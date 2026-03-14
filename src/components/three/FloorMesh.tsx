@@ -306,7 +306,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshPhysicalMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.6, 0.6) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}
@@ -318,7 +318,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshStandardMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.6, 0.6) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}

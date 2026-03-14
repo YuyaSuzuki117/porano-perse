@@ -64,6 +64,7 @@ export function SceneCanvas({
   const annotations = useEditorStore((s) => s.annotations);
   const showAnnotations = useEditorStore((s) => s.showAnnotations);
   const activeTool = useEditorStore((s) => s.activeTool);
+  const deletingFurnitureIds = useEditorStore((s) => s.deletingFurnitureIds);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -224,6 +225,7 @@ export function SceneCanvas({
             key={item.id}
             item={item}
             selected={selectedFurniture === item.id || selectedFurnitureIds.includes(item.id)}
+            isDeleting={deletingFurnitureIds.includes(item.id)}
             onSelect={onSelectFurniture}
             onToggleSelect={onToggleFurnitureSelection}
             onMove={onMoveFurniture}

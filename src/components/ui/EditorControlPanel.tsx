@@ -225,10 +225,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* View Mode - hidden on mobile (tab bar handles this) */}
       {!isMobile && (
         <div className="p-3 border-b border-gray-200 bg-gray-50">
-          <div className="flex gap-1">
+          <div className="flex gap-1" role="tablist" aria-label="ビューモード切替">
             {(['2d', 'split', '3d'] as const).map((mode) => (
               <button
                 key={mode}
+                role="tab"
+                aria-selected={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
                   viewMode === mode
@@ -446,7 +448,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {/* 壁の表示制御 */}
           <div>
             <label className="block text-[10px] text-gray-400 mb-1">壁の表示</label>
-            <div className="flex gap-1">
+            <div className="flex gap-1" role="radiogroup" aria-label="壁の表示モード">
               {([
                 { mode: 'solid' as const, label: '実線' },
                 { mode: 'transparent' as const, label: '半透明' },
@@ -455,6 +457,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               ]).map(({ mode, label }) => (
                 <button
                   key={mode}
+                  role="radio"
+                  aria-checked={wallDisplayMode === mode}
                   onClick={() => setWallDisplayMode(mode)}
                   className={`flex-1 text-[10px] px-1 py-1 rounded transition-all ${
                     wallDisplayMode === mode
@@ -503,8 +507,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {/* 天井の表示制御 */}
           <div>
             <label className="block text-[10px] text-gray-400 mb-1">天井</label>
-            <div className="flex gap-1">
+            <div className="flex gap-1" role="radiogroup" aria-label="天井の表示">
               <button
+                role="radio"
+                aria-checked={ceilingVisible}
                 onClick={() => setCeilingVisible(true)}
                 className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
                   ceilingVisible
@@ -515,6 +521,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 表示
               </button>
               <button
+                role="radio"
+                aria-checked={!ceilingVisible}
                 onClick={() => setCeilingVisible(false)}
                 className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
                   !ceilingVisible
@@ -579,7 +587,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {snapToGrid3D && (
             <div>
               <label className="block text-[10px] text-gray-400 mb-1">グリッドサイズ</label>
-              <div className="flex gap-1">
+              <div className="flex gap-1" role="radiogroup" aria-label="グリッドサイズ">
                 {[
                   { size: 0.1, label: '10cm' },
                   { size: 0.25, label: '25cm' },
@@ -587,6 +595,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 ].map(({ size, label }) => (
                   <button
                     key={size}
+                    role="radio"
+                    aria-checked={gridSnapSize === size}
                     onClick={() => setGridSnapSize(size)}
                     className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
                       gridSnapSize === size
@@ -617,11 +627,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
       {/* Style */}
       <Section title="スタイル" collapsible={isMobile} mobileCollapsible={isMobile}>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="スタイル選択">
           {(Object.entries(STYLE_PRESETS) as [StylePreset, (typeof STYLE_PRESETS)[StylePreset]][]).map(
             ([key, config]) => (
               <button
                 key={key}
+                role="radio"
+                aria-checked={style === key}
                 onClick={() => setStyle(key)}
                 className={`relative px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
                   style === key
@@ -993,7 +1005,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {/* 描画品質 */}
           <div>
             <div className="text-[10px] text-gray-500 mb-1 font-medium">描画品質</div>
-            <div className="flex gap-1">
+            <div className="flex gap-1" role="radiogroup" aria-label="描画品質">
               {([
                 { level: 'high' as const, label: '高品質' },
                 { level: 'medium' as const, label: '標準' },
@@ -1001,6 +1013,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               ]).map(({ level, label }) => (
                 <button
                   key={level}
+                  role="radio"
+                  aria-checked={qualityLevel === level}
                   onClick={() => setQualityLevel(level)}
                   className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium transition-all ${
                     qualityLevel === level
@@ -1249,8 +1263,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
       {/* Furniture */}
       <Section title="什器・家具" collapsible={isMobile} mobileCollapsible={isMobile} defaultOpen={true}>
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-1 mb-2" role="tablist" aria-label="什器表示切替">
           <button
+            role="tab"
+            aria-selected={furnitureTab === 'single'}
             onClick={() => setFurnitureTab('single')}
             className={`flex-1 px-2 py-1 rounded text-[10px] font-medium ${
               furnitureTab === 'single' ? 'bg-blue-100 text-blue-700' : 'bg-gray-50 text-gray-500'
@@ -1259,6 +1275,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             単品
           </button>
           <button
+            role="tab"
+            aria-selected={furnitureTab === 'sets'}
             onClick={() => setFurnitureTab('sets')}
             className={`flex-1 px-2 py-1 rounded text-[10px] font-medium ${
               furnitureTab === 'sets' ? 'bg-blue-100 text-blue-700' : 'bg-gray-50 text-gray-500'
@@ -1317,10 +1335,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 isMobile ? 'min-h-[44px]' : ''
               }`}
             />
-            <div className="flex flex-wrap gap-1 mb-2">
+            <div className="flex flex-wrap gap-1 mb-2" role="radiogroup" aria-label="什器カテゴリ">
               {CATEGORY_LIST.map((cat) => (
                 <button
                   key={cat.key}
+                  role="radio"
+                  aria-checked={furnitureCategory === cat.key}
                   onClick={() => setFurnitureCategory(cat.key)}
                   className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
                     furnitureCategory === cat.key
@@ -1337,10 +1357,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 該当する什器がありません
               </div>
             ) : (
-              <div className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
+              <div className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`} role="listbox" aria-label="什器カタログ">
                 {filteredCatalog.map((item) => (
                   <button
                     key={item.type}
+                    role="option"
+                    aria-selected={false}
+                    aria-label={item.name}
                     onClick={() => handleAddFurniture(item.type)}
                     className={`flex items-center gap-1 px-2 py-1.5 bg-gray-50 rounded hover:bg-blue-50 border border-gray-200 text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
                       isMobile ? 'flex-col gap-0.5 py-2 text-center min-h-[44px]' : ''
@@ -1928,11 +1951,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
   // Desktop: sidebar
   return (
-    <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col text-sm scroll-smooth-panel">
+    <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col text-sm scroll-smooth-panel" role="complementary" aria-label="エディタコントロールパネル">
       {panelContent}
     </div>
   );
 }
+
+let sectionIdCounter = 0;
 
 function Section({
   title,
@@ -1949,19 +1974,32 @@ function Section({
 }) {
   const isCollapsible = collapsible || mobileCollapsible;
   const [isOpen, setIsOpen] = useState(mobileCollapsible ? false : defaultOpen);
+  const [sectionId] = useState(() => `section-${++sectionIdCounter}`);
+  const contentId = `${sectionId}-content`;
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isCollapsible) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsOpen(!isOpen);
+    }
+  };
 
   return (
-    <div className="border-b border-gray-100">
+    <div className="border-b border-gray-100" role="region" aria-label={title}>
       <button
         onClick={isCollapsible ? () => setIsOpen(!isOpen) : undefined}
+        onKeyDown={handleKeyDown}
         className={`w-full p-3 pb-2 flex items-center justify-between transition-colors duration-150 ${isCollapsible ? 'cursor-pointer hover:bg-gray-50 active:scale-[0.99]' : 'cursor-default'}`}
+        aria-expanded={isCollapsible ? isOpen : undefined}
+        aria-controls={isCollapsible ? contentId : undefined}
       >
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
         {isCollapsible && (
-          <span className={`text-[10px] text-gray-400 transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+          <span className={`text-[10px] text-gray-400 transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-90' : ''}`} aria-hidden="true">▶</span>
         )}
       </button>
-      <div className="section-content" data-open={isCollapsible ? isOpen : true}>
+      <div className="section-content" data-open={isCollapsible ? isOpen : true} id={contentId}>
         <div>
           <div className="px-3 pb-3">{children}</div>
         </div>

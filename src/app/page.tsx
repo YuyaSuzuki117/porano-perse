@@ -4,6 +4,9 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useScreenshot } from '@/hooks/useScreenshot';
+import { useDragDrop } from '@/hooks/useDragDrop';
 import { Header } from '@/components/layout/Header';
 import { EditorControlPanel } from '@/components/ui/EditorControlPanel';
 import { CameraPresetButtons } from '@/components/ui/CameraPresetButtons';
@@ -81,7 +84,7 @@ function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
   if (walls.length > 0) return null;
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-      <div className="text-center px-6 py-8 bg-black/40 backdrop-blur-sm rounded-2xl max-w-xs">
+      <div className="text-center px-6 py-8 bg-black/40 backdrop-blur-sm rounded-2xl max-xs">
         <div className="text-white/80 text-sm font-medium mb-2">
           {isMobile ? '図面タブから壁を描画して開始' : '左パネルの図面エディタで壁を描画して開始'}
         </div>
@@ -105,28 +108,12 @@ export default function EditorPage() {
   const selectedFurnitureIds = useEditorStore((s) => s.selectedFurnitureIds);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
   const toggleFurnitureSelection = useEditorStore((s) => s.toggleFurnitureSelection);
-  const duplicateSelectedFurniture = useEditorStore((s) => s.duplicateSelectedFurniture);
-  const selectAllFurniture = useEditorStore((s) => s.selectAllFurniture);
   const moveFurniture = useEditorStore((s) => s.moveFurniture);
-  const undo = useEditorStore((s) => s.undo);
-  const redo = useEditorStore((s) => s.redo);
-  const copyFurniture = useEditorStore((s) => s.copyFurniture);
-  const pasteFurniture = useEditorStore((s) => s.pasteFurniture);
-  const deleteSelected = useEditorStore((s) => s.deleteSelected);
-  const duplicateFurniture = useEditorStore((s) => s.duplicateFurniture);
   const restoreFromLocalStorage = useEditorStore((s) => s.restoreFromLocalStorage);
   const loadTemplate = useEditorStore((s) => s.loadTemplate);
   const loadFromShareUrl = useEditorStore((s) => s.loadFromShareUrl);
   const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
   const setWallDisplayMode = useEditorStore((s) => s.setWallDisplayMode);
-  const ceilingVisible = useEditorStore((s) => s.ceilingVisible);
-  const setCeilingVisible = useEditorStore((s) => s.setCeilingVisible);
-  const showGrid = useEditorStore((s) => s.showGrid);
-  const setShowGrid = useEditorStore((s) => s.setShowGrid);
-  const showDimensions = useEditorStore((s) => s.showDimensions);
-  const setShowDimensions = useEditorStore((s) => s.setShowDimensions);
-  const showFurniture = useEditorStore((s) => s.showFurniture);
-  const setShowFurniture = useEditorStore((s) => s.setShowFurniture);
   const photoMode = useEditorStore((s) => s.photoMode);
   const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -179,49 +166,10 @@ export default function EditorPage() {
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'pixel' | 'settings'>('2d');
   const [fabOpen, setFabOpen] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
 
-  const addFurniture = useEditorStore((s) => s.addFurniture);
-
-  const handleDrop3DModel = useCallback((file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'glb' && ext !== 'gltf') return;
-    const nameWithoutExt = file.name.replace(/\.(glb|gltf)$/i, '');
-    const name = window.prompt('モデル名を入力', nameWithoutExt) || nameWithoutExt;
-    const blobUrl = URL.createObjectURL(file);
-    addFurniture({
-      id: `custom_${Date.now()}`,
-      type: 'custom',
-      name,
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      modelUrl: blobUrl,
-    });
-  }, [addFurniture]);
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
-    if (hasFiles) setIsDragOver(true);
-  }, []);
-
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  }, []);
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    const modelFile = files.find(f => /\.(glb|gltf)$/i.test(f.name));
-    if (modelFile) handleDrop3DModel(modelFile);
-  }, [handleDrop3DModel]);
+  // カスタムフック: ドラッグ&ドロップ
+  const { isDragOver, dragHandlers } = useDragDrop();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -241,6 +189,12 @@ export default function EditorPage() {
 
   // Auto-save
   useAutoSave();
+
+  // カスタムフック: キーボードショートカット
+  useKeyboardShortcuts();
+
+  // カスタムフック: スクリーンショット
+  const { takeScreenshot, takeHiResScreenshot, isRendering } = useScreenshot(canvasRef);
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -269,209 +223,6 @@ export default function EditorPage() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [loadFromShareUrl]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // テキスト入力中は無視
-      const target = e.target as HTMLElement;
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
-
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !e.shiftKey) {
-          e.preventDefault();
-          undo();
-        } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-          e.preventDefault();
-          redo();
-        } else if (e.key === 'c') {
-          e.preventDefault();
-          copyFurniture();
-        } else if (e.key === 'v') {
-          e.preventDefault();
-          pasteFurniture();
-        } else if (e.key === 'a') {
-          e.preventDefault();
-          selectAllFurniture();
-        } else if (e.key === 'd') {
-          e.preventDefault();
-          if (selectedFurnitureIds.length > 1) {
-            duplicateSelectedFurniture();
-          } else if (selectedFurnitureId) {
-            duplicateFurniture(selectedFurnitureId);
-          }
-        }
-      }
-
-      // Delete / Backspace で選択中のアイテムを削除
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        deleteSelected();
-      }
-
-      // Escape で選択解除
-      if (e.key === 'Escape') {
-        setSelectedFurniture(null);
-      }
-
-      // H キー: 壁表示モード切替 (solid → transparent → hidden → section → solid)
-      if (e.key === 'h' || e.key === 'H') {
-        const modes: Array<'solid' | 'transparent' | 'hidden' | 'section'> = ['solid', 'transparent', 'hidden', 'section'];
-        const currentIndex = modes.indexOf(wallDisplayMode);
-        const nextIndex = (currentIndex + 1) % modes.length;
-        setWallDisplayMode(modes[nextIndex]);
-      }
-
-      // C キー: 天井表示トグル
-      if (e.key === 'c' || e.key === 'C') {
-        if (!e.ctrlKey && !e.metaKey) {
-          setCeilingVisible(!ceilingVisible);
-        }
-      }
-
-      // G キー: グリッド表示トグル
-      if ((e.key === 'g' || e.key === 'G') && !e.ctrlKey && !e.metaKey) {
-        setShowGrid(!showGrid);
-      }
-
-      // D キー: 寸法表示トグル (Ctrl/Cmd なしの場合のみ)
-      if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey) {
-        setShowDimensions(!showDimensions);
-      }
-
-      // F キー: 家具表示トグル
-      if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
-        setShowFurniture(!showFurniture);
-      }
-
-      // P キー: フォトモード切替
-      if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
-        setPhotoMode(!photoMode);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copyFurniture, pasteFurniture, deleteSelected, duplicateFurniture, duplicateSelectedFurniture, selectAllFurniture, selectedFurnitureId, selectedFurnitureIds, setSelectedFurniture, wallDisplayMode, setWallDisplayMode, ceilingVisible, setCeilingVisible, showGrid, setShowGrid, showDimensions, setShowDimensions, showFurniture, setShowFurniture, photoMode, setPhotoMode]);
-
-  const enableWatermark = useEditorStore((s) => s.enableWatermark);
-  const [isRendering, setIsRendering] = useState(false);
-
-  /** ウォーターマークを描画 */
-  const applyWatermark = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.save();
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#000000';
-    const fontSize = Math.max(14, Math.min(width, height) * 0.03);
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('Porano Plaza', width - fontSize * 0.8, height - fontSize * 0.5);
-    ctx.restore();
-  }, []);
-
-  const takeScreenshot = useCallback((scale: number = 1) => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-
-    if (scale <= 1) {
-      if (enableWatermark) {
-        const offscreen = document.createElement('canvas');
-        offscreen.width = canvas.width;
-        offscreen.height = canvas.height;
-        const ctx = offscreen.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(canvas, 0, 0);
-          applyWatermark(ctx, offscreen.width, offscreen.height);
-          const link = document.createElement('a');
-          link.download = `porano-perse-${Date.now()}.png`;
-          link.href = offscreen.toDataURL('image/png');
-          link.click();
-        }
-      } else {
-        const link = document.createElement('a');
-        link.download = `porano-perse-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }
-    } else {
-      const offscreen = document.createElement('canvas');
-      offscreen.width = canvas.width * scale;
-      offscreen.height = canvas.height * scale;
-      const ctx = offscreen.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
-        if (enableWatermark) {
-          applyWatermark(ctx, offscreen.width, offscreen.height);
-        }
-        const link = document.createElement('a');
-        link.download = `porano-perse-${Date.now()}.png`;
-        link.href = offscreen.toDataURL('image/png');
-        link.click();
-      }
-    }
-  }, [enableWatermark, applyWatermark]);
-
-  /** 高解像度キャプチャ（R3Fレンダラーのピクセル比を一時的に上げる） */
-  const takeHiResScreenshot = useCallback(async () => {
-    if (!canvasRef.current) return;
-    setIsRendering(true);
-
-    // R3Fのinternalstoreにアクセスしてrendererを取得
-    const canvas = canvasRef.current;
-    const gl = (canvas as HTMLCanvasElement & { __r3f?: { store?: { getState: () => { gl: { setPixelRatio: (r: number) => void; render: (scene: unknown, camera: unknown) => void; getPixelRatio: () => number; domElement: HTMLCanvasElement } ; scene: unknown; camera: unknown } } } }).__r3f?.store?.getState();
-
-    if (gl) {
-      const renderer = gl.gl;
-      const origRatio = renderer.getPixelRatio();
-      const hiResRatio = Math.max(origRatio * 3, 4);
-
-      // ピクセル比を上げて1フレームレンダリング
-      renderer.setPixelRatio(hiResRatio);
-      renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
-
-      // キャプチャ
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const dataUrl = renderer.domElement.toDataURL('image/png');
-
-      // ウォーターマーク追加（必要な場合）
-      if (enableWatermark) {
-        const img = new Image();
-        img.onload = () => {
-          const offscreen = document.createElement('canvas');
-          offscreen.width = img.width;
-          offscreen.height = img.height;
-          const ctx = offscreen.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            applyWatermark(ctx, offscreen.width, offscreen.height);
-            const link = document.createElement('a');
-            link.download = `porano-perse-4K-${Date.now()}.png`;
-            link.href = offscreen.toDataURL('image/png');
-            link.click();
-          }
-          renderer.setPixelRatio(origRatio);
-          renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
-          setIsRendering(false);
-        };
-        img.src = dataUrl;
-      } else {
-        const link = document.createElement('a');
-        link.download = `porano-perse-4K-${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
-
-        // 元に戻す
-        renderer.setPixelRatio(origRatio);
-        renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
-        setIsRendering(false);
-      }
-    } else {
-      // fallback: 通常の3xスケールキャプチャ
-      takeScreenshot(3);
-      setIsRendering(false);
-    }
-  }, [enableWatermark, applyWatermark, takeScreenshot]);
 
   const handlePrint = useCallback(() => {
     window.print();
@@ -521,7 +272,7 @@ export default function EditorPage() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="h-dvh-safe flex flex-col bg-gray-100">
+      <div className="h-dvh-safe flex flex-col bg-gray-100" role="main" aria-label="Porano Perse エディタ">
         {welcomeModal}
         {tutorialModal}
         <QuickTipsContainer />
@@ -534,7 +285,7 @@ export default function EditorPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-xl px-8 py-6 shadow-2xl flex flex-col items-center gap-3">
               <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full" />
-              <span className="text-sm font-medium text-gray-700">レンダリング中...</span>
+              <span className="text-sm font-medium text-gray-700" aria-live="polite">レンダリング中...</span>
             </div>
           </div>
         )}
@@ -542,12 +293,12 @@ export default function EditorPage() {
         {/* Full viewport: 2D or 3D or Pixel */}
         <div className="flex-1 overflow-hidden relative min-h-0">
           {mobileTab === 'pixel' && (
-            <div className="absolute inset-0 tab-content-enter">
+            <div className="absolute inset-0 tab-content-enter" aria-label="ドットエディタ">
               <PixelRoomEditor />
             </div>
           )}
           {mobileTab !== 'pixel' && (viewMode === '2d' || viewMode === 'split') && (
-            <div className="absolute inset-0 bg-white tab-content-enter">
+            <div className="absolute inset-0 bg-white tab-content-enter" aria-label="2D図面エディタ">
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs text-gray-500 font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md border border-gray-200 pointer-events-none">
                 2D 図面
@@ -557,9 +308,8 @@ export default function EditorPage() {
           {mobileTab !== 'pixel' && viewMode === '3d' && (
             <div
               className="absolute inset-0 tab-content-enter"
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
+              aria-label="3Dプレビュー"
+              {...dragHandlers}
             >
               <ErrorBoundary>
                 <SceneCanvas
@@ -577,7 +327,7 @@ export default function EditorPage() {
               </div>
               <CameraPresetButtons canvasRef={canvasRef} />
               <AlignmentToolbar />
-              <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2">
+              <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
                 <span>ドラッグ: 回転</span>
                 <span className="text-white/40">|</span>
                 <span>ピンチ: ズーム</span>
@@ -595,8 +345,8 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* Floating Action Button — モバイルクイックアクション */}
-        <div className="absolute bottom-[76px] right-3 z-30 flex flex-col-reverse items-center gap-2">
+        {/* Floating Action Button — モバイルクイックアクション（セーフエリア対応） */}
+        <div className="absolute bottom-[calc(var(--safe-bottom)+76px)] right-3 z-30 flex flex-col-reverse items-center gap-2">
           {/* FABメニュー項目（展開時のみ表示） */}
           {fabOpen && (
             <>
@@ -612,7 +362,7 @@ export default function EditorPage() {
                   setMobileTab('settings');
                 }}
                 className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                title="什器カタログ"
+                aria-label="什器カタログを開く"
               >
                 🪑
               </button>
@@ -626,7 +376,7 @@ export default function EditorPage() {
                   );
                 }}
                 className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                title="壁表示切替"
+                aria-label="壁表示切替"
               >
                 🧱
               </button>
@@ -636,7 +386,7 @@ export default function EditorPage() {
                   takeScreenshot(1);
                 }}
                 className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                title="スクリーンショット"
+                aria-label="スクリーンショットを撮る"
               >
                 📸
               </button>
@@ -648,14 +398,15 @@ export default function EditorPage() {
             className={`w-14 h-14 rounded-full bg-blue-600 shadow-xl flex items-center justify-center text-white text-2xl font-light active:scale-90 transition-all duration-200 ${
               fabOpen ? 'rotate-45 bg-gray-600' : ''
             }`}
-            title="クイックアクション"
+            aria-label="クイックアクション"
+            aria-expanded={fabOpen}
           >
             +
           </button>
         </div>
 
         {/* Bottom tab bar — セーフエリア対応 + タッチフィードバック */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe">
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe" role="tablist" aria-label="エディタビュー切替">
           {([
             { key: '2d' as const, label: '図面', icon: '📐' },
             { key: '3d' as const, label: '3D', icon: '🏠' },
@@ -664,6 +415,8 @@ export default function EditorPage() {
           ]).map(({ key, label, icon }) => (
             <button
               key={key}
+              role="tab"
+              aria-selected={mobileTab === key}
               onClick={() => { handleMobileTab(key); setFabOpen(false); }}
               className={`flex-1 flex flex-col items-center justify-center min-h-[56px] py-2 text-xs font-medium transition-all active:scale-95 active:bg-gray-100 ${
                 mobileTab === key
@@ -692,7 +445,7 @@ export default function EditorPage() {
 
   // Desktop layout
   return (
-    <div className="h-dvh-safe flex flex-col bg-gray-100">
+    <div className="h-dvh-safe flex flex-col bg-gray-100" role="main" aria-label="Porano Perse エディタ">
       {welcomeModal}
       {tutorialModal}
       <QuickTipsContainer />
@@ -705,7 +458,7 @@ export default function EditorPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl px-8 py-6 shadow-2xl flex flex-col items-center gap-3">
             <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full" />
-            <span className="text-sm font-medium text-gray-700">レンダリング中...</span>
+            <span className="text-sm font-medium text-gray-700" aria-live="polite">レンダリング中...</span>
           </div>
         </div>
       )}
@@ -715,12 +468,13 @@ export default function EditorPage() {
         <div className="flex-1 flex">
           {/* Pixel editor (replaces 2D when active) */}
           {showPixelEditor && viewMode !== '3d' && (
-            <div className="relative flex-1">
+            <div className="relative flex-1" aria-label="ドットエディタ">
               <PixelRoomEditor />
               {/* Toggle back to 2D */}
               <button
                 onClick={() => setShowPixelEditor(false)}
                 className="absolute top-2 right-2 z-20 bg-[#16213e] text-[#e94560] text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-md border border-[#0f3460] hover:bg-[#2a2a50] transition-colors"
+                aria-label="2D図面に戻す"
               >
                 2D図面に戻す
               </button>
@@ -732,6 +486,7 @@ export default function EditorPage() {
               className={`relative bg-white ${
                 viewMode === 'split' ? 'w-1/2' : 'flex-1'
               }`}
+              aria-label="2D図面エディタ"
             >
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
               {/* 2Dラベル */}
@@ -742,6 +497,7 @@ export default function EditorPage() {
               <button
                 onClick={() => setShowPixelEditor(true)}
                 className="absolute top-2 right-2 z-20 bg-[#1a1a2e] text-[#e94560] text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-md border border-[#0f3460] hover:bg-[#2a2a50] hover:text-white transition-colors flex items-center gap-1"
+                aria-label="ドットエディタに切替"
               >
                 <span>🎮</span>
                 <span>ドットエディタ</span>
@@ -751,7 +507,7 @@ export default function EditorPage() {
 
           {/* 分割線インジケーター（splitモード時のみ） */}
           {viewMode === 'split' && (
-            <div className="relative w-[6px] bg-gray-200 hover:bg-blue-300 transition-colors flex-shrink-0 group">
+            <div className="relative w-[6px] bg-gray-200 hover:bg-blue-300 transition-colors flex-shrink-0 group" role="separator" aria-orientation="vertical">
               {/* 上部ハンドル */}
               <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-[3px]">
                 <div className="w-[3px] h-[3px] rounded-full bg-gray-400 group-hover:bg-blue-500 transition-colors" />
@@ -775,9 +531,8 @@ export default function EditorPage() {
               className={`relative print-area ${
                 viewMode === 'split' ? 'w-1/2' : 'flex-1'
               }`}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
+              aria-label="3Dプレビュー"
+              {...dragHandlers}
             >
               <ErrorBoundary>
                 <SceneCanvas
@@ -800,7 +555,7 @@ export default function EditorPage() {
               {!photoMode && <AlignmentToolbar />}
               {/* 操作ヘルプ */}
               {!photoMode && (
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2">
+                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
                   <span>ドラッグ: 回転</span>
                   <span className="text-white/40">|</span>
                   <span>右ドラッグ: 移動</span>
@@ -814,6 +569,7 @@ export default function EditorPage() {
                   <button
                     onClick={() => takeHiResScreenshot()}
                     className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
+                    aria-label="4K高解像度で撮影"
                   >
                     <span className="text-lg group-hover:animate-pulse">📷</span>
                     <span>撮影 (4K)</span>
@@ -821,6 +577,7 @@ export default function EditorPage() {
                   <button
                     onClick={() => setPhotoMode(false)}
                     className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 hover:text-white hover:scale-105 transition-all duration-200"
+                    aria-label="フォトモードを終了"
                   >
                     フォトモード終了 <span className="text-white/50 ml-1">P</span>
                   </button>

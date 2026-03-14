@@ -182,6 +182,11 @@ interface EditorState {
   showAnnotations: boolean;
   setShowAnnotations: (show: boolean) => void;
 
+  // 削除アニメーション用
+  deletingFurnitureIds: string[];
+  markFurnitureForDeletion: (id: string) => void;
+  completeDeleteFurniture: (id: string) => void;
+
   // 家具操作
   addFurniture: (item: FurnitureItem) => void;
   updateFurniture: (id: string, updates: Partial<FurnitureItem>) => void;
@@ -403,6 +408,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   wallDisplayMode: 'solid',
   ceilingVisible: true,
   sectionCutHeight: 1.2,
+  deletingFurnitureIds: [],
   isDraggingFurniture: false,
   isFirstPersonMode: false,
   activeLightingPreset: null,
@@ -669,12 +675,25 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const furniture = s.furniture.map((f) => (f.id === id ? { ...f, ...updates } : f));
       return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-update-${id}`) };
     }),
-  deleteFurniture: (id) =>
+  deleteFurniture: (id) => {
+    // 削除アニメーション付き: まずmarkしてアニメーション後にcompleteDeleteで実削除
+    get().markFurnitureForDeletion(id);
+  },
+  markFurnitureForDeletion: (id) =>
+    set((s) => ({
+      deletingFurnitureIds: s.deletingFurnitureIds.includes(id)
+        ? s.deletingFurnitureIds
+        : [...s.deletingFurnitureIds, id],
+    })),
+  completeDeleteFurniture: (id) =>
     set((s) => {
       const furniture = s.furniture.filter((f) => f.id !== id);
       const selectedFurnitureIds = s.selectedFurnitureIds.filter((fid) => fid !== id);
+      const deletingFurnitureIds = s.deletingFurnitureIds.filter((fid) => fid !== id);
       return {
-        furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }),
+        furniture,
+        deletingFurnitureIds,
+        ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }),
         selectedFurnitureId: s.selectedFurnitureId === id ? null : s.selectedFurnitureId,
         selectedFurnitureIds,
       };
@@ -1101,17 +1120,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   deleteSelected: () => {
     const { selectedFurnitureId, selectedFurnitureIds, selectedWallId } = get();
-    // 複数選択時はまとめて削除
+    // 複数選択時はまとめて削除（アニメーション付き）
     if (selectedFurnitureIds.length > 1) {
-      set((s) => {
-        const furniture = s.furniture.filter((f) => !selectedFurnitureIds.includes(f.id));
-        return {
-          furniture,
-          selectedFurnitureId: null,
-          selectedFurnitureIds: [],
-          ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }),
-        };
-      });
+      for (const fid of selectedFurnitureIds) {
+        get().markFurnitureForDeletion(fid);
+      }
+      set({ selectedFurnitureId: null, selectedFurnitureIds: [] });
     } else if (selectedFurnitureId) {
       get().deleteFurniture(selectedFurnitureId);
       set({ selectedFurnitureId: null, selectedFurnitureIds: [] });

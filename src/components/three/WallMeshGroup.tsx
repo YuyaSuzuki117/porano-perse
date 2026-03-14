@@ -1029,7 +1029,7 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.2, 0.2) : undefined}
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}

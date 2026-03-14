@@ -100,10 +100,50 @@ const MATERIAL_PBR: Record<FurnitureMaterial, FurniturePBR> = {
   stone:   { roughness: 0.82, metalness: 0.03 },  // 天然石
 };
 
-/* ─── モジュールスコープ ジオメトリ/マテリアルキャッシュ ─────────── */
+/* ─── モジュールスコープ LRUキャッシュ (ジオメトリ/マテリアル) ────── */
 
-/** ジオメトリキャッシュ: 同一パラメータのジオメトリを共有 */
-const geometryCache = new Map<string, THREE.BufferGeometry>();
+/**
+ * LRUキャッシュ: 最大サイズを超えたら最も古いエントリをdispose()して削除。
+ * メモリリーク防止のためdisposable THREE.jsオブジェクトに特化。
+ */
+class LRUCache<T extends { dispose: () => void }> {
+  private cache = new Map<string, T>();
+  constructor(private maxSize: number) {}
+
+  get(key: string): T | undefined {
+    const val = this.cache.get(key);
+    if (val !== undefined) {
+      // アクセス順を更新（削除→再挿入で末尾へ移動）
+      this.cache.delete(key);
+      this.cache.set(key, val);
+    }
+    return val;
+  }
+
+  set(key: string, value: T): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+    this.cache.set(key, value);
+    // maxSize超過時に最古エントリをdispose
+    while (this.cache.size > this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        const oldest = this.cache.get(firstKey);
+        this.cache.delete(firstKey);
+        oldest?.dispose();
+      }
+    }
+  }
+
+  clear(): void {
+    this.cache.forEach((val) => val.dispose());
+    this.cache.clear();
+  }
+}
+
+/** ジオメトリLRUキャッシュ: 最大200エントリ */
+const geometryCache = new LRUCache<THREE.BufferGeometry>(200);
 
 function getCachedGeometry(key: string, factory: () => THREE.BufferGeometry): THREE.BufferGeometry {
   const existing = geometryCache.get(key);
@@ -113,8 +153,8 @@ function getCachedGeometry(key: string, factory: () => THREE.BufferGeometry): TH
   return geo;
 }
 
-/** マテリアルキャッシュ: 同一色・同一パラメータのマテリアルを共有 */
-const materialCache = new Map<string, THREE.Material>();
+/** マテリアルLRUキャッシュ: 最大100エントリ */
+const materialCache = new LRUCache<THREE.Material>(100);
 
 function getCachedStandardMaterial(
   key: string,
@@ -136,6 +176,12 @@ function getCachedPhysicalMaterial(
   const mat = new THREE.MeshPhysicalMaterial(props);
   materialCache.set(key, mat);
   return mat;
+}
+
+/** キャッシュクリーンアップ関数（コンポーネントアンマウント時に呼び出し可能） */
+export function cleanupFurnitureCaches(): void {
+  geometryCache.clear();
+  materialCache.clear();
 }
 
 /** 共有ジオメトリ: 椅子/テーブル脚など頻出パーツ */
@@ -163,6 +209,7 @@ const HIT_AREA_MATERIAL = new THREE.MeshBasicMaterial({
 interface FurnitureProps {
   item: FurnitureItem;
   selected: boolean;
+  isDeleting?: boolean;
   onSelect: (id: string) => void;
   onToggleSelect?: (id: string) => void;
   onMove: (id: string, position: [number, number, number]) => void;
@@ -175,6 +222,7 @@ function furniturePropsAreEqual(
 ): boolean {
   if (prev.item.id !== next.item.id) return false;
   if (prev.selected !== next.selected) return false;
+  if (prev.isDeleting !== next.isDeleting) return false;
   // 位置が変わった場合（ドラッグ完了時）
   if (
     prev.item.position[0] !== next.item.position[0] ||
@@ -209,11 +257,17 @@ function snapRotation(rad: number): number {
   return Math.round(rad / ROTATION_SNAP_RAD) * ROTATION_SNAP_RAD;
 }
 
-export const Furniture = React.memo(function Furniture({ item, selected, onSelect, onToggleSelect, onMove }: FurnitureProps) {
+export const Furniture = React.memo(function Furniture({ item, selected, isDeleting, onSelect, onToggleSelect, onMove }: FurnitureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // 配置時「ポップ」アニメーション: マウント時にscale 0.5→1.0 (300ms ease-out)
-  const placementAnimRef = useRef({ active: true, elapsed: 0, duration: 0.3 });
+  // 配置時「ポップ」アニメーション: マウント時にscale 0→1.0 (400ms elastic easing)
+  const placementAnimRef = useRef({ active: true, elapsed: 0, duration: 0.4 });
+
+  // 削除フェードアニメーション用ref
+  const deleteAnimRef = useRef({ active: false, elapsed: 0, duration: 0.2 });
+
+  // 選択時エミッシブグロー用ref
+  const emissivePhaseRef = useRef(0);
 
   const style = useEditorStore((s) => s.style);
   // スナップ設定はドラッグ中getState()で直接取得（サブスクリプション不要）
@@ -282,10 +336,12 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // フラスタムカリング用: バウンディングボックスの明示的計算
+  // フラスタムカリング用: バウンディングボックスの明示的計算 + グループレベルカリング
   useEffect(() => {
     if (!groupRef.current) return;
-    // 1フレーム遅延でジオメトリが確定した後にbounding box計算
+    // グループ自体もfrustumCulled有効化
+    groupRef.current.frustumCulled = true;
+    // 1フレーム遅延でジオメトリが確定した後にbounding box/sphere計算
     const timer = requestAnimationFrame(() => {
       if (groupRef.current) {
         groupRef.current.traverse((child) => {
@@ -294,32 +350,68 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
             child.geometry.computeBoundingSphere();
             child.frustumCulled = true;
           }
+          // グループ/Object3DにもfrustumCulled設定
+          child.frustumCulled = true;
         });
       }
     });
     return () => cancelAnimationFrame(timer);
   }, [item.type, item.modelUrl]);
 
-  // パルスアニメーション: 選択中の家具に微妙な脈動リング
+  // 削除アニメーション開始検知
+  useEffect(() => {
+    if (isDeleting && !deleteAnimRef.current.active) {
+      deleteAnimRef.current = { active: true, elapsed: 0, duration: 0.2 };
+    }
+  }, [isDeleting]);
+
+  // パルスアニメーション + 配置ポップ + 選択グロー + 削除フェード
   useFrame((_, delta) => {
-    // 配置ポップアニメーション (マウント時300ms)
-    if (placementAnimRef.current.active && groupRef.current) {
+    if (!groupRef.current) return;
+
+    // 削除フェードアニメーション: opacity 1→0 (200ms)
+    if (deleteAnimRef.current.active) {
+      deleteAnimRef.current.elapsed += delta;
+      const t = Math.min(deleteAnimRef.current.elapsed / deleteAnimRef.current.duration, 1);
+      const opacity = 1 - t;
+      // 全メッシュの透明度を直接操作
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          for (const mat of mats) {
+            mat.transparent = true;
+            mat.opacity = opacity;
+            mat.needsUpdate = true;
+          }
+        }
+      });
+      if (t >= 1) {
+        deleteAnimRef.current.active = false;
+        // アニメーション完了 → 実際の削除
+        useEditorStore.getState().completeDeleteFurniture(item.id);
+      }
+      return; // 削除中は他のアニメーションスキップ
+    }
+
+    // 配置ポップアニメーション (マウント時400ms, elastic easing)
+    if (placementAnimRef.current.active) {
       placementAnimRef.current.elapsed += delta;
       const t = Math.min(placementAnimRef.current.elapsed / placementAnimRef.current.duration, 1);
-      // ease-out cubic: 1 - (1-t)^3
-      const eased = 1 - Math.pow(1 - t, 3);
-      const s = 0.5 + 0.5 * eased; // 0.5 → 1.0
+      // elastic easing (bounce): sin波減衰で弾むような動き
+      const p = 0.3; // 周期パラメータ
+      const eased = t === 1 ? 1 : -(Math.pow(2, -10 * t)) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
+      const s = eased; // 0→1 with elastic bounce
       groupRef.current.scale.setScalar(s);
       if (t >= 1) {
         placementAnimRef.current.active = false;
         groupRef.current.scale.setScalar(1);
       }
-      // Skip normal scale logic during placement animation
+      // 配置アニメーション中は他のスケール処理スキップ
       if (t < 1) return;
     }
 
     // pointerDown即時フィードバック: 1.02xスケール (タッチレスポンス向上)
-    if (groupRef.current) {
+    {
       const targetScale = isPointerDownRef.current ? 1.02 : 1.0;
       const currentScale = groupRef.current.scale.x;
       const newScale = currentScale + (targetScale - currentScale) * 0.3;
@@ -327,6 +419,42 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
         groupRef.current.scale.setScalar(newScale);
       }
     }
+
+    // 選択時エミッシブグロー: emissiveIntensity 0→0.15→0 (1.5sループ)
+    if (selected) {
+      emissivePhaseRef.current += delta * (2 * Math.PI / 1.5); // 1.5秒周期
+      const glowIntensity = (Math.sin(emissivePhaseRef.current) * 0.5 + 0.5) * 0.15;
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          for (const mat of mats) {
+            if ('emissiveIntensity' in mat) {
+              (mat as THREE.MeshStandardMaterial).emissiveIntensity = glowIntensity;
+              if ('emissive' in mat && (mat as THREE.MeshStandardMaterial).emissive) {
+                (mat as THREE.MeshStandardMaterial).emissive.setHex(0x3B82F6);
+              }
+            }
+          }
+        }
+      });
+    } else {
+      // 非選択時: エミッシブリセット
+      if (emissivePhaseRef.current !== 0) {
+        emissivePhaseRef.current = 0;
+        groupRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            for (const mat of mats) {
+              if ('emissiveIntensity' in mat) {
+                (mat as THREE.MeshStandardMaterial).emissiveIntensity = 0;
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // パルスリングアニメーション
     if (!selected || !pulseRef.current) return;
     pulsePhaseRef.current += delta * 2.5;
     const scale = 1 + Math.sin(pulsePhaseRef.current) * 0.08;

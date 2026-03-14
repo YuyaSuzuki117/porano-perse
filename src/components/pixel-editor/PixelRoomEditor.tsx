@@ -16,6 +16,18 @@ const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 4;
 const SELECTION_COLORS = [PAL.golden, PAL.softOrange];
 
+// ─── Animation constants ────────────────────────────────────────────────
+const PLACE_ANIM_DURATION = 8;  // frames
+const DELETE_ANIM_DURATION = 5; // frames
+const ANIM_FPS = 60;
+const PLACE_ANIM_MS = (PLACE_ANIM_DURATION / ANIM_FPS) * 1000;
+const DELETE_ANIM_MS = (DELETE_ANIM_DURATION / ANIM_FPS) * 1000;
+
+interface AnimationState {
+  startTime: number;
+  type: 'place' | 'delete';
+}
+
 // ─── Isometric coordinate helpers ──────────────────────────────────────
 function isoProject(wx: number, wy: number, tileW: number): { ix: number; iy: number } {
   const tileH = tileW / 2;
@@ -147,6 +159,10 @@ export default function PixelRoomEditor() {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const [dragging, setDragging] = useState<{ id: string; startWorld: { x: number; z: number }; startPos: [number, number, number] } | null>(null);
+  const [hoveredFurnitureId, setHoveredFurnitureId] = useState<string | null>(null);
+  const animationsRef = useRef<Map<string, AnimationState>>(new Map());
+  const pendingDeleteRef = useRef<Set<string>>(new Set());
+  const selectionBounceRef = useRef(0);
 
   useEffect(() => {
     if (!selectedFurnitureId) return;
@@ -155,6 +171,20 @@ export default function PixelRoomEditor() {
       needsRedrawRef.current = true;
     }, 400);
     return () => clearInterval(interval);
+  }, [selectedFurnitureId]);
+
+  // ── Selection bounce animation ──
+  useEffect(() => {
+    if (!selectedFurnitureId) return;
+    let running = true;
+    const bounceLoop = () => {
+      if (!running) return;
+      selectionBounceRef.current = (selectionBounceRef.current + 0.08) % (Math.PI * 2);
+      needsRedrawRef.current = true;
+      requestAnimationFrame(bounceLoop);
+    };
+    requestAnimationFrame(bounceLoop);
+    return () => { running = false; };
   }, [selectedFurnitureId]);
 
   const roomBounds = useMemo(() => {
@@ -221,6 +251,73 @@ export default function PixelRoomEditor() {
   );
 
   const snapToGrid = (v: number) => Math.round(v / GRID_SNAP_M) * GRID_SNAP_M;
+
+  // ── PNG Export (2x resolution) ──
+  const handleExportPNG = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const exportScale = 2;
+    const exportW = Math.round(rect.width * exportScale);
+    const exportH = Math.round(rect.height * exportScale);
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = exportW;
+    offscreen.height = exportH;
+    const ctx = offscreen.getContext('2d');
+    if (!ctx) return;
+
+    // Scale context for 2x resolution
+    ctx.setTransform(exportScale, 0, 0, exportScale, 0, 0);
+    const W = rect.width;
+    const H = rect.height;
+
+    // ── Redraw the full scene at export resolution ──
+    // Background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0d1b2a');
+    bgGrad.addColorStop(0.5, '#1b2838');
+    bgGrad.addColorStop(1, '#162032');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    const starSeed = 42;
+    for (let i = 0; i < 40; i++) {
+      const sx2 = ((starSeed * (i + 1) * 7) % 1000) / 1000 * W;
+      const sy2 = ((starSeed * (i + 1) * 13) % 1000) / 1000 * H * 0.5;
+      const brightness = 0.1 + ((i * 37) % 100) / 300;
+      ctx.fillStyle = `rgba(255,248,240,${brightness})`;
+      ctx.fillRect(Math.floor(sx2), Math.floor(sy2), 1.5, 1.5);
+    }
+
+    // Vignette
+    const vGrad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
+    vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = vGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Now draw the main canvas content on top (reuse existing render)
+    // We draw the existing canvas onto the export canvas at 2x
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Draw from the display canvas (which has DPR scaling already)
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, exportW, exportH);
+
+    // Export
+    offscreen.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `porano-perse-pixel-${timestamp}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }, []);
 
   // ── Hit test (isometric) ──
   const hitTestFurniture = useCallback(
@@ -650,6 +747,43 @@ export default function PixelRoomEditor() {
       }
     }
 
+    // ── Draw grid snap dots when dragging ──
+    if (dragging && walls.length > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = PAL.golden;
+      const step = GRID_SNAP_M;
+      for (let ty = roomBounds.minY; ty <= roomBounds.maxY; ty += step) {
+        for (let tx = roomBounds.minX; tx <= roomBounds.maxX; tx += step) {
+          const { sx: gx, sy: gy } = worldToScreen(tx, ty, W, H);
+          ctx.fillRect(gx - 1, gy - 1, 2, 2);
+        }
+      }
+      ctx.restore();
+    }
+
+    // ── Draw ghost outline at original position when dragging ──
+    if (dragging) {
+      const dragItem = furniture.find(fi => fi.id === dragging.id);
+      if (dragItem) {
+        const { sx: gx, sy: gy } = worldToScreen(dragging.startPos[0], dragging.startPos[2], W, H);
+        const ghostSize = SPRITE_SIZE * spritePixelSize;
+        const halfGhost = ghostSize / 2;
+        const rotStepsGhost = Math.round((dragItem.rotation[1] / (Math.PI / 2))) % 4;
+        const ghostCanvas = getCachedSprite(dragItem.type, spritePixelSize, rotStepsGhost);
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.drawImage(ghostCanvas, gx - halfGhost, gy - halfGhost * 0.7);
+        // Dashed outline
+        ctx.strokeStyle = PAL.golden;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(gx - halfGhost, gy - halfGhost * 0.7, ghostSize, ghostSize);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
     // ── Draw furniture (sorted by iso depth: painter's algorithm) ──
     const sortedFurniture = [...furniture].sort((a, b) => {
       const depthA = a.position[0] + a.position[2];
@@ -657,34 +791,106 @@ export default function PixelRoomEditor() {
       return depthA - depthB;
     });
 
+    const now = performance.now();
+    // Process animations, cleanup completed ones
+    const anims = animationsRef.current;
+    for (const [id, anim] of anims.entries()) {
+      const elapsed = now - anim.startTime;
+      if (anim.type === 'place' && elapsed > PLACE_ANIM_MS) {
+        anims.delete(id);
+      }
+      if (anim.type === 'delete' && elapsed > DELETE_ANIM_MS) {
+        anims.delete(id);
+        pendingDeleteRef.current.delete(id);
+        deleteFurniture(id);
+        if (selectedFurnitureId === id) setSelectedFurniture(null);
+        needsRedrawRef.current = true;
+      }
+    }
+    // Request redraw if any animations are active
+    if (anims.size > 0) {
+      needsRedrawRef.current = true;
+    }
+
     for (const f of sortedFurniture) {
+      // Skip items being deleted (they are handled by animation)
+      const anim = anims.get(f.id);
+      let animScale = 1;
+      let animOpacity = 1;
+
+      if (anim) {
+        const elapsed = now - anim.startTime;
+        if (anim.type === 'place') {
+          const progress = Math.min(elapsed / PLACE_ANIM_MS, 1);
+          if (progress < 5 / PLACE_ANIM_DURATION) {
+            // Frame 0-5: scale 0% -> 120%
+            const t = progress / (5 / PLACE_ANIM_DURATION);
+            animScale = t * 1.2;
+          } else {
+            // Frame 5-8: scale 120% -> 100%
+            const t = (progress - 5 / PLACE_ANIM_DURATION) / (3 / PLACE_ANIM_DURATION);
+            animScale = 1.2 - 0.2 * Math.min(t, 1);
+          }
+        } else if (anim.type === 'delete') {
+          const progress = Math.min(elapsed / DELETE_ANIM_MS, 1);
+          animScale = 1 - progress;
+          animOpacity = 1 - progress;
+        }
+      }
+
       const { sx: fx, sy: fy } = worldToScreen(f.position[0], f.position[2], W, H);
       const spriteSize = SPRITE_SIZE * spritePixelSize;
       const halfSprite = spriteSize / 2;
 
+      // Apply animation transforms
+      const scaledSize = spriteSize * animScale;
+      const scaledHalf = scaledSize / 2;
+
+      ctx.save();
+      ctx.globalAlpha = animOpacity;
+
       // Isometric shadow (elongated, extending to bottom-right)
       ctx.save();
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.18 * animOpacity;
       ctx.fillStyle = '#2a1f14';
       ctx.beginPath();
-      ctx.ellipse(fx + 3, fy + halfSprite * 0.35 + 3, halfSprite * 0.75, halfSprite * 0.22, Math.PI / 6, 0, Math.PI * 2);
+      ctx.ellipse(fx + 3, fy + halfSprite * 0.35 + 3, halfSprite * 0.75 * animScale, halfSprite * 0.22 * animScale, Math.PI / 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
       // Rotation steps
       const rotSteps = Math.round((f.rotation[1] / (Math.PI / 2))) % 4;
 
-      // Draw sprite from cache
+      // Draw sprite from cache (with scale animation)
       const cachedCanvas = getCachedSprite(f.type, spritePixelSize, rotSteps);
-      ctx.drawImage(cachedCanvas, fx - halfSprite, fy - halfSprite * 0.7);
+      if (animScale !== 1) {
+        ctx.save();
+        ctx.translate(fx, fy - halfSprite * 0.7 + halfSprite);
+        ctx.scale(animScale, animScale);
+        ctx.drawImage(cachedCanvas, -halfSprite, -halfSprite * 1.7 + halfSprite * 0.7);
+        ctx.restore();
+      } else {
+        ctx.drawImage(cachedCanvas, fx - halfSprite, fy - halfSprite * 0.7);
+      }
 
       // Subtle floor reflection (very faint, flipped vertically)
       ctx.save();
-      ctx.globalAlpha = 0.04;
-      ctx.translate(fx - halfSprite, fy + halfSprite * 0.35);
-      ctx.scale(1, -0.3);
+      ctx.globalAlpha = 0.04 * animOpacity;
+      ctx.translate(fx - scaledHalf, fy + scaledHalf * 0.35);
+      ctx.scale(animScale, -0.3 * animScale);
       ctx.drawImage(cachedCanvas, 0, 0);
       ctx.restore();
+
+      // ── Hover highlight outline ──
+      if (f.id === hoveredFurnitureId && f.id !== selectedFurnitureId && !pendingDeleteRef.current.has(f.id)) {
+        ctx.save();
+        ctx.strokeStyle = PAL.cream;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.6;
+        const hm = 1;
+        ctx.strokeRect(fx - halfSprite - hm, fy - halfSprite * 0.7 - hm, spriteSize + hm * 2, spriteSize + hm * 2);
+        ctx.restore();
+      }
 
       // Selection highlight (blinking pixel frame)
       if (f.id === selectedFurnitureId) {
@@ -715,7 +921,23 @@ export default function PixelRoomEditor() {
         ctx.fillRect(bx + bw - pxSz, by, pxSz, pxSz);
         ctx.fillRect(bx, by + bh - pxSz, pxSz, pxSz);
         ctx.fillRect(bx + bw - pxSz, by + bh - pxSz, pxSz, pxSz);
+
+        // ── Bouncing selection arrow ──
+        const bounceY = Math.sin(selectionBounceRef.current) * 4;
+        const arrowX = fx;
+        const arrowY = fy - halfSprite * 0.7 - margin - 10 + bounceY;
+        ctx.fillStyle = PAL.golden;
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY + 6);
+        ctx.lineTo(arrowX - 4, arrowY);
+        ctx.lineTo(arrowX + 4, arrowY);
+        ctx.closePath();
+        ctx.fill();
+        // Arrow stem
+        ctx.fillRect(arrowX - 1.5, arrowY - 5, 3, 5);
       }
+
+      ctx.restore();
     }
 
     // ── Warm overlay ──
@@ -738,11 +960,11 @@ export default function PixelRoomEditor() {
       ctx.fillStyle = PAL.golden;
       ctx.fillText(text, 16, H - 27);
     }
-  }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, worldToScreen, blinkPhase, roomArea, tileW, drawDiamond]);
+  }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, worldToScreen, blinkPhase, roomArea, tileW, drawDiamond, dragging, hoveredFurnitureId, deleteFurniture, setSelectedFurniture]);
 
   useEffect(() => {
     needsRedrawRef.current = true;
-  }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, blinkPhase, roomArea]);
+  }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, blinkPhase, roomArea, dragging, hoveredFurnitureId]);
 
   useEffect(() => {
     let running = true;
@@ -778,6 +1000,13 @@ export default function PixelRoomEditor() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      // Ctrl+Shift+E for PNG export
+      if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+        e.preventDefault();
+        handleExportPNG();
+        return;
+      }
+
       switch (e.key) {
         case '1': e.preventDefault(); setActiveTool('select'); break;
         case '2': e.preventDefault(); setActiveTool('move'); break;
@@ -794,10 +1023,11 @@ export default function PixelRoomEditor() {
           break;
         case 'Delete':
         case 'Backspace':
-          if (selectedFurnitureId) {
+          if (selectedFurnitureId && !pendingDeleteRef.current.has(selectedFurnitureId)) {
             e.preventDefault();
-            deleteFurniture(selectedFurnitureId);
-            setSelectedFurniture(null);
+            pendingDeleteRef.current.add(selectedFurnitureId);
+            animationsRef.current.set(selectedFurnitureId, { startTime: performance.now(), type: 'delete' });
+            needsRedrawRef.current = true;
           }
           break;
         case 'Escape':
@@ -810,7 +1040,7 @@ export default function PixelRoomEditor() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedFurnitureId, furniture, rotateFurniture, deleteFurniture, setSelectedFurniture]);
+  }, [selectedFurnitureId, furniture, rotateFurniture, setSelectedFurniture, handleExportPNG]);
 
   // ── Touch handlers ──
   const getTouchCanvasPos = useCallback((touch: { clientX: number; clientY: number }): { sx: number; sy: number } => {
@@ -849,9 +1079,10 @@ export default function PixelRoomEditor() {
 
     if (activeTool === 'delete') {
       const hit = hitTestFurniture(sx, sy, cw, ch);
-      if (hit) {
-        deleteFurniture(hit.id);
-        if (selectedFurnitureId === hit.id) setSelectedFurniture(null);
+      if (hit && !pendingDeleteRef.current.has(hit.id)) {
+        pendingDeleteRef.current.add(hit.id);
+        animationsRef.current.set(hit.id, { startTime: performance.now(), type: 'delete' });
+        needsRedrawRef.current = true;
       }
       return;
     }
@@ -863,7 +1094,7 @@ export default function PixelRoomEditor() {
     }
 
     const hit = hitTestFurniture(sx, sy, cw, ch);
-    if (hit) {
+    if (hit && !pendingDeleteRef.current.has(hit.id)) {
       setSelectedFurniture(hit.id);
       if (activeTool === 'select' || activeTool === 'move') {
         const world = screenToWorld(sx, sy, cw, ch);
@@ -874,7 +1105,7 @@ export default function PixelRoomEditor() {
       setIsPanning(true);
       panStartRef.current = { x: touch.clientX, y: touch.clientY, ox: panOffset.x, oy: panOffset.y };
     }
-  }, [activeTool, hitTestFurniture, selectedFurnitureId, panOffset, zoom, setSelectedFurniture, deleteFurniture, rotateFurniture, screenToWorld, getTouchCanvasPos]);
+  }, [activeTool, hitTestFurniture, selectedFurnitureId, panOffset, zoom, setSelectedFurniture, rotateFurniture, screenToWorld, getTouchCanvasPos]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
@@ -955,9 +1186,11 @@ export default function PixelRoomEditor() {
 
     if (activeTool === 'delete') {
       const hit = hitTestFurniture(sx, sy, cw, ch);
-      if (hit) {
-        deleteFurniture(hit.id);
-        if (selectedFurnitureId === hit.id) setSelectedFurniture(null);
+      if (hit && !pendingDeleteRef.current.has(hit.id)) {
+        // Animate deletion instead of immediate remove
+        pendingDeleteRef.current.add(hit.id);
+        animationsRef.current.set(hit.id, { startTime: performance.now(), type: 'delete' });
+        needsRedrawRef.current = true;
       }
       return;
     }
@@ -969,7 +1202,7 @@ export default function PixelRoomEditor() {
     }
 
     const hit = hitTestFurniture(sx, sy, cw, ch);
-    if (hit) {
+    if (hit && !pendingDeleteRef.current.has(hit.id)) {
       setSelectedFurniture(hit.id);
       if (activeTool === 'select' || activeTool === 'move') {
         const world = screenToWorld(sx, sy, cw, ch);
@@ -978,7 +1211,7 @@ export default function PixelRoomEditor() {
     } else {
       setSelectedFurniture(null);
     }
-  }, [activeTool, hitTestFurniture, selectedFurnitureId, panOffset, setSelectedFurniture, deleteFurniture, rotateFurniture, screenToWorld]);
+  }, [activeTool, hitTestFurniture, selectedFurnitureId, panOffset, setSelectedFurniture, rotateFurniture, screenToWorld]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isPanning) {
@@ -1000,8 +1233,22 @@ export default function PixelRoomEditor() {
       const newX = snapToGrid(dragging.startPos[0] + dx);
       const newZ = snapToGrid(dragging.startPos[2] + dz);
       moveFurniture(dragging.id, [newX, dragging.startPos[1], newZ]);
+      return;
     }
-  }, [isPanning, dragging, screenToWorld, moveFurniture]);
+
+    // Hover detection
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const hit = hitTestFurniture(sx, sy, rect.width, rect.height);
+    const newHoverId = hit ? hit.id : null;
+    if (newHoverId !== hoveredFurnitureId) {
+      setHoveredFurnitureId(newHoverId);
+      needsRedrawRef.current = true;
+    }
+  }, [isPanning, dragging, screenToWorld, moveFurniture, hitTestFurniture, hoveredFurnitureId]);
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
@@ -1042,19 +1289,23 @@ export default function PixelRoomEditor() {
         duplicateFurniture(id);
         break;
       case 'delete':
-        deleteFurniture(id);
-        if (selectedFurnitureId === id) setSelectedFurniture(null);
+        if (!pendingDeleteRef.current.has(id)) {
+          pendingDeleteRef.current.add(id);
+          animationsRef.current.set(id, { startTime: performance.now(), type: 'delete' });
+          needsRedrawRef.current = true;
+        }
         break;
     }
     setContextMenu(null);
-  }, [contextMenu, rotateFurniture, duplicateFurniture, deleteFurniture, furniture, selectedFurnitureId, setSelectedFurniture]);
+  }, [contextMenu, rotateFurniture, duplicateFurniture, furniture, selectedFurnitureId, setSelectedFurniture]);
 
   const handleCatalogAdd = useCallback((type: FurnitureType) => {
     if (!catalogPopup) return;
     const catalogItem = FURNITURE_CATALOG.find(c => c.type === type);
     if (!catalogItem) return;
+    const newId = `pixel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     addFurniture({
-      id: `pixel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: newId,
       type,
       name: catalogItem.name,
       position: [catalogPopup.worldX, 0, catalogPopup.worldZ],
@@ -1063,6 +1314,9 @@ export default function PixelRoomEditor() {
       color: catalogItem.defaultColor,
       material: catalogItem.defaultMaterial,
     });
+    // Trigger placement animation
+    animationsRef.current.set(newId, { startTime: performance.now(), type: 'place' });
+    needsRedrawRef.current = true;
     setCatalogPopup(null);
   }, [catalogPopup, addFurniture]);
 
@@ -1095,8 +1349,9 @@ export default function PixelRoomEditor() {
       wx = snapToGrid(center.wx);
       wz = snapToGrid(center.wy);
     }
+    const newId = `pixel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     addFurniture({
-      id: `pixel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: newId,
       type,
       name: catalogItem.name,
       position: [wx, 0, wz],
@@ -1105,6 +1360,9 @@ export default function PixelRoomEditor() {
       color: catalogItem.defaultColor,
       material: catalogItem.defaultMaterial,
     });
+    // Trigger placement animation
+    animationsRef.current.set(newId, { startTime: performance.now(), type: 'place' });
+    needsRedrawRef.current = true;
   }, [addFurniture, screenToWorld]);
 
   return (
@@ -1143,6 +1401,19 @@ export default function PixelRoomEditor() {
         >
           CRT
           <span className="hidden sm:inline text-[8px] opacity-50 ml-0.5">[5]</span>
+        </button>
+
+        <div className="w-px h-5 bg-[#2a3848] mx-1" />
+
+        <button
+          onClick={handleExportPNG}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[10px] font-bold tracking-wider font-mono transition-all bg-[#1b2838] text-[#8a8a90] hover:bg-[#2a3848] hover:text-white"
+          title="Export PNG [Ctrl+Shift+E]"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5">
+            <path d="M3 10v3h10v-3M8 2v8M5 7l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="hidden sm:inline">PNG</span>
         </button>
 
         <div className="ml-auto text-[10px] font-mono text-[#607888] px-2">
