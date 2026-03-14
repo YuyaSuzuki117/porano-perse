@@ -202,7 +202,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           position={[roomBounds.cx, 0.15, roomBounds.cz]}
           intensity={styleLighting.warmFillIntensity * b * 2.5}
           color={styleLighting.warmFillColor}
-          distance={Math.max(roomBounds.w, roomBounds.d) * 1.5}
+          distance={Math.max(roomBounds.w, roomBounds.d) * 1.8}
           decay={2}
         />
       )}
@@ -354,7 +354,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       {/* コンタクトシャドウ風グラウンドプレーン */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
         <planeGeometry args={[roomBounds.w + 2, roomBounds.d + 2]} />
-        <shadowMaterial transparent opacity={0.3} />
+        <shadowMaterial transparent opacity={0.5} />
       </mesh>
 
       {/* リムライト（奥行き感向上）— スタイル連動 */}
@@ -375,7 +375,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           roomHeight * 2.2,
           roomBounds.cz - roomBounds.d * 0.7,
         ]}
-        intensity={0.15}
+        intensity={0.225}
         color="#E8F0FF"
       />
     </>

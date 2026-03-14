@@ -22,8 +22,43 @@ const RUG_CONFIGS: Partial<Record<StylePreset, RugConfig>> = {
   retro: { shape: 'rect', color: '#C4956A', width: 1.0, height: 1.0 },
 };
 
+function createRugNormalMap(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  // Base flat normal (128,128,255) = pointing up
+  ctx.fillStyle = 'rgb(128,128,255)';
+  ctx.fillRect(0, 0, size, size);
+
+  // Weave pattern: alternating horizontal/vertical bumps
+  const cellSize = 8;
+  for (let y = 0; y < size; y += cellSize) {
+    for (let x = 0; x < size; x += cellSize) {
+      const row = Math.floor(y / cellSize);
+      const col = Math.floor(x / cellSize);
+      if ((row + col) % 2 === 0) {
+        // Horizontal weave bump — slight right-leaning normal
+        ctx.fillStyle = 'rgb(138,128,255)';
+      } else {
+        // Vertical weave bump — slight up-leaning normal
+        ctx.fillStyle = 'rgb(128,138,255)';
+      }
+      ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(4, 4);
+  return texture;
+}
+
 function createRugTexture(style: StylePreset, baseColor: string): THREE.CanvasTexture {
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -143,6 +178,7 @@ function createRugTexture(style: StylePreset, baseColor: string): THREE.CanvasTe
 
 function SingleRug({ item, config, style }: { item: FurnitureItem; config: RugConfig; style: StylePreset }) {
   const rugTexture = useMemo(() => createRugTexture(style, config.color), [style, config.color]);
+  const rugNormalMap = useMemo(() => createRugNormalMap(), []);
 
   return (
     <group
@@ -159,10 +195,14 @@ function SingleRug({ item, config, style }: { item: FurnitureItem; config: RugCo
         ) : (
           <planeGeometry args={[config.width!, config.height!]} />
         )}
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           map={rugTexture}
-          roughness={0.95}
+          normalMap={rugNormalMap}
+          normalScale={new THREE.Vector2(0.3, 0.3)}
+          roughness={0.82}
           metalness={0}
+          clearcoat={0.05}
+          clearcoatRoughness={0.5}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -187,9 +227,9 @@ function SingleRug({ item, config, style }: { item: FurnitureItem; config: RugCo
               castShadow={false}
             >
               <planeGeometry args={[0.01, fringeLength]} />
-              <meshStandardMaterial
+              <meshPhysicalMaterial
                 color={config.color}
-                roughness={0.95}
+                roughness={0.85}
                 metalness={0}
                 side={THREE.DoubleSide}
               />

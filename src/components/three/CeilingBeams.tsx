@@ -43,45 +43,53 @@ interface BeamStyle {
   brackets: boolean;
   beamWidth: number;
   beamDepth: number;
+  clearcoat: number;
+  clearcoatRoughness: number;
 }
 
 function getBeamStyle(style: StyleConfig): BeamStyle {
   switch (style.name) {
     case 'industrial':
       return {
-        color: '#3A3A3A', roughness: 0.3, metalness: 0.8,
+        color: '#3A3A3A', roughness: 0.2, metalness: 0.8,
         beamCount: 3, grid: false, brackets: false,
         beamWidth: 0.12, beamDepth: 0.18,
+        clearcoat: 0, clearcoatRoughness: 0,
       };
     case 'japanese':
       return {
-        color: '#4A3728', roughness: 0.7, metalness: 0.02,
+        color: '#4A3728', roughness: 0.5, metalness: 0.02,
         beamCount: 3, grid: true, brackets: false,
         beamWidth: BEAM_WIDTH, beamDepth: BEAM_DEPTH,
+        clearcoat: 0.35, clearcoatRoughness: 0.2,
       };
     case 'scandinavian':
       return {
-        color: '#D4C5A0', roughness: 0.65, metalness: 0.02,
+        color: '#D4C5A0', roughness: 0.55, metalness: 0.02,
         beamCount: 4, grid: false, brackets: false,
         beamWidth: 0.14, beamDepth: 0.18,
+        clearcoat: 0.1, clearcoatRoughness: 0.3,
       };
     case 'cafe':
       return {
-        color: '#5A3A2A', roughness: 0.7, metalness: 0.02,
+        color: '#5A3A2A', roughness: 0.55, metalness: 0.02,
         beamCount: 3, grid: false, brackets: false,
         beamWidth: BEAM_WIDTH, beamDepth: BEAM_DEPTH,
+        clearcoat: 0.2, clearcoatRoughness: 0.3,
       };
     case 'retro':
       return {
-        color: '#6B3A2A', roughness: 0.6, metalness: 0.03,
+        color: '#6B3A2A', roughness: 0.5, metalness: 0.03,
         beamCount: 3, grid: false, brackets: true,
         beamWidth: BEAM_WIDTH, beamDepth: 0.22,
+        clearcoat: 0.2, clearcoatRoughness: 0.3,
       };
     default:
       return {
         color: '#808080', roughness: 0.5, metalness: 0.0,
         beamCount: 2, grid: false, brackets: false,
         beamWidth: BEAM_WIDTH, beamDepth: BEAM_DEPTH,
+        clearcoat: 0, clearcoatRoughness: 0,
       };
   }
 }
@@ -156,10 +164,12 @@ export const CeilingBeams = React.memo(function CeilingBeams({
             castShadow
           >
             <boxGeometry args={[bounds.width, beamStyle.beamDepth, beamStyle.beamWidth]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={beamStyle.color}
               roughness={beamStyle.roughness}
               metalness={beamStyle.metalness}
+              clearcoat={beamStyle.clearcoat}
+              clearcoatRoughness={beamStyle.clearcoatRoughness}
             />
           </mesh>
         );
@@ -175,10 +185,12 @@ export const CeilingBeams = React.memo(function CeilingBeams({
             castShadow
           >
             <boxGeometry args={[beamStyle.beamWidth, beamStyle.beamDepth, bounds.depth]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={beamStyle.color}
               roughness={beamStyle.roughness}
               metalness={beamStyle.metalness}
+              clearcoat={beamStyle.clearcoat}
+              clearcoatRoughness={beamStyle.clearcoatRoughness}
             />
           </mesh>
         );
@@ -210,10 +222,12 @@ export const CeilingBeams = React.memo(function CeilingBeams({
               beamStyle.beamDepth,
               spanAlongX ? beamStyle.beamWidth : spanLen,
             ]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={beamStyle.color}
               roughness={beamStyle.roughness}
               metalness={beamStyle.metalness}
+              clearcoat={beamStyle.clearcoat}
+              clearcoatRoughness={beamStyle.clearcoatRoughness}
             />
           </mesh>
         );
@@ -230,9 +244,11 @@ export const CeilingBeams = React.memo(function CeilingBeams({
               position={[bx1, beamY + beamStyle.beamDepth / 2 - bracketSize / 2, bz1]}
             >
               <boxGeometry args={[bracketSize, bracketSize, bracketSize]} />
-              <meshStandardMaterial
+              <meshPhysicalMaterial
                 color={beamStyle.color}
                 roughness={beamStyle.roughness}
+                clearcoat={beamStyle.clearcoat}
+                clearcoatRoughness={beamStyle.clearcoatRoughness}
               />
             </mesh>
           );
@@ -245,9 +261,11 @@ export const CeilingBeams = React.memo(function CeilingBeams({
               position={[bx2, beamY + beamStyle.beamDepth / 2 - bracketSize / 2, bz2]}
             >
               <boxGeometry args={[bracketSize, bracketSize, bracketSize]} />
-              <meshStandardMaterial
+              <meshPhysicalMaterial
                 color={beamStyle.color}
                 roughness={beamStyle.roughness}
+                clearcoat={beamStyle.clearcoat}
+                clearcoatRoughness={beamStyle.clearcoatRoughness}
               />
             </mesh>
           );

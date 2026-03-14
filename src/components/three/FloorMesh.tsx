@@ -37,7 +37,7 @@ function useFloorTexture(
   const roundedW = Math.round(floorSize.w * 10) / 10;
   const roundedD = Math.round(floorSize.d * 10) / 10;
 
-  // 品質連動テクスチャ解像度: low=256, medium=512, high=1024
+  // 品質連動テクスチャ解像度: low=512, medium=1024, high=2048
   const floorTexSize = res.floor;
 
   const map = useMemo(() => {
@@ -385,6 +385,8 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
           clearcoat={clearcoat}
           clearcoatRoughness={clearcoatRoughness}
           iridescence={iridescence}
+          specularIntensity={clearcoat > 0 ? 0.5 : undefined}
+          specularColor={clearcoat > 0 ? new THREE.Color('#ffffff') : undefined}
         />
       ) : (
         <meshStandardMaterial

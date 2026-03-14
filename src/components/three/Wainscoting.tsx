@@ -45,13 +45,13 @@ interface WainscotStyle {
 function getWainscotStyle(style: StyleConfig): WainscotStyle {
   switch (style.name) {
     case 'luxury':
-      return { panelColor: '#5A3A2A', panelRoughness: 0.35, railColor: '#4A2A1A' };
+      return { panelColor: '#5A3A2A', panelRoughness: 0.25, railColor: '#4A2A1A' };
     case 'retro':
-      return { panelColor: '#8B6914', panelRoughness: 0.5, railColor: '#7A5A10' };
+      return { panelColor: '#8B6914', panelRoughness: 0.6, railColor: '#7A5A10' };
     case 'japanese':
-      return { panelColor: '#6B5B3C', panelRoughness: 0.6, railColor: '#5A4A30' };
+      return { panelColor: '#6B5B3C', panelRoughness: 0.5, railColor: '#5A4A30' };
     case 'cafe':
-      return { panelColor: '#D4C5A0', panelRoughness: 0.55, railColor: '#C4B590' };
+      return { panelColor: '#D4C5A0', panelRoughness: 0.4, railColor: '#C4B590' };
     default:
       return { panelColor: '#808080', panelRoughness: 0.5, railColor: '#707070' };
   }
@@ -126,7 +126,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[panelWidth, panelHeight, 0.008]} />
-                <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.4} clearcoatRoughness={0.2} />
               </mesh>
             );
             // 浮き出し部分（少し前に出る）
@@ -141,7 +141,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[panelWidth - 0.06, panelHeight - 0.06, 0.01]} />
-                <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness - 0.1} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness - 0.1} clearcoat={0.4} clearcoatRoughness={0.2} />
               </mesh>
             );
           }
@@ -162,7 +162,7 @@ export const Wainscoting = React.memo(function Wainscoting({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len, WAINSCOT_HEIGHT - 0.05, 0.006]} />
-              <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
+              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
             </mesh>
           );
 
@@ -179,7 +179,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[stripWidth, WAINSCOT_HEIGHT - 0.08, 0.005]} />
-                <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness + 0.1} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness + 0.1} />
               </mesh>
             );
           }
@@ -198,7 +198,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[len - 0.04, 0.06, 0.008]} />
-                <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.15} clearcoatRoughness={0.3} />
               </mesh>
             );
           }
@@ -214,7 +214,7 @@ export const Wainscoting = React.memo(function Wainscoting({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len - 0.02, WAINSCOT_HEIGHT - 0.05, 0.006]} />
-              <meshStandardMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
+              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.2} clearcoatRoughness={0.3} />
             </mesh>
           );
           break;
@@ -231,7 +231,7 @@ export const Wainscoting = React.memo(function Wainscoting({
           rotation={[0, -angle, 0]}
         >
           <boxGeometry args={[len, CHAIR_RAIL_HEIGHT, CHAIR_RAIL_DEPTH]} />
-          <meshStandardMaterial color={wStyle.railColor} roughness={0.4} />
+          <meshPhysicalMaterial color={wStyle.railColor} roughness={0.4} clearcoat={0.2} clearcoatRoughness={0.3} />
         </mesh>
       );
     }

@@ -11,12 +11,12 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#F0EBE0',
     accentColor: '#8B4513',
     ambientIntensity: 0.7,
-    spotlightIntensity: 1.2,
+    spotlightIntensity: 1.44,
     spotlightColor: '#FFE0A0',  // 暖色の行灯風
     hemisphereSkyColor: '#FFF5E0',
     hemisphereGroundColor: '#8B7D3C',
     furniturePalette: { primary: '#8B6914', secondary: '#C4A97D', accent: '#2E4A30', metal: '#4A3728', fabric: '#D4C5A0' },
-    furnitureRoughness: 0.78,   // 漆器: やや光沢のある木
+    furnitureRoughness: 0.65,   // 漆器: 光沢のある木（シネマ品質）
     furnitureMetalness: 0.02,   // 漆の微かな映り込み
     woodType: 'walnut',
     fabricType: 'linen',
@@ -31,12 +31,12 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#FFFFFF',
     accentColor: '#2196F3',     // ブルーアクセント
     ambientIntensity: 0.8,
-    spotlightIntensity: 1.5,
+    spotlightIntensity: 1.8,
     spotlightColor: '#F0F4FF',  // やや青白い光
     hemisphereSkyColor: '#E8F0FF',
     hemisphereGroundColor: '#4A4A5A',
     furniturePalette: { primary: '#404040', secondary: '#808080', accent: '#2196F3', metal: '#C0C0C0', fabric: '#E0E0E0' },
-    furnitureRoughness: 0.4,
+    furnitureRoughness: 0.32,
     furnitureMetalness: 0.05,
     woodType: 'ash',
     fabricType: 'linen',
@@ -51,12 +51,12 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#FFF5E6',
     accentColor: '#C87941',     // レンガ色アクセント
     ambientIntensity: 0.6,
-    spotlightIntensity: 1.0,
+    spotlightIntensity: 1.2,
     spotlightColor: '#FFD090',  // 暖色の間接照明
     hemisphereSkyColor: '#FFE8C8',
     hemisphereGroundColor: '#6B4A20',
     furniturePalette: { primary: '#6B3A2A', secondary: '#D4A76A', accent: '#8B6914', metal: '#8B7355', fabric: '#C8A882' },
-    furnitureRoughness: 0.6,
+    furnitureRoughness: 0.5,
     furnitureMetalness: 0.05,
     woodType: 'oak',
     fabricType: 'canvas',
@@ -71,13 +71,13 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#A0A0A8',
     accentColor: '#FF6B35',     // メタルオレンジ
     ambientIntensity: 0.5,
-    spotlightIntensity: 1.8,
+    spotlightIntensity: 2.16,
     spotlightColor: '#FFF0D0',  // 工業用照明
     hemisphereSkyColor: '#D0D0D8',
     hemisphereGroundColor: '#606068',
     furniturePalette: { primary: '#505050', secondary: '#707070', accent: '#FF6B35', metal: '#A0A0A0', fabric: '#808080' },
     furnitureRoughness: 0.75,   // コンクリート・鉄のマット感
-    furnitureMetalness: 0.3,    // 金属パーツの映り込み強化
+    furnitureMetalness: 0.4,    // 金属パーツの映り込み強化（シネマ品質）
     woodType: 'oak',
     fabricType: 'canvas',
     metalFinish: 'oxidized',
@@ -91,7 +91,7 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#FFFFFF',
     accentColor: '#333333',
     ambientIntensity: 0.8,
-    spotlightIntensity: 1.0,
+    spotlightIntensity: 1.2,
     spotlightColor: '#FFFFFF',
     hemisphereSkyColor: '#F5F5F5',
     hemisphereGroundColor: '#D0C8C0',
@@ -111,13 +111,13 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#1E1818',
     accentColor: '#C9A84C',     // ゴールドアクセント
     ambientIntensity: 0.4,
-    spotlightIntensity: 2.0,
+    spotlightIntensity: 2.4,
     spotlightColor: '#FFD700',  // ゴールド照明
     hemisphereSkyColor: '#3A2A1A',
     hemisphereGroundColor: '#0A0808',
     furniturePalette: { primary: '#3D1F0A', secondary: '#6B3A2A', accent: '#C9B037', metal: '#D4AF37', fabric: '#4A0E2E' },
-    furnitureRoughness: 0.25,   // 大理石・漆仕上げの光沢
-    furnitureMetalness: 0.18,   // 深い映り込み
+    furnitureRoughness: 0.18,   // 大理石・漆仕上げの光沢（シネマ品質）
+    furnitureMetalness: 0.22,   // 深い映り込み強化
     woodType: 'mahogany',
     fabricType: 'velvet',
     metalFinish: 'polished',
@@ -131,12 +131,12 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#FAFAF5',
     accentColor: '#5B8C5A',     // モスグリーン
     ambientIntensity: 0.75,
-    spotlightIntensity: 1.1,
+    spotlightIntensity: 1.32,
     spotlightColor: '#FFF5E0',
     hemisphereSkyColor: '#F0EDE5',
     hemisphereGroundColor: '#B0A080',
     furniturePalette: { primary: '#E8D5B5', secondary: '#F0E6D3', accent: '#4A7C59', metal: '#B8B8B8', fabric: '#F5E6CC' },
-    furnitureRoughness: 0.6,
+    furnitureRoughness: 0.48,
     furnitureMetalness: 0.05,
     woodType: 'birch',
     fabricType: 'tweed',
@@ -151,7 +151,7 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#F0E8D8',
     accentColor: '#C04030',     // レトロレッド
     ambientIntensity: 0.55,
-    spotlightIntensity: 1.3,
+    spotlightIntensity: 1.56,
     spotlightColor: '#FFD890',
     hemisphereSkyColor: '#F0E0C0',
     hemisphereGroundColor: '#5A3A1A',
@@ -171,12 +171,12 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     ceilingColor: '#FFFFFF',
     accentColor: '#2E86AB',     // メディカルブルー
     ambientIntensity: 0.85,
-    spotlightIntensity: 1.6,
+    spotlightIntensity: 1.92,
     spotlightColor: '#F8FCFF',  // 昼白色
     hemisphereSkyColor: '#EEF2F6',
     hemisphereGroundColor: '#B0B8C0',
     furniturePalette: { primary: '#E8E8E8', secondary: '#FFFFFF', accent: '#4A90D9', metal: '#D0D0D0', fabric: '#F0F0F0' },
-    furnitureRoughness: 0.3,
+    furnitureRoughness: 0.22,
     furnitureMetalness: 0.0,
     woodType: 'pine',
     fabricType: 'linen',

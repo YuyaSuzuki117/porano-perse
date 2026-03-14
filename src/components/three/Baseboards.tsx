@@ -37,6 +37,14 @@ interface MoldingProfile {
   doubleCrown: boolean;
   /** industrial用パイプレール */
   pipeCrown: boolean;
+  /** baseboard clearcoat */
+  baseboardClearcoat: number;
+  baseboardClearcoatRoughness: number;
+  /** crown clearcoat */
+  crownClearcoat: number;
+  crownClearcoatRoughness: number;
+  /** environment map intensity */
+  envMapIntensity: number;
 }
 
 function getMoldingProfile(style: StyleConfig): MoldingProfile {
@@ -47,54 +55,72 @@ function getMoldingProfile(style: StyleConfig): MoldingProfile {
         baseboardHeight: 0.08, baseboardDepth: 0.012, baseboardColor: '#4A3728',
         crownHeight: 0.08, crownDepth: 0.01, crownColor: '#5A4738',
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.25, baseboardClearcoatRoughness: 0.25,
+        crownClearcoat: 0.25, crownClearcoatRoughness: 0.25, envMapIntensity: 1.0,
       };
     case 'luxury':
       return {
         baseboardHeight: 0.15, baseboardDepth: 0.018, baseboardColor: '#3D1F0A',
         crownHeight: 0.15, crownDepth: 0.015, crownColor: '#3D1F0A',
         skipBaseboard: false, skipCrown: false, doubleCrown: true, pipeCrown: false,
+        baseboardClearcoat: 0.4, baseboardClearcoatRoughness: 0.2,
+        crownClearcoat: 0.4, crownClearcoatRoughness: 0.2, envMapIntensity: 1.5,
       };
     case 'retro':
       return {
         baseboardHeight: 0.15, baseboardDepth: 0.018, baseboardColor: '#6B3A2A',
         crownHeight: 0.10, crownDepth: 0.012, crownColor: '#8B6914',
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.25, baseboardClearcoatRoughness: 0.25,
+        crownClearcoat: 0.25, crownClearcoatRoughness: 0.25, envMapIntensity: 1.0,
       };
     case 'industrial':
       return {
         baseboardHeight: 0, baseboardDepth: 0, baseboardColor: '#505050',
         crownHeight: 0.04, crownDepth: 0.04, crownColor: '#606060',
         skipBaseboard: true, skipCrown: false, doubleCrown: false, pipeCrown: true,
+        baseboardClearcoat: 0, baseboardClearcoatRoughness: 0,
+        crownClearcoat: 0.2, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
     case 'minimal':
       return {
         baseboardHeight: 0.06, baseboardDepth: 0.01, baseboardColor: style.wallColor,
         crownHeight: 0.04, crownDepth: 0.008, crownColor: style.wallColor,
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.15, baseboardClearcoatRoughness: 0.3,
+        crownClearcoat: 0.15, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
     case 'modern':
       return {
         baseboardHeight: 0.06, baseboardDepth: 0.01, baseboardColor: style.wallColor,
         crownHeight: 0.04, crownDepth: 0.008, crownColor: style.wallColor,
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.15, baseboardClearcoatRoughness: 0.3,
+        crownClearcoat: 0.15, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
     case 'scandinavian':
       return {
         baseboardHeight: 0.10, baseboardDepth: 0.014, baseboardColor: '#F0F0F0',
         crownHeight: 0.08, crownDepth: 0.012, crownColor: '#F0F0F0',
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.15, baseboardClearcoatRoughness: 0.3,
+        crownClearcoat: 0.15, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
     case 'cafe':
       return {
         baseboardHeight: 0.10, baseboardDepth: 0.014, baseboardColor: '#F0F0F0',
         crownHeight: 0.08, crownDepth: 0.012, crownColor: '#F0F0F0',
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.15, baseboardClearcoatRoughness: 0.3,
+        crownClearcoat: 0.15, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
     default: // medical等
       return {
         baseboardHeight: 0.08, baseboardDepth: 0.012, baseboardColor: '#E0E0E0',
         crownHeight: 0.06, crownDepth: 0.01, crownColor: '#E8E8E8',
         skipBaseboard: false, skipCrown: false, doubleCrown: false, pipeCrown: false,
+        baseboardClearcoat: 0.1, baseboardClearcoatRoughness: 0.3,
+        crownClearcoat: 0.1, crownClearcoatRoughness: 0.3, envMapIntensity: 1.0,
       };
   }
 }
@@ -187,7 +213,7 @@ export const Baseboards = React.memo(function Baseboards({
               castShadow
             >
               <boxGeometry args={[seg.length, profile.baseboardHeight, profile.baseboardDepth]} />
-              <meshStandardMaterial color={profile.baseboardColor} roughness={0.6} />
+              <meshPhysicalMaterial color={profile.baseboardColor} roughness={0.6} clearcoat={profile.baseboardClearcoat} clearcoatRoughness={profile.baseboardClearcoatRoughness} envMapIntensity={profile.envMapIntensity} />
             </mesh>
           );
         }
@@ -209,7 +235,7 @@ export const Baseboards = React.memo(function Baseboards({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len, stepHeight, profile.crownDepth]} />
-              <meshStandardMaterial color={profile.crownColor} roughness={0.4} />
+              <meshPhysicalMaterial color={profile.crownColor} roughness={0.3} clearcoat={profile.crownClearcoat} clearcoatRoughness={profile.crownClearcoatRoughness} envMapIntensity={profile.envMapIntensity} />
             </mesh>
           );
           elements.push(
@@ -219,7 +245,7 @@ export const Baseboards = React.memo(function Baseboards({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len, stepHeight, profile.crownDepth * 1.4]} />
-              <meshStandardMaterial color={profile.crownColor} roughness={0.4} />
+              <meshPhysicalMaterial color={profile.crownColor} roughness={0.3} clearcoat={profile.crownClearcoat} clearcoatRoughness={profile.crownClearcoatRoughness} envMapIntensity={profile.envMapIntensity} />
             </mesh>
           );
         } else if (profile.pipeCrown) {
@@ -231,7 +257,7 @@ export const Baseboards = React.memo(function Baseboards({
               rotation={[0, 0, Math.PI / 2]}
             >
               <cylinderGeometry args={[0.02, 0.02, len, 8]} />
-              <meshStandardMaterial color={profile.crownColor} roughness={0.3} metalness={0.8} />
+              <meshPhysicalMaterial color={profile.crownColor} roughness={0.15} metalness={0.85} clearcoat={profile.crownClearcoat} clearcoatRoughness={profile.crownClearcoatRoughness} />
             </mesh>
           );
         } else {
@@ -243,7 +269,7 @@ export const Baseboards = React.memo(function Baseboards({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len, profile.crownHeight, profile.crownDepth]} />
-              <meshStandardMaterial color={profile.crownColor} roughness={0.5} />
+              <meshPhysicalMaterial color={profile.crownColor} roughness={0.5} clearcoat={profile.crownClearcoat} clearcoatRoughness={profile.crownClearcoatRoughness} envMapIntensity={profile.envMapIntensity} />
             </mesh>
           );
         }

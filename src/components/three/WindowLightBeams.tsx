@@ -38,14 +38,14 @@ export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, op
     return map;
   }, [walls]);
 
-  // 部屋サイズの30%を光条の長さとする
+  // 部屋サイズの40%を光条の長さとする（シネマ品質）
   const beamLength = useMemo(() => {
     if (walls.length === 0) return 1;
     const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
     const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
     const w = Math.max(...xs) - Math.min(...xs);
     const d = Math.max(...ys) - Math.min(...ys);
-    return Math.max(w, d) * 0.3;
+    return Math.max(w, d) * 0.4;
   }, [walls]);
 
   // lowモードでは完全無効化（hooksの後に配置）
@@ -207,7 +207,7 @@ function LightBeamMesh({ opening, wall, beamLength, isNight, qualityLevel }: Lig
       <meshBasicMaterial
         color={isNight ? '#8888CC' : '#FFF5D6'}
         transparent={true}
-        opacity={(isNight ? 0.03 : 0.1) * (qualityLevel === 'medium' ? 0.5 : 1)}
+        opacity={(isNight ? 0.06 : 0.15) * (qualityLevel === 'medium' ? 0.5 : 1)}
         side={THREE.DoubleSide}
         depthWrite={false}
         blending={THREE.AdditiveBlending}

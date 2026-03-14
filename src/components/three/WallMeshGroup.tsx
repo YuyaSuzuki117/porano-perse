@@ -46,7 +46,7 @@ function computeWallTargetOpacity(dot: number): number {
 }
 
 /* ─── useWallTexture フック ─────────────────────────────────────
-   Canvas API (512x512) でスタイル別プロシージャルテクスチャを生成し、
+   Canvas API (品質別: low=512, medium=1024, high=2048) でスタイル別プロシージャルテクスチャを生成し、
    { map, normalMap, roughnessMap, metalness } を返す。
    map はパターンのみ描画し、baseColor を基調色として使用。
    ──────────────────────────────────────────────────────────── */
@@ -1013,8 +1013,11 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
     useWallTexture(effectiveTextureType, color, wall);
 
   // cinema-grade: スタイル別壁面envMapIntensity / clearcoat
+  const wallEnvMapIntensity = effectiveTextureType === 'luxury' ? 1.5
+    : effectiveTextureType === 'modern' ? 1.2
+    : effectiveTextureType === 'medical' ? 1.0
+    : 0.8;
   const isLuxuryOrModern = effectiveTextureType === 'luxury' || effectiveTextureType === 'modern';
-  const wallEnvMapIntensity = isLuxuryOrModern ? 1.2 : 0.8;
   const wallClearcoat = isLuxuryOrModern ? 0.08 : 0.05;
 
   // セクションカットの断面エッジ（切断位置に暗色の線を表示）
