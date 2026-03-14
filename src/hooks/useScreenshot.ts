@@ -3,10 +3,62 @@
 import { useCallback, useState, type RefObject } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 
+function isMobile(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+}
+
+async function saveBlobToDevice(blob: Blob, filename: string): Promise<void> {
+  // Try Web Share API first (best for mobile)
+  if (isMobile() && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (e) {
+      // User cancelled or share failed - fall through to other methods
+      if ((e as DOMException).name === 'AbortError') return;
+    }
+  }
+
+  // Desktop: standard download link
+  const url = URL.createObjectURL(blob);
+  try {
+    if (isMobile()) {
+      // Mobile fallback: open in new tab for long-press save
+      window.open(url, '_blank');
+      // Keep URL alive a bit for the new tab
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } else {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  } catch {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Canvas toBlob failed'));
+    }, 'image/png');
+  });
+}
+
 /**
  * スクリーンショット撮影ロジックを管理するカスタムフック。
- * 通常撮影と高解像度(4K)撮影の両方をサポート。
- * ウォーターマーク設定にも対応。
+ * 通常撮影と高解像度撮影の両方をサポート。
+ * モバイルではWeb Share APIまたは新しいタブで保存。
  */
 export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const enableWatermark = useEditorStore((s) => s.enableWatermark);
@@ -25,47 +77,32 @@ export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
     ctx.restore();
   }, []);
 
-  const takeScreenshot = useCallback((scale: number = 1) => {
+  const takeScreenshot = useCallback(async (scale: number = 1) => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
+    const filename = `porano-perse-${Date.now()}.png`;
 
-    if (scale <= 1) {
-      if (enableWatermark) {
-        const offscreen = document.createElement('canvas');
-        offscreen.width = canvas.width;
-        offscreen.height = canvas.height;
-        const ctx = offscreen.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(canvas, 0, 0);
-          applyWatermark(ctx, offscreen.width, offscreen.height);
-          const link = document.createElement('a');
-          link.download = `porano-perse-${Date.now()}.png`;
-          link.href = offscreen.toDataURL('image/png');
-          link.click();
-        }
+    try {
+      if (scale <= 1 && !enableWatermark) {
+        const blob = await canvasToBlob(canvas);
+        await saveBlobToDevice(blob, filename);
       } else {
-        const link = document.createElement('a');
-        link.download = `porano-perse-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }
-    } else {
-      const offscreen = document.createElement('canvas');
-      offscreen.width = canvas.width * scale;
-      offscreen.height = canvas.height * scale;
-      const ctx = offscreen.getContext('2d');
-      if (ctx) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = canvas.width * Math.max(scale, 1);
+        offscreen.height = canvas.height * Math.max(scale, 1);
+        const ctx = offscreen.getContext('2d');
+        if (!ctx) return;
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
         if (enableWatermark) {
           applyWatermark(ctx, offscreen.width, offscreen.height);
         }
-        const link = document.createElement('a');
-        link.download = `porano-perse-${Date.now()}.png`;
-        link.href = offscreen.toDataURL('image/png');
-        link.click();
+        const blob = await canvasToBlob(offscreen);
+        await saveBlobToDevice(blob, filename);
       }
+    } catch (e) {
+      console.error('[Screenshot] Failed:', e);
     }
   }, [canvasRef, enableWatermark, applyWatermark]);
 
@@ -74,58 +111,52 @@ export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
     if (!canvasRef.current) return;
     setIsRendering(true);
 
-    // R3Fのinternalstoreにアクセスしてrendererを取得
     const canvas = canvasRef.current;
-    const gl = (canvas as HTMLCanvasElement & { __r3f?: { store?: { getState: () => { gl: { setPixelRatio: (r: number) => void; render: (scene: unknown, camera: unknown) => void; getPixelRatio: () => number; domElement: HTMLCanvasElement } ; scene: unknown; camera: unknown } } } }).__r3f?.store?.getState();
+    const mobile = isMobile();
+    const filename = `porano-perse-${mobile ? 'HD' : '4K'}-${Date.now()}.png`;
 
-    if (gl) {
-      const renderer = gl.gl;
-      const origRatio = renderer.getPixelRatio();
-      const hiResRatio = Math.max(origRatio * 3, 4);
+    try {
+      const gl = (canvas as HTMLCanvasElement & { __r3f?: { store?: { getState: () => { gl: { setPixelRatio: (r: number) => void; render: (scene: unknown, camera: unknown) => void; getPixelRatio: () => number; domElement: HTMLCanvasElement }; scene: unknown; camera: unknown } } } }).__r3f?.store?.getState();
 
-      // ピクセル比を上げて1フレームレンダリング
-      renderer.setPixelRatio(hiResRatio);
-      renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
+      if (gl) {
+        const renderer = gl.gl;
+        const origRatio = renderer.getPixelRatio();
+        // Mobile: 2x max to avoid memory crash. Desktop: 4x
+        const hiResRatio = mobile ? Math.min(origRatio * 2, 2) : Math.max(origRatio * 3, 4);
 
-      // キャプチャ
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const dataUrl = renderer.domElement.toDataURL('image/png');
+        renderer.setPixelRatio(hiResRatio);
+        renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
 
-      // ウォーターマーク追加（必要な場合）
-      if (enableWatermark) {
-        const img = new Image();
-        img.onload = () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const srcCanvas = renderer.domElement;
+        let finalCanvas = srcCanvas;
+
+        if (enableWatermark) {
           const offscreen = document.createElement('canvas');
-          offscreen.width = img.width;
-          offscreen.height = img.height;
+          offscreen.width = srcCanvas.width;
+          offscreen.height = srcCanvas.height;
           const ctx = offscreen.getContext('2d');
           if (ctx) {
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(srcCanvas, 0, 0);
             applyWatermark(ctx, offscreen.width, offscreen.height);
-            const link = document.createElement('a');
-            link.download = `porano-perse-4K-${Date.now()}.png`;
-            link.href = offscreen.toDataURL('image/png');
-            link.click();
+            finalCanvas = offscreen;
           }
-          renderer.setPixelRatio(origRatio);
-          renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
-          setIsRendering(false);
-        };
-        img.src = dataUrl;
-      } else {
-        const link = document.createElement('a');
-        link.download = `porano-perse-4K-${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
+        }
 
-        // 元に戻す
+        const blob = await canvasToBlob(finalCanvas);
+        await saveBlobToDevice(blob, filename);
+
+        // Restore original
         renderer.setPixelRatio(origRatio);
         renderer.render(gl.scene as Parameters<typeof renderer.render>[0], gl.camera as Parameters<typeof renderer.render>[1]);
-        setIsRendering(false);
+      } else {
+        // Fallback: scale capture (2x on mobile, 3x on desktop)
+        await takeScreenshot(mobile ? 2 : 3);
       }
-    } else {
-      // fallback: 通常の3xスケールキャプチャ
-      takeScreenshot(3);
+    } catch (e) {
+      console.error('[HiRes Screenshot] Failed:', e);
+    } finally {
       setIsRendering(false);
     }
   }, [canvasRef, enableWatermark, applyWatermark, takeScreenshot]);

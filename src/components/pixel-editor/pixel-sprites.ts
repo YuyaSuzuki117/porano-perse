@@ -54,6 +54,16 @@ export const PAL = {
   petal: '#e8a0a0',
   petalDark: '#c87878',
   iceBlue: '#b8d8f0',
+
+  // Furniture-specific accent colors for better differentiation
+  cushionRed: '#d45050',
+  cushionBlue: '#5080c0',
+  woodCherry: '#a04030',
+  woodMaple: '#d8a050',
+  metalBrass: '#c0a060',
+  ceramicWhite: '#e8e8f0',
+  leatherBrown: '#8b5a2b',
+  fabricGreen: '#508050',
 } as const;
 
 export type PalKey = keyof typeof PAL;
@@ -99,47 +109,63 @@ function alt(a: PalKey | 0, b: PalKey | 0, n: number): (PalKey | 0)[] {
 // ── Isometric Chair (32x32): viewed from 45deg ──
 export const SPRITES: Record<string, SpriteData> = {
   chair: createSprite([
-    seg(10,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],10),
-    seg(9,['darkBrown','highlight','brown','brown','brown','brown','brown','brown','brown','brown','brown','darkBrown','darkBrown'],9),
-    seg(8,['darkBrown','brown','highlight','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','brown','darkBrown','darkBrown'],8),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','shadow2','darkBrown'],9),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','shadow2','darkBrown'],10),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','shadow2','darkBrown'],10),
-    seg(8,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],10),
-    seg(7,['shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2'],10),
-    seg(4,[...rep('darkBrown',24)],4),
-    seg(3,['darkBrown','highlight',...rep('cream',20),'brown','darkBrown'],3),
-    seg(3,['darkBrown','brown',...rep('peach',20),'shadow2','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','cream',...rep('peach',18),'shadow2','brown','darkBrown'],3),
-    seg(4,['darkBrown','brown',...rep('cream',20),'shadow2','darkBrown'],4),
-    seg(5,[...rep('darkBrown',22)],5),
-    seg(5,['darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown'],5),
-    seg(5,['darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown'],5),
-    seg(6,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],6),
-    seg(6,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],6),
-    seg(6,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],6),
-    seg(6,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],6),
+    // Row 0-1: Tall backrest top with curved top edge
+    seg(10,[...rep('woodCherry',12)],10),
+    seg(9,['woodCherry','darkBrown',...rep('woodCherry',10),'darkBrown','woodCherry'],8),
+    // Row 2-5: Backrest body with vertical slats
+    seg(8,['woodCherry','darkBrown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','darkBrown','woodCherry'],7),
+    seg(8,['woodCherry','darkBrown','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','darkBrown','woodCherry'],7),
+    seg(8,['woodCherry','darkBrown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','darkBrown','woodCherry'],7),
+    seg(8,['woodCherry','darkBrown','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','woodMaple','brown','darkBrown','woodCherry'],7),
+    // Row 6-7: Backrest bottom rail
+    seg(8,['woodCherry',...rep('darkBrown',14),'woodCherry'],7),
+    seg(8,['shadow2',...rep('shadow1',14),'shadow2'],8),
+    // Row 8-9: Armrests extending forward + seat top
+    seg(5,['woodCherry','darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown','woodCherry'],5),
+    seg(4,['woodCherry','darkBrown','darkBrown',...rep('woodMaple',18),'darkBrown','darkBrown','woodCherry'],3),
+    // Row 10-12: Seat cushion (padded, distinct from backrest)
+    seg(4,['woodCherry','darkBrown','highlight',...rep('cushionRed',18),'shadow2','darkBrown','woodCherry'],3),
+    seg(4,['woodCherry','darkBrown','cushionRed',...rep('peach',8),'cushionRed',...rep('peach',8),'cushionRed','darkBrown','woodCherry'],3),
+    seg(4,['woodCherry','darkBrown',...rep('cushionRed',20),'darkBrown','woodCherry'],3),
+    // Row 13: Seat frame bottom
+    seg(5,['woodCherry',...rep('darkBrown',22),'woodCherry'],4),
+    // Row 14-15: Armrest front posts
+    seg(5,['woodCherry','darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown','woodCherry'],5),
+    seg(5,['woodCherry','shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1','woodCherry'],5),
+    // Row 16-19: Four visible legs
+    seg(6,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],6),
+    seg(6,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],6),
+    seg(6,['shadow1','shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1','shadow1'],6),
+    seg(6,['shadow1','shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1','shadow1'],6),
     ...Array(12).fill(new Array(SPRITE_SIZE).fill(0)),
   ]),
 
   table_square: createSprite([
     ...Array(4).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(6,[...rep('darkBrown',20)],6),
-    seg(4,['darkBrown','highlight',...rep('lightBrown',20),'brown','darkBrown'],4),
-    seg(3,['darkBrown','brown','highlight',...rep('cream',20),'lightBrown','shadow2','darkBrown'],3),
-    seg(2,['darkBrown','brown','lightBrown',...rep('cream',22),'lightBrown','shadow2','darkBrown'],2),
-    seg(2,['darkBrown','brown','lightBrown',...rep('cream',22),'shadow2','brown','darkBrown'],2),
-    seg(3,['darkBrown','brown','lightBrown',...rep('cream',20),'shadow2','brown','darkBrown'],3),
-    seg(4,['darkBrown','brown',...rep('lightBrown',20),'shadow2','darkBrown'],4),
-    seg(6,[...rep('darkBrown',20)],6),
-    seg(6,['shadow2',...rep('shadow1',18),'shadow2'],6),
-    seg(7,[...rep('shadow1',18)],7),
-    seg(7,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],7),
-    seg(7,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],7),
-    seg(8,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],8),
-    seg(8,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],8),
-    seg(9,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],9),
-    seg(9,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],9),
+    // Row 4: Table edge top
+    seg(5,[...rep('darkBrown',22)],5),
+    // Row 5-6: Table surface with wood grain (alternating tones)
+    seg(4,['darkBrown','highlight',...rep('woodMaple',10),...rep('lightBrown',10),'brown','darkBrown'],4),
+    seg(3,['darkBrown','brown',...alt('lightBrown','woodMaple',22),'shadow2','darkBrown'],3),
+    // Row 7-8: More grain + slight knot detail
+    seg(3,['darkBrown','brown','woodMaple',...rep('lightBrown',4),'brown',...rep('woodMaple',4),...rep('lightBrown',4),'woodMaple',...rep('lightBrown',4),'brown','woodMaple','shadow2','darkBrown'],3),
+    seg(3,['darkBrown','brown',...alt('woodMaple','lightBrown',22),'shadow2','darkBrown'],3),
+    // Row 9: Grain continues
+    seg(4,['darkBrown','brown',...rep('lightBrown',5),...rep('woodMaple',5),...rep('lightBrown',5),...rep('woodMaple',5),'shadow2','darkBrown'],4),
+    // Row 10: Table edge bottom
+    seg(4,['darkBrown','shadow2',...rep('brown',20),'shadow2','darkBrown'],4),
+    seg(5,[...rep('darkBrown',22)],5),
+    // Row 12: Apron/skirt detail
+    seg(5,['shadow2','brown',...rep('darkBrown',18),'brown','shadow2'],5),
+    // Row 13: Cross-brace visible
+    seg(6,['shadow1','brown',0,0,0,0,...rep('darkBrown',6),0,0,0,0,'brown','shadow1'],6),
+    // Row 14-17: Thick legs
+    seg(6,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],6),
+    seg(6,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],6),
+    seg(7,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],7),
+    seg(7,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],7),
+    seg(8,['shadow1','shadow1',0,0,0,0,0,0,0,0,0,0,'shadow1','shadow1'],8),
+    seg(8,['shadow1','shadow1',0,0,0,0,0,0,0,0,0,0,'shadow1','shadow1'],8),
     ...Array(12).fill(new Array(SPRITE_SIZE).fill(0)),
   ]),
 
@@ -162,59 +188,94 @@ export const SPRITES: Record<string, SpriteData> = {
   ]),
 
   sofa: createSprite([
-    ...Array(2).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(2,[...rep('darkBrown',28)],2),
-    seg(1,['darkBrown','brown',...rep('softOrange',26),'brown','darkBrown'],1),
-    seg(1,['darkBrown','brown','softOrange',...rep('peach',24),'softOrange','brown','darkBrown'],1),
-    seg(1,['darkBrown','brown','softOrange',...rep('peach',24),'softOrange','brown','darkBrown'],1),
-    seg(1,['darkBrown','brown',...rep('softOrange',26),'brown','darkBrown'],1),
-    seg(2,[...rep('darkBrown',28)],2),
-    seg(2,['brown',...rep('cream',26),'brown'],2),
-    seg(2,['brown','cream',...rep('highlight',24),'cream','brown'],2),
-    seg(2,['brown',...rep('cream',26),'brown'],2),
-    seg(2,[...rep('darkBrown',28)],2),
+    // Row 0: empty
+    ...Array(1).fill(new Array(SPRITE_SIZE).fill(0)),
+    // Row 1-2: Backrest top (curved, padded look)
+    seg(3,[0,...rep('leatherBrown',24),0],3),
+    seg(2,['leatherBrown','darkBrown',...rep('softOrange',24),'darkBrown','leatherBrown'],2),
+    // Row 3-5: Backrest face with padding detail
+    seg(1,['leatherBrown','darkBrown','softOrange',...rep('peach',10),'softOrange',...rep('peach',10),'softOrange','darkBrown','leatherBrown'],1),
+    seg(1,['leatherBrown','darkBrown','softOrange','peach','highlight',...rep('peach',8),'softOrange','peach','highlight',...rep('peach',8),'softOrange','darkBrown','leatherBrown'],1),
+    seg(1,['leatherBrown','darkBrown',...rep('softOrange',26),'darkBrown','leatherBrown'],1),
+    // Row 6: Backrest-seat junction
+    seg(1,['leatherBrown',...rep('darkBrown',28),'leatherBrown'],1),
+    // Row 7-9: Seat cushions (3 divisions) with highlights
+    seg(1,['leatherBrown','darkBrown','highlight',...rep('cream',7),'darkBrown',...rep('cream',8),'darkBrown',...rep('cream',7),'highlight','darkBrown','leatherBrown'],1),
+    seg(1,['leatherBrown','darkBrown','cream',...rep('highlight',7),'darkBrown',...rep('highlight',8),'darkBrown',...rep('highlight',7),'cream','darkBrown','leatherBrown'],1),
+    seg(1,['leatherBrown','darkBrown',...rep('cream',8),'darkBrown',...rep('cream',8),'darkBrown',...rep('cream',8),'darkBrown','leatherBrown'],1),
+    // Row 10: Seat front edge
+    seg(1,['leatherBrown',...rep('darkBrown',28),'leatherBrown'],1),
+    // Row 11: Throw pillow on left armrest (accent color)
+    seg(1,['leatherBrown','cushionBlue','cushionBlue','cushionBlue','cushionBlue',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'leatherBrown'],1),
+    // Row 12: Armrest sides visible + base
+    seg(1,['leatherBrown','cushionBlue','highlight','cushionBlue',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'leatherBrown'],1),
+    // Row 13: Base/skirt
     seg(2,['shadow2',...rep('shadow1',26),'shadow2'],2),
-    seg(3,[...rep('shadow1',26)],3),
-    seg(3,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],3),
-    seg(3,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],3),
-    ...Array(16).fill(new Array(SPRITE_SIZE).fill(0)),
+    seg(2,['shadow1',...rep('darkBrown',26),'shadow1'],2),
+    // Row 15-16: Short legs
+    seg(3,['brown','brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown','brown'],3),
+    seg(3,['shadow1','shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1','shadow1'],3),
+    ...Array(15).fill(new Array(SPRITE_SIZE).fill(0)),
   ]),
 
   counter: createSprite([
-    ...Array(4).fill(new Array(SPRITE_SIZE).fill(0)),
+    // Row 0: Items on counter top - cash register silhouette
+    ...Array(1).fill(new Array(SPRITE_SIZE).fill(0)),
+    seg(10,[...rep('darkGray',6)],16),
+    seg(10,['darkGray','skyBlue','skyBlue','skyBlue','skyBlue','darkGray'],16),
+    seg(10,[...rep('darkGray',6),...rep(0,4),'metalBrass','metalBrass'],14),
+    // Row 4-5: Counter top surface
     seg(4,[...rep('darkBrown',24)],4),
-    seg(3,['darkBrown','highlight',...rep('golden',22),'shadow2','darkBrown'],3),
-    seg(3,['darkBrown','brown','highlight',...rep('cream',20),'shadow2','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown',...rep('golden',22),'shadow2','darkBrown'],3),
+    seg(3,['darkBrown','highlight',...rep('woodMaple',22),'shadow2','darkBrown'],3),
+    // Row 6-7: Counter top with items (coffee cup on right)
+    seg(3,['darkBrown','brown',...rep('cream',14),'ceramicWhite','ceramicWhite','ceramicWhite',0,0,'cream','cream','shadow2','brown','darkBrown'],3),
+    seg(3,['darkBrown','brown',...rep('woodMaple',22),'shadow2','darkBrown'],3),
+    // Row 8: Counter top edge
     seg(4,[...rep('darkBrown',24)],4),
-    seg(4,['shadow2','brown',...rep('brown',20),'brown','shadow2'],4),
+    // Row 9-12: Front panel with wood grain detail
+    seg(4,['shadow2','brown','lightBrown',...alt('brown','lightBrown',18),'brown','shadow2'],4),
     seg(4,['shadow2','brown',...rep('darkBrown',20),'brown','shadow2'],4),
+    seg(4,['shadow2','brown','darkBrown',...rep('brown',6),'darkBrown','darkBrown',...rep('brown',6),'darkBrown','darkBrown','brown','shadow2'],4),
     seg(4,['shadow2','brown',...rep('darkBrown',20),'brown','shadow2'],4),
-    seg(4,['shadow2','brown',...rep('brown',20),'brown','shadow2'],4),
+    // Row 13: Shelf visible underneath
+    seg(4,['shadow2','brown','lightBrown',...rep('cream',4),'lightBrown',0,0,0,0,0,0,'lightBrown',...rep('cream',4),'lightBrown','brown','shadow2'],4),
+    // Row 14: Base
     seg(5,[...rep('shadow1',22)],5),
-    ...Array(18).fill(new Array(SPRITE_SIZE).fill(0)),
+    ...Array(17).fill(new Array(SPRITE_SIZE).fill(0)),
   ]),
 
   plant: createSprite([
-    ...Array(1).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(10,['olive','olive','olive','sage','sage','sage','olive','olive','sage','sage','olive','olive'],10),
-    seg(8,['olive',...rep('sage',14),'olive'],8),
-    seg(7,['olive',...rep('sage',16),'olive'],7),
-    seg(6,['olive','sage','sage','sage','sage','mint','sage','sage','sage','sage','sage','sage','mint','sage','sage','sage','sage','sage','sage','olive'],6),
-    seg(6,['olive',...rep('sage',18),'olive'],6),
-    seg(7,['olive',...rep('sage',16),'olive'],7),
-    seg(8,['olive',...rep('sage',14),'olive'],8),
-    seg(9,['olive','olive',...rep('sage',10),'olive','olive'],9),
-    seg(11,['olive','olive',...rep('sage',6),'olive','olive'],11),
-    seg(13,['olive',...rep('brown',4),'olive'],13),
-    seg(14,[...rep('brown',4)],14),
-    seg(10,[...rep('darkBrown',12)],10),
-    seg(10,['darkBrown',...rep('warmRed',10),'darkBrown'],10),
-    seg(11,['darkBrown',...rep('warmRed',8),'darkBrown'],11),
-    seg(11,['darkBrown',...rep('shadow1',8),'darkBrown'],11),
-    seg(12,['darkBrown',...rep('shadow1',6),'darkBrown'],12),
+    // Row 0-1: Top leaf cluster (small leaves poking up)
+    seg(12,['fabricGreen','greenLeaf',0,0,'sage','fabricGreen'],14),
+    seg(10,['fabricGreen','greenLeaf','sage','greenLeaf','greenLeaf','sage','greenLeaf','fabricGreen'],14),
+    // Row 2-3: Upper canopy - lush with light/dark variation
+    seg(8,['olive','fabricGreen','greenLeaf','sage','greenLeaf','highlight','sage','fabricGreen','greenLeaf','sage','greenLeaf','fabricGreen','sage','olive'],10),
+    seg(7,['olive','fabricGreen','sage','greenLeaf','fabricGreen','sage','greenLeaf','highlight','greenLeaf','sage','fabricGreen','greenLeaf','sage','greenLeaf','fabricGreen','olive'],7),
+    // Row 4-5: Widest part of foliage - distinct leaf shapes
+    seg(5,['olive','greenLeaf','sage','fabricGreen','greenLeaf','sage','mint','sage','greenLeaf','fabricGreen','sage','greenLeaf','sage','fabricGreen','greenLeaf','sage','fabricGreen','olive'],9),
+    seg(5,['fabricGreen','sage','greenLeaf','sage','fabricGreen','highlight','sage','greenLeaf','sage','fabricGreen','sage','greenLeaf','sage','mint','sage','greenLeaf','sage','fabricGreen'],9),
+    // Row 6-7: Middle foliage with visible individual leaves
+    seg(6,['olive','greenLeaf','fabricGreen','sage','greenLeaf','sage','fabricGreen','greenLeaf','sage','fabricGreen','sage','greenLeaf','fabricGreen','sage','greenLeaf','olive'],10),
+    seg(7,['fabricGreen','sage','greenLeaf','sage','fabricGreen','sage','greenLeaf','sage','fabricGreen','sage','greenLeaf','sage','fabricGreen','sage'],11),
+    // Row 8-9: Lower foliage tapering + some drooping leaves
+    seg(8,['olive','fabricGreen','sage','greenLeaf','sage','fabricGreen','sage','greenLeaf','sage','fabricGreen','sage','olive'],12),
+    seg(9,['fabricGreen','sage','greenLeaf','sage','fabricGreen','sage','greenLeaf','sage','fabricGreen'],14),
+    // Row 10-11: Trunk visible through thinning leaves
+    seg(11,['olive','sage','brown','brown','sage','olive','sage','olive'],13),
+    seg(12,['olive','brown','darkBrown','brown','olive'],15),
+    // Row 12: Trunk
+    seg(13,['brown','darkBrown','brown','brown'],15),
+    seg(14,['brown','darkBrown','brown'],15),
+    // Row 13-14: Decorative terracotta pot - wider rim
+    seg(10,[...rep('woodCherry',12)],10),
+    seg(10,['woodCherry','warmRed',...rep('softOrange',8),'warmRed','woodCherry'],10),
+    // Row 15-16: Pot body with texture
+    seg(11,['woodCherry','warmRed',...rep('softOrange',3),'warmRed',...rep('softOrange',3),'warmRed','woodCherry'],11),
+    seg(11,['woodCherry','warmRed',...rep('shadow1',6),'warmRed','woodCherry'],11),
+    // Row 17: Pot base
+    seg(12,['woodCherry',...rep('shadow1',6),'woodCherry'],12),
     seg(12,[...rep('darkBrown',8)],12),
-    ...Array(14).fill(new Array(SPRITE_SIZE).fill(0)),
+    ...Array(12).fill(new Array(SPRITE_SIZE).fill(0)),
   ]),
 
   shelf: createSprite([

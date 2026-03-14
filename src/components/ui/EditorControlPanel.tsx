@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useId } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FURNITURE_CATALOG } from '@/data/furniture';
@@ -2473,8 +2473,6 @@ function SnapshotPanel() {
   );
 }
 
-let sectionIdCounter = 0;
-
 function Section({
   title,
   children,
@@ -2490,7 +2488,7 @@ function Section({
 }) {
   const isCollapsible = collapsible || mobileCollapsible;
   const [isOpen, setIsOpen] = useState(mobileCollapsible ? false : defaultOpen);
-  const [sectionId] = useState(() => `section-${++sectionIdCounter}`);
+  const sectionId = useId();
   const contentId = `${sectionId}-content`;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

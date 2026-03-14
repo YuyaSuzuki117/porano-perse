@@ -2353,6 +2353,66 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     []
   );
 
+  // --- タッチイベント → マウスイベント変換（モバイル対応） ---
+  const touchToMouse = useCallback((e: React.TouchEvent<HTMLCanvasElement>): React.MouseEvent<HTMLCanvasElement> | null => {
+    if (e.touches.length === 0 && e.changedTouches.length === 0) return null;
+    const touch = e.touches[0] || e.changedTouches[0];
+    return {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      button: 0,
+      buttons: 1,
+      preventDefault: () => e.preventDefault(),
+      stopPropagation: () => e.stopPropagation(),
+      nativeEvent: e.nativeEvent,
+      currentTarget: e.currentTarget,
+      target: e.target,
+    } as unknown as React.MouseEvent<HTMLCanvasElement>;
+  }, []);
+
+  const lastTouchDist = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2) {
+      // ピンチズーム開始
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist.current = Math.sqrt(dx * dx + dy * dy);
+      return;
+    }
+    if (e.touches.length === 1) {
+      const mouseEvt = touchToMouse(e);
+      if (mouseEvt) handleMouseDown(mouseEvt);
+    }
+  }, [touchToMouse, handleMouseDown]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 2 && lastTouchDist.current !== null) {
+      // ピンチズーム
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const ratio = dist / lastTouchDist.current;
+      setView((v) => ({
+        ...v,
+        zoom: Math.max(0.1, Math.min(10, v.zoom * ratio)),
+      }));
+      lastTouchDist.current = dist;
+      return;
+    }
+    if (e.touches.length === 1) {
+      const mouseEvt = touchToMouse(e);
+      if (mouseEvt) handleMouseMove(mouseEvt);
+    }
+  }, [touchToMouse, handleMouseMove, setView]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) {
+      lastTouchDist.current = null;
+      handleMouseUp();
+    }
+  }, [handleMouseUp]);
+
   // --- リサイズ ---
   useEffect(() => {
     const container = containerRef.current;
@@ -2453,10 +2513,14 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
       <canvas
         ref={canvasRef}
         className={`absolute inset-0 ${cursorClass}`}
+        style={{ touchAction: 'none' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
       />

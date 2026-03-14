@@ -881,6 +881,41 @@ export default function PixelRoomEditor() {
       ctx.drawImage(cachedCanvas, 0, 0);
       ctx.restore();
 
+      // ── Furniture name label below sprite ──
+      {
+        const catalogItem = FURNITURE_CATALOG.find(c => c.type === f.type);
+        const labelText = catalogItem?.name || f.type;
+        const labelFontSize = Math.max(9, Math.min(14, spritePixelSize * 4));
+        ctx.save();
+        ctx.font = `bold ${labelFontSize}px "Hiragino Sans", "Yu Gothic", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const labelX = fx;
+        const labelY = fy - halfSprite * 0.7 + spriteSize + 2;
+        // Background pill
+        const textMetrics = ctx.measureText(labelText);
+        const pillW = textMetrics.width + 8;
+        const pillH = labelFontSize + 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        const rx = labelX - pillW / 2, ry = labelY, rr = 3;
+        ctx.beginPath();
+        ctx.moveTo(rx + rr, ry);
+        ctx.lineTo(rx + pillW - rr, ry);
+        ctx.arcTo(rx + pillW, ry, rx + pillW, ry + rr, rr);
+        ctx.lineTo(rx + pillW, ry + pillH - rr);
+        ctx.arcTo(rx + pillW, ry + pillH, rx + pillW - rr, ry + pillH, rr);
+        ctx.lineTo(rx + rr, ry + pillH);
+        ctx.arcTo(rx, ry + pillH, rx, ry + pillH - rr, rr);
+        ctx.lineTo(rx, ry + rr);
+        ctx.arcTo(rx, ry, rx + rr, ry, rr);
+        ctx.closePath();
+        ctx.fill();
+        // Text
+        ctx.fillStyle = '#fff8f0';
+        ctx.fillText(labelText, labelX, labelY + 2);
+        ctx.restore();
+      }
+
       // ── Hover highlight outline ──
       if (f.id === hoveredFurnitureId && f.id !== selectedFurnitureId && !pendingDeleteRef.current.has(f.id)) {
         ctx.save();

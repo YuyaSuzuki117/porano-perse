@@ -79,7 +79,7 @@ function PostProcessingEffects({
         <ChromaticAberration offset={chromaticOffsetHigh} />
         <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
         <DepthOfField
-          focusDistance={0}
+          focusDistance={0.01}
           focalLength={0.035}
           bokehScale={6.0}
         />

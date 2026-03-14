@@ -410,9 +410,6 @@ export default function EditorPage() {
             <div
               className="absolute inset-0 bg-white tab-content-enter"
               aria-label="2D図面エディタ"
-              onTouchStart={handleTouchStart2D}
-              onTouchMove={handleTouchMove2D}
-              onTouchEnd={handleTouchEnd2D}
             >
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs text-gray-500 font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md border border-gray-200 pointer-events-none">
@@ -440,12 +437,14 @@ export default function EditorPage() {
                 />
               </ErrorBoundary>
               <EmptyStateOverlay isMobile />
-              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none">
-                3D プレビュー
-              </div>
-              <CameraPresetButtons canvasRef={canvasRef} />
-              <AlignmentToolbar />
-              {showMinimap && (
+              {!photoMode && (
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none">
+                  3D プレビュー
+                </div>
+              )}
+              {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}
+              {!photoMode && <AlignmentToolbar />}
+              {!photoMode && showMinimap && (
                 <MiniMap
                   walls={walls}
                   furniture={furniture}
@@ -455,12 +454,42 @@ export default function EditorPage() {
                 />
               )}
               {/* 座席数カウンター */}
-              <SeatCounter furniture={furniture} />
-              <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
-                <span>ドラッグ: 回転</span>
-                <span className="text-white/40">|</span>
-                <span>ピンチ: ズーム</span>
-              </div>
+              {!photoMode && <SeatCounter furniture={furniture} />}
+              {!photoMode && (
+                <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
+                  <span>ドラッグ: 回転</span>
+                  <span className="text-white/40">|</span>
+                  <span>ピンチ: ズーム</span>
+                </div>
+              )}
+              {/* フォトモード: モバイル撮影UI */}
+              {photoMode && (
+                <div className="absolute bottom-16 right-3 flex flex-col items-end gap-2 z-40">
+                  <button
+                    onClick={() => takeHiResScreenshot()}
+                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform"
+                    aria-label="高解像度で撮影"
+                  >
+                    <span className="text-lg">📷</span>
+                    <span>撮影 (HD)</span>
+                  </button>
+                  <button
+                    onClick={() => takeScreenshot(1)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm"
+                    aria-label="通常撮影"
+                  >
+                    <span>📸</span>
+                    <span>通常撮影</span>
+                  </button>
+                  <button
+                    onClick={() => setPhotoMode(false)}
+                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform"
+                    aria-label="フォトモードを終了"
+                  >
+                    フォトモード終了
+                  </button>
+                </div>
+              )}
               {isDragOver && (
                 <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
                   <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
