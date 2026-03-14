@@ -23,6 +23,7 @@ import { UndoTimeline } from '@/components/ui/UndoTimeline';
 import { BatchEditPanel } from '@/components/ui/BatchEditPanel';
 import { TextureUploadPanel } from '@/components/ui/TextureUploadPanel';
 import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
+import { RenderQualityPanel } from '@/components/ui/RenderQualityPanel';
 
 interface EditorControlPanelProps {
   isMobile?: boolean;
@@ -139,6 +140,20 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     showCollisionHeatmap,
     toggleCollisionHeatmap,
     selectedFurnitureIds,
+    showGodRays,
+    toggleGodRays,
+    godRayIntensity,
+    setGodRayIntensity,
+    wetFloorEnabled,
+    toggleWetFloor,
+    wetFloorWetness,
+    setWetFloorWetness,
+    showLensFlare,
+    toggleLensFlare,
+    toneMappingPreset,
+    setToneMappingPreset,
+    renderQualityPreset,
+    setRenderQualityPreset,
     updateFurnitureHeight,
     updateFurnitureMaterialOverride,
     resetFurnitureMaterialOverride,
@@ -2004,6 +2019,30 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               <input type="checkbox" checked={showFlowSimulation} readOnly className="rounded" />
               <span className="text-xs text-gray-700">動線シミュレーション</span>
             </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={showGodRays} onChange={() => toggleGodRays()} className="rounded text-blue-500 focus:ring-blue-400" />
+                <span className="text-xs text-gray-700">ゴッドレイ（窓光線）</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={showLensFlare} onChange={() => toggleLensFlare()} className="rounded text-blue-500 focus:ring-blue-400" />
+                <span className="text-xs text-gray-700">レンズフレア</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={wetFloorEnabled} onChange={() => toggleWetFloor()} className="rounded text-blue-500 focus:ring-blue-400" />
+                <span className="text-xs text-gray-700">ウェットフロア</span>
+              </label>
+              {wetFloorEnabled && (
+                <div className="ml-6">
+                  <label className="text-[10px] text-gray-500 block mb-1">濡れ具合</label>
+                  <input type="range" min="0" max="1" step="0.05" value={wetFloorWetness} onChange={(e) => setWetFloorWetness(parseFloat(e.target.value))} className="w-full" />
+                </div>
+              )}
+              {showGodRays && (
+                <div className="ml-6">
+                  <label className="text-[10px] text-gray-500 block mb-1">光線強度</label>
+                  <input type="range" min="0.1" max="1" step="0.05" value={godRayIntensity} onChange={(e) => setGodRayIntensity(parseFloat(e.target.value))} className="w-full" />
+                </div>
+              )}
           </div>
           {showFlowSimulation && (
             <p className="text-[10px] text-green-600 bg-green-50 rounded px-2 py-1">入口から各エリアへの顧客動線をアニメーション表示中</p>
@@ -2118,6 +2157,16 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* カラーハーモニー */}
       <Section title="カラーハーモニー" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <ColorHarmonyPanel />
+      </Section>
+
+      {/* レンダリング品質 */}
+      <Section title="レンダリング品質" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <RenderQualityPanel
+          currentQuality={renderQualityPreset as any}
+          currentToneMapping={toneMappingPreset as any}
+          onQualityChange={(p) => setRenderQualityPreset(p)}
+          onToneMappingChange={(p) => setToneMappingPreset(p)}
+        />
       </Section>
 
       {/* バージョン履歴 */}

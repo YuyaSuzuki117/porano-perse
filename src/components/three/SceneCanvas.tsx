@@ -34,6 +34,9 @@ import FlowSimulation from './FlowSimulation';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 import { CollisionHeatmap } from './CollisionHeatmap';
 import PlacementPreview from './PlacementPreview';
+import { GodRays } from './GodRays';
+import { LensFlare } from './LensFlare';
+import { WetFloorEffect } from './WetFloorEffect';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -95,6 +98,11 @@ export function SceneCanvas({
   const referenceImageUrl = useEditorStore((s) => s.referenceImageUrl);
   const referenceImageOpacity = useEditorStore((s) => s.referenceImageOpacity);
   const showCollisionHeatmap = useEditorStore((s) => s.showCollisionHeatmap);
+  const showGodRays = useEditorStore((s) => s.showGodRays);
+  const godRayIntensity = useEditorStore((s) => s.godRayIntensity);
+  const wetFloorEnabled = useEditorStore((s) => s.wetFloorEnabled);
+  const wetFloorWetness = useEditorStore((s) => s.wetFloorWetness);
+  const showLensFlare = useEditorStore((s) => s.showLensFlare);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -342,6 +350,37 @@ export function SceneCanvas({
             visible={true}
           />
         )}
+
+        {/* ゴッドレイ（窓からの光の筋） */}
+        {showGodRays && qualityLevel !== 'low' && (
+          <GodRays
+            openings={openings.filter(o => o.type === 'window')}
+            walls={walls}
+            roomHeight={roomHeight}
+            intensity={godRayIntensity}
+            enabled={true}
+          />
+        )}
+
+        {/* ウェットフロア */}
+        {wetFloorEnabled && (
+          <WetFloorEffect
+            walls={walls}
+            wetness={wetFloorWetness}
+            enabled={true}
+          />
+        )}
+
+        {/* レンズフレア（ペンダントライト） */}
+        {showLensFlare && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (
+          <LensFlare
+            key={`flare-${light.id}`}
+            position={[light.position[0], light.position[1] + (light.heightOffset ?? 0) + 0.3, light.position[2]]}
+            color={styleConfig.spotlightColor || '#FFF5E6'}
+            intensity={0.7}
+            size={0.25}
+          />
+        ))}
 
         {/* モーションブラー（ウォークスルー・巡回時） */}
         {motionBlurEnabled && qualityLevel !== 'low' && (

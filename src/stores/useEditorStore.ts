@@ -395,6 +395,30 @@ interface EditorState {
   // Round 7: 衝突ヒートマップ
   showCollisionHeatmap: boolean;
   toggleCollisionHeatmap: () => void;
+
+  // Round 8: ゴッドレイ
+  showGodRays: boolean;
+  toggleGodRays: () => void;
+  godRayIntensity: number;
+  setGodRayIntensity: (v: number) => void;
+
+  // Round 8: ウェットフロア
+  wetFloorEnabled: boolean;
+  wetFloorWetness: number;
+  toggleWetFloor: () => void;
+  setWetFloorWetness: (v: number) => void;
+
+  // Round 8: レンズフレア
+  showLensFlare: boolean;
+  toggleLensFlare: () => void;
+
+  // Round 8: トーンマッピング
+  toneMappingPreset: string;
+  setToneMappingPreset: (preset: string) => void;
+
+  // Round 8: レンダリング品質プリセット
+  renderQualityPreset: string;
+  setRenderQualityPreset: (preset: string) => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -560,6 +584,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   referenceImageUrl: null,
   referenceImageOpacity: 0.5,
   showCollisionHeatmap: false,
+  showGodRays: false,
+  godRayIntensity: 0.6,
+  wetFloorEnabled: false,
+  wetFloorWetness: 0.5,
+  showLensFlare: false,
+  toneMappingPreset: 'aces',
+  renderQualityPreset: 'cinema',
   clipboard: null,
   cameraBookmarks: [],
   snapshots: (() => {
@@ -1818,6 +1849,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })),
   // Round 7: 衝突ヒートマップ
   toggleCollisionHeatmap: () => set((s) => ({ showCollisionHeatmap: !s.showCollisionHeatmap })),
+  // Round 8
+  toggleGodRays: () => set((s) => ({ showGodRays: !s.showGodRays })),
+  setGodRayIntensity: (v) => set({ godRayIntensity: v }),
+  toggleWetFloor: () => set((s) => ({ wetFloorEnabled: !s.wetFloorEnabled })),
+  setWetFloorWetness: (v) => set({ wetFloorWetness: v }),
+  toggleLensFlare: () => set((s) => ({ showLensFlare: !s.showLensFlare })),
+  setToneMappingPreset: (preset) => set({ toneMappingPreset: preset }),
+  setRenderQualityPreset: (preset) => set({ renderQualityPreset: preset }),
 }));
 
 export { LOCALSTORAGE_KEY };
