@@ -130,6 +130,15 @@ export type FurnitureType =
   | 'curtain'         // カーテン
   | 'clock'           // 時計（壁掛け）
   | 'trash_can'       // ゴミ箱
+  | 'refrigerator'    // 冷蔵庫（大型）
+  | 'washbasin'       // 洗面台
+  | 'toilet'          // トイレ
+  | 'stairs'          // 階段
+  | 'register_counter' // レジカウンター（什器）
+  | 'showcase'        // ショーケース（ガラス）
+  | 'bed'             // ベッド
+  | 'bar_stool'       // バースツール
+  | 'hanger_rack'     // ハンガーラック
   | 'custom';         // カスタム3Dモデル
 
 export interface FurnitureCatalogItem {

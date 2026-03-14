@@ -460,6 +460,22 @@ interface EditorState {
   // Round 9: 3Dフレーム表示
   showWindowDoorFrames: boolean;
   toggleWindowDoorFrames: () => void;
+
+  // Round 10: 避難経路
+  showEvacuation: boolean;
+  toggleEvacuation: () => void;
+
+  // Round 10: 電気配線
+  showElectrical: boolean;
+  toggleElectrical: () => void;
+
+  // Round 10: 空調可視化
+  showHVAC: boolean;
+  toggleHVAC: () => void;
+
+  // Round 10: 煙パーティクル
+  showSmoke: boolean;
+  toggleSmoke: () => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -646,6 +662,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   beforeAfterLeftLabel: '',
   beforeAfterRightLabel: '',
   showWindowDoorFrames: true,
+  showEvacuation: false,
+  showElectrical: false,
+  showHVAC: false,
+  showSmoke: false,
   clipboard: null,
   cameraBookmarks: [],
   snapshots: (() => {
@@ -1936,6 +1956,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     beforeAfterRightLabel: '',
   }),
   toggleWindowDoorFrames: () => set((s) => ({ showWindowDoorFrames: !s.showWindowDoorFrames })),
+  // Round 10
+  toggleEvacuation: () => set((s) => ({ showEvacuation: !s.showEvacuation })),
+  toggleElectrical: () => set((s) => ({ showElectrical: !s.showElectrical })),
+  toggleHVAC: () => set((s) => ({ showHVAC: !s.showHVAC })),
+  toggleSmoke: () => set((s) => ({ showSmoke: !s.showSmoke })),
 }));
 
 export { LOCALSTORAGE_KEY };

@@ -44,6 +44,10 @@ import { CausticEffect } from './CausticEffect';
 import { SunSimulation } from './SunSimulation';
 import { AcousticVisualization } from './AcousticVisualization';
 import { WindowDoorFrame3D } from './WindowDoorFrame3D';
+import { EvacuationOverlay } from './EvacuationOverlay';
+import { ElectricalOverlay } from './ElectricalOverlay';
+import { HVACVisualization } from './HVACVisualization';
+import { SmokeParticles } from './SmokeParticles';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -119,6 +123,10 @@ export function SceneCanvas({
   const showSunSimulation = useEditorStore((s) => s.showSunSimulation);
   const showAcoustics = useEditorStore((s) => s.showAcoustics);
   const showWindowDoorFrames = useEditorStore((s) => s.showWindowDoorFrames);
+  const showEvacuation = useEditorStore((s) => s.showEvacuation);
+  const showElectrical = useEditorStore((s) => s.showElectrical);
+  const showHVAC = useEditorStore((s) => s.showHVAC);
+  const showSmoke = useEditorStore((s) => s.showSmoke);
   const setSkyTimeOfDay = useEditorStore((s) => s.setSkyTimeOfDay);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
@@ -460,6 +468,48 @@ export function SceneCanvas({
             />
           );
         })}
+
+        {/* 避難経路オーバーレイ */}
+        {showEvacuation && (
+          <EvacuationOverlay
+            walls={walls}
+            openings={openings}
+            furniture={furniture}
+            roomHeight={roomHeight}
+            enabled={true}
+          />
+        )}
+
+        {/* 電気配線オーバーレイ */}
+        {showElectrical && (
+          <ElectricalOverlay
+            walls={walls}
+            furniture={furniture}
+            roomHeight={roomHeight}
+            enabled={true}
+          />
+        )}
+
+        {/* 空調効率可視化 */}
+        {showHVAC && (
+          <HVACVisualization
+            walls={walls}
+            furniture={furniture}
+            roomHeight={roomHeight}
+            enabled={true}
+          />
+        )}
+
+        {/* 煙・蒸気パーティクル（キッチン家具付近） */}
+        {showSmoke && furniture.filter(f => ['refrigerator', 'kitchen_island'].includes(f.type)).map(item => (
+          <SmokeParticles
+            key={`smoke-${item.id}`}
+            position={[item.position[0], item.position[1] + (item.scale?.[1] ?? 1), item.position[2]]}
+            type="steam"
+            intensity={0.6}
+            enabled={true}
+          />
+        ))}
 
         {/* レンズフレア（ペンダントライト） */}
         {showLensFlare && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (

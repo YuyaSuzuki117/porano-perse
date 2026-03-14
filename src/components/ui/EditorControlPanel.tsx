@@ -183,12 +183,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
   };
 
   const FURNITURE_CATEGORIES: Record<string, string[]> = {
-    '座る': ['chair', 'stool', 'sofa', 'bench'],
+    '座る': ['chair', 'stool', 'sofa', 'bench', 'bar_stool'],
     'テーブル': ['counter', 'table_square', 'table_round', 'bar_table', 'kitchen_island', 'desk', 'reception_desk'],
-    '収納': ['shelf', 'bookcase', 'wardrobe', 'display_case'],
+    '収納': ['shelf', 'bookcase', 'wardrobe', 'display_case', 'showcase', 'hanger_rack'],
     '照明': ['pendant_light'],
-    '設備': ['register', 'sink', 'fridge', 'washing_machine', 'air_conditioner', 'tv_monitor'],
-    'その他': ['plant', 'partition', 'mirror', 'coat_rack'],
+    '設備': ['register', 'sink', 'fridge', 'washing_machine', 'air_conditioner', 'tv_monitor', 'refrigerator', 'washbasin', 'toilet', 'stairs'],
+    '什器': ['register_counter', 'partition', 'bed'],
+    'その他': ['plant', 'mirror', 'coat_rack'],
   };
 
   const CATEGORY_LIST = [
@@ -198,6 +199,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     { key: '収納', label: '収納' },
     { key: '照明', label: '照明' },
     { key: '設備', label: '設備' },
+    { key: '什器', label: '什器' },
     { key: 'その他', label: 'その他' },
   ];
 

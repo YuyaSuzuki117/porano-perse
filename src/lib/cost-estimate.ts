@@ -82,6 +82,16 @@ export const FURNITURE_PRICES: Record<FurnitureType, FurniturePriceInfo> = {
   clock: { minPrice: 3000, maxPrice: 20000, averagePrice: 8000, nameJa: '時計（壁掛け）' },
   trash_can: { minPrice: 2000, maxPrice: 10000, averagePrice: 5000, nameJa: 'ゴミ箱' },
   custom: { minPrice: 10000, maxPrice: 100000, averagePrice: 50000, nameJa: 'カスタム' },
+  // Round 9 追加家具
+  refrigerator: { minPrice: 30000, maxPrice: 150000, averagePrice: 80000, nameJa: '冷蔵庫' },
+  washbasin: { minPrice: 25000, maxPrice: 120000, averagePrice: 60000, nameJa: '洗面台' },
+  toilet: { minPrice: 30000, maxPrice: 200000, averagePrice: 80000, nameJa: 'トイレ' },
+  stairs: { minPrice: 200000, maxPrice: 800000, averagePrice: 400000, nameJa: '階段' },
+  register_counter: { minPrice: 80000, maxPrice: 250000, averagePrice: 150000, nameJa: 'レジカウンター' },
+  showcase: { minPrice: 50000, maxPrice: 200000, averagePrice: 100000, nameJa: 'ショーケース' },
+  bed: { minPrice: 30000, maxPrice: 200000, averagePrice: 80000, nameJa: 'ベッド' },
+  bar_stool: { minPrice: 8000, maxPrice: 30000, averagePrice: 15000, nameJa: 'バースツール' },
+  hanger_rack: { minPrice: 10000, maxPrice: 40000, averagePrice: 20000, nameJa: 'ハンガーラック' },
 };
 
 // --- 消費税率 ---
