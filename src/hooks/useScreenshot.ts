@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type RefObject } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { showToast } from '@/components/ui/Toast';
 
 function isMobile(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -78,7 +79,10 @@ export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
   }, []);
 
   const takeScreenshot = useCallback(async (scale: number = 1) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      showToast('3Dキャンバスが見つかりません。3Dビューを表示してから撮影してください', 'error');
+      return;
+    }
     const canvas = canvasRef.current;
     const filename = `porano-perse-${Date.now()}.png`;
 
@@ -101,14 +105,19 @@ export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
         const blob = await canvasToBlob(offscreen);
         await saveBlobToDevice(blob, filename);
       }
+      showToast('スクリーンショットを保存しました', 'success');
     } catch (e) {
       console.error('[Screenshot] Failed:', e);
+      showToast('スクリーンショットに失敗しました', 'error');
     }
   }, [canvasRef, enableWatermark, applyWatermark]);
 
   /** 高解像度キャプチャ（R3Fレンダラーのピクセル比を一時的に上げる） */
   const takeHiResScreenshot = useCallback(async () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      showToast('3Dキャンバスが見つかりません。3Dビューを表示してから撮影してください', 'error');
+      return;
+    }
     setIsRendering(true);
 
     const canvas = canvasRef.current;
@@ -154,8 +163,10 @@ export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
         // Fallback: scale capture (2x on mobile, 3x on desktop)
         await takeScreenshot(mobile ? 2 : 3);
       }
+      showToast('高解像度スクリーンショットを保存しました', 'success');
     } catch (e) {
       console.error('[HiRes Screenshot] Failed:', e);
+      showToast('スクリーンショットに失敗しました', 'error');
     } finally {
       setIsRendering(false);
     }

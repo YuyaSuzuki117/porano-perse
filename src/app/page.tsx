@@ -550,6 +550,16 @@ export default function EditorPage() {
               >
                 📸
               </button>
+              <button
+                onClick={() => {
+                  setFabOpen(false);
+                  setPhotoMode(true);
+                }}
+                className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center text-lg active:scale-90 transition-transform"
+                aria-label="フォトモードで撮影"
+              >
+                📷
+              </button>
             </>
           )}
           {/* メインFABボタン */}
@@ -733,14 +743,24 @@ export default function EditorPage() {
                   onNavigate={handleMinimapNavigate}
                 />
               )}
-              {/* 操作ヘルプ */}
+              {/* 操作ヘルプ + フォトモード入口 */}
               {!photoMode && (
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
-                  <span>ドラッグ: 回転</span>
-                  <span className="text-white/40">|</span>
-                  <span>右ドラッグ: 移動</span>
-                  <span className="text-white/40">|</span>
-                  <span>スクロール: ズーム</span>
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                  <div className="bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
+                    <span>ドラッグ: 回転</span>
+                    <span className="text-white/40">|</span>
+                    <span>右ドラッグ: 移動</span>
+                    <span className="text-white/40">|</span>
+                    <span>スクロール: ズーム</span>
+                  </div>
+                  <button
+                    onClick={() => setPhotoMode(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 text-white text-xs rounded-md backdrop-blur-sm hover:bg-amber-600/80 transition-colors"
+                    title="フォトモード (P)"
+                  >
+                    <span>📷</span>
+                    <span>フォトモード</span>
+                  </button>
                 </div>
               )}
               {/* フォトモード: 撮影フローティングボタン */}
