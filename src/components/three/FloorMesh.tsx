@@ -250,8 +250,8 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
   const effectiveFloorType = floorTextureType ?? style.name;
   const qualityLevel = useEditorStore((s) => s.qualityLevel);
 
-  // 反射性のある床タイプ: marble, tile, checkerboard, linoleum
-  const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical']);
+  // 反射性のある床タイプ: marble, tile, checkerboard, linoleum, 木目(clearcoat)
+  const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical', 'cafe', 'scandinavian']);
 
   const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness } = useMemo(() => {
     switch (effectiveFloorType) {
@@ -270,10 +270,19 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
       case 'medical':
         // リノリウム — 微かな光沢
         return { metalness: 0.1, roughness: 0.45, envMapIntensity: 1.0, clearcoat: 0.15, clearcoatRoughness: 0.35 };
+      case 'cafe':
+        // 木目フローリング — ワックスがけした控えめな光沢
+        return { metalness: 0.05, roughness: 0.55, envMapIntensity: 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4 };
+      case 'scandinavian':
+        // ライトオーク — ナチュラルオイル仕上げ
+        return { metalness: 0.03, roughness: 0.6, envMapIntensity: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.45 };
+      case 'japanese':
+        // 畳 — マットだが微かな繊維のツヤ
+        return { metalness: 0.0, roughness: 0.85, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
       case 'industrial':
-        return { metalness: 0.1, roughness: 0.7, envMapIntensity: 0, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.1, roughness: 0.7, envMapIntensity: 0.4, clearcoat: 0, clearcoatRoughness: 0 };
       default:
-        return { metalness: 0.0, roughness: 1.0, envMapIntensity: 0, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.0, roughness: 0.9, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
     }
   }, [effectiveFloorType]);
 
@@ -292,7 +301,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshPhysicalMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.4, 0.4) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.6, 0.6) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}
@@ -304,7 +313,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshStandardMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.4, 0.4) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.6, 0.6) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}
@@ -763,18 +772,29 @@ function drawLinoleumTexture(ctx: CanvasRenderingContext2D, base: string) {
 // ===========================================================================
 
 function drawTatamiNormal(ctx: CanvasRenderingContext2D) {
-  for (let y = 0; y < 512; y += 4) {
-    const r = 128 + (y % 8 === 0 ? -5 : 5);
-    ctx.strokeStyle = `rgb(${r}, ${r}, 255)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(512, y);
-    ctx.stroke();
+  // イ草の編み目パターン — 横方向のバリエーションを追加してリアルに
+  for (let y = 0; y < 512; y += 3) {
+    const baseR = 128 + (y % 6 < 3 ? -8 : 6);
+    for (let x = 0; x < 512; x += 16) {
+      const noise = (Math.random() - 0.5) * 4;
+      const r = Math.max(100, Math.min(156, baseR + noise));
+      const g = Math.max(100, Math.min(156, 128 + (Math.random() - 0.5) * 3));
+      ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+      ctx.fillRect(x, y, 16, 3);
+    }
   }
-  // 縁の溝
-  ctx.strokeStyle = '#6060FF';
-  ctx.lineWidth = 4;
+  // 微細な繊維方向のノイズ
+  for (let i = 0; i < 300; i++) {
+    const x = Math.random() * 512;
+    const y = Math.random() * 512;
+    const r = 128 + (Math.random() - 0.5) * 12;
+    const g = 128 + (Math.random() - 0.5) * 12;
+    ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+    ctx.fillRect(x, y, 1, 2);
+  }
+  // 縁の溝（深い法線で立体的に）
+  ctx.strokeStyle = '#5050FF';
+  ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(256, 0);
   ctx.lineTo(256, 512);
@@ -783,6 +803,19 @@ function drawTatamiNormal(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(512, y);
+    ctx.stroke();
+  }
+  // 縁のハイライト側（片側を明るくして立体感）
+  ctx.strokeStyle = '#9090FF';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(258, 0);
+  ctx.lineTo(258, 512);
+  ctx.stroke();
+  for (let y = 0; y <= 512; y += 128) {
+    ctx.beginPath();
+    ctx.moveTo(0, y + 3);
+    ctx.lineTo(512, y + 3);
     ctx.stroke();
   }
 }

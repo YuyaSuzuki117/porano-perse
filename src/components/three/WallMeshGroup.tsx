@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WallSegment, Opening } from '@/types/floor-plan';
@@ -698,43 +698,54 @@ interface WallMeshGroupProps {
   style: StyleConfig;
 }
 
-export function WallMeshGroup({ walls, openings, style }: WallMeshGroupProps) {
+export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings, style }: WallMeshGroupProps) {
   const dayNight = useEditorStore((s) => s.dayNight);
   const wallColorOverride = useEditorStore((s) => s.wallColorOverride);
   const wallTextureType = useEditorStore((s) => s.wallTextureType);
   const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
+  const sectionCutHeight = useEditorStore((s) => s.sectionCutHeight);
   const isNight = dayNight === 'night';
 
   // hidden モードでは壁を一切レンダリングしない
   if (wallDisplayMode === 'hidden') return null;
 
-  // section モード: カメラに最も近い壁を最大2枚非表示にする
+  // section モード: カメラに向いている壁を sectionCutHeight でクリップ
   const { camera } = useThree();
-  const hiddenWallIds = useMemo(() => {
+
+  const sectionCutWallIds = useMemo(() => {
     if (wallDisplayMode !== 'section') return new Set<string>();
     const camPos2D = { x: camera.position.x, y: camera.position.z };
-    // 各壁の中心点とカメラ距離を計算
-    const wallDistances = walls.map((wall) => {
+    const ids = new Set<string>();
+
+    for (const wall of walls) {
+      const dx = wall.end.x - wall.start.x;
+      const dy = wall.end.y - wall.start.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len === 0) continue;
+      // 壁の法線（左側方向）
+      const nx = -dy / len;
+      const ny = dx / len;
       const cx = (wall.start.x + wall.end.x) / 2;
       const cy = (wall.start.y + wall.end.y) / 2;
-      const dist = Math.sqrt((camPos2D.x - cx) ** 2 + (camPos2D.y - cy) ** 2);
-      return { id: wall.id, dist };
-    });
-    // 距離順にソートして最も近い2枚を非表示対象に
-    wallDistances.sort((a, b) => a.dist - b.dist);
-    const ids = new Set<string>();
-    for (let i = 0; i < Math.min(2, wallDistances.length); i++) {
-      ids.add(wallDistances[i].id);
+      // カメラ方向との内積: 正ならカメラに向いている壁 → カット対象
+      const dot = nx * (camPos2D.x - cx) + ny * (camPos2D.y - cy);
+      if (dot > 0) {
+        ids.add(wall.id);
+      }
     }
     return ids;
   }, [wallDisplayMode, walls, camera.position.x, camera.position.z]);
 
+  // セクションカット用クリッピングプレーン: sectionCutHeight より上をカット
+  const sectionClipPlane = useMemo(() => {
+    return new THREE.Plane(new THREE.Vector3(0, -1, 0), sectionCutHeight);
+  }, [sectionCutHeight]);
+
   return (
     <group>
       {walls.map((wall) => {
-        // section モードでカメラに近い壁は非表示
-        if (wallDisplayMode === 'section' && hiddenWallIds.has(wall.id)) return null;
         const wallOpenings = openings.filter((o) => o.wallId === wall.id);
+        const isSectionCut = wallDisplayMode === 'section' && sectionCutWallIds.has(wall.id);
         return (
           <WallMesh
             key={wall.id}
@@ -745,12 +756,13 @@ export function WallMeshGroup({ walls, openings, style }: WallMeshGroupProps) {
             wallColorOverride={wallColorOverride}
             wallTextureType={wallTextureType}
             wallDisplayMode={wallDisplayMode}
+            sectionClipPlane={isSectionCut ? sectionClipPlane : null}
           />
         );
       })}
     </group>
   );
-}
+});
 
 interface WallMeshProps {
   wall: WallSegment;
@@ -760,9 +772,10 @@ interface WallMeshProps {
   wallColorOverride: string | null;
   wallTextureType: string | null;
   wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
+  sectionClipPlane: THREE.Plane | null;
 }
 
-function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode }: WallMeshProps) {
+function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, sectionClipPlane }: WallMeshProps) {
   const { geometry, position, rotationY } = useMemo(() => {
     const len = wallLength(wall);
     const angle = wallAngle(wall);
@@ -846,6 +859,8 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           opacity={wallDisplayMode === 'transparent' ? 0.3 : 1}
           side={wallDisplayMode === 'transparent' ? THREE.DoubleSide : THREE.FrontSide}
           depthWrite={wallDisplayMode !== 'transparent'}
+          clippingPlanes={sectionClipPlane ? [sectionClipPlane] : []}
+          clipShadows={!!sectionClipPlane}
         />
       </mesh>
       {openings.map((op) => (

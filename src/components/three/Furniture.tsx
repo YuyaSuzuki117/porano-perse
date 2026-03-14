@@ -216,6 +216,9 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
   const pulseRef = useRef<THREE.Mesh>(null);
   const pulsePhaseRef = useRef(0);
 
+  // pointerDown即時フィードバック用（1.02xスケール）
+  const isPointerDownRef = useRef(false);
+
   // パルスリングのジオメトリをmemo化 (scale変更時のみ再生成)
   const pulseRingGeometry = useMemo(() => {
     const maxDim = Math.max(item.scale[0], item.scale[2]);
@@ -251,6 +254,15 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
 
   // パルスアニメーション: 選択中の家具に微妙な脈動リング
   useFrame((_, delta) => {
+    // pointerDown即時フィードバック: 1.02xスケール (タッチレスポンス向上)
+    if (groupRef.current) {
+      const targetScale = isPointerDownRef.current ? 1.02 : 1.0;
+      const currentScale = groupRef.current.scale.x;
+      const newScale = currentScale + (targetScale - currentScale) * 0.3;
+      if (Math.abs(newScale - currentScale) > 0.001) {
+        groupRef.current.scale.setScalar(newScale);
+      }
+    }
     if (!selected || !pulseRef.current) return;
     pulsePhaseRef.current += delta * 2.5;
     const scale = 1 + Math.sin(pulsePhaseRef.current) * 0.08;
@@ -320,6 +332,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
 
   const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    // 即時視覚フィードバック（1.02xスケール）
+    isPointerDownRef.current = true;
     // Shift+クリックで複数選択トグル
     if (e.nativeEvent.shiftKey && onToggleSelect) {
       onToggleSelect(item.id);
@@ -418,6 +432,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
   }, [item.position, snappedToGrid, snappedToWall]);
 
   const handlePointerUp = useCallback(() => {
+    // 即時フィードバック解除
+    isPointerDownRef.current = false;
     // 長押しタイマーのクリーンアップ
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);

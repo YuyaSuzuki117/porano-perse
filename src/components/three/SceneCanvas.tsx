@@ -127,23 +127,29 @@ export function SceneCanvas({
     return Math.max(40, Math.min(65, 70 - maxDim * 2));
   }, [maxDim]);
 
-  // タスク2: 部屋サイズ連動SSAOパラメータ（半径拡大で品質向上）
-  const ssaoRadius = useMemo(() => Math.max(0.05, Math.min(0.3, maxDim * 0.02)), [maxDim]);
-  const ssaoIntensity = useMemo(() => Math.max(8, Math.min(20, 25 - maxDim)), [maxDim]);
+  // タスク2: 部屋サイズ連動SSAOパラメータ — ソフトで自然なAO（半径大・強度控えめ）
+  const ssaoRadius = useMemo(() => Math.max(0.08, Math.min(0.5, maxDim * 0.035)), [maxDim]);
+  const ssaoIntensity = useMemo(() => Math.max(5, Math.min(15, 18 - maxDim * 0.8)), [maxDim]);
 
   // タスク2: 照明連動Bloom luminanceThreshold
   const bloomLuminanceThreshold = useMemo(() => {
     return isNight ? 0.5 : Math.max(0.7, 1.0 - lightBrightness / 200);
   }, [isNight, lightBrightness]);
 
+  // 暖色スタイル判定（トーンマッピング露出補正用）
+  const isWarmStyle = styleName === 'japanese' || styleName === 'cafe' || styleName === 'luxury' || styleName === 'retro';
+
   // 品質レベル連動トーンマッピング・シャドウマップ設定
   const handleCanvasCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
+    // 暖色スタイルは若干露出を上げて明るく温かみのある印象に
+    const warmBoost = isWarmStyle ? 0.1 : 0;
     gl.toneMappingExposure = isNight
       ? 0.8 + lightBrightness / 400
-      : 1.2 + lightBrightness / 200;
+      : 1.3 + lightBrightness / 200 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.shadowMap.enabled = true;
+    gl.localClippingEnabled = true;
     // lowモード: BasicShadowMap + ピクセル比制限
     if (qualityLevel === 'low') {
       gl.shadowMap.type = THREE.BasicShadowMap;
@@ -155,7 +161,7 @@ export function SceneCanvas({
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
     }
-  }, [canvasRef, isNight, lightBrightness, qualityLevel]);
+  }, [canvasRef, isNight, isWarmStyle, lightBrightness, qualityLevel]);
 
   const handlePointerMissed = useCallback(() => {
     onSelectFurniture(null);
@@ -173,7 +179,7 @@ export function SceneCanvas({
     <Canvas
       shadows
       dpr={qualityLevel === 'low' ? [1, 1.5] : [1, 2]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true }}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -194,7 +200,7 @@ export function SceneCanvas({
         <Environment
           preset={envPreset}
           background={false}
-          environmentIntensity={qualityLevel === 'high' ? 2.0 : qualityLevel === 'medium' ? 1.5 : 1.0}
+          environmentIntensity={qualityLevel === 'high' ? 2.5 : qualityLevel === 'medium' ? 1.8 : 1.0}
           environmentRotation={[0, Math.PI / 4, 0]}
         />
 
@@ -241,16 +247,16 @@ export function SceneCanvas({
           onPlace={handleAnnotationPlace}
         />
 
-        {/* lowモードではContactShadows無効 */}
+        {/* lowモードではContactShadows無効 — 暖色スタイルは暖色影で自然な印象 */}
         {qualityLevel !== 'low' && (
           <ContactShadows
             position={[0, 0.001, 0]}
-            opacity={isNight ? 0.35 : 0.6}
+            opacity={isNight ? 0.35 : 0.55}
             scale={maxDim * 1.5}
-            blur={2.5}
+            blur={3.5}
             far={4}
             resolution={qualityLevel === 'high' ? 1024 : 512}
-            color="#000000"
+            color={isWarmStyle ? '#3A2515' : '#1A1A1A'}
           />
         )}
 
@@ -310,7 +316,10 @@ export function SceneCanvas({
             minDistance={Math.max(0.3, Math.min(maxDim * 0.08, 0.8))}
             maxDistance={20}
             enableDamping
-            dampingFactor={0.05}
+            dampingFactor={0.08}
+            zoomSpeed={0.8}
+            rotateSpeed={0.5}
+            panSpeed={0.8}
           />
         )}
 

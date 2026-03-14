@@ -389,6 +389,27 @@ export function CameraController() {
         camera.lookAt(cx + w * 0.2, roomHeight * 0.3, cz - d * 0.2);
         break;
       }
+      case 'diorama': {
+        // アイソメトリック風ジオラマビュー: 45度回転 + 35度仰角
+        // 部屋のコーナーから対角線方向に見下ろす
+        const diag = Math.sqrt(w * w + d * d);
+        const camDist = diag * 0.65;
+        const elevation = Math.tan(35 * Math.PI / 180) * camDist;
+        // 45度回転でコーナーに配置
+        const offsetX = Math.cos(Math.PI / 4) * camDist;
+        const offsetZ = Math.sin(Math.PI / 4) * camDist;
+        camera.position.set(
+          cx + offsetX,
+          elevation,
+          cz + offsetZ
+        );
+        camera.lookAt(cx, roomHeight * 0.15, cz);
+        // FOVを低くしてアイソメトリック感を出す（PerspectiveCameraの場合）
+        if ('fov' in camera && typeof camera.fov === 'number') {
+          (camera as THREE.PerspectiveCamera).fov = 28;
+        }
+        break;
+      }
     }
     camera.updateProjectionMatrix();
     setCameraPreset(null);

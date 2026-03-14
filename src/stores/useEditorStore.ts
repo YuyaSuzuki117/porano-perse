@@ -121,8 +121,11 @@ interface EditorState {
   // 壁・天井の表示制御
   wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
   ceilingVisible: boolean;
+  sectionCutHeight: number;
   setWallDisplayMode: (mode: 'solid' | 'transparent' | 'hidden' | 'section') => void;
   setCeilingVisible: (visible: boolean) => void;
+  setSectionCutHeight: (height: number) => void;
+  activateDioramaMode: () => void;
   // 家具ドラッグ中フラグ（OrbitControls無効化用）
   isDraggingFurniture: boolean;
   setIsDraggingFurniture: (v: boolean) => void;
@@ -389,6 +392,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showFurniture: true,
   wallDisplayMode: 'solid',
   ceilingVisible: true,
+  sectionCutHeight: 1.2,
   isDraggingFurniture: false,
   isFirstPersonMode: false,
   activeLightingPreset: null,
@@ -907,6 +911,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
   setWallDisplayMode: (wallDisplayMode) => set({ wallDisplayMode }),
   setCeilingVisible: (ceilingVisible) => set({ ceilingVisible }),
+  setSectionCutHeight: (sectionCutHeight) => set({ sectionCutHeight: Math.max(0.5, Math.min(2.5, sectionCutHeight)) }),
+  activateDioramaMode: () => set({ wallDisplayMode: 'section', ceilingVisible: false, sectionCutHeight: 1.2, cameraPreset: 'diorama' }),
   setIsDraggingFurniture: (isDraggingFurniture) => set({ isDraggingFurniture }),
   setFirstPersonMode: (isFirstPersonMode) => set((s) => ({
     isFirstPersonMode,
@@ -1061,6 +1067,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedWallId: null,
       selectedFurnitureId: null,
       selectedFurnitureIds: [],
+      // ジオラマモードをデフォルトに
+      wallDisplayMode: 'section' as const,
+      ceilingVisible: false,
+      sectionCutHeight: 1.2,
+      cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
   },
@@ -1082,6 +1093,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedWallId: null,
       selectedFurnitureId: null,
       selectedFurnitureIds: [],
+      // ジオラマモードをデフォルトに
+      wallDisplayMode: 'section' as const,
+      ceilingVisible: false,
+      sectionCutHeight: 1.2,
+      cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
   },
