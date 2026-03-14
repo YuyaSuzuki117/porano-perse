@@ -358,6 +358,39 @@ interface EditorState {
   deleteProjectFromList: (id: string) => void;
   getShareUrl: () => { url: string; tooLong: boolean };
   loadFromShareUrl: (encoded: string) => void;
+
+  // 人物シルエット
+  showHumanFigures: boolean;
+  toggleHumanFigures: () => void;
+
+  // 環境プリセット
+  environmentPreset: string;
+  setEnvironmentPreset: (preset: string) => void;
+
+  // モーションブラー
+  motionBlurEnabled: boolean;
+  toggleMotionBlur: () => void;
+
+  // ライトグロー
+  showLightGlow: boolean;
+  toggleLightGlow: () => void;
+
+  // 動線シミュレーション
+  showFlowSimulation: boolean;
+  toggleFlowSimulation: () => void;
+
+  // 参照画像
+  referenceImageUrl: string | null;
+  referenceImageOpacity: number;
+  setReferenceImage: (url: string | null) => void;
+  setReferenceImageOpacity: (opacity: number) => void;
+
+  // 家具高さオフセット
+  updateFurnitureHeight: (id: string, heightOffset: number) => void;
+
+  // 家具個別マテリアル
+  updateFurnitureMaterialOverride: (id: string, overrides: FurnitureItem['materialOverride']) => void;
+  resetFurnitureMaterialOverride: (id: string) => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -515,6 +548,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   liveCameraPosition: [0, 0, 0],
   liveCameraRotationY: 0,
   showMinimap: true,
+  showHumanFigures: false,
+  environmentPreset: 'indoor',
+  motionBlurEnabled: false,
+  showLightGlow: true,
+  showFlowSimulation: false,
+  referenceImageUrl: null,
+  referenceImageOpacity: 0.5,
   clipboard: null,
   cameraBookmarks: [],
   snapshots: (() => {
@@ -1730,6 +1770,47 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       console.error('Failed to load shared project:', e);
     }
   },
+
+  // 人物シルエット
+  toggleHumanFigures: () => set((s) => ({ showHumanFigures: !s.showHumanFigures })),
+
+  // 環境プリセット
+  setEnvironmentPreset: (environmentPreset) => set({ environmentPreset }),
+
+  // モーションブラー
+  toggleMotionBlur: () => set((s) => ({ motionBlurEnabled: !s.motionBlurEnabled })),
+
+  // ライトグロー
+  toggleLightGlow: () => set((s) => ({ showLightGlow: !s.showLightGlow })),
+
+  // 動線シミュレーション
+  toggleFlowSimulation: () => set((s) => ({ showFlowSimulation: !s.showFlowSimulation })),
+
+  // 参照画像
+  setReferenceImage: (referenceImageUrl) => set({ referenceImageUrl }),
+  setReferenceImageOpacity: (referenceImageOpacity) => set({ referenceImageOpacity }),
+
+  // 家具高さオフセット
+  updateFurnitureHeight: (id, heightOffset) =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        f.id === id ? { ...f, heightOffset } : f
+      ),
+    })),
+
+  // 家具個別マテリアル
+  updateFurnitureMaterialOverride: (id, overrides) =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        f.id === id ? { ...f, materialOverride: { ...f.materialOverride, ...overrides } } : f
+      ),
+    })),
+  resetFurnitureMaterialOverride: (id) =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        f.id === id ? { ...f, materialOverride: undefined } : f
+      ),
+    })),
 }));
 
 export { LOCALSTORAGE_KEY };

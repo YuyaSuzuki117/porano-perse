@@ -81,6 +81,16 @@ export interface FurnitureItem {
   locked?: boolean;
   /** グループID（同一グループの家具をまとめて操作） */
   groupId?: string;
+  /** Y軸高さオフセット（壁掛けアイテム用、デフォルト0=床置き） */
+  heightOffset?: number;
+  /** 個別マテリアルオーバーライド */
+  materialOverride?: {
+    color?: string;
+    woodType?: WoodType;
+    fabricType?: FabricType;
+    metalFinish?: MetalFinish;
+    opacity?: number;
+  };
 }
 
 export type FurnitureType =

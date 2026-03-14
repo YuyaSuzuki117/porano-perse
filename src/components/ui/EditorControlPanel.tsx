@@ -12,6 +12,10 @@ import { FurnitureMaterial, StylePreset } from '@/types/scene';
 import { wallLength, computeFloorArea } from '@/lib/geometry';
 import { resetTutorial } from '@/components/ui/OnboardingTutorial';
 import { resetQuickTips } from '@/components/ui/QuickTips';
+import { LayerManager, getFurnitureCategory, type CategoryName } from '@/components/ui/LayerManager';
+import CostEstimatePanel from '@/components/ui/CostEstimatePanel';
+import CrossSectionPanel from '@/components/ui/CrossSectionPanel';
+import { ReferenceImagePanel } from '@/components/ui/ReferenceImagePanel';
 
 interface EditorControlPanelProps {
   isMobile?: boolean;
@@ -115,6 +119,20 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     toggleFlowHeatmap,
     toggleLightingAnalysis,
     applyAutoLayout,
+    showHumanFigures,
+    toggleHumanFigures,
+    environmentPreset,
+    setEnvironmentPreset,
+    motionBlurEnabled,
+    toggleMotionBlur,
+    showLightGlow,
+    toggleLightGlow,
+    showFlowSimulation,
+    toggleFlowSimulation,
+    selectedFurnitureIds,
+    updateFurnitureHeight,
+    updateFurnitureMaterialOverride,
+    resetFurnitureMaterialOverride,
   } = useEditorStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
@@ -1918,8 +1936,156 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {showLightingAnalysis && (
             <p className="text-[10px] text-yellow-700 bg-yellow-50 rounded px-2 py-1">窓・照明からの近似ルクス値を表示中。赤=明るい、青=暗い</p>
           )}
+          {/* 動線シミュレーションの説明 */}
+          {showFlowSimulation && (
+            <p className="text-[10px] text-green-600 bg-green-50 rounded px-2 py-1">入口から各エリアへの動線をアニメーション表示中</p>
+          )}
         </div>
       </Section>
+
+      {/* 3D表示オプション */}
+      <Section title="3D表示オプション" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <div className="space-y-3">
+          {/* 環境プリセット */}
+          <div>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">環境マップ</label>
+            <div className="grid grid-cols-3 gap-1">
+              {(['studio', 'indoor', 'outdoor', 'sunset', 'warehouse', 'night'] as const).map((env) => {
+                const labels: Record<string, string> = { studio: 'スタジオ', indoor: '室内', outdoor: '屋外', sunset: '夕日', warehouse: '倉庫', night: '夜景' };
+                return (
+                  <button
+                    key={env}
+                    onClick={() => setEnvironmentPreset(env)}
+                    className={`px-2 py-1.5 text-[11px] rounded-lg transition-all ${
+                      environmentPreset === env
+                        ? 'bg-blue-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {labels[env]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {/* トグル群 */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 cursor-pointer" onClick={toggleHumanFigures}>
+              <input type="checkbox" checked={showHumanFigures} readOnly className="rounded" />
+              <span className="text-xs text-gray-700">人物シルエット（スケール参照）</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer" onClick={toggleLightGlow}>
+              <input type="checkbox" checked={showLightGlow} readOnly className="rounded" />
+              <span className="text-xs text-gray-700">ライトグロー効果</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer" onClick={toggleMotionBlur}>
+              <input type="checkbox" checked={motionBlurEnabled} readOnly className="rounded" />
+              <span className="text-xs text-gray-700">モーションブラー（巡回時）</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer" onClick={toggleFlowSimulation}>
+              <input type="checkbox" checked={showFlowSimulation} readOnly className="rounded" />
+              <span className="text-xs text-gray-700">動線シミュレーション</span>
+            </label>
+          </div>
+          {showFlowSimulation && (
+            <p className="text-[10px] text-green-600 bg-green-50 rounded px-2 py-1">入口から各エリアへの顧客動線をアニメーション表示中</p>
+          )}
+        </div>
+      </Section>
+
+      {/* レイヤー管理 */}
+      <Section title="レイヤー管理" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <LayerManager categoryCounts={(() => {
+          const m = new Map<CategoryName, number>();
+          furniture.forEach(f => {
+            const cat = getFurnitureCategory(f.type);
+            m.set(cat, (m.get(cat) || 0) + 1);
+          });
+          return m;
+        })()} />
+      </Section>
+
+      {/* 参照画像 */}
+      <Section title="参照画像" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <ReferenceImagePanel onChange={(state) => {
+          useEditorStore.getState().setReferenceImage(state.imageUrl);
+          useEditorStore.getState().setReferenceImageOpacity(state.opacity);
+        }} />
+      </Section>
+
+      {/* コスト見積 */}
+      <Section title="コスト見積" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <CostEstimatePanel furniture={furniture} />
+      </Section>
+
+      {/* 断面図 */}
+      <Section title="断面図エクスポート" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <CrossSectionPanel
+          walls={walls}
+          furniture={furniture}
+          ceilingHeight={roomHeight}
+        />
+      </Section>
+
+      {/* 家具詳細編集（選択時） */}
+      {selectedFurnitureId && (() => {
+        const selFurn = furniture.find(f => f.id === selectedFurnitureId);
+        if (!selFurn) return null;
+        const wallMountTypes = ['air_conditioner', 'tv_monitor', 'clock', 'menu_board', 'ceiling_fan'];
+        const isWallMount = wallMountTypes.includes(selFurn.type);
+        return (
+          <Section title="家具詳細" collapsible defaultOpen mobileCollapsible={isMobile}>
+            <div className="space-y-3">
+              <div className="text-xs text-gray-500 bg-gray-50 rounded px-2 py-1.5">
+                {selFurn.name} ({selFurn.type})
+              </div>
+              {/* 高さ調整 */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
+                  高さ (Y) {isWallMount ? '※壁掛け' : ''}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="2.7"
+                    step="0.1"
+                    value={selFurn.heightOffset ?? (isWallMount ? 2.0 : 0)}
+                    onChange={(e) => updateFurnitureHeight(selFurn.id, parseFloat(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-xs text-gray-600 w-10 text-right">
+                    {(selFurn.heightOffset ?? (isWallMount ? 2.0 : 0)).toFixed(1)}m
+                  </span>
+                </div>
+              </div>
+              {/* 個別カラー */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">個別カラー</label>
+                <div className="flex gap-1.5 items-center">
+                  <input
+                    type="color"
+                    value={selFurn.materialOverride?.color || selFurn.color || '#8B4513'}
+                    onChange={(e) => updateFurnitureMaterialOverride(selFurn.id, { color: e.target.value })}
+                    className="w-8 h-8 rounded cursor-pointer border border-gray-200"
+                  />
+                  <span className="text-[11px] text-gray-500 flex-1">
+                    {selFurn.materialOverride?.color || 'スタイル準拠'}
+                  </span>
+                  {selFurn.materialOverride && (
+                    <button
+                      onClick={() => resetFurnitureMaterialOverride(selFurn.id)}
+                      className="px-2 py-1 text-[10px] bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
+                    >
+                      リセット
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Section>
+        );
+      })()}
 
       {/* バージョン履歴 */}
       <Section title="バージョン履歴" collapsible defaultOpen={false} mobileCollapsible={isMobile}>

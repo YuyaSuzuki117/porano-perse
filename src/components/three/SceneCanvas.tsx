@@ -26,6 +26,12 @@ import { DustParticles } from './DustParticles';
 import PanoramaExporter from './PanoramaExporter';
 import { FlowHeatmap } from './FlowHeatmap';
 import { LightingAnalysis } from './LightingAnalysis';
+import { HumanFigure } from './HumanFigure';
+import { EnvironmentPresets } from './EnvironmentPresets';
+import { MotionBlurEffect } from './MotionBlurEffect';
+import { LightGlow } from './LightGlow';
+import FlowSimulation from './FlowSimulation';
+import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -79,6 +85,13 @@ export function SceneCanvas({
   const showLightingAnalysis = useEditorStore((s) => s.showLightingAnalysis);
   const deletingFurnitureIds = useEditorStore((s) => s.deletingFurnitureIds);
   const photoMode = useEditorStore((s) => s.photoMode);
+  const showHumanFigures = useEditorStore((s) => s.showHumanFigures);
+  const environmentPreset = useEditorStore((s) => s.environmentPreset);
+  const motionBlurEnabled = useEditorStore((s) => s.motionBlurEnabled);
+  const showLightGlow = useEditorStore((s) => s.showLightGlow);
+  const showFlowSimulation = useEditorStore((s) => s.showFlowSimulation);
+  const referenceImageUrl = useEditorStore((s) => s.referenceImageUrl);
+  const referenceImageOpacity = useEditorStore((s) => s.referenceImageOpacity);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -212,12 +225,10 @@ export function SceneCanvas({
         )}
 
         <LightingRig style={styleConfig} walls={walls} roomHeight={roomHeight} brightness={effectiveBrightness} warmth={effectiveWarmth} qualityLevel={qualityLevel} />
-        <Environment
-          preset={envPreset}
-          background={false}
-          environmentIntensity={qualityLevel === 'high' ? 1.5 : qualityLevel === 'medium' ? 1.2 : 0.8}
-          environmentRotation={[0, Math.PI / 4, 0]}
-          resolution={qualityLevel === 'high' ? 512 : 256}
+        <EnvironmentPresets
+          preset={isNight ? 'night' : (environmentPreset as 'studio' | 'indoor' | 'outdoor' | 'sunset' | 'warehouse' | 'night')}
+          intensity={qualityLevel === 'high' ? 1.5 : qualityLevel === 'medium' ? 1.2 : 0.8}
+          showBackground={false}
         />
 
         <WallMeshGroup walls={walls} openings={openings} style={styleConfig} />
@@ -280,6 +291,52 @@ export function SceneCanvas({
           active={activeTool === 'annotation'}
           onPlace={handleAnnotationPlace}
         />
+
+        {/* 人物シルエット（スケール参照用） */}
+        {showHumanFigures && (
+          <>
+            <HumanFigure position={[1, 0, 1]} pose="standing" />
+            <HumanFigure position={[2, 0, 2]} pose="sitting" />
+            <HumanFigure position={[-1, 0, 1.5]} pose="walking" rotation={[0, Math.PI / 3, 0]} />
+          </>
+        )}
+
+        {/* ライトグロー（ペンダントライト周辺のグロー効果） */}
+        {showLightGlow && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (
+          <LightGlow
+            key={`glow-${light.id}`}
+            position={[light.position[0], light.position[1] + (light.heightOffset ?? 0) + 0.3, light.position[2]]}
+            color={styleConfig.spotlightColor || '#FFF5E6'}
+            intensity={0.8}
+            size={0.6}
+          />
+        ))}
+
+        {/* 動線シミュレーション（アニメーション付き） */}
+        {showFlowSimulation && (
+          <FlowSimulation
+            enabled={showFlowSimulation}
+            walls={walls}
+            furniture={furniture}
+            speed={1}
+          />
+        )}
+
+        {/* 参照画像オーバーレイ */}
+        {referenceImageUrl && (
+          <ReferenceImageOverlay
+            imageUrl={referenceImageUrl}
+            opacity={referenceImageOpacity}
+            position={[0, roomHeight / 2, 0]}
+            scale={Math.max(gridSize.w, gridSize.d) * 0.5}
+            visible={true}
+          />
+        )}
+
+        {/* モーションブラー（ウォークスルー・巡回時） */}
+        {motionBlurEnabled && qualityLevel !== 'low' && (
+          <MotionBlurEffect enabled={isAutoWalkthrough || isFirstPersonMode} intensity={0.3} />
+        )}
 
         {/* ContactShadows はhigh品質のみ（非常に重い） */}
         {qualityLevel === 'high' && (

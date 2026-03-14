@@ -674,6 +674,36 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: Export
                       </div>
                     </button>
 
+                    {/* glTF/GLBエクスポートボタン */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          const canvas = canvasRef?.current;
+                          if (!canvas) return;
+                          const { exportSceneAsGLB } = await import('@/lib/gltf-export');
+                          // Three.jsのrendererからsceneを取得
+                          const gl = (canvas as HTMLCanvasElement & { __r3f?: { scene?: import('three').Scene } }).__r3f;
+                          if (gl?.scene) {
+                            await exportSceneAsGLB(gl.scene, `${projectName || 'scene'}.glb`);
+                          }
+                        } catch (e) {
+                          console.error('GLB export failed:', e);
+                        }
+                        setIsModalOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-all"
+                    >
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth={1.5} className="w-5 h-5">
+                          <path d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-800">3Dモデル (GLB)</div>
+                        <div className="text-[11px] text-gray-400">シーン全体を .glb ファイルとしてエクスポート</div>
+                      </div>
+                    </button>
+
                     {/* パノラマ出力ボタン */}
                     <button
                       onClick={() => {

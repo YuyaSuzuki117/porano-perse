@@ -21,6 +21,8 @@ import { StyleComparisonModal } from '@/components/ui/StyleComparisonModal';
 import { MeasurementTool } from '@/components/three/MeasurementTool';
 import { MiniMap } from '@/components/ui/MiniMap';
 import { FurnitureContextMenu } from '@/components/ui/FurnitureContextMenu';
+import SeatCounter from '@/components/ui/SeatCounter';
+import { SelectionOverlay } from '@/components/ui/SelectionOverlay';
 import { exportProposalPDF } from '@/lib/pdf-export';
 
 const FloorPlanEditor = dynamic(
@@ -452,6 +454,8 @@ export default function EditorPage() {
                   onNavigate={handleMinimapNavigate}
                 />
               )}
+              {/* 座席数カウンター */}
+              <SeatCounter furniture={furniture} />
               <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
                 <span>ドラッグ: 回転</span>
                 <span className="text-white/40">|</span>
