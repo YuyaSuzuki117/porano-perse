@@ -54,7 +54,7 @@ function PostProcessingEffects({
   vignetteIntensity,
   photoMode = false,
 }: PostProcessingEffectsProps) {
-  // ── high + photoMode: DOF含む全エフェクト ──
+  // ── high + photoMode: DOF含む全エフェクト + シネマティック強化 ──
   if (qualityLevel === 'high' && photoMode) {
     return (
       <EffectComposer enableNormalPass>
@@ -71,11 +71,11 @@ function PostProcessingEffects({
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
           luminanceSmoothing={0.3}
-          intensity={bloomIntensity}
+          intensity={bloomIntensity * 1.4}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.04} contrast={0.15} />
-        <HueSaturation saturation={0.10} />
+        <BrightnessContrast brightness={0.05} contrast={0.18} />
+        <HueSaturation hue={0.02} saturation={0.12} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
         <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
         <DepthOfField
@@ -83,13 +83,13 @@ function PostProcessingEffects({
           focalLength={0.035}
           bokehScale={6.0}
         />
-        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15} blendFunction={BlendFunction.NORMAL} />
+        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.3} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
     );
   }
 
-  // ── high (非photoMode): DOF以外の全エフェクト ──
+  // ── high (非photoMode): DOF以外の全エフェクト + シネマティック強化 ──
   if (qualityLevel === 'high') {
     return (
       <EffectComposer enableNormalPass>
@@ -106,11 +106,11 @@ function PostProcessingEffects({
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
           luminanceSmoothing={0.3}
-          intensity={bloomIntensity}
+          intensity={bloomIntensity * 1.2}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.04} contrast={0.15} />
-        <HueSaturation saturation={0.10} />
+        <BrightnessContrast brightness={0.05} contrast={0.18} />
+        <HueSaturation hue={0.02} saturation={0.12} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
         <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
         <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15} blendFunction={BlendFunction.NORMAL} />

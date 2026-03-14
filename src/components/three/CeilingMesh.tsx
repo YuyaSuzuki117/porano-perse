@@ -78,15 +78,16 @@ function DownLight({ x, z, y, emissiveColor, isNight }: {
       {/* くぼみシリンダー */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <cylinderGeometry args={[0.06, 0.06, 0.03, 24, 1, true]} />
-        <meshStandardMaterial color="#333333" side={THREE.BackSide} />
+        <meshPhysicalMaterial color="#333333" side={THREE.BackSide} clearcoat={0.03} />
       </mesh>
       {/* LED発光面 */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
         <circleGeometry args={[0.02, 24]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color="#FFFFFF"
           emissive={emissiveColor}
           emissiveIntensity={intensity}
+          clearcoat={0.03}
         />
       </mesh>
       {/* ポイントライト */}
@@ -138,7 +139,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
   const isNight = dayNight === 'night';
 
   // 天井マテリアルの参照（カメラ角度ベースのフェードに使用）
-  const ceilingMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const ceilingMatRef = useRef<THREE.MeshPhysicalMaterial>(null);
   const currentCeilingOpacityRef = useRef(0.85); // 基本不透明度（cinema-grade）
   const groupRef = useRef<THREE.Group>(null);
 
@@ -263,7 +264,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
     const name = style.name;
     let ceilingColor = style.ceilingColor;
     let panelEmissive = '#FFFDE8';
-    let panelEmissiveIntensity = 0.8;
+    let panelEmissiveIntensity = 1.352; // 1.04 * 1.3 — 照明パネルさらに30%増光
     let showPanels = true;
     let spacingMultiplier = 1.0;
 
@@ -276,7 +277,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
     } else if (name === 'luxury') {
       panelEmissive = '#FFF5D0'; // ゴールデンティント
     } else if (name === 'medical') {
-      panelEmissiveIntensity = 1.0; // 明るい白パネル
+      panelEmissiveIntensity = 1.69; // 1.3 * 1.3 — 明るい白パネルさらに30%増光
       panelEmissive = '#FFFFFF';
     }
 
@@ -402,10 +403,13 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
             castShadow
           >
             <boxGeometry args={[m.len, m.moldingHeight, m.moldingDepth]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={m.moldingColor}
               roughness={0.4}
               metalness={style.name === 'luxury' ? 0.3 : 0.05}
+              clearcoat={0.15}
+              clearcoatRoughness={0.3}
+              envMapIntensity={0.8}
             />
           </mesh>
         </group>
@@ -420,10 +424,11 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
           receiveShadow
         >
           <boxGeometry args={beam.size} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             color={beam.color}
             roughness={beam.roughness}
             metalness={beam.metalness}
+            clearcoat={0.03}
           />
         </mesh>
       ))}
@@ -434,13 +439,15 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, roomHeight, 0]}
       >
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           ref={ceilingMatRef}
           color={styleConfig.ceilingColor}
           map={ceilingTexture}
           roughness={0.95}
           metalness={0.0}
-          envMapIntensity={0.3}
+          envMapIntensity={0.5}
+          clearcoat={0.03}
+          clearcoatRoughness={0.8}
           transparent
           opacity={0.85}
           side={THREE.DoubleSide}
@@ -454,21 +461,23 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
           {/* パネル本体 */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[0.8, 0.8]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color="#FFFFFF"
               emissive={styleConfig.panelEmissive}
               emissiveIntensity={styleConfig.panelEmissiveIntensity}
               transparent
               opacity={0.6}
               side={THREE.DoubleSide}
+              clearcoat={0.03}
             />
           </mesh>
           {/* パネル枠（矩形フレーム） */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]}>
             <boxGeometry args={[0.85, 0.85, 0.02]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={styleConfig.ceilingColor}
               roughness={0.8}
+              clearcoat={0.03}
             />
           </mesh>
           {/* パネル下のポイントライト */}

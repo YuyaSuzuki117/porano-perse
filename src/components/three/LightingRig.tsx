@@ -170,15 +170,28 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
   }
 
   // ── highモード: フルライティング + シネマティック強化 ──
+  // フォトリアリスティック多灯ライティング
   return (
     <>
-      <ambientLight intensity={style.ambientIntensity * b} color={ambientColor} />
+      <ambientLight intensity={style.ambientIntensity * b * 0.81} color={ambientColor} />
 
-      {/* メインHemisphereLight — groundColor をスタイル別暖色に */}
+      {/* 天井暗部補填用トップダウンアンビエント */}
+      <ambientLight intensity={0.08} color="#FFFFFF" />
+
+      {/* シネマティック トップダウンアンビエント */}
+      <pointLight
+        position={[roomBounds.cx, roomHeight, roomBounds.cz]}
+        intensity={0.15}
+        color="#FFFFFF"
+        distance={roomHeight * 3}
+        decay={2}
+      />
+
+      {/* メインHemisphereLight — groundColor をスタイル別暖色に (10%減コントラスト強化) */}
       <hemisphereLight
         color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
         groundColor={styleLighting.groundWarmth}
-        intensity={0.75 * b}
+        intensity={0.675 * b}
       />
 
       {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 */}
@@ -201,6 +214,21 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         <pointLight
           position={[roomBounds.cx, 0.15, roomBounds.cz]}
           intensity={styleLighting.warmFillIntensity * b * 2.5}
+          color={styleLighting.warmFillColor}
+          distance={Math.max(roomBounds.w, roomBounds.d) * 1.8}
+          decay={2}
+        />
+      )}
+
+      {/* 暖色フィル（対角コーナー）— ラジオシティバウンス補完 60%強度 */}
+      {styleLighting.warmFillIntensity > 0 && (
+        <pointLight
+          position={[
+            roomBounds.cx + roomBounds.w * 0.4,
+            0.15,
+            roomBounds.cz + roomBounds.d * 0.4,
+          ]}
+          intensity={styleLighting.warmFillIntensity * b * 2.5 * 0.6}
           color={styleLighting.warmFillColor}
           distance={Math.max(roomBounds.w, roomBounds.d) * 1.8}
           decay={2}
@@ -232,7 +260,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         shadow-radius={3}
         shadow-blurSamples={32}
         shadow-normalBias={0.02}
-        shadow-camera-near={0.1}
+        shadow-camera-near={0.05}
         shadow-camera-far={roomBounds.maxDim * 2.5}
         shadow-camera-left={-roomBounds.maxDim * 0.8}
         shadow-camera-right={roomBounds.maxDim * 0.8}
@@ -377,6 +405,17 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         ]}
         intensity={0.3}
         color="#E8F0FF"
+      />
+
+      {/* 暖色フィルライト（既存フィルの対角） */}
+      <directionalLight
+        position={[
+          roomBounds.cx + roomBounds.w * 0.6,
+          roomHeight * 2.0,
+          roomBounds.cz + roomBounds.d * 0.4,
+        ]}
+        intensity={0.3}
+        color="#ffeedd"
       />
     </>
   );

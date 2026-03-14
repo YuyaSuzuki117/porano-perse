@@ -48,6 +48,8 @@ import { EvacuationOverlay } from './EvacuationOverlay';
 import { ElectricalOverlay } from './ElectricalOverlay';
 import { HVACVisualization } from './HVACVisualization';
 import { SmokeParticles } from './SmokeParticles';
+import FloorReflection from './FloorReflection';
+import AmbientOcclusionPlanes from './AmbientOcclusionPlanes';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -220,6 +222,12 @@ export function SceneCanvas({
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 3.0 : 2.0));
+      // high品質: 物理ベースライト減衰（リアルな光の落ち方）
+      if (qualityLevel === 'high') {
+        // Three.js r155+: renderer.useLegacyLights は非推奨だが光減衰に影響
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (gl as any).useLegacyLights = false;
+      }
     }
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
@@ -257,13 +265,13 @@ export function SceneCanvas({
       <Suspense fallback={null}>
         {/* lowモードではfog無効 */}
         {qualityLevel !== 'low' && (
-          <fog attach="fog" args={[bgColor, fogDistance * 0.8, fogDistance * 1.3]} />
+          <fog attach="fog" args={[bgColor, fogDistance * 0.7, fogDistance * 1.15]} />
         )}
 
         <LightingRig style={styleConfig} walls={walls} roomHeight={roomHeight} brightness={effectiveBrightness} warmth={effectiveWarmth} qualityLevel={qualityLevel} />
         <EnvironmentPresets
           preset={isNight ? 'night' : (environmentPreset as 'studio' | 'indoor' | 'outdoor' | 'sunset' | 'warehouse' | 'night')}
-          intensity={qualityLevel === 'high' ? 1.5 : qualityLevel === 'medium' ? 1.2 : 0.8}
+          intensity={qualityLevel === 'high' ? 2.0 : qualityLevel === 'medium' ? 1.2 : 0.8}
           showBackground={false}
         />
 
@@ -276,7 +284,11 @@ export function SceneCanvas({
           <WallNiches walls={walls} openings={openings} roomHeight={roomHeight} style={styleConfig} />
         )}
         <FloorMesh walls={walls} style={styleConfig} />
+        <FloorReflection />
         <CeilingMesh walls={walls} roomHeight={roomHeight} style={styleConfig} />
+
+        {/* 擬似AO: コーナーダークニング */}
+        <AmbientOcclusionPlanes />
 
         {/* 建築ディテール: 巾木・廻り縁・腰壁・天井梁 */}
         {wallDisplayMode !== 'hidden' && (

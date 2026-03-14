@@ -126,7 +126,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[panelWidth, panelHeight, 0.008]} />
-                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.4} clearcoatRoughness={0.2} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.46} clearcoatRoughness={0.2} envMapIntensity={1.44} specularIntensity={0.4} />
               </mesh>
             );
             // 浮き出し部分（少し前に出る）
@@ -141,7 +141,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[panelWidth - 0.06, panelHeight - 0.06, 0.01]} />
-                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness - 0.1} clearcoat={0.4} clearcoatRoughness={0.2} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness - 0.1} clearcoat={0.46} clearcoatRoughness={0.2} envMapIntensity={1.44} specularIntensity={0.4} />
               </mesh>
             );
           }
@@ -162,7 +162,7 @@ export const Wainscoting = React.memo(function Wainscoting({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len, WAINSCOT_HEIGHT - 0.05, 0.006]} />
-              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} />
+              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.15} clearcoatRoughness={0.3} envMapIntensity={1.44} specularIntensity={0.4} />
             </mesh>
           );
 
@@ -179,7 +179,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[stripWidth, WAINSCOT_HEIGHT - 0.08, 0.005]} />
-                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness + 0.1} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness + 0.1} clearcoat={0.15} clearcoatRoughness={0.3} envMapIntensity={1.44} specularIntensity={0.4} />
               </mesh>
             );
           }
@@ -198,7 +198,7 @@ export const Wainscoting = React.memo(function Wainscoting({
                 rotation={[0, -angle, 0]}
               >
                 <boxGeometry args={[len - 0.04, 0.06, 0.008]} />
-                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.15} clearcoatRoughness={0.3} />
+                <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.1725} clearcoatRoughness={0.3} envMapIntensity={1.44} specularIntensity={0.4} />
               </mesh>
             );
           }
@@ -214,7 +214,7 @@ export const Wainscoting = React.memo(function Wainscoting({
               rotation={[0, -angle, 0]}
             >
               <boxGeometry args={[len - 0.02, WAINSCOT_HEIGHT - 0.05, 0.006]} />
-              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.2} clearcoatRoughness={0.3} />
+              <meshPhysicalMaterial color={wStyle.panelColor} roughness={wStyle.panelRoughness} clearcoat={0.23} clearcoatRoughness={0.3} envMapIntensity={1.44} specularIntensity={0.4} />
             </mesh>
           );
           break;
@@ -231,7 +231,7 @@ export const Wainscoting = React.memo(function Wainscoting({
           rotation={[0, -angle, 0]}
         >
           <boxGeometry args={[len, CHAIR_RAIL_HEIGHT, CHAIR_RAIL_DEPTH]} />
-          <meshPhysicalMaterial color={wStyle.railColor} roughness={0.4} clearcoat={0.2} clearcoatRoughness={0.3} />
+          <meshPhysicalMaterial color={wStyle.railColor} roughness={0.4} clearcoat={0.23} clearcoatRoughness={0.3} envMapIntensity={1.44} specularIntensity={0.4} />
         </mesh>
       );
     }
