@@ -25,9 +25,15 @@ export interface Opening {
   elevation: number; // 床からの高さ(窓の場合)
 }
 
-export type EditorTool = 'select' | 'wall' | 'door' | 'window' | 'measure' | 'delete' | 'furniture';
+export type EditorTool = 'select' | 'wall' | 'door' | 'window' | 'measure' | 'delete' | 'furniture' | 'annotation';
 
 export interface SnapResult {
   point: Point2D;
   type: 'grid' | 'endpoint' | 'midpoint' | 'none';
+}
+
+export interface RoomLabel {
+  id: string;
+  name: string;
+  position: Point2D; // ラベルの配置位置（ワールド座標）
 }

@@ -2,13 +2,14 @@
 
 import { useEditorStore } from '@/stores/useEditorStore';
 import { EditorTool } from '@/types/floor-plan';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 interface ToolConfig {
   id: EditorTool;
   label: string;
   shortcut: string;
   icon: ReactNode;
+  group?: 'draw' | 'edit' | 'view'; // ツールのグループ分け
 }
 
 const tools: ToolConfig[] = [
@@ -16,10 +17,13 @@ const tools: ToolConfig[] = [
     id: 'select',
     label: '選択',
     shortcut: 'V',
+    group: 'edit',
+    // 矢印カーソルアイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-        <path d="M13 13l6 6" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path d="M5 3l2 18 4.5-6.5L18 12 5 3z" fill="currentColor" opacity={0.15} />
+        <path d="M5 3l2 18 4.5-6.5L18 12 5 3z" />
+        <path d="M11.5 14.5l4.5 4.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -27,11 +31,18 @@ const tools: ToolConfig[] = [
     id: 'wall',
     label: '壁描画',
     shortcut: 'W',
+    group: 'draw',
+    // 壁の線+角アイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <rect x="3" y="3" width="18" height="18" rx="1" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="12" y1="3" x2="12" y2="21" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path d="M4 20V8h0" strokeLinecap="round" />
+        <path d="M4 8h12" strokeLinecap="round" />
+        <path d="M16 8v12" strokeLinecap="round" />
+        {/* 壁の厚み表現 */}
+        <path d="M4 20V8h12v12" strokeWidth={3} opacity={0.15} />
+        {/* 角のドット */}
+        <circle cx="4" cy="8" r="1.5" fill="currentColor" />
+        <circle cx="16" cy="8" r="1.5" fill="currentColor" />
       </svg>
     ),
   },
@@ -39,10 +50,19 @@ const tools: ToolConfig[] = [
     id: 'door',
     label: 'ドア',
     shortcut: 'D',
+    group: 'draw',
+    // ドアの弧アイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <rect x="6" y="2" width="12" height="20" rx="1" />
-        <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        {/* 壁の線 */}
+        <line x1="4" y1="18" x2="10" y2="18" strokeWidth={3} opacity={0.2} />
+        <line x1="18" y1="18" x2="20" y2="18" strokeWidth={3} opacity={0.2} />
+        {/* ドアの開き弧 */}
+        <path d="M10 18 A8 8 0 0 1 18 18" strokeDasharray="2 2" opacity={0.5} />
+        {/* ドアパネル */}
+        <line x1="10" y1="18" x2="17.5" y2="12" strokeWidth={2} />
+        {/* ヒンジ */}
+        <circle cx="10" cy="18" r="1.5" fill="currentColor" />
       </svg>
     ),
   },
@@ -50,11 +70,20 @@ const tools: ToolConfig[] = [
     id: 'window',
     label: '窓',
     shortcut: 'N',
+    group: 'draw',
+    // 窓の二重線アイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <rect x="3" y="4" width="18" height="16" rx="1" />
-        <line x1="12" y1="4" x2="12" y2="20" />
-        <line x1="3" y1="12" x2="21" y2="12" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        {/* 壁の線 */}
+        <line x1="3" y1="12" x2="7" y2="12" strokeWidth={3} opacity={0.2} />
+        <line x1="17" y1="12" x2="21" y2="12" strokeWidth={3} opacity={0.2} />
+        {/* 窓の二重線 */}
+        <line x1="7" y1="10" x2="17" y2="10" strokeWidth={2} />
+        <line x1="7" y1="14" x2="17" y2="14" strokeWidth={2} />
+        {/* ガラスの表現 */}
+        <line x1="7" y1="10" x2="7" y2="14" strokeWidth={1} opacity={0.5} />
+        <line x1="17" y1="10" x2="17" y2="14" strokeWidth={1} opacity={0.5} />
+        <line x1="12" y1="10" x2="12" y2="14" strokeWidth={1} opacity={0.3} />
       </svg>
     ),
   },
@@ -62,11 +91,18 @@ const tools: ToolConfig[] = [
     id: 'measure',
     label: '計測',
     shortcut: 'M',
+    group: 'view',
+    // 定規アイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <path d="M2 12h4m4 0h4m4 0h4" />
-        <path d="M6 8v8" />
-        <path d="M18 8v8" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        {/* 定規の本体 */}
+        <rect x="2" y="8" width="20" height="8" rx="1" fill="currentColor" opacity={0.08} />
+        <rect x="2" y="8" width="20" height="8" rx="1" />
+        {/* 目盛り */}
+        <line x1="6" y1="8" x2="6" y2="11" />
+        <line x1="10" y1="8" x2="10" y2="12" strokeWidth={2} />
+        <line x1="14" y1="8" x2="14" y2="11" />
+        <line x1="18" y1="8" x2="18" y2="12" strokeWidth={2} />
       </svg>
     ),
   },
@@ -74,21 +110,41 @@ const tools: ToolConfig[] = [
     id: 'delete',
     label: '削除',
     shortcut: 'X',
+    group: 'edit',
+    // ゴミ箱アイコン
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-        <path d="M10 11v6" />
-        <path d="M14 11v6" />
-        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        {/* 蓋 */}
+        <path d="M4 6h16" strokeLinecap="round" />
+        <path d="M9 6V4.5a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 4.5V6" />
+        {/* 本体 */}
+        <path d="M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14" />
+        {/* 中の線 */}
+        <line x1="10" y1="10" x2="10" y2="18" opacity={0.6} />
+        <line x1="14" y1="10" x2="14" y2="18" opacity={0.6} />
       </svg>
     ),
   },
 ];
 
+// ツールチップコンポーネント
+function Tooltip({ text, visible }: { text: string; visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
+      <div className="bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-md shadow-lg whitespace-nowrap">
+        {text}
+        {/* 左向き矢印 */}
+        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-800" />
+      </div>
+    </div>
+  );
+}
+
 export default function FloorPlanToolbar() {
   const activeTool = useEditorStore((s) => s.activeTool);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
+  const [hoveredTool, setHoveredTool] = useState<string | null>(null);
 
   // キーボードショートカット
   useEffect(() => {
@@ -113,40 +169,66 @@ export default function FloorPlanToolbar() {
     return () => window.removeEventListener('keydown', handler);
   }, [setActiveTool]);
 
-  return (
-    <div className="flex flex-col gap-1 p-2 bg-gray-50 border-r border-gray-200 w-16 shrink-0">
-      <div className="text-[10px] text-gray-400 text-center mb-1 font-medium">
-        ツール
+  // グループ分け
+  const drawTools = tools.filter((t) => t.group === 'draw');
+  const editTools = tools.filter((t) => t.group === 'edit');
+  const viewTools = tools.filter((t) => t.group === 'view');
+
+  const renderToolButton = (tool: ToolConfig) => {
+    const isActive = activeTool === tool.id;
+    return (
+      <div key={tool.id} className="relative">
+        <button
+          onClick={() => setActiveTool(tool.id)}
+          onMouseEnter={() => setHoveredTool(tool.id)}
+          onMouseLeave={() => setHoveredTool(null)}
+          className={`
+            flex flex-col items-center justify-center gap-0.5
+            w-10 h-10 md:w-11 md:h-11 rounded-lg
+            transition-all duration-100 text-xs relative
+            active:scale-95
+            ${
+              isActive
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25'
+                : 'text-gray-600 hover:bg-gray-200/80 hover:text-gray-800 active:bg-gray-200'
+            }
+          `}
+        >
+          {tool.icon}
+          <span className="text-[7px] md:text-[8px] leading-none mt-0.5 font-medium">{tool.label}</span>
+        </button>
+        <Tooltip
+          text={`${tool.label} (${tool.shortcut})`}
+          visible={hoveredTool === tool.id}
+        />
       </div>
-      {tools.map((tool) => {
-        const isActive = activeTool === tool.id;
-        return (
-          <button
-            key={tool.id}
-            onClick={() => setActiveTool(tool.id)}
-            title={`${tool.label} (${tool.shortcut})`}
-            className={`
-              flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg
-              transition-colors duration-100 text-xs
-              ${
-                isActive
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-200'
-              }
-            `}
-          >
-            {tool.icon}
-            <span className="text-[9px] leading-tight">{tool.label}</span>
-            <span
-              className={`text-[8px] leading-none ${
-                isActive ? 'text-blue-100' : 'text-gray-400'
-              }`}
-            >
-              {tool.shortcut}
-            </span>
-          </button>
-        );
-      })}
+    );
+  };
+
+  // ディバイダー
+  const Divider = () => (
+    <div className="w-8 h-px bg-gray-300 mx-auto my-1" />
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 py-2 md:py-3 px-1.5 md:px-2 bg-gray-50/80 border-r border-gray-200 w-[48px] md:w-[56px] shrink-0">
+      {/* タイトル */}
+      <div className="text-[9px] text-gray-400 text-center mb-1 font-semibold tracking-wider uppercase">
+        Tools
+      </div>
+
+      {/* 編集ツール */}
+      {editTools.map(renderToolButton)}
+
+      <Divider />
+
+      {/* 描画ツール */}
+      {drawTools.map(renderToolButton)}
+
+      <Divider />
+
+      {/* 表示ツール */}
+      {viewTools.map(renderToolButton)}
     </div>
   );
 }

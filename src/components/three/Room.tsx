@@ -22,7 +22,8 @@ export function Room({ dimensions, style }: RoomProps) {
     ctx.fillStyle = baseColor;
     ctx.fillRect(0, 0, 512, 512);
 
-    if (style.floorTexture === 'wood') {
+    const ft = style.floorTexture;
+    if (ft === 'wood') {
       // 木目パターン
       ctx.strokeStyle = adjustBrightness(baseColor, -20);
       ctx.lineWidth = 1;
@@ -31,7 +32,6 @@ export function Room({ dimensions, style }: RoomProps) {
         ctx.moveTo(0, i);
         ctx.lineTo(512, i);
         ctx.stroke();
-        // 木目の節
         for (let j = 0; j < 512; j += 128) {
           ctx.beginPath();
           ctx.moveTo(j, i);
@@ -39,32 +39,42 @@ export function Room({ dimensions, style }: RoomProps) {
           ctx.stroke();
         }
       }
-    } else if (style.floorTexture === 'tile') {
-      // タイルパターン
+    } else if (ft === 'tile' || ft === 'marble' || ft === 'linoleum') {
+      // タイル系パターン
       ctx.strokeStyle = adjustBrightness(baseColor, 30);
-      ctx.lineWidth = 2;
-      const tileSize = 128;
+      ctx.lineWidth = ft === 'marble' ? 1 : 2;
+      const tileSize = ft === 'marble' ? 160 : 128;
       for (let x = 0; x < 512; x += tileSize) {
         for (let y = 0; y < 512; y += tileSize) {
           ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
         }
       }
-    } else if (style.floorTexture === 'tatami') {
+    } else if (ft === 'tatami') {
       // 畳パターン
       ctx.strokeStyle = adjustBrightness(baseColor, -15);
       ctx.lineWidth = 3;
-      // 横線（い草の目）
       for (let i = 0; i < 512; i += 8) {
         ctx.beginPath();
         ctx.moveTo(0, i);
         ctx.lineTo(512, i);
         ctx.stroke();
       }
-      // 畳の縁
       ctx.strokeStyle = '#8B7D3C';
       ctx.lineWidth = 4;
       ctx.strokeRect(0, 0, 256, 512);
       ctx.strokeRect(256, 0, 256, 512);
+    } else if (ft === 'checkerboard') {
+      // チェッカーボード
+      const ts = 64;
+      const colorB = adjustBrightness(baseColor, 35);
+      for (let x = 0; x < 512; x += ts) {
+        for (let y = 0; y < 512; y += ts) {
+          if (((x / ts) + (y / ts)) % 2 === 1) {
+            ctx.fillStyle = colorB;
+            ctx.fillRect(x, y, ts, ts);
+          }
+        }
+      }
     } else {
       // コンクリート
       ctx.fillStyle = adjustBrightness(baseColor, 5);

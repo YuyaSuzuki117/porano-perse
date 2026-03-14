@@ -96,6 +96,43 @@ export function computeFloorPolygon(walls: WallSegment[]): Point2D[] {
   return unique;
 }
 
+// Shoelace formula for polygon area (m²)
+export function computeFloorArea(walls: WallSegment[]): number {
+  const polygon = computeFloorPolygon(walls);
+  if (polygon.length < 3) return 0;
+  let area = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length;
+    area += polygon[i].x * polygon[j].y;
+    area -= polygon[j].x * polygon[i].y;
+  }
+  return Math.abs(area / 2);
+}
+
+// Shoelace formula for a single polygon loop (Point2D[])
+export function computePolygonArea(polygon: Point2D[]): number {
+  if (polygon.length < 3) return 0;
+  let area = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length;
+    area += polygon[i].x * polygon[j].y;
+    area -= polygon[j].x * polygon[i].y;
+  }
+  return Math.abs(area / 2);
+}
+
+// Compute centroid of a polygon
+export function computePolygonCentroid(polygon: Point2D[]): Point2D {
+  if (polygon.length === 0) return { x: 0, y: 0 };
+  let cx = 0;
+  let cy = 0;
+  for (const pt of polygon) {
+    cx += pt.x;
+    cy += pt.y;
+  }
+  return { x: cx / polygon.length, y: cy / polygon.length };
+}
+
 // 矩形部屋のWallSegment生成ヘルパー
 export function createRectRoom(
   width: number,
@@ -107,38 +144,62 @@ export function createRectRoom(
   const hd = depth / 2;
   const id = () => `wall_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
+  const c = '#E0E0E0';
   return [
-    {
-      id: id(),
-      start: { x: -hw, y: -hd },
-      end: { x: hw, y: -hd },
-      thickness,
-      height,
-      color: '#E0E0E0',
-    },
-    {
-      id: id(),
-      start: { x: hw, y: -hd },
-      end: { x: hw, y: hd },
-      thickness,
-      height,
-      color: '#E0E0E0',
-    },
-    {
-      id: id(),
-      start: { x: hw, y: hd },
-      end: { x: -hw, y: hd },
-      thickness,
-      height,
-      color: '#E0E0E0',
-    },
-    {
-      id: id(),
-      start: { x: -hw, y: hd },
-      end: { x: -hw, y: -hd },
-      thickness,
-      height,
-      color: '#E0E0E0',
-    },
+    { id: id(), start: { x: -hw, y: -hd }, end: { x: hw, y: -hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: -hd }, end: { x: hw, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: hd }, end: { x: -hw, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: -hw, y: hd }, end: { x: -hw, y: -hd }, thickness, height, color: c },
+  ];
+}
+
+// L字型部屋の壁生成
+export function createLShapeRoom(
+  width: number,
+  depth: number,
+  height: number = 2.7,
+  thickness: number = 0.12
+): WallSegment[] {
+  const hw = width / 2;
+  const hd = depth / 2;
+  const cutW = width * 0.4;
+  const cutD = depth * 0.4;
+  const id = () => `wall_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const c = '#E0E0E0';
+
+  // L-shape: full bottom, right side up to cut, horizontal cut, vertical cut, left full
+  return [
+    { id: id(), start: { x: -hw, y: -hd }, end: { x: hw, y: -hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: -hd }, end: { x: hw, y: hd - cutD }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: hd - cutD }, end: { x: hw - cutW, y: hd - cutD }, thickness, height, color: c },
+    { id: id(), start: { x: hw - cutW, y: hd - cutD }, end: { x: hw - cutW, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw - cutW, y: hd }, end: { x: -hw, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: -hw, y: hd }, end: { x: -hw, y: -hd }, thickness, height, color: c },
+  ];
+}
+
+// コの字型部屋の壁生成
+export function createUShapeRoom(
+  width: number,
+  depth: number,
+  height: number = 2.7,
+  thickness: number = 0.12
+): WallSegment[] {
+  const hw = width / 2;
+  const hd = depth / 2;
+  const cutW = width * 0.4;
+  const cutD = depth * 0.35;
+  const id = () => `wall_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const c = '#E0E0E0';
+
+  return [
+    { id: id(), start: { x: -hw, y: -hd }, end: { x: hw, y: -hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: -hd }, end: { x: hw, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: hw, y: hd }, end: { x: cutW / 2, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: cutW / 2, y: hd }, end: { x: cutW / 2, y: hd - cutD }, thickness, height, color: c },
+    { id: id(), start: { x: cutW / 2, y: hd - cutD }, end: { x: -cutW / 2, y: hd - cutD }, thickness, height, color: c },
+    { id: id(), start: { x: -cutW / 2, y: hd - cutD }, end: { x: -cutW / 2, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: -cutW / 2, y: hd }, end: { x: -hw, y: hd }, thickness, height, color: c },
+    { id: id(), start: { x: -hw, y: hd }, end: { x: -hw, y: -hd }, thickness, height, color: c },
   ];
 }

@@ -1,5 +1,14 @@
 import { FurnitureCatalogItem } from '@/types/scene';
 
+/**
+ * 家具カタログ定義
+ *
+ * modelUrl に glTF/GLB モデルのURLを指定すると、プリミティブ描画の代わりに
+ * 3Dモデルが自動で使用される。未指定(undefined)の場合はプリミティブ描画。
+ *
+ * 例: modelUrl: '/models/counter.glb'
+ *     modelUrl: 'https://example.com/models/chair.glb'
+ */
 export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   {
     type: 'counter',
@@ -7,6 +16,8 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🪵',
     defaultScale: [3, 1.1, 0.6],
     defaultColor: '#8B6914',
+    defaultMaterial: 'wood',
+    // modelUrl: ここにglTF/GLBモデルURLを指定（例: '/models/counter.glb'）
   },
   {
     type: 'table_square',
@@ -14,6 +25,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '⬜',
     defaultScale: [0.8, 0.75, 0.8],
     defaultColor: '#A0522D',
+    defaultMaterial: 'wood',
   },
   {
     type: 'table_round',
@@ -21,6 +33,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '⭕',
     defaultScale: [0.8, 0.75, 0.8],
     defaultColor: '#A0522D',
+    defaultMaterial: 'wood',
   },
   {
     type: 'chair',
@@ -28,6 +41,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🪑',
     defaultScale: [0.45, 0.85, 0.45],
     defaultColor: '#654321',
+    defaultMaterial: 'wood',
   },
   {
     type: 'stool',
@@ -35,6 +49,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🔵',
     defaultScale: [0.35, 0.7, 0.35],
     defaultColor: '#333333',
+    defaultMaterial: 'metal',
   },
   {
     type: 'sofa',
@@ -42,6 +57,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🛋️',
     defaultScale: [1.8, 0.8, 0.8],
     defaultColor: '#8B7355',
+    defaultMaterial: 'fabric',
   },
   {
     type: 'shelf',
@@ -49,6 +65,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '📚',
     defaultScale: [1.2, 1.8, 0.4],
     defaultColor: '#DEB887',
+    defaultMaterial: 'wood',
   },
   {
     type: 'pendant_light',
@@ -56,6 +73,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '💡',
     defaultScale: [0.3, 0.4, 0.3],
     defaultColor: '#FFD700',
+    defaultMaterial: 'metal',
   },
   {
     type: 'plant',
@@ -63,6 +81,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🌿',
     defaultScale: [0.5, 1.2, 0.5],
     defaultColor: '#228B22',
+    defaultMaterial: 'plastic',
   },
   {
     type: 'partition',
@@ -70,5 +89,204 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🧱',
     defaultScale: [1.5, 2.0, 0.1],
     defaultColor: '#D2B48C',
+  },
+  {
+    type: 'register',
+    name: 'レジカウンター',
+    icon: '🖥️',
+    defaultScale: [0.6, 1.0, 0.5],
+    defaultColor: '#333333',
+    defaultMaterial: 'plastic',
+  },
+  {
+    type: 'sink',
+    name: 'シンク',
+    icon: '🚰',
+    defaultScale: [1.2, 0.9, 0.6],
+    defaultColor: '#C0C0C0',
+    defaultMaterial: 'metal',
+  },
+  {
+    type: 'fridge',
+    name: '冷蔵庫',
+    icon: '🧊',
+    defaultScale: [0.7, 1.8, 0.7],
+    defaultColor: '#E8E8E8',
+    defaultMaterial: 'metal',
+  },
+  {
+    type: 'display_case',
+    name: 'ショーケース',
+    icon: '🗄️',
+    defaultScale: [1.5, 1.2, 0.6],
+    defaultColor: '#B8D4E3',
+    defaultMaterial: 'glass',
+  },
+  {
+    type: 'bench',
+    name: 'ベンチ',
+    icon: '🪑',
+    defaultScale: [1.5, 0.45, 0.4],
+    defaultColor: '#8B6914',
+    defaultMaterial: 'wood',
+  },
+  {
+    type: 'mirror',
+    name: '鏡',
+    icon: '🪞',
+    defaultScale: [1.0, 1.5, 0.05],
+    defaultColor: '#C0C0C0',
+    defaultMaterial: 'glass',
+  },
+  {
+    type: 'reception_desk',
+    name: 'レセプションデスク',
+    icon: '🏢',
+    defaultScale: [2.0, 1.1, 0.8],
+    defaultColor: '#F5F0E8',
+  },
+  {
+    type: 'tv_monitor',
+    name: 'TVモニター',
+    icon: '📺',
+    defaultScale: [1.2, 0.7, 0.08],
+    defaultColor: '#1A1A1A',
+  },
+  {
+    type: 'washing_machine',
+    name: '洗濯機',
+    icon: '🫧',
+    defaultScale: [0.6, 0.85, 0.6],
+    defaultColor: '#F0F0F0',
+  },
+  {
+    type: 'coat_rack',
+    name: 'コートラック',
+    icon: '🧥',
+    defaultScale: [0.5, 1.7, 0.5],
+    defaultColor: '#333333',
+  },
+  {
+    type: 'air_conditioner',
+    name: 'エアコン',
+    icon: '❄️',
+    defaultScale: [0.9, 0.3, 0.25],
+    defaultColor: '#F8F8F8',
+  },
+  {
+    type: 'desk',
+    name: 'デスク',
+    icon: '🖥️',
+    defaultScale: [1.2, 0.75, 0.6],
+    defaultColor: '#A0896C',
+    defaultMaterial: 'wood',
+  },
+  {
+    type: 'bookcase',
+    name: '本棚',
+    icon: '📖',
+    defaultScale: [0.9, 2.0, 0.35],
+    defaultColor: '#8B6914',
+  },
+  {
+    type: 'kitchen_island',
+    name: 'キッチンアイランド',
+    icon: '🏝️',
+    defaultScale: [1.8, 0.9, 0.8],
+    defaultColor: '#F0EBE0',
+  },
+  {
+    type: 'bar_table',
+    name: 'ハイテーブル',
+    icon: '🍸',
+    defaultScale: [0.6, 1.1, 0.6],
+    defaultColor: '#333333',
+  },
+  {
+    type: 'wardrobe',
+    name: 'ワードローブ',
+    icon: '🚪',
+    defaultScale: [1.2, 2.0, 0.6],
+    defaultColor: '#DEB887',
+  },
+  {
+    type: 'shoe_rack',
+    name: '靴棚',
+    icon: '👟',
+    defaultScale: [0.8, 1.0, 0.35],
+    defaultColor: '#8B6914',
+    defaultMaterial: 'wood',
+  },
+  {
+    type: 'umbrella_stand',
+    name: '傘立て',
+    icon: '☂️',
+    defaultScale: [0.25, 0.6, 0.25],
+    defaultColor: '#555555',
+    defaultMaterial: 'metal',
+  },
+  {
+    type: 'cash_register',
+    name: 'レジ',
+    icon: '💰',
+    defaultScale: [0.4, 0.3, 0.4],
+    defaultColor: '#333333',
+    defaultMaterial: 'plastic',
+  },
+  {
+    type: 'menu_board',
+    name: 'メニューボード',
+    icon: '📋',
+    defaultScale: [0.6, 1.2, 0.05],
+    defaultColor: '#2C2C2C',
+    defaultMaterial: 'wood',
+  },
+  {
+    type: 'flower_pot',
+    name: 'フラワーポット',
+    icon: '🌸',
+    defaultScale: [0.3, 0.5, 0.3],
+    defaultColor: '#B5651D',
+    defaultMaterial: 'stone',
+  },
+  {
+    type: 'ceiling_fan',
+    name: 'シーリングファン',
+    icon: '🌀',
+    defaultScale: [1.2, 0.15, 1.2],
+    defaultColor: '#F5F5F5',
+    defaultMaterial: 'metal',
+  },
+  {
+    type: 'rug',
+    name: 'ラグ',
+    icon: '🟫',
+    defaultScale: [2.0, 0.01, 1.5],
+    defaultColor: '#8B4513',
+    defaultMaterial: 'fabric',
+  },
+  {
+    type: 'curtain',
+    name: 'カーテン',
+    icon: '🪟',
+    defaultScale: [1.5, 2.2, 0.08],
+    defaultColor: '#DCDCDC',
+    defaultMaterial: 'fabric',
+  },
+  {
+    type: 'clock',
+    name: '時計',
+    icon: '🕐',
+    defaultScale: [0.3, 0.3, 0.05],
+    defaultColor: '#F5F5F5',
+    defaultMaterial: 'plastic',
+  },
+  {
+    type: 'trash_can',
+    name: 'ゴミ箱',
+    icon: '🗑️',
+    defaultScale: [0.3, 0.45, 0.3],
+    defaultColor: '#666666',
+    defaultMaterial: 'metal',
   },
 ];

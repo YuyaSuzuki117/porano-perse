@@ -19,8 +19,117 @@ body {
   overflow: hidden;
 }
 
+/* モバイルでアドレスバーを考慮した動的ビューポート高さ */
+.h-dvh-safe {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* セーフエリア対応パディング */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Canvas cursor styles */
 .cursor-crosshair { cursor: crosshair; }
 .cursor-move { cursor: move; }
 .cursor-grab { cursor: grab; }
 .cursor-grabbing { cursor: grabbing; }
+
+/* ── Interaction responsiveness ── */
+
+/* Smooth scrolling for panels */
+.scroll-smooth-panel {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Collapsible section animation */
+.section-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease;
+}
+.section-content[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.section-content > div {
+  overflow: hidden;
+}
+
+/* Tab content fade + slide */
+.tab-content-enter {
+  animation: tabFadeIn 150ms ease-out;
+}
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile bottom sheet spring */
+.bottom-sheet {
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1), height 200ms ease;
+}
+
+/* Universal button feedback — smooth transitions + press effect */
+button, [role="button"] {
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+button:active:not(:disabled), [role="button"]:active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* Exclude canvas and 3D interaction areas from button press effect */
+canvas, canvas:active {
+  cursor: default;
+  transform: none !important;
+}
+
+/* Slider thumb responsiveness — no delay */
+input[type="range"] {
+  cursor: pointer;
+  touch-action: none;
+}
+input[type="range"]:active {
+  cursor: grabbing;
+}
+
+/* 印刷最適化: 3Dビューのみ表示 */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+  }
+  .print-area canvas {
+    width: 100% !important;
+    height: 100vh !important;
+    object-fit: contain;
+  }
+  /* UIコントロール類を非表示 */
+  header,
+  nav,
+  button,
+  .print-area button,
+  .print-area [class*="absolute"] {
+    visibility: hidden !important;
+    display: none !important;
+  }
+  .print-area canvas {
+    visibility: visible !important;
+    display: block !important;
+  }
+}
