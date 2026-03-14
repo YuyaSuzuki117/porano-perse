@@ -67,6 +67,8 @@ export interface TextureResolution {
   normal: number;
   /** ラフネスマップ解像度 */
   roughness: number;
+  /** 家具テクスチャ解像度 */
+  furniture: number;
   /** ノーマルマップを使用するか（low では省略） */
   useNormalMap: boolean;
 }
@@ -77,10 +79,10 @@ export function getTextureResolution(
 ): TextureResolution {
   switch (qualityLevel) {
     case 'high':
-      return { wall: 2048, floor: 2048, normal: 2048, roughness: 1024, useNormalMap: true };
+      return { wall: 4096, floor: 4096, normal: 2048, roughness: 2048, furniture: 4096, useNormalMap: true };
     case 'medium':
-      return { wall: 1024, floor: 1024, normal: 512, roughness: 512, useNormalMap: true };
+      return { wall: 2048, floor: 2048, normal: 512, roughness: 512, furniture: 1024, useNormalMap: true };
     case 'low':
-      return { wall: 512, floor: 512, normal: 256, roughness: 256, useNormalMap: false };
+      return { wall: 512, floor: 512, normal: 256, roughness: 256, furniture: 512, useNormalMap: false };
   }
 }

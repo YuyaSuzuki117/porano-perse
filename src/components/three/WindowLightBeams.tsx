@@ -45,7 +45,7 @@ export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, op
     const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
     const w = Math.max(...xs) - Math.min(...xs);
     const d = Math.max(...ys) - Math.min(...ys);
-    return Math.max(w, d) * 0.4;
+    return Math.max(w, d) * 0.44;  // 光条長+10%でより印象的な光演出
   }, [walls]);
 
   // lowモードでは完全無効化（hooksの後に配置）
@@ -113,8 +113,8 @@ function LightBeamMesh({ opening, wall, beamLength, isNight, qualityLevel }: Lig
     const endOffsetY = dirY * beamLength;
     const endOffsetZ = dirZ * beamLength;
 
-    // 先端面は1.5倍に拡大
-    const spread = 1.5;
+    // 先端面は1.65倍に拡大（+10%でより広がりのある光）
+    const spread = 1.65;
 
     // 8頂点: 0-3が窓面、4-7が先端面
     const v0 = [
@@ -207,7 +207,7 @@ function LightBeamMesh({ opening, wall, beamLength, isNight, qualityLevel }: Lig
       <meshBasicMaterial
         color={isNight ? '#8888CC' : '#FFF5D6'}
         transparent={true}
-        opacity={(isNight ? 0.06 : 0.15) * (qualityLevel === 'medium' ? 0.5 : 1)}
+        opacity={(isNight ? 0.072 : 0.18) * (qualityLevel === 'medium' ? 0.5 : 1)}
         side={THREE.DoubleSide}
         depthWrite={false}
         blending={THREE.AdditiveBlending}

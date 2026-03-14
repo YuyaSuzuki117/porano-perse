@@ -148,10 +148,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           intensity={1.2 * b}
           color={lightColor}
           castShadow
-          shadow-mapSize={[4096, 4096]}
+          shadow-mapSize={[8192, 8192]}
           shadow-bias={-0.0001}
           shadow-radius={5}
-          shadow-blurSamples={16}
+          shadow-blurSamples={20}
           shadow-normalBias={0.02}
           shadow-camera-near={0.1}
           shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -178,7 +178,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       <hemisphereLight
         color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
         groundColor={styleLighting.groundWarmth}
-        intensity={0.7 * b}
+        intensity={0.75 * b}
       />
 
       {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 */}
@@ -192,7 +192,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       <hemisphereLight
         color="#8B7355"
         groundColor={lerpColor('#F5E6D3', styleLighting.color, 0.3)}
-        intensity={0.45 * b * styleLighting.indirectIntensityMult}
+        intensity={0.5 * b * styleLighting.indirectIntensityMult}
         position={[roomBounds.cx, 0.1, roomBounds.cz]}
       />
 
@@ -224,13 +224,13 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           roomHeight * 2.5,
           roomBounds.cz + roomBounds.d * 0.4,
         ]}
-        intensity={1.4 * b}
+        intensity={1.5 * b}
         color={lightColor}
         castShadow
-        shadow-mapSize={[8192, 8192]}
+        shadow-mapSize={[16384, 16384]}
         shadow-bias={-0.0001}
         shadow-radius={3}
-        shadow-blurSamples={25}
+        shadow-blurSamples={32}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -264,11 +264,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 2}
         castShadow
-        shadow-mapSize={[4096, 4096]}
+        shadow-mapSize={[8192, 8192]}
         shadow-bias={-0.0001}
         shadow-normalBias={0.02}
         shadow-radius={8}
-        shadow-blurSamples={20}
+        shadow-blurSamples={25}
       />
 
       <spotLight
@@ -338,10 +338,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.2 * 0.3 * b}
         color={fillColor}
         castShadow
-        shadow-mapSize={[4096, 4096]}
+        shadow-mapSize={[8192, 8192]}
         shadow-bias={-0.0001}
         shadow-radius={6}
-        shadow-blurSamples={20}
+        shadow-blurSamples={25}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -354,7 +354,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       {/* コンタクトシャドウ風グラウンドプレーン */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
         <planeGeometry args={[roomBounds.w + 2, roomBounds.d + 2]} />
-        <shadowMaterial transparent opacity={0.5} />
+        <shadowMaterial transparent opacity={0.6} />
       </mesh>
 
       {/* リムライト（奥行き感向上）— スタイル連動 */}
@@ -375,7 +375,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           roomHeight * 2.2,
           roomBounds.cz - roomBounds.d * 0.7,
         ]}
-        intensity={0.225}
+        intensity={0.3}
         color="#E8F0FF"
       />
     </>

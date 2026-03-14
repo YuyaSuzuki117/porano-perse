@@ -12,14 +12,14 @@ interface DustParticlesProps {
   qualityLevel: 'low' | 'medium' | 'high';
 }
 
-/** 品質レベル別パーティクル数 */
+/** 品質レベル別パーティクル数（高品質モード+50%強化） */
 const PARTICLE_COUNTS: Record<'low' | 'medium' | 'high', number> = {
-  high: 400,
+  high: 600,
   medium: 200,
   low: 50,
 };
 /** 最大パーティクル数（プリアロケート用） */
-const MAX_PARTICLE_COUNT = 400;
+const MAX_PARTICLE_COUNT = 600;
 /** 塵の色（暖白） */
 const DUST_COLOR = new THREE.Color('#FFF8E7');
 
@@ -111,8 +111,8 @@ const DustParticles = React.memo(function DustParticles({
       pos[i3] = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);     // x
       pos[i3 + 1] = Math.random() * roomHeight;                                 // y
       pos[i3 + 2] = bounds.minZ + Math.random() * (bounds.maxZ - bounds.minZ); // z
-      sz[i] = 0.008 + Math.random() * 0.007;
-      op[i] = 0.3 + Math.random() * 0.3;
+      sz[i] = 0.0092 + Math.random() * 0.008;  // サイズ+15%で視認性向上
+      op[i] = 0.35 + Math.random() * 0.35;   // 不透明度アップで空気感強化
     }
 
     return { positions: pos, sizes: sz, opacities: op };

@@ -219,7 +219,7 @@ export function SceneCanvas({
     } else {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 3.0 : 2.0));
     }
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
@@ -241,8 +241,8 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={[1, 2.5]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 8 } : {}) }}
+      dpr={[1, 3.0]}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 16 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -257,7 +257,7 @@ export function SceneCanvas({
       <Suspense fallback={null}>
         {/* lowモードではfog無効 */}
         {qualityLevel !== 'low' && (
-          <fog attach="fog" args={[bgColor, fogDistance * 0.7, fogDistance * 1.2]} />
+          <fog attach="fog" args={[bgColor, fogDistance * 0.8, fogDistance * 1.3]} />
         )}
 
         <LightingRig style={styleConfig} walls={walls} roomHeight={roomHeight} brightness={effectiveBrightness} warmth={effectiveWarmth} qualityLevel={qualityLevel} />
@@ -533,9 +533,9 @@ export function SceneCanvas({
             position={[0, 0.001, 0]}
             opacity={isNight ? 0.4 : 0.65}
             scale={maxDim * 1.5}
-            blur={4.5}
-            far={5}
-            resolution={2048}
+            blur={5.0}
+            far={6}
+            resolution={4096}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}
           />
         )}
