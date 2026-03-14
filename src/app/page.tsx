@@ -462,34 +462,7 @@ export default function EditorPage() {
                   <span>ピンチ: ズーム</span>
                 </div>
               )}
-              {/* フォトモード: モバイル撮影UI */}
-              {photoMode && (
-                <div className="absolute bottom-16 right-3 flex flex-col items-end gap-2 z-40">
-                  <button
-                    onClick={() => takeHiResScreenshot()}
-                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform"
-                    aria-label="高解像度で撮影"
-                  >
-                    <span className="text-lg">📷</span>
-                    <span>撮影 (HD)</span>
-                  </button>
-                  <button
-                    onClick={() => takeScreenshot(1)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm"
-                    aria-label="通常撮影"
-                  >
-                    <span>📸</span>
-                    <span>通常撮影</span>
-                  </button>
-                  <button
-                    onClick={() => setPhotoMode(false)}
-                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform"
-                    aria-label="フォトモードを終了"
-                  >
-                    フォトモード終了
-                  </button>
-                </div>
-              )}
+              {/* フォトモードUIは外側のdivに移動済み */}
               {isDragOver && (
                 <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
                   <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
@@ -499,6 +472,35 @@ export default function EditorPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* フォトモード: モバイル撮影UI — 3Dビュー条件やErrorBoundaryの外に配置 */}
+          {photoMode && (
+            <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2 z-50">
+              <button
+                onClick={() => takeHiResScreenshot()}
+                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform"
+                aria-label="高解像度で撮影"
+              >
+                <span className="text-lg">📷</span>
+                <span>撮影 (HD)</span>
+              </button>
+              <button
+                onClick={() => takeScreenshot(1)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm"
+                aria-label="通常撮影"
+              >
+                <span>📸</span>
+                <span>通常撮影</span>
+              </button>
+              <button
+                onClick={() => setPhotoMode(false)}
+                className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform"
+                aria-label="フォトモードを終了"
+              >
+                フォトモード終了
+              </button>
             </div>
           )}
         </div>
