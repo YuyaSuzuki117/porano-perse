@@ -17,7 +17,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [3, 1.1, 0.6],
     defaultColor: '#8B6914',
     defaultMaterial: 'wood',
-    // modelUrl: ここにglTF/GLBモデルURLを指定（例: '/models/counter.glb'）
+    modelUrl: '/models/counter.glb',
   },
   {
     type: 'table_square',
@@ -26,6 +26,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [0.8, 0.75, 0.8],
     defaultColor: '#A0522D',
     defaultMaterial: 'wood',
+    modelUrl: '/models/table_square.glb',
   },
   {
     type: 'table_round',
@@ -42,6 +43,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [0.45, 0.85, 0.45],
     defaultColor: '#654321',
     defaultMaterial: 'wood',
+    modelUrl: '/models/chair.glb',
   },
   {
     type: 'stool',
@@ -50,6 +52,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [0.35, 0.7, 0.35],
     defaultColor: '#333333',
     defaultMaterial: 'metal',
+    modelUrl: '/models/stool.glb',
   },
   {
     type: 'sofa',
@@ -58,6 +61,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [1.8, 0.8, 0.8],
     defaultColor: '#8B7355',
     defaultMaterial: 'fabric',
+    modelUrl: '/models/sofa.glb',
   },
   {
     type: 'shelf',
@@ -66,6 +70,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [1.2, 1.8, 0.4],
     defaultColor: '#DEB887',
     defaultMaterial: 'wood',
+    modelUrl: '/models/shelf.glb',
   },
   {
     type: 'pendant_light',
@@ -82,6 +87,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [0.5, 1.2, 0.5],
     defaultColor: '#228B22',
     defaultMaterial: 'plastic',
+    modelUrl: '/models/plant.glb',
   },
   {
     type: 'partition',
@@ -128,6 +134,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🪑',
     defaultScale: [1.5, 0.45, 0.4],
     defaultColor: '#8B6914',
+    modelUrl: '/models/bench.glb',
     defaultMaterial: 'wood',
   },
   {
@@ -180,6 +187,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [1.2, 0.75, 0.6],
     defaultColor: '#A0896C',
     defaultMaterial: 'wood',
+    modelUrl: '/models/desk.glb',
   },
   {
     type: 'bookcase',
@@ -187,6 +195,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '📖',
     defaultScale: [0.9, 2.0, 0.35],
     defaultColor: '#8B6914',
+    modelUrl: '/models/bookcase.glb',
   },
   {
     type: 'kitchen_island',

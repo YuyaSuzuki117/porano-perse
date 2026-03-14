@@ -1377,6 +1377,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           const cat = FURNITURE_CATALOG.find(c => c.type === sg.furnitureType);
           return cat?.defaultMaterial;
         })(),
+        modelUrl: FURNITURE_CATALOG.find(c => c.type === sg.furnitureType)?.modelUrl,
       }));
       set((prev) => {
         const snapshot = pushHistory(prev, { walls: prev.walls, openings: prev.openings, furniture: newFurniture, roomLabels: prev.roomLabels });
