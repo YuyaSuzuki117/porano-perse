@@ -12,26 +12,32 @@ interface DustParticlesProps {
   qualityLevel: 'low' | 'medium' | 'high';
 }
 
-/** パーティクル数 */
-const PARTICLE_COUNT = 200;
+/** 品質レベル別パーティクル数 */
+const PARTICLE_COUNTS: Record<'low' | 'medium' | 'high', number> = {
+  high: 400,
+  medium: 200,
+  low: 50,
+};
+/** 最大パーティクル数（プリアロケート用） */
+const MAX_PARTICLE_COUNT = 400;
 /** 塵の色（暖白） */
 const DUST_COLOR = new THREE.Color('#FFF8E7');
 
-/** 各パーティクルの揺れ位相（プリアロケート） */
-const particlePhases = new Float32Array(PARTICLE_COUNT);
-for (let i = 0; i < PARTICLE_COUNT; i++) {
+/** 各パーティクルの揺れ位相（プリアロケート — 最大数で確保） */
+const particlePhases = new Float32Array(MAX_PARTICLE_COUNT);
+for (let i = 0; i < MAX_PARTICLE_COUNT; i++) {
   particlePhases[i] = Math.random() * Math.PI * 2;
 }
 
 /** 各パーティクルの揺れ速度（プリアロケート） */
-const particleSwaySpeeds = new Float32Array(PARTICLE_COUNT);
-for (let i = 0; i < PARTICLE_COUNT; i++) {
+const particleSwaySpeeds = new Float32Array(MAX_PARTICLE_COUNT);
+for (let i = 0; i < MAX_PARTICLE_COUNT; i++) {
   particleSwaySpeeds[i] = 0.2 + Math.random() * 0.4;
 }
 
 /** 各パーティクルの揺れ振幅（プリアロケート） */
-const particleSwayAmplitudes = new Float32Array(PARTICLE_COUNT);
-for (let i = 0; i < PARTICLE_COUNT; i++) {
+const particleSwayAmplitudes = new Float32Array(MAX_PARTICLE_COUNT);
+for (let i = 0; i < MAX_PARTICLE_COUNT; i++) {
   particleSwayAmplitudes[i] = 0.002 + Math.random() * 0.005;
 }
 
@@ -86,8 +92,7 @@ const DustParticles = React.memo(function DustParticles({
   roomHeight,
   qualityLevel,
 }: DustParticlesProps) {
-  // high品質でのみレンダリング
-  if (qualityLevel !== 'high') return null;
+  const particleCount = PARTICLE_COUNTS[qualityLevel];
 
   const pointsRef = useRef<THREE.Points>(null);
   const timeRef = useRef(0);
@@ -95,13 +100,13 @@ const DustParticles = React.memo(function DustParticles({
   const bounds = useMemo(() => computeRoomBounds(walls), [walls]);
   const windowPositions = useMemo(() => computeWindowPositions(walls, openings), [walls, openings]);
 
-  // 初期パーティクル位置とサイズを生成
+  // 初期パーティクル位置とサイズを生成（品質レベルに応じた数）
   const { positions, sizes, opacities } = useMemo(() => {
-    const pos = new Float32Array(PARTICLE_COUNT * 3);
-    const sz = new Float32Array(PARTICLE_COUNT);
-    const op = new Float32Array(PARTICLE_COUNT);
+    const pos = new Float32Array(particleCount * 3);
+    const sz = new Float32Array(particleCount);
+    const op = new Float32Array(particleCount);
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
       pos[i3] = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);     // x
       pos[i3 + 1] = Math.random() * roomHeight;                                 // y
@@ -111,7 +116,7 @@ const DustParticles = React.memo(function DustParticles({
     }
 
     return { positions: pos, sizes: sz, opacities: op };
-  }, [bounds, roomHeight]);
+  }, [bounds, roomHeight, particleCount]);
 
   // BufferGeometryの構築
   const geometry = useMemo(() => {
@@ -165,7 +170,7 @@ const DustParticles = React.memo(function DustParticles({
     const posArray = posAttr.array as Float32Array;
     const opArray = opAttr.array as Float32Array;
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
 
       // ゆっくり上昇

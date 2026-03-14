@@ -1191,8 +1191,8 @@ function Counter({ scale, color, palette, pbr, selected, woodType, qualityLevel 
   return (
     <group>
       {/* 天板（オーバーハング強化 + 面取り） */}
-      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={qualityLevel === 'high' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={1.2} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
+      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.35} clearcoatRoughness={0.2} envMapIntensity={2.0} iridescence={0.02} iridescenceIOR={1.5} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* トリムライン（天板と本体の間） */}
       <mesh position={[0, h - 0.035, 0]}>
@@ -1242,7 +1242,7 @@ function TableSquare({ scale, color, palette, pbr, selected, woodType, qualityLe
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
   const legH = h - 0.04;
-  const legSegs = qualityLevel === 'high' ? 24 : 8;
+  const legSegs = qualityLevel === 'high' ? 48 : 8;
   const legGeoKey = `table-leg-${legH.toFixed(2)}-${legSegs}`;
   const legGeo = useMemo(() =>
     getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(legTopR, legBotR, legH, legSegs)),
@@ -1257,15 +1257,15 @@ function TableSquare({ scale, color, palette, pbr, selected, woodType, qualityLe
     getCachedPhysicalMaterial(legMatKey, {
       color: legColor, roughness: pbr.roughness * 0.9,
       metalness: Math.min(pbr.metalness + 0.1, 1.0),
-      clearcoat: 0.35, clearcoatRoughness: 0.15, envMapIntensity: 1.5,
+      clearcoat: 0.5, clearcoatRoughness: 0.15, envMapIntensity: 2.5, iridescence: 0.05,
     }),
   [legMatKey, legColor, pbr.roughness, pbr.metalness]);
 
   return (
     <group>
       {/* 天板 — 面取りを強化した木目風の自然な艶 */}
-      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={qualityLevel === 'high' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.2} clearcoatRoughness={0.4} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
+      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.4} clearcoatRoughness={0.2} envMapIntensity={1.8} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* 天板エッジハイライト */}
       <mesh position={[0, h + 0.021, 0]} frustumCulled>
@@ -1358,7 +1358,7 @@ function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, me
   const legColor = color ? adjustColor(color, -40) : palette.metal;
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
-  const chairLegSegs = qualityLevel === 'high' ? 24 : 8;
+  const chairLegSegs = qualityLevel === 'high' ? 48 : 8;
   const legGeoKey = `chair-leg-${seatH.toFixed(2)}-${chairLegSegs}`;
   const legGeo = useMemo(() =>
     getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(0.015, 0.018, seatH, chairLegSegs)),
@@ -1383,29 +1383,29 @@ function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, me
         rotation={[-0.03, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={frameColor} emissiveIntensity={selected ? 0.15 : 0} />
+        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.25} clearcoatRoughness={0.3} envMapIntensity={1.5} emissive={frameColor} emissiveIntensity={selected ? 0.15 : 0} />
       </RoundedBox>
       {/* 座面クッション — 丸みを持たせたふっくら形状 */}
       <RoundedBox
         args={[w - 0.03, 0.04, d - 0.03]}
         radius={0.02}
-        smoothness={qualityLevel === 'high' ? 4 : 2}
+        smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2}
         position={[0, seatH + 0.032, 0.005]}
         rotation={[-0.03, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.98} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.3} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.4} sheenColor={new THREE.Color(cushionColor).multiplyScalar(1.1)} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
       </RoundedBox>
       {/* 背もたれフレーム — わずかに曲面化 */}
       <RoundedBox
         args={[w - 0.01, h * 0.45, 0.025]}
         radius={0.02}
-        smoothness={qualityLevel === 'high' ? 4 : 2}
+        smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2}
         position={[0, h * 0.73, -d / 2 + 0.015]}
         rotation={[0.1, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
+        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.25} clearcoatRoughness={0.3} envMapIntensity={1.5} />
       </RoundedBox>
       {/* 背もたれ横スラット（2本） — ジオメトリ共有 */}
       {[0.62, 0.82].map((ratio, i) => (
@@ -1499,7 +1499,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
   const fabricTex = useMemo(() => !color ? generateFabricTexture(furnitureTexSize, furnitureTexSize, styleName, fabricType) : null, [color, styleName, fabricType, furnitureTexSize]);
 
   // キャッシュされた脚ジオメトリ/マテリアル
-  const footSegs = qualityLevel === 'high' ? 24 : 8;
+  const footSegs = qualityLevel === 'high' ? 48 : 8;
   const footGeoKey = `sofa-foot-${footR.toFixed(3)}-${footSegs}`;
   const footGeo = useMemo(() =>
     getCachedGeometry(footGeoKey, () => new THREE.CylinderGeometry(footR, footR, footR * 2, footSegs)),
@@ -1536,7 +1536,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           key={`seat-${i}`}
           args={[cushionW, h * 0.25, d * 0.7]}
           radius={0.06}
-          smoothness={qualityLevel === 'high' ? 4 : 2}
+          smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2}
           position={[side * (cushionW / 2 + 0.01), h * 0.38, d * 0.05]}
           castShadow
         >
@@ -1559,7 +1559,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           key={`back-${i}`}
           args={[cushionW, h * 0.5, d * 0.22]}
           radius={0.05}
-          smoothness={qualityLevel === 'high' ? 4 : 2}
+          smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2}
           position={[side * (cushionW / 2 + 0.01), h * 0.6, -d * 0.33]}
           castShadow
         >
@@ -1581,7 +1581,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           key={`arm-${i}`}
           args={[armW, h * 0.4, d * 0.9]}
           radius={0.04}
-          smoothness={qualityLevel === 'high' ? 4 : 2}
+          smoothness={qualityLevel === 'high' ? 8 : qualityLevel === 'medium' ? 4 : 2}
           position={[side * (w / 2 - armW / 2 - 0.01), h * 0.42, -d * 0.02]}
           castShadow
         >
@@ -2041,6 +2041,7 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
           transmission={0.92}
           ior={1.52}
           thickness={0.04}
+          dispersion={0.3}
           envMapIntensity={2.5}
           clearcoat={1.0}
           clearcoatRoughness={0.05}
@@ -2050,7 +2051,7 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
       {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z], i) => (
         <mesh key={`edge-${i}`} position={[x * (w / 2 - 0.005), baseH + footH + (h - baseH - topH - footH) / 2, z * (d / 2 - 0.005)]}>
           <cylinderGeometry args={[0.005, 0.005, h - baseH - topH - footH, 6]} />
-          <meshPhysicalMaterial color="#1a1a1a" roughness={0.15} metalness={0.6} envMapIntensity={2.0} clearcoat={0.5} clearcoatRoughness={0.1} />
+          <meshPhysicalMaterial color="#1a1a1a" roughness={0.15} metalness={0.6} envMapIntensity={2.5} clearcoat={0.5} clearcoatRoughness={0.1} iridescence={0.08} />
         </mesh>
       ))}
       {/* ガラス棚板（2枚） */}
@@ -2067,6 +2068,7 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
               transmission={0.88}
               ior={1.52}
               thickness={0.008}
+              dispersion={0.3}
               envMapIntensity={1.8}
             />
           </mesh>

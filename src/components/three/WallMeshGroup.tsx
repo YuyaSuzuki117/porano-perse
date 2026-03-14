@@ -870,7 +870,7 @@ interface WallMeshProps {
 }
 
 function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, sectionClipPlane, sectionCutHeight }: WallMeshProps) {
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const materialRef = useRef<THREE.MeshPhysicalMaterial>(null);
   const currentOpacityRef = useRef(1.0);
 
   // 壁の2D法線を事前計算
@@ -1012,6 +1012,11 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
   const { map: wallTexture, normalMap, roughnessMap: wallRoughnessMap, metalness } =
     useWallTexture(effectiveTextureType, color, wall);
 
+  // cinema-grade: スタイル別壁面envMapIntensity / clearcoat
+  const isLuxuryOrModern = effectiveTextureType === 'luxury' || effectiveTextureType === 'modern';
+  const wallEnvMapIntensity = isLuxuryOrModern ? 1.2 : 0.8;
+  const wallClearcoat = isLuxuryOrModern ? 0.08 : 0.05;
+
   // セクションカットの断面エッジ（切断位置に暗色の線を表示）
   const sectionEdge = useMemo(() => {
     if (!sectionClipPlane) return null;
@@ -1027,7 +1032,7 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
         castShadow
         receiveShadow
       >
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
@@ -1035,6 +1040,8 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}
+          envMapIntensity={wallEnvMapIntensity}
+          clearcoat={wallClearcoat}
           transparent
           opacity={wallDisplayMode === 'transparent' ? 0.3 : 1}
           side={wallDisplayMode === 'transparent' ? THREE.DoubleSide : THREE.FrontSide}

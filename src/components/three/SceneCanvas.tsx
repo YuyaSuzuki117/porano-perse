@@ -216,8 +216,8 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 4 } : {}) }}
+      dpr={[1, 2.5]}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 8 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -391,9 +391,9 @@ export function SceneCanvas({
         {qualityLevel === 'high' && (
           <ContactShadows
             position={[0, 0.001, 0]}
-            opacity={isNight ? 0.35 : 0.55}
+            opacity={isNight ? 0.4 : 0.65}
             scale={maxDim * 1.5}
-            blur={4.0}
+            blur={4.5}
             far={5}
             resolution={2048}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}

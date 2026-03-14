@@ -296,66 +296,69 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
   // 反射性のある床タイプ: marble, tile, checkerboard, linoleum, 木目(clearcoat)
   const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical', 'cafe', 'scandinavian', 'herringbone', 'chevron', 'basketweave']);
 
-  const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness } = useMemo(() => {
+  const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness, iridescence } = useMemo(() => {
     // high品質ではポリッシュ系床の反射をさらに強化
     const isHigh = qualityLevel === 'high';
     switch (effectiveFloorType) {
       case 'luxury':
-        // 磨き大理石 — 非常に強い反射 (high品質でさらに強化)
+        // 磨き大理石 — 非常に強い反射 (high品質でさらに強化, clearcoat≥0.15保証)
         return {
           metalness: isHigh ? 0.4 : 0.4,
           roughness: isHigh ? 0.1 : 0.08,
           envMapIntensity: isHigh ? 2.4 : 3.5,
           clearcoat: isHigh ? 0.5 : 0.8,
           clearcoatRoughness: isHigh ? 0.1 : 0.05,
+          iridescence: 0,
         };
       case 'modern':
-        // 大判磁器タイル — 反射強化 (polished)
+        // 大判磁器タイル — 反射強化 (polished, clearcoat≥0.15保証)
         return {
           metalness: isHigh ? 0.25 : 0.25,
           roughness: isHigh ? 0.15 : 0.2,
           envMapIntensity: isHigh ? 1.8 : 2.8,
           clearcoat: isHigh ? 0.3 : 0.5,
           clearcoatRoughness: isHigh ? 0.2 : 0.1,
+          iridescence: 0,
         };
       case 'medical':
-        // リノリウム — ポリッシュ床 (high品質で反射強化)
+        // リノリウム — ポリッシュ床 (high品質で反射強化, clearcoat≥0.15保証)
         return {
           metalness: isHigh ? 0.1 : 0.1,
           roughness: isHigh ? 0.25 : 0.45,
           envMapIntensity: isHigh ? 1.8 : 1.0,
           clearcoat: isHigh ? 0.3 : 0.15,
           clearcoatRoughness: isHigh ? 0.2 : 0.35,
+          iridescence: 0,
         };
       case 'retro':
-        // チェッカーボードタイル — ワックスがけした光沢
-        return { metalness: 0.15, roughness: 0.35, envMapIntensity: isHigh ? 1.8 : 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25 };
+        // チェッカーボードタイル — ワックスがけした光沢 (clearcoat≥0.15保証)
+        return { metalness: 0.15, roughness: 0.35, envMapIntensity: isHigh ? 1.8 : 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25, iridescence: 0 };
       case 'minimal':
-        // 白タイル — 控えめな反射
-        return { metalness: 0.1, roughness: 0.4, envMapIntensity: isHigh ? 1.44 : 1.2, clearcoat: 0.2, clearcoatRoughness: 0.3 };
+        // 白タイル — 控えめな反射 (clearcoat≥0.15保証)
+        return { metalness: 0.1, roughness: 0.4, envMapIntensity: isHigh ? 1.44 : 1.2, clearcoat: 0.2, clearcoatRoughness: 0.3, iridescence: 0 };
       case 'cafe':
         // 木目フローリング — ワックスがけした控えめな光沢
-        return { metalness: 0.05, roughness: 0.55, envMapIntensity: isHigh ? 0.96 : 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4 };
+        return { metalness: 0.05, roughness: 0.55, envMapIntensity: isHigh ? 0.96 : 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4, iridescence: 0 };
       case 'scandinavian':
         // ライトオーク — ナチュラルオイル仕上げ
-        return { metalness: 0.03, roughness: 0.6, envMapIntensity: isHigh ? 0.72 : 0.6, clearcoat: 0.1, clearcoatRoughness: 0.45 };
+        return { metalness: 0.03, roughness: 0.6, envMapIntensity: isHigh ? 0.72 : 0.6, clearcoat: 0.1, clearcoatRoughness: 0.45, iridescence: 0 };
       case 'japanese':
-        // 畳 — マットだが微かな繊維のツヤ
-        return { metalness: 0.0, roughness: 0.85, envMapIntensity: isHigh ? 0.36 : 0.3, clearcoat: 0, clearcoatRoughness: 0 };
+        // 畳 — マットだが微かな繊維のツヤ（cinema-grade: envMap≥0.5）
+        return { metalness: 0.0, roughness: 0.85, envMapIntensity: isHigh ? 0.5 : 0.3, clearcoat: 0, clearcoatRoughness: 0, iridescence: 0 };
       case 'industrial':
-        // コンクリート打ちっぱなし — 非常にマット
-        return { metalness: 0.05, roughness: 0.92, envMapIntensity: isHigh ? 0.3 : 0.25, clearcoat: 0, clearcoatRoughness: 0 };
+        // コンクリート打ちっぱなし — 非常にマット（cinema-grade: envMap≥0.5）
+        return { metalness: 0.05, roughness: 0.92, envMapIntensity: isHigh ? 0.5 : 0.25, clearcoat: 0, clearcoatRoughness: 0, iridescence: 0 };
       case 'herringbone':
-        // ヘリンボーン木目 — ワックスがけした高級木床
-        return { metalness: 0.05, roughness: 0.45, envMapIntensity: isHigh ? 1.2 : 1.0, clearcoat: 0.2, clearcoatRoughness: 0.3 };
+        // ヘリンボーン木目 — ワックスがけした高級木床（cinema-grade）
+        return { metalness: 0.05, roughness: 0.45, envMapIntensity: isHigh ? 2.4 : 1.0, clearcoat: 0.4, clearcoatRoughness: 0.15, iridescence: 0.015 };
       case 'chevron':
-        // シェブロン木目 — モダンな光沢
-        return { metalness: 0.06, roughness: 0.4, envMapIntensity: isHigh ? 1.44 : 1.2, clearcoat: 0.25, clearcoatRoughness: 0.25 };
+        // シェブロン木目 — モダンな光沢（cinema-grade）
+        return { metalness: 0.06, roughness: 0.4, envMapIntensity: isHigh ? 2.8 : 1.2, clearcoat: 0.5, clearcoatRoughness: 0.12, iridescence: 0.015 };
       case 'basketweave':
-        // 市松模様 — 伝統的な木床
-        return { metalness: 0.03, roughness: 0.55, envMapIntensity: isHigh ? 0.84 : 0.7, clearcoat: 0.1, clearcoatRoughness: 0.4 };
+        // 市松模様 — 伝統的な木床（cinema-grade）
+        return { metalness: 0.03, roughness: 0.55, envMapIntensity: isHigh ? 1.6 : 0.7, clearcoat: 0.1, clearcoatRoughness: 0.4, iridescence: 0 };
       default:
-        return { metalness: 0.0, roughness: 0.9, envMapIntensity: isHigh ? 0.36 : 0.3, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.0, roughness: 0.9, envMapIntensity: isHigh ? 0.8 : 0.3, clearcoat: 0, clearcoatRoughness: 0, iridescence: 0 };
     }
   }, [effectiveFloorType, qualityLevel]);
 
@@ -381,6 +384,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
           envMapIntensity={envMapIntensity}
           clearcoat={clearcoat}
           clearcoatRoughness={clearcoatRoughness}
+          iridescence={iridescence}
         />
       ) : (
         <meshStandardMaterial

@@ -87,7 +87,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
   const b = brightness * styleLighting.intensityMult;
 
   // 天井ダウンライトグリッド計算（品質レベルで上限を制限）
-  const maxDownlights = qualityLevel === 'low' ? 6 : qualityLevel === 'medium' ? 12 : 20;
+  const maxDownlights = qualityLevel === 'low' ? 6 : qualityLevel === 'medium' ? 12 : 30;
   const downlights = useMemo((): DownlightPosition[] => {
     const cols = Math.max(2, Math.ceil(roomBounds.w / 2.5));
     const rows = Math.max(2, Math.ceil(roomBounds.d / 2.5));
@@ -148,10 +148,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           intensity={1.2 * b}
           color={lightColor}
           castShadow
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[4096, 4096]}
           shadow-bias={-0.0001}
           shadow-radius={5}
-          shadow-blurSamples={10}
+          shadow-blurSamples={16}
           shadow-normalBias={0.02}
           shadow-camera-near={0.1}
           shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -178,21 +178,21 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       <hemisphereLight
         color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
         groundColor={styleLighting.groundWarmth}
-        intensity={0.6 * b}
+        intensity={0.7 * b}
       />
 
       {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 */}
       <hemisphereLight
         color="#87CEEB"
         groundColor="#4A3520"
-        intensity={0.15}
+        intensity={0.2}
       />
 
       {/* バウンスライト（床からの間接光シミュレーション） */}
       <hemisphereLight
         color="#8B7355"
         groundColor={lerpColor('#F5E6D3', styleLighting.color, 0.3)}
-        intensity={0.35 * b * styleLighting.indirectIntensityMult}
+        intensity={0.45 * b * styleLighting.indirectIntensityMult}
         position={[roomBounds.cx, 0.1, roomBounds.cz]}
       />
 
@@ -200,7 +200,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       {styleLighting.warmFillIntensity > 0 && (
         <pointLight
           position={[roomBounds.cx, 0.15, roomBounds.cz]}
-          intensity={styleLighting.warmFillIntensity * b * 2}
+          intensity={styleLighting.warmFillIntensity * b * 2.5}
           color={styleLighting.warmFillColor}
           distance={Math.max(roomBounds.w, roomBounds.d) * 1.5}
           decay={2}
@@ -224,12 +224,12 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           roomHeight * 2.5,
           roomBounds.cz + roomBounds.d * 0.4,
         ]}
-        intensity={1.2 * b}
+        intensity={1.4 * b}
         color={lightColor}
         castShadow
         shadow-mapSize={[8192, 8192]}
         shadow-bias={-0.0001}
-        shadow-radius={4}
+        shadow-radius={3}
         shadow-blurSamples={25}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
@@ -375,7 +375,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           roomHeight * 2.2,
           roomBounds.cz - roomBounds.d * 0.7,
         ]}
-        intensity={0.1}
+        intensity={0.15}
         color="#E8F0FF"
       />
     </>
