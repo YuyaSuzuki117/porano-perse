@@ -449,13 +449,22 @@ export default function EditorPage() {
               {/* 座席数カウンター */}
               {!photoMode && <SeatCounter furniture={furniture} />}
               {!photoMode && (
-                <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
-                  <span>ドラッグ: 回転</span>
-                  <span className="text-white/40">|</span>
-                  <span>ピンチ: ズーム</span>
+                <div className="absolute bottom-14 left-2 right-2 flex items-center justify-between">
+                  <div className="bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
+                    <span>ドラッグ: 回転</span>
+                    <span className="text-white/40">|</span>
+                    <span>ピンチ: ズーム</span>
+                  </div>
+                  <button
+                    onClick={() => { setPhotoMode(true); setMobileTab('3d'); }}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform"
+                    aria-label="フォトモードで撮影"
+                  >
+                    <span>📷</span>
+                    <span>撮影</span>
+                  </button>
                 </div>
               )}
-              {/* フォトモードUIは外側のdivに移動済み */}
               {isDragOver && (
                 <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
                   <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
@@ -547,6 +556,8 @@ export default function EditorPage() {
                 onClick={() => {
                   setFabOpen(false);
                   setPhotoMode(true);
+                  setMobileTab('3d');
+                  setViewMode('3d');
                 }}
                 className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center text-lg active:scale-90 transition-transform"
                 aria-label="フォトモードで撮影"
@@ -598,7 +609,10 @@ export default function EditorPage() {
           isOpen={showMobilePanel}
           onClose={() => {
             setShowMobilePanel(false);
-            setMobileTab(viewMode === '3d' ? '3d' : '2d');
+            // photoMode中はZustandのviewModeが'3d'に変わっているが、
+            // クロージャ内のviewModeはレンダー時の値なので直接チェック
+            const currentVM = useEditorStore.getState().viewMode;
+            setMobileTab(currentVM === '3d' ? '3d' : '2d');
           }}
         />
 
