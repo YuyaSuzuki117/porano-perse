@@ -342,10 +342,15 @@ export default function EditorPage() {
       if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
         setShowFurniture(!showFurniture);
       }
+
+      // P キー: フォトモード切替
+      if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
+        setPhotoMode(!photoMode);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copyFurniture, pasteFurniture, deleteSelected, duplicateFurniture, duplicateSelectedFurniture, selectAllFurniture, selectedFurnitureId, selectedFurnitureIds, setSelectedFurniture, wallDisplayMode, setWallDisplayMode, ceilingVisible, setCeilingVisible, showGrid, setShowGrid, showDimensions, setShowDimensions, showFurniture, setShowFurniture]);
+  }, [undo, redo, copyFurniture, pasteFurniture, deleteSelected, duplicateFurniture, duplicateSelectedFurniture, selectAllFurniture, selectedFurnitureId, selectedFurnitureIds, setSelectedFurniture, wallDisplayMode, setWallDisplayMode, ceilingVisible, setCeilingVisible, showGrid, setShowGrid, showDimensions, setShowDimensions, showFurniture, setShowFurniture, photoMode, setPhotoMode]);
 
   const enableWatermark = useEditorStore((s) => s.enableWatermark);
   const [isRendering, setIsRendering] = useState(false);
@@ -808,25 +813,25 @@ export default function EditorPage() {
                 <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-40">
                   <button
                     onClick={() => takeHiResScreenshot()}
-                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-xl transition-all active:scale-95"
+                    className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
                   >
-                    <span className="text-lg">📷</span>
+                    <span className="text-lg group-hover:animate-pulse">📷</span>
                     <span>撮影 (4K)</span>
                   </button>
                   <button
                     onClick={() => setPhotoMode(false)}
-                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 transition-all"
+                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 hover:text-white hover:scale-105 transition-all duration-200"
                   >
-                    フォトモード終了
+                    フォトモード終了 <span className="text-white/50 ml-1">P</span>
                   </button>
                 </div>
               )}
               {isDragOver && (
-                <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
-                  <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
-                    <div className="text-3xl mb-2">📦</div>
-                    <div className="text-sm font-medium">3Dモデルをドロップして読込</div>
-                    <div className="text-xs text-purple-200 mt-1">.glb / .gltf</div>
+                <div className="absolute inset-0 bg-purple-500/20 backdrop-blur-[2px] border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none animate-[dropzonePulse_1.5s_ease-in-out_infinite]">
+                  <div className="bg-purple-600/90 text-white px-8 py-5 rounded-xl shadow-2xl text-center animate-[dropzoneBounce_0.3s_ease-out]">
+                    <div className="text-4xl mb-2 animate-bounce">📦</div>
+                    <div className="text-sm font-bold">3Dモデルをドロップして読込</div>
+                    <div className="text-xs text-purple-200 mt-1.5 bg-purple-700/50 px-3 py-1 rounded-full inline-block">.glb / .gltf</div>
                   </div>
                 </div>
               )}

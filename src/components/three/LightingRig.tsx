@@ -80,7 +80,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
   // Color based on warmth slider + スタイル別色温度をブレンド
   const baseLightColor = lerpColor('#E0E8FF', '#FFF0D0', effectiveWarmth);
   const lightColor = lerpColor(baseLightColor, styleLighting.color, 0.5);
-  const ambientColor = lerpColor('#FFFFFF', '#FFF5E8', effectiveWarmth);
+  const ambientColor = lerpColor('#FFF8F0', '#FFF0D8', effectiveWarmth);
   const fillColor = lerpColor(lerpColor('#E0E8FF', '#FFE8D0', effectiveWarmth), styleLighting.color, 0.3);
 
   // スタイル別強度倍率を適用
@@ -117,7 +117,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
 
       {/* メインHemisphereLight — groundColor をスタイル別暖色に */}
       <hemisphereLight
-        color="#B0D0F0"
+        color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
         groundColor={styleLighting.groundWarmth}
         intensity={0.6 * b}
       />
@@ -167,7 +167,8 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
         castShadow
         shadow-mapSize={qualityLevel === 'low' ? [1024, 1024] : qualityLevel === 'medium' ? [2048, 2048] : [4096, 4096]}
         shadow-bias={-0.0003}
-        shadow-radius={qualityLevel === 'high' ? 6 : 4}
+        shadow-radius={qualityLevel === 'high' ? 8 : 5}
+        shadow-blurSamples={qualityLevel === 'high' ? 20 : 10}
         shadow-normalBias={0.03}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -204,6 +205,8 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
         shadow-mapSize={qualityLevel === 'low' ? [512, 512] : qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
+        shadow-radius={qualityLevel === 'high' ? 8 : 4}
+        shadow-blurSamples={qualityLevel === 'high' ? 16 : 8}
       />
 
       <spotLight
@@ -279,7 +282,8 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
           castShadow
           shadow-mapSize={qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
           shadow-bias={-0.0003}
-          shadow-radius={qualityLevel === 'high' ? 4 : 2}
+          shadow-radius={qualityLevel === 'high' ? 6 : 3}
+          shadow-blurSamples={qualityLevel === 'high' ? 16 : 8}
           shadow-normalBias={0.03}
           shadow-camera-near={0.1}
           shadow-camera-far={roomBounds.maxDim * 2.5}

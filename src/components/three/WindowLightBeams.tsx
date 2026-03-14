@@ -75,17 +75,10 @@ interface LightBeamMeshProps {
 }
 
 function LightBeamMesh({ opening, wall, beamLength, isNight }: LightBeamMeshProps) {
-  const geometry = useMemo(() => {
+  const { geometry, vertexColors } = useMemo(() => {
     const angle = wallAngle(wall);
 
     // 壁の法線（内側向き）: wall.start→wall.end の右向き法線
-    // 2D: wallDir = (cos(angle), sin(angle)), 右法線 = (sin(angle), -cos(angle))
-    // 3D座標系では z = 2DのY なので: normalX = sin(angle), normalZ = -cos(angle)
-    // ただし壁メッシュは -angle で回転されており、pointLight は -thickness/2 で内側配置
-    // 法線方向 = (sin(angle), 0, -cos(angle)) これが壁の「手前側」
-    // 内側 or 外側は壁配置に依存するが、WallMeshGroup の pointLight が
-    // z = -thickness/2 - 0.1 で配置しているので、ローカル -z が内側
-
     const nx = Math.sin(angle);
     const nz = -Math.cos(angle);
 
@@ -117,49 +110,47 @@ function LightBeamMesh({ opening, wall, beamLength, isNight }: LightBeamMeshProp
     const spread = 1.5;
 
     // 8頂点: 0-3が窓面、4-7が先端面
-    // 窓面の4頂点（ワールド座標）
-    const v0 = [ // 左下
+    const v0 = [
       wx - tx * hw + nx * wall.thickness * 0.5,
       wy - hh,
       wz - tz * hw + nz * wall.thickness * 0.5,
     ];
-    const v1 = [ // 右下
+    const v1 = [
       wx + tx * hw + nx * wall.thickness * 0.5,
       wy - hh,
       wz + tz * hw + nz * wall.thickness * 0.5,
     ];
-    const v2 = [ // 右上
+    const v2 = [
       wx + tx * hw + nx * wall.thickness * 0.5,
       wy + hh,
       wz + tz * hw + nz * wall.thickness * 0.5,
     ];
-    const v3 = [ // 左上
+    const v3 = [
       wx - tx * hw + nx * wall.thickness * 0.5,
       wy + hh,
       wz - tz * hw + nz * wall.thickness * 0.5,
     ];
 
-    // 先端面の4頂点（窓面中心からオフセット + 拡大）
     const ecx = wx + endOffsetX + nx * wall.thickness * 0.5;
     const ecy = wy + endOffsetY;
     const ecz = wz + endOffsetZ + nz * wall.thickness * 0.5;
 
-    const v4 = [ // 左下
+    const v4 = [
       ecx - tx * hw * spread,
       ecy - hh * spread,
       ecz - tz * hw * spread,
     ];
-    const v5 = [ // 右下
+    const v5 = [
       ecx + tx * hw * spread,
       ecy - hh * spread,
       ecz + tz * hw * spread,
     ];
-    const v6 = [ // 右上
+    const v6 = [
       ecx + tx * hw * spread,
       ecy + hh * spread,
       ecz + tz * hw * spread,
     ];
-    const v7 = [ // 左上
+    const v7 = [
       ecx - tx * hw * spread,
       ecy + hh * spread,
       ecz - tz * hw * spread,
@@ -170,39 +161,50 @@ function LightBeamMesh({ opening, wall, beamLength, isNight }: LightBeamMeshProp
       ...v4, ...v5, ...v6, ...v7,
     ]);
 
+    // 頂点カラー: 窓面(0-3)は明るく、先端面(4-7)はフェードアウト
+    // これにより光ビームが窓から遠ざかるほど自然に減衰
+    const colors = new Float32Array([
+      // 窓面 v0-v3: 明るい暖色
+      1.0, 0.98, 0.88,
+      1.0, 0.98, 0.88,
+      1.0, 0.98, 0.88,
+      1.0, 0.98, 0.88,
+      // 先端面 v4-v7: フェードアウト（暖色寄りの薄い色）
+      1.0, 0.95, 0.8,
+      1.0, 0.95, 0.8,
+      1.0, 0.95, 0.8,
+      1.0, 0.95, 0.8,
+    ]);
+
     // 6面 x 2三角形 = 12三角形
     const indices = new Uint16Array([
-      // 窓面（前面）
       0, 1, 2, 0, 2, 3,
-      // 先端面（後面）
       4, 6, 5, 4, 7, 6,
-      // 下面
       0, 5, 1, 0, 4, 5,
-      // 上面
       3, 2, 6, 3, 6, 7,
-      // 左面
       0, 3, 7, 0, 7, 4,
-      // 右面
       1, 5, 6, 1, 6, 2,
     ]);
 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.setIndex(new THREE.BufferAttribute(indices, 1));
     geo.computeVertexNormals();
 
-    return geo;
+    return { geometry: geo, vertexColors: true as const };
   }, [opening, wall, beamLength]);
 
   return (
     <mesh geometry={geometry} renderOrder={999}>
       <meshBasicMaterial
-        color={isNight ? '#8888CC' : '#FFFFEE'}
+        color={isNight ? '#8888CC' : '#FFF5D6'}
         transparent={true}
-        opacity={isNight ? 0.03 : 0.08}
+        opacity={isNight ? 0.03 : 0.1}
         side={THREE.DoubleSide}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
+        vertexColors={vertexColors}
       />
     </mesh>
   );

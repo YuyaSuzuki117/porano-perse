@@ -468,10 +468,15 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </div>
             {/* 断面カット高さスライダー */}
             {wallDisplayMode === 'section' && (
-              <div className="mt-1.5">
-                <label className="block text-[9px] text-gray-400 mb-0.5">
-                  カット高さ: {sectionCutHeight.toFixed(1)}m
-                </label>
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-medium text-blue-700">
+                    カット高さ
+                  </label>
+                  <span className="text-[11px] font-bold text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-200 tabular-nums">
+                    {sectionCutHeight.toFixed(1)}m
+                  </span>
+                </div>
                 <input
                   type="range"
                   min={0.5}
@@ -479,8 +484,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   step={0.1}
                   value={sectionCutHeight}
                   onChange={(e) => setSectionCutHeight(parseFloat(e.target.value))}
-                  className="w-full h-1.5 accent-blue-600"
+                  className="w-full h-2 accent-blue-600 cursor-pointer"
                 />
+                <div className="flex justify-between text-[8px] text-blue-400 mt-0.5">
+                  <span>0.5m</span>
+                  <span>2.5m</span>
+                </div>
               </div>
             )}
             {/* ジオラマモードボタン */}
@@ -614,12 +623,19 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               <button
                 key={key}
                 onClick={() => setStyle(key)}
-                className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`relative px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
                   style === key
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50 scale-[1.02]'
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-sm border border-gray-200'
                 }`}
               >
+                {style === key && (
+                  <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center">
+                    <svg viewBox="0 0 12 12" className="w-2.5 h-2.5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 6l3 3 5-5" />
+                    </svg>
+                  </span>
+                )}
                 <div
                   className="w-full h-1.5 rounded mb-1"
                   style={{
@@ -1942,7 +1958,7 @@ function Section({
       >
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
         {isCollapsible && (
-          <span className={`text-[10px] text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+          <span className={`text-[10px] text-gray-400 transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-90' : ''}`}>▶</span>
         )}
       </button>
       <div className="section-content" data-open={isCollapsible ? isOpen : true}>

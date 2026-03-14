@@ -806,6 +806,9 @@ const MAX_ZOOM = 4;
 const WALL_COLOR = PAL.darkGray;
 const FLOOR_COLOR_1 = '#d4c4a8';
 const FLOOR_COLOR_2 = '#c8b898';
+const FLOOR_PLANK_DARK = '#b8a880';
+const FLOOR_PLANK_LIGHT = '#dcd0b4';
+const FLOOR_PLANK_LINE = '#a09070';
 const SHADOW_COLOR = 'rgba(0,0,0,0.18)';
 const SELECTION_COLORS = [PAL.yellow, PAL.orange]; // blinking cycle
 
@@ -825,7 +828,7 @@ interface CatalogPopupState {
 }
 
 // ─── Tool types ────────────────────────────────────────────────────────
-type PixelTool = 'select' | 'move' | 'rotate' | 'delete';
+type PixelTool = 'select' | 'move' | 'rotate' | 'delete' | 'crt';
 
 // ─── Helper: render sprite to canvas ───────────────────────────────────
 function drawSprite(
@@ -1070,15 +1073,37 @@ export default function PixelRoomEditor() {
         ctx.clip();
       }
 
-      // Checkerboard tiles
+      // Flooring pattern — herringbone-style dot planks
       const startCol = Math.floor((floorLeft) / tileSize) - 1;
       const endCol = Math.ceil((floorRight) / tileSize) + 1;
       const startRow = Math.floor((floorTop) / tileSize) - 1;
       const endRow = Math.ceil((floorBottom) / tileSize) + 1;
       for (let r = startRow; r < endRow; r++) {
         for (let c = startCol; c < endCol; c++) {
-          ctx.fillStyle = (r + c) % 2 === 0 ? FLOOR_COLOR_1 : FLOOR_COLOR_2;
+          // Base plank color alternates in pairs for herringbone illusion
+          const plankGroup = Math.floor(c / 2) + Math.floor(r / 2);
+          const isLight = plankGroup % 2 === 0;
+          ctx.fillStyle = isLight ? FLOOR_COLOR_1 : FLOOR_COLOR_2;
           ctx.fillRect(c * tileSize, r * tileSize, tileSize + 1, tileSize + 1);
+
+          // Wood grain dots (tiny pixel detail)
+          const grainSeed = ((c * 7 + r * 13) & 0xFF);
+          if (grainSeed % 5 === 0) {
+            ctx.fillStyle = isLight ? FLOOR_PLANK_LIGHT : FLOOR_PLANK_DARK;
+            const gx = c * tileSize + (grainSeed % 3 + 1) * (tileSize / 5);
+            const gy = r * tileSize + ((grainSeed >> 2) % 3 + 1) * (tileSize / 5);
+            const dotSize = Math.max(1, tileSize / 8);
+            ctx.fillRect(gx, gy, dotSize, dotSize);
+          }
+
+          // Plank edge lines (horizontal seams every 2 rows, vertical every 4 cols staggered)
+          ctx.fillStyle = FLOOR_PLANK_LINE;
+          if (r % 2 === 0) {
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize + 1, Math.max(1, tileSize / 12));
+          }
+          if ((c + (r % 2 === 0 ? 0 : 2)) % 4 === 0) {
+            ctx.fillRect(c * tileSize, r * tileSize, Math.max(1, tileSize / 12), tileSize + 1);
+          }
         }
       }
       ctx.restore();
@@ -1148,13 +1173,41 @@ export default function PixelRoomEditor() {
       // Draw sprite
       drawSprite(ctx, sprite, fx - halfSprite, fy - halfSprite, spritePixelSize, rotSteps);
 
-      // Selection highlight (blinking)
+      // Selection highlight (blinking pixel frame)
       if (f.id === selectedFurnitureId) {
-        ctx.strokeStyle = SELECTION_COLORS[blinkPhase];
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(fx - halfSprite - 3, fy - halfSprite - 3, spriteSize + 6, spriteSize + 6);
-        ctx.setLineDash([]);
+        const selColor = SELECTION_COLORS[blinkPhase];
+        const altColor = SELECTION_COLORS[(blinkPhase + 1) % 2];
+        const margin = 3;
+        const bx = fx - halfSprite - margin;
+        const by = fy - halfSprite - margin;
+        const bw = spriteSize + margin * 2;
+        const bh = spriteSize + margin * 2;
+        const pxSz = Math.max(2, spritePixelSize * 0.4);
+
+        // Draw pixel-art dashed border (alternating colored squares)
+        const stepsH = Math.ceil(bw / pxSz);
+        const stepsV = Math.ceil(bh / pxSz);
+        for (let i = 0; i < stepsH; i++) {
+          ctx.fillStyle = i % 2 === 0 ? selColor : altColor;
+          // Top edge
+          ctx.fillRect(bx + i * pxSz, by, pxSz, pxSz);
+          // Bottom edge
+          ctx.fillRect(bx + i * pxSz, by + bh - pxSz, pxSz, pxSz);
+        }
+        for (let i = 1; i < stepsV - 1; i++) {
+          ctx.fillStyle = i % 2 === 0 ? selColor : altColor;
+          // Left edge
+          ctx.fillRect(bx, by + i * pxSz, pxSz, pxSz);
+          // Right edge
+          ctx.fillRect(bx + bw - pxSz, by + i * pxSz, pxSz, pxSz);
+        }
+
+        // Corner dots (bright)
+        ctx.fillStyle = PAL.white;
+        ctx.fillRect(bx, by, pxSz, pxSz);
+        ctx.fillRect(bx + bw - pxSz, by, pxSz, pxSz);
+        ctx.fillRect(bx, by + bh - pxSz, pxSz, pxSz);
+        ctx.fillRect(bx + bw - pxSz, by + bh - pxSz, pxSz, pxSz);
       }
     }
 
@@ -1209,6 +1262,193 @@ export default function PixelRoomEditor() {
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
+
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      switch (e.key) {
+        case '1':
+          e.preventDefault();
+          setActiveTool('select');
+          break;
+        case '2':
+          e.preventDefault();
+          setActiveTool('move');
+          break;
+        case '3':
+          e.preventDefault();
+          setActiveTool('rotate');
+          break;
+        case '4':
+          e.preventDefault();
+          setActiveTool('delete');
+          break;
+        case '5':
+          e.preventDefault();
+          setCrtEnabled(prev => !prev);
+          break;
+        case 'r':
+        case 'R':
+          if (selectedFurnitureId) {
+            e.preventDefault();
+            const f = furniture.find(fi => fi.id === selectedFurnitureId);
+            if (f) rotateFurniture(f.id, f.rotation[1] + Math.PI / 2);
+          }
+          break;
+        case 'Delete':
+        case 'Backspace':
+          if (selectedFurnitureId) {
+            e.preventDefault();
+            deleteFurniture(selectedFurnitureId);
+            setSelectedFurniture(null);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setSelectedFurniture(null);
+          setContextMenu(null);
+          setCatalogPopup(null);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedFurnitureId, furniture, rotateFurniture, deleteFurniture, setSelectedFurniture]);
+
+  // ── Touch handlers ──
+  const getTouchCanvasPos = useCallback((touch: { clientX: number; clientY: number }): { sx: number; sy: number } => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { sx: 0, sy: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { sx: touch.clientX - rect.left, sy: touch.clientY - rect.top };
+  }, []);
+
+  const touchStartRef = useRef<{ id: number; sx: number; sy: number; time: number } | null>(null);
+  const touchPinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    setContextMenu(null);
+    setCatalogPopup(null);
+
+    if (e.touches.length === 2) {
+      // Pinch zoom start
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      touchPinchRef.current = { dist, zoom };
+      return;
+    }
+
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const { sx, sy } = getTouchCanvasPos(touch);
+    touchStartRef.current = { id: touch.identifier, sx, sy, time: Date.now() };
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cw = rect.width;
+    const ch = rect.height;
+
+    if (activeTool === 'delete') {
+      const hit = hitTestFurniture(sx, sy, cw, ch);
+      if (hit) {
+        deleteFurniture(hit.id);
+        if (selectedFurnitureId === hit.id) setSelectedFurniture(null);
+      }
+      return;
+    }
+
+    if (activeTool === 'rotate') {
+      const hit = hitTestFurniture(sx, sy, cw, ch);
+      if (hit) {
+        rotateFurniture(hit.id, hit.rotation[1] + Math.PI / 2);
+      }
+      return;
+    }
+
+    // Select / Move
+    const hit = hitTestFurniture(sx, sy, cw, ch);
+    if (hit) {
+      setSelectedFurniture(hit.id);
+      if (activeTool === 'select' || activeTool === 'move') {
+        const world = screenToWorld(sx, sy, cw, ch);
+        setDragging({
+          id: hit.id,
+          startWorld: { x: world.wx, z: world.wy },
+          startPos: [...hit.position],
+        });
+      }
+    } else {
+      setSelectedFurniture(null);
+      // Start panning on empty area
+      setIsPanning(true);
+      panStartRef.current = { x: touch.clientX, y: touch.clientY, ox: panOffset.x, oy: panOffset.y };
+    }
+  }, [activeTool, hitTestFurniture, selectedFurnitureId, panOffset, zoom, setSelectedFurniture, deleteFurniture, rotateFurniture, screenToWorld, getTouchCanvasPos]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+
+    // Pinch zoom
+    if (e.touches.length === 2 && touchPinchRef.current) {
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const scale = dist / touchPinchRef.current.dist;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, touchPinchRef.current.zoom * scale));
+      setZoom(newZoom);
+      return;
+    }
+
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+
+    if (isPanning) {
+      const dx = touch.clientX - panStartRef.current.x;
+      const dy = touch.clientY - panStartRef.current.y;
+      setPanOffset({ x: panStartRef.current.ox + dx, y: panStartRef.current.oy + dy });
+      return;
+    }
+
+    if (dragging) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const sx = touch.clientX - rect.left;
+      const sy = touch.clientY - rect.top;
+      const world = screenToWorld(sx, sy, rect.width, rect.height);
+      const dx = world.wx - dragging.startWorld.x;
+      const dz = world.wy - dragging.startWorld.z;
+      const newX = snapToGrid(dragging.startPos[0] + dx);
+      const newZ = snapToGrid(dragging.startPos[2] + dz);
+      moveFurniture(dragging.id, [newX, dragging.startPos[1], newZ]);
+    }
+  }, [isPanning, dragging, screenToWorld, moveFurniture]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+
+    if (e.touches.length === 0) {
+      touchPinchRef.current = null;
+
+      // Detect double-tap for catalog popup
+      if (touchStartRef.current && !dragging && !isPanning) {
+        // If the touch was very short and didn't move, treat tap as select only
+        // Double-tap handled by onDoubleClick fallback
+      }
+
+      setIsPanning(false);
+      setDragging(null);
+      touchStartRef.current = null;
+    }
+  }, [dragging, isPanning]);
 
   // ── Mouse handlers ──
   const getCanvasPos = (e: React.MouseEvent): { sx: number; sy: number } => {
@@ -1376,11 +1616,11 @@ export default function PixelRoomEditor() {
   }, [catalogPopup, addFurniture]);
 
   // ── Tool buttons data ──
-  const tools: { key: PixelTool; label: string; iconPath: string }[] = [
-    { key: 'select', label: 'SELECT', iconPath: 'M5 3l10 8-5 2-3 5-2-1 3-5 5-2z' },
-    { key: 'move', label: 'MOVE', iconPath: 'M8 2l2 4h-4l2-4zm0 14l-2-4h4l-2 4zm-6-6l4-2v4l-4-2zm14 0l-4 2v-4l4 2z' },
-    { key: 'rotate', label: 'ROTATE', iconPath: 'M12 4a6 6 0 11-6 6h2a4 4 0 104-4V4l3 3-3 3V6z' },
-    { key: 'delete', label: 'DELETE', iconPath: 'M4 4l10 10M14 4L4 14' },
+  const tools: { key: PixelTool; label: string; shortcut: string; iconPath: string }[] = [
+    { key: 'select', label: 'SELECT', shortcut: '1', iconPath: 'M5 3l10 8-5 2-3 5-2-1 3-5 5-2z' },
+    { key: 'move', label: 'MOVE', shortcut: '2', iconPath: 'M8 2l2 4h-4l2-4zm0 14l-2-4h4l-2 4zm-6-6l4-2v4l-4-2zm14 0l-4 2v-4l4 2z' },
+    { key: 'rotate', label: 'ROTATE', shortcut: '3', iconPath: 'M12 4a6 6 0 11-6 6h2a4 4 0 104-4V4l3 3-3 3V6z' },
+    { key: 'delete', label: 'DELETE', shortcut: '4', iconPath: 'M4 4l10 10M14 4L4 14' },
   ];
 
   // Side palette: ALL furniture grouped by category
@@ -1432,12 +1672,13 @@ export default function PixelRoomEditor() {
                 ? 'bg-[#e94560] text-white shadow-[0_0_8px_rgba(233,69,96,0.5)]'
                 : 'bg-[#1a1a40] text-[#9e9e9e] hover:bg-[#2a2a50] hover:text-white'
             }`}
-            title={t.label}
+            title={`${t.label} [${t.shortcut}]`}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3.5 h-3.5">
               <path d={t.iconPath} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span className="hidden sm:inline">{t.label}</span>
+            <span className="hidden sm:inline text-[8px] opacity-50 ml-0.5">[{t.shortcut}]</span>
           </button>
         ))}
 
@@ -1452,9 +1693,10 @@ export default function PixelRoomEditor() {
               ? 'bg-[#533483] text-white shadow-[0_0_8px_rgba(83,52,131,0.5)]'
               : 'bg-[#1a1a40] text-[#9e9e9e] hover:bg-[#2a2a50] hover:text-white'
           }`}
-          title="CRT Effect"
+          title="CRT Effect [5]"
         >
           CRT
+          <span className="hidden sm:inline text-[8px] opacity-50 ml-0.5">[5]</span>
         </button>
 
         {/* Zoom display */}
@@ -1497,7 +1739,7 @@ export default function PixelRoomEditor() {
         <div className="flex-1 relative min-w-0">
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 w-full h-full cursor-crosshair"
+            className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
             style={{ imageRendering: 'pixelated' }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -1506,17 +1748,45 @@ export default function PixelRoomEditor() {
             onDoubleClick={handleDoubleClick}
             onWheel={handleWheel}
             onContextMenu={handleContextMenu}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
 
-          {/* CRT scanline overlay */}
+          {/* CRT composite overlay: scanlines + color bleed + vignette + curvature */}
           {crtEnabled && (
-            <div
-              className="absolute inset-0 pointer-events-none z-10"
-              style={{
-                background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px)',
-                mixBlendMode: 'multiply',
-              }}
-            />
+            <>
+              {/* Scanlines */}
+              <div
+                className="absolute inset-0 pointer-events-none z-10"
+                style={{
+                  background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px)',
+                  mixBlendMode: 'multiply',
+                }}
+              />
+              {/* RGB color bleed — horizontal sub-pixel stripes */}
+              <div
+                className="absolute inset-0 pointer-events-none z-10"
+                style={{
+                  background: 'repeating-linear-gradient(90deg, rgba(255,0,0,0.03) 0px, rgba(0,255,0,0.03) 1px, rgba(0,0,255,0.03) 2px, transparent 3px)',
+                  mixBlendMode: 'screen',
+                }}
+              />
+              {/* Vignette burn — darker corners */}
+              <div
+                className="absolute inset-0 pointer-events-none z-10"
+                style={{
+                  background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%)',
+                }}
+              />
+              {/* Slight barrel-distortion glow at edges */}
+              <div
+                className="absolute inset-0 pointer-events-none z-10 rounded-[8px]"
+                style={{
+                  boxShadow: 'inset 0 0 80px 20px rgba(0,0,0,0.3), inset 0 0 4px 1px rgba(255,255,255,0.02)',
+                }}
+              />
+            </>
           )}
 
           {/* Empty state */}
