@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useCallback, useMemo, lazy } from 'react';
+import { Suspense, useRef, useCallback, useMemo, lazy, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, ContactShadows, Stats } from '@react-three/drei';
 import * as THREE from 'three';
@@ -134,6 +134,16 @@ export function SceneCanvas({
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
+
+  // エキスパートモード: 高度なエフェクトはエキスパートのみ表示
+  const [isExpert, setIsExpert] = useState(false);
+  useEffect(() => {
+    const stored = typeof localStorage !== 'undefined' && localStorage.getItem('porano-perse-expert-mode') === 'true';
+    setIsExpert(stored);
+    const handler = () => setIsExpert(localStorage.getItem('porano-perse-expert-mode') === 'true');
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const styleConfig: StyleConfig = STYLE_PRESETS[styleName];
   const controlsRef = useRef(null);
@@ -299,19 +309,15 @@ export function SceneCanvas({
         )}
         <CeilingBeams walls={walls} roomHeight={roomHeight} style={styleConfig} />
 
-        {/* ダストパーティクル（high品質のみ） */}
-        <DustParticles walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
-
-        {/* 分析オーバーレイ: 動線ヒートマップ・照明分析 */}
-        <FlowHeatmap walls={walls} openings={openings} furniture={furniture} visible={showFlowHeatmap} />
-        <LightingAnalysis walls={walls} openings={openings} furniture={furniture} roomHeight={roomHeight} visible={showLightingAnalysis} brightness={lightBrightness} />
-
-        {/* 衝突ヒートマップ */}
-        <CollisionHeatmap
-          furniture={furniture}
-          walls={walls}
-          visible={showCollisionHeatmap}
-        />
+        {/* ダストパーティクル・分析オーバーレイ（エキスパートモードのみ） */}
+        {isExpert && (
+          <>
+            <DustParticles walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
+            <FlowHeatmap walls={walls} openings={openings} furniture={furniture} visible={showFlowHeatmap} />
+            <LightingAnalysis walls={walls} openings={openings} furniture={furniture} roomHeight={roomHeight} visible={showLightingAnalysis} brightness={lightBrightness} />
+            <CollisionHeatmap furniture={furniture} walls={walls} visible={showCollisionHeatmap} />
+          </>
+        )}
 
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 
@@ -367,8 +373,8 @@ export function SceneCanvas({
           />
         ))}
 
-        {/* 動線シミュレーション（アニメーション付き） */}
-        {showFlowSimulation && (
+        {/* 動線シミュレーション（エキスパートモードのみ） */}
+        {isExpert && showFlowSimulation && (
           <FlowSimulation
             enabled={showFlowSimulation}
             walls={walls}
@@ -388,8 +394,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* ゴッドレイ（窓からの光の筋） */}
-        {showGodRays && qualityLevel !== 'low' && (
+        {/* ゴッドレイ（窓からの光の筋）（エキスパートモードのみ） */}
+        {isExpert && showGodRays && qualityLevel !== 'low' && (
           <GodRays
             openings={openings.filter(o => o.type === 'window')}
             walls={walls}
@@ -399,8 +405,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* ウェットフロア */}
-        {wetFloorEnabled && (
+        {/* ウェットフロア（エキスパートモードのみ） */}
+        {isExpert && wetFloorEnabled && (
           <WetFloorEffect
             walls={walls}
             wetness={wetFloorWetness}
@@ -408,8 +414,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* プロシージャルスカイボックス */}
-        {showProceduralSky && (
+        {/* プロシージャルスカイボックス（エキスパートモードのみ） */}
+        {isExpert && showProceduralSky && (
           <ProceduralSkybox timeOfDay={skyTimeOfDay} enabled={true} />
         )}
 
@@ -424,8 +430,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* ガラス結露エフェクト */}
-        {glassCondensation !== 'off' && openings.length > 0 && (
+        {/* ガラス結露エフェクト（エキスパートモードのみ） */}
+        {isExpert && glassCondensation !== 'off' && openings.length > 0 && (
           <GlassCondensation
             walls={walls}
             openings={openings}
@@ -435,8 +441,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* コースティクスエフェクト */}
-        {showCaustics && openings.length > 0 && (
+        {/* コースティクスエフェクト（エキスパートモードのみ） */}
+        {isExpert && showCaustics && openings.length > 0 && (
           <CausticEffect
             openings={openings}
             walls={walls}
@@ -445,8 +451,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* 太陽シミュレーション */}
-        {showSunSimulation && (
+        {/* 太陽シミュレーション（エキスパートモードのみ） */}
+        {isExpert && showSunSimulation && (
           <SunSimulation
             enabled={true}
             timeOfDay={skyTimeOfDay}
@@ -455,8 +461,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* 音響シミュレーション可視化 */}
-        {showAcoustics && (
+        {/* 音響シミュレーション可視化（エキスパートモードのみ） */}
+        {isExpert && showAcoustics && (
           <AcousticVisualization
             walls={walls}
             furniture={furniture}
@@ -481,8 +487,8 @@ export function SceneCanvas({
           );
         })}
 
-        {/* 避難経路オーバーレイ */}
-        {showEvacuation && (
+        {/* 避難経路オーバーレイ（エキスパートモードのみ） */}
+        {isExpert && showEvacuation && (
           <EvacuationOverlay
             walls={walls}
             openings={openings}
@@ -492,8 +498,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* 電気配線オーバーレイ */}
-        {showElectrical && (
+        {/* 電気配線オーバーレイ（エキスパートモードのみ） */}
+        {isExpert && showElectrical && (
           <ElectricalOverlay
             walls={walls}
             furniture={furniture}
@@ -502,8 +508,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* 空調効率可視化 */}
-        {showHVAC && (
+        {/* 空調効率可視化（エキスパートモードのみ） */}
+        {isExpert && showHVAC && (
           <HVACVisualization
             walls={walls}
             furniture={furniture}
@@ -512,8 +518,8 @@ export function SceneCanvas({
           />
         )}
 
-        {/* 煙・蒸気パーティクル（キッチン家具付近） */}
-        {showSmoke && furniture.filter(f => ['refrigerator', 'kitchen_island'].includes(f.type)).map(item => (
+        {/* 煙・蒸気パーティクル（エキスパートモードのみ） */}
+        {isExpert && showSmoke && furniture.filter(f => ['refrigerator', 'kitchen_island'].includes(f.type)).map(item => (
           <SmokeParticles
             key={`smoke-${item.id}`}
             position={[item.position[0], item.position[1] + (item.scale?.[1] ?? 1), item.position[2]]}
@@ -523,8 +529,8 @@ export function SceneCanvas({
           />
         ))}
 
-        {/* レンズフレア（ペンダントライト） */}
-        {showLensFlare && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (
+        {/* レンズフレア（エキスパートモードのみ） */}
+        {isExpert && showLensFlare && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (
           <LensFlare
             key={`flare-${light.id}`}
             position={[light.position[0], light.position[1] + (light.heightOffset ?? 0) + 0.3, light.position[2]]}

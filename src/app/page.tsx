@@ -177,7 +177,7 @@ export default function EditorPage() {
   // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'pixel' | 'settings'>('2d');
+  const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'settings'>('2d');
   const [fabOpen, setFabOpen] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
 
@@ -349,15 +349,13 @@ export default function EditorPage() {
   }, []);
 
   // Sync mobileTab with viewMode
-  const handleMobileTab = (tab: '2d' | '3d' | 'pixel' | 'settings') => {
+  const handleMobileTab = (tab: '2d' | '3d' | 'settings') => {
     setMobileTab(tab);
     if (tab === '2d') {
       setViewMode('2d');
       setShowMobilePanel(false);
     } else if (tab === '3d') {
       setViewMode('3d');
-      setShowMobilePanel(false);
-    } else if (tab === 'pixel') {
       setShowMobilePanel(false);
     } else {
       setShowMobilePanel(true);
@@ -401,12 +399,7 @@ export default function EditorPage() {
 
         {/* Full viewport: 2D or 3D or Pixel */}
         <div className="flex-1 overflow-hidden relative min-h-0">
-          {mobileTab === 'pixel' && (
-            <div className="absolute inset-0 tab-content-enter" aria-label="ドットエディタ">
-              <PixelRoomEditor />
-            </div>
-          )}
-          {mobileTab !== 'pixel' && (viewMode === '2d' || viewMode === 'split') && (
+          {(viewMode === '2d' || viewMode === 'split') && (
             <div
               className="absolute inset-0 bg-white tab-content-enter"
               aria-label="2D図面エディタ"
@@ -417,7 +410,7 @@ export default function EditorPage() {
               </div>
             </div>
           )}
-          {mobileTab !== 'pixel' && viewMode === '3d' && (
+          {viewMode === '3d' && (
             <div
               className="absolute inset-0 tab-content-enter"
               aria-label="3Dプレビュー"
@@ -580,7 +573,6 @@ export default function EditorPage() {
           {([
             { key: '2d' as const, label: '図面', icon: '📐' },
             { key: '3d' as const, label: '3D', icon: '🏠' },
-            { key: 'pixel' as const, label: 'ドット', icon: '🎮' },
             { key: 'settings' as const, label: '設定', icon: '⚙️' },
           ]).map(({ key, label, icon }) => (
             <button

@@ -18,11 +18,11 @@ const PROJECTS_KEY = 'porano-perse-projects';
 
 /** デバイス性能に基づく描画品質の自動判定 */
 function detectQualityLevel(): 'high' | 'medium' | 'low' {
-  if (typeof navigator === 'undefined') return 'high';
+  if (typeof navigator === 'undefined') return 'medium';
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const isLowCore = navigator.hardwareConcurrency <= 4;
   if (isMobile || isLowCore) return 'low';
-  return 'high';
+  return 'medium';
 }
 
 export interface SavedProject {
