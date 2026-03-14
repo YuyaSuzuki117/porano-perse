@@ -41,7 +41,7 @@ interface PostProcessingEffectsProps {
 }
 
 /** 色収差オフセット — high用 (ウルトラシネマティック・GC防止のためコンポーネント外定義) */
-const chromaticOffsetHigh = new THREE.Vector2(0.0012, 0.001);
+const chromaticOffsetHigh = new THREE.Vector2(0.0008, 0.0007);
 /** 色収差オフセット — medium用 (控えめ) */
 const chromaticOffsetMedium = new THREE.Vector2(0.0003, 0.0003);
 
@@ -70,20 +70,20 @@ function PostProcessingEffects({
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
-          luminanceSmoothing={0.3}
+          luminanceSmoothing={0.2}
           intensity={bloomIntensity * 1.4}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.05} contrast={0.18} />
-        <HueSaturation hue={0.02} saturation={0.12} />
+        <BrightnessContrast brightness={0.06} contrast={0.18} />
+        <HueSaturation hue={0.03} saturation={0.12} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
         <DepthOfField
           focusDistance={0}
           focalLength={0.035}
           bokehScale={6.0}
         />
-        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.3} blendFunction={BlendFunction.NORMAL} />
+        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.3 * 1.2} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
     );
@@ -105,15 +105,15 @@ function PostProcessingEffects({
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
-          luminanceSmoothing={0.3}
+          luminanceSmoothing={0.2}
           intensity={bloomIntensity * 1.2}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.05} contrast={0.18} />
-        <HueSaturation hue={0.02} saturation={0.12} />
+        <BrightnessContrast brightness={0.06} contrast={0.18} />
+        <HueSaturation hue={0.03} saturation={0.12} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
-        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15} blendFunction={BlendFunction.NORMAL} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
+        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.2} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
     );

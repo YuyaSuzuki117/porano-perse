@@ -543,9 +543,9 @@ export function SceneCanvas({
         {qualityLevel === 'high' && (
           <ContactShadows
             position={[0, 0.001, 0]}
-            opacity={isNight ? 0.4 : 0.65}
+            opacity={isNight ? 0.4 : 0.5}
             scale={maxDim * 1.5}
-            blur={5.0}
+            blur={6.0}
             far={6}
             resolution={4096}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}

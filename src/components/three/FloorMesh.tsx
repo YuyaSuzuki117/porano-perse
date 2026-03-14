@@ -306,8 +306,8 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
           metalness: isHigh ? 0.4 : 0.4,
           roughness: isHigh ? 0.1 : 0.08,
           envMapIntensity: isHigh ? 3.0 : 4.2,
-          clearcoat: isHigh ? 0.6 : 0.92,
-          clearcoatRoughness: isHigh ? 0.1 : 0.05,
+          clearcoat: isHigh ? 0.8 : 0.92,
+          clearcoatRoughness: isHigh ? 0.02 : 0.05,
           iridescence: 0, iridescenceIOR: 1.3,
         };
       case 'modern':
@@ -316,8 +316,8 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
           metalness: isHigh ? 0.25 : 0.25,
           roughness: isHigh ? 0.15 : 0.2,
           envMapIntensity: isHigh ? 3.0 : 3.36,
-          clearcoat: isHigh ? 0.6 : 0.575,
-          clearcoatRoughness: isHigh ? 0.2 : 0.1,
+          clearcoat: isHigh ? 0.8 : 0.575,
+          clearcoatRoughness: isHigh ? 0.02 : 0.1,
           iridescence: 0, iridescenceIOR: 1.3,
         };
       case 'medical':
@@ -338,10 +338,10 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         return { metalness: 0.1, roughness: 0.4, envMapIntensity: isHigh ? 3.0 : 1.44, clearcoat: isHigh ? 0.6 : 0.23, clearcoatRoughness: 0.3, iridescence: 0, iridescenceIOR: 1.3 };
       case 'cafe':
         // 木目フローリング — ワックスがけした控えめな光沢 + 天然木微小虹彩 + iridescenceIOR
-        return { metalness: 0.05, roughness: 0.55, envMapIntensity: isHigh ? 1.15 : 0.96, clearcoat: 0.17, clearcoatRoughness: 0.4, iridescence: 0.02, iridescenceIOR: 1.3 };
+        return { metalness: 0.05, roughness: 0.55, envMapIntensity: isHigh ? 1.15 : 0.96, clearcoat: 0.3, clearcoatRoughness: 0.08, iridescence: 0.02, iridescenceIOR: 1.3 };
       case 'scandinavian':
         // ライトオーク — ナチュラルオイル仕上げ + 天然木微小虹彩 + iridescenceIOR
-        return { metalness: 0.03, roughness: 0.6, envMapIntensity: isHigh ? 0.86 : 0.72, clearcoat: 0.115, clearcoatRoughness: 0.45, iridescence: 0.02, iridescenceIOR: 1.3 };
+        return { metalness: 0.03, roughness: 0.6, envMapIntensity: isHigh ? 0.86 : 0.72, clearcoat: 0.3, clearcoatRoughness: 0.08, iridescence: 0.02, iridescenceIOR: 1.3 };
       case 'japanese':
         // 畳 — マットだが微かな繊維のツヤ（cinema-grade: envMap≥0.5）
         return { metalness: 0.0, roughness: 0.85, envMapIntensity: isHigh ? 0.6 : 0.36, clearcoat: 0, clearcoatRoughness: 0, iridescence: 0, iridescenceIOR: 1.3 };
@@ -377,7 +377,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshPhysicalMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.65, 0.65) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.85, 0.85) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}
@@ -386,7 +386,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
           clearcoatRoughness={clearcoatRoughness}
           iridescence={iridescence}
           iridescenceIOR={iridescenceIOR}
-          specularIntensity={0.7}
+          specularIntensity={0.8}
           specularColor={clearcoat > 0 ? new THREE.Color('#ffffff') : undefined}
         />
       ) : (

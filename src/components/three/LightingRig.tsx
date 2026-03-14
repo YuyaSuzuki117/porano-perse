@@ -258,14 +258,14 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         shadow-mapSize={[16384, 16384]}
         shadow-bias={-0.0001}
         shadow-radius={3}
-        shadow-blurSamples={32}
+        shadow-blurSamples={48}
         shadow-normalBias={0.02}
         shadow-camera-near={0.05}
         shadow-camera-far={roomBounds.maxDim * 2.5}
-        shadow-camera-left={-roomBounds.maxDim * 0.8}
-        shadow-camera-right={roomBounds.maxDim * 0.8}
-        shadow-camera-top={roomBounds.maxDim * 0.8}
-        shadow-camera-bottom={-roomBounds.maxDim * 0.8}
+        shadow-camera-left={-roomBounds.maxDim * 0.96}
+        shadow-camera-right={roomBounds.maxDim * 0.96}
+        shadow-camera-top={roomBounds.maxDim * 0.96}
+        shadow-camera-bottom={-roomBounds.maxDim * 0.96}
       />
 
       <pointLight
@@ -382,7 +382,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
       {/* コンタクトシャドウ風グラウンドプレーン */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
         <planeGeometry args={[roomBounds.w + 2, roomBounds.d + 2]} />
-        <shadowMaterial transparent opacity={0.6} />
+        <shadowMaterial transparent opacity={0.65} />
       </mesh>
 
       {/* リムライト（奥行き感向上）— スタイル連動 */}

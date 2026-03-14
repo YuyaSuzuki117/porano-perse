@@ -264,7 +264,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
     const name = style.name;
     let ceilingColor = style.ceilingColor;
     let panelEmissive = '#FFFDE8';
-    let panelEmissiveIntensity = 1.352; // 1.04 * 1.3 — 照明パネルさらに30%増光
+    let panelEmissiveIntensity = 1.758; // 1.352 * 1.3 — 照明パネルさらに30%増光
     let showPanels = true;
     let spacingMultiplier = 1.0;
 
@@ -277,7 +277,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
     } else if (name === 'luxury') {
       panelEmissive = '#FFF5D0'; // ゴールデンティント
     } else if (name === 'medical') {
-      panelEmissiveIntensity = 1.69; // 1.3 * 1.3 — 明るい白パネルさらに30%増光
+      panelEmissiveIntensity = 2.197; // 1.69 * 1.3 — 明るい白パネルさらに30%増光
       panelEmissive = '#FFFFFF';
     }
 

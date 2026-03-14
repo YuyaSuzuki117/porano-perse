@@ -1420,7 +1420,7 @@ function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, me
         rotation={[-0.03, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.92} metalness={0} clearcoat={0.3} clearcoatRoughness={0.6} sheen={0.661} sheenRoughness={0.324} sheenColor={new THREE.Color(cushionColor).multiplyScalar(1.1)} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.92} metalness={0} clearcoat={0.3} clearcoatRoughness={0.6} sheen={0.661} sheenRoughness={0.324} sheenColor={new THREE.Color(cushionColor).multiplyScalar(1.1)} anisotropy={0.3} anisotropyRotation={Math.PI / 4} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
       </RoundedBox>
       {/* 背もたれフレーム — わずかに曲面化 */}
       <RoundedBox
@@ -1584,7 +1584,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           position={[side * (cushionW / 2 + 0.01), h * 0.38, d * 0.05]}
           castShadow
         >
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.78} metalness={0} clearcoat={0.12} clearcoatRoughness={0.5} sheen={0.926} sheenRoughness={0.243} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.78} metalness={0} clearcoat={0.12} clearcoatRoughness={0.5} sheen={0.926} sheenRoughness={0.243} sheenColor={cushionColor} anisotropy={0.3} anisotropyRotation={Math.PI / 4} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 座面クッション間の縫い目ライン */}
@@ -1616,7 +1616,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           scale={[cushionW * 0.7, 1, d * 0.5]}
           frustumCulled>
           <sphereGeometry args={[0.5, qualityLevel === 'high' ? 24 : 12, qualityLevel === 'high' ? 16 : 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} map={fabricTex?.map ?? null} roughness={0.92} metalness={0} transparent opacity={0.7} sheen={0.529} sheenRoughness={0.446} sheenColor={cushionColor} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} map={fabricTex?.map ?? null} roughness={0.92} metalness={0} transparent opacity={0.7} sheen={0.529} sheenRoughness={0.446} sheenColor={cushionColor} anisotropy={0.3} anisotropyRotation={Math.PI / 4} />
         </mesh>
       ))}
       {/* 背もたれクッション（2分割）— より丸みのある形状 */}
@@ -1629,7 +1629,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qua
           position={[side * (cushionW / 2 + 0.01), h * 0.6, -d * 0.33]}
           castShadow
         >
-          <meshPhysicalMaterial color={backColor} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.78} metalness={0} clearcoat={0.12} clearcoatRoughness={0.5} sheen={0.926} sheenRoughness={0.243} sheenColor={backSheen} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={backColor} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.78} metalness={0} clearcoat={0.12} clearcoatRoughness={0.5} sheen={0.926} sheenRoughness={0.243} sheenColor={backSheen} anisotropy={0.3} anisotropyRotation={Math.PI / 4} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 背もたれクッション間の縫い目ライン */}
@@ -1863,8 +1863,8 @@ function PendantLight({ scale, color, palette, metalFinish, qualityLevel }: Furn
           side={THREE.BackSide}
           roughness={0.15}
           metalness={0.1}
-          emissive={cfg.color}
-          emissiveIntensity={1.5}
+          emissive="#fff5e0"
+          emissiveIntensity={2.0}
         />
       </mesh>
       {/* 電球（やや縦長） — 発光色はそのまま暖色系 */}

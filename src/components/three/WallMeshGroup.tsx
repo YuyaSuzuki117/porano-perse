@@ -1018,8 +1018,12 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
     : effectiveTextureType === 'medical' ? 1.25
     : 1.0;
   const isLuxuryOrModern = effectiveTextureType === 'luxury' || effectiveTextureType === 'modern';
-  // clearcoat +20%強化
-  const wallClearcoat = isLuxuryOrModern ? 0.096 : 0.06;
+  // clearcoat +強化
+  const wallClearcoat = isLuxuryOrModern ? 0.25 : 0.15;
+  const wallClearcoatRoughness = effectiveTextureType === 'luxury' ? 0.03
+    : effectiveTextureType === 'modern' ? 0.05
+    : effectiveTextureType === 'medical' ? 0.08
+    : 0.1;
 
   // セクションカットの断面エッジ（切断位置に暗色の線を表示）
   const sectionEdge = useMemo(() => {
@@ -1040,12 +1044,15 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.42, 0.42) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.8, 0.8) : undefined}
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}
           envMapIntensity={wallEnvMapIntensity}
           clearcoat={wallClearcoat}
+          clearcoatRoughness={wallClearcoatRoughness}
+          specularIntensity={0.5}
+          specularColor={new THREE.Color('#ffffff')}
           transparent
           opacity={wallDisplayMode === 'transparent' ? 0.3 : 1}
           side={wallDisplayMode === 'transparent' ? THREE.DoubleSide : THREE.FrontSide}

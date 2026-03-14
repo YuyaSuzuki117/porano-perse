@@ -10,8 +10,8 @@ function createAOGradient(width: number, height: number): THREE.CanvasTexture {
   canvas.height = height;
   const ctx = canvas.getContext('2d')!;
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, 'rgba(0,0,0,0.15)');
-  gradient.addColorStop(0.4, 'rgba(0,0,0,0.06)');
+  gradient.addColorStop(0, 'rgba(0,0,0,0.22)');
+  gradient.addColorStop(0.4, 'rgba(0,0,0,0.10)');
   gradient.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -27,8 +27,8 @@ function createFloorAOGradient(width: number, height: number): THREE.CanvasTextu
   canvas.height = height;
   const ctx = canvas.getContext('2d')!;
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
-  gradient.addColorStop(0, 'rgba(0,0,0,0.12)');
-  gradient.addColorStop(0.3, 'rgba(0,0,0,0.04)');
+  gradient.addColorStop(0, 'rgba(0,0,0,0.18)');
+  gradient.addColorStop(0.3, 'rgba(0,0,0,0.08)');
   gradient.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -57,8 +57,8 @@ export default function AmbientOcclusionPlanes() {
   const aoHeight = 0.3;
   const floorAOWidth = 0.25;
 
-  const wallAOTex = useMemo(() => createAOGradient(64, 128), []);
-  const floorAOTex = useMemo(() => createFloorAOGradient(128, 64), []);
+  const wallAOTex = useMemo(() => createAOGradient(128, 256), []);
+  const floorAOTex = useMemo(() => createFloorAOGradient(256, 128), []);
 
   const wallPositions = useMemo(() => [
     { pos: [0, aoHeight / 2, -roomDepth / 2 + 0.005] as [number, number, number], rot: [0, 0, 0] as [number, number, number], scale: [roomWidth, aoHeight, 1] as [number, number, number] },

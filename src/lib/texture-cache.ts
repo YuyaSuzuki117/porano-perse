@@ -79,7 +79,7 @@ export function getTextureResolution(
 ): TextureResolution {
   switch (qualityLevel) {
     case 'high':
-      return { wall: 4096, floor: 4096, normal: 2048, roughness: 2048, furniture: 4096, useNormalMap: true };
+      return { wall: 4096, floor: 4096, normal: 4096, roughness: 4096, furniture: 4096, useNormalMap: true };
     case 'medium':
       return { wall: 2048, floor: 2048, normal: 512, roughness: 512, furniture: 1024, useNormalMap: true };
     case 'low':
