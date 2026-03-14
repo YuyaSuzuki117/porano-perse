@@ -4,7 +4,7 @@ import { useEditorStore } from '@/stores/useEditorStore';
 
 export default function FloorReflection() {
   const walls = useEditorStore(s => s.walls);
-  const qualityLevel = useEditorStore(s => s.renderQualityPreset);
+  const qualityLevel = useEditorStore(s => s.qualityLevel);
 
   const { w, d } = useMemo(() => {
     if (walls.length === 0) return { w: 6, d: 6 };

@@ -289,17 +289,14 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#666666',
     defaultMaterial: 'metal',
   },
-  // --- Round 9 追加家具 (12点) ---
-  { type: 'air_conditioner', name: 'エアコン', icon: '❄️', defaultScale: [0.8, 0.3, 0.22], defaultColor: '#F0F0F0', defaultMaterial: 'plastic' as const },
-  { type: 'refrigerator', name: '冷蔵庫', icon: '🧊', defaultScale: [0.6, 1.7, 0.65], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const },
+  // --- Round 9 追加家具 (重複除外9点) ---
+  { type: 'refrigerator', name: '冷蔵庫(大型)', icon: '🧊', defaultScale: [0.6, 1.7, 0.65], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const },
   { type: 'washbasin', name: '洗面台', icon: '🚰', defaultScale: [0.6, 0.85, 0.5], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const },
   { type: 'toilet', name: 'トイレ', icon: '🚽', defaultScale: [0.4, 0.45, 0.65], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const },
   { type: 'stairs', name: '階段', icon: '🪜', defaultScale: [1.0, 2.7, 3.0], defaultColor: '#A0522D', defaultMaterial: 'wood' as const },
-  { type: 'partition', name: 'パーティション', icon: '🧱', defaultScale: [1.5, 1.8, 0.05], defaultColor: '#D4D4D4', defaultMaterial: 'fabric' as const },
   { type: 'register_counter', name: 'レジカウンター', icon: '💰', defaultScale: [1.2, 1.0, 0.6], defaultColor: '#5C4033', defaultMaterial: 'wood' as const },
   { type: 'showcase', name: 'ショーケース', icon: '🔲', defaultScale: [1.2, 1.3, 0.5], defaultColor: '#E8E8E8', defaultMaterial: 'glass' as const },
   { type: 'bed', name: 'ベッド', icon: '🛏️', defaultScale: [1.4, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const },
-  { type: 'bench', name: 'ベンチ', icon: '🪑', defaultScale: [1.2, 0.45, 0.4], defaultColor: '#8B6914', defaultMaterial: 'wood' as const },
   { type: 'bar_stool', name: 'バースツール', icon: '🍺', defaultScale: [0.35, 0.95, 0.35], defaultColor: '#333333', defaultMaterial: 'metal' as const },
   { type: 'hanger_rack', name: 'ハンガーラック', icon: '👔', defaultScale: [1.0, 1.7, 0.5], defaultColor: '#444444', defaultMaterial: 'metal' as const },
 ];

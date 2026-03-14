@@ -1,19 +1,14 @@
 'use client';
 
 /**
- * FloorReflection — 床面のフォトリアリスティック反射エフェクト
- *
- * MeshReflectorMaterial（WebGLエラーの原因）を避け、
- * meshPhysicalMaterial + clearcoat で光沢のある床面反射を再現する。
- * modern, luxury, medical, industrial, minimal スタイルのハードフロアのみ対象。
- * high品質限定。
+ * FloorReflection (レガシー) — FloorReflection.tsx に移行済み
+ * このファイルは後方互換性のために残しているが、実際には使用されていない。
  */
 
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { WallSegment } from '@/types/floor-plan';
 
-/** ハードフロア対象スタイル */
 const HARD_FLOOR_STYLES = new Set(['modern', 'luxury', 'medical', 'industrial', 'minimal']);
 
 interface FloorReflectionProps {
@@ -29,13 +24,8 @@ export const FloorReflection = React.memo(function FloorReflection({
   qualityLevel,
   enabled,
 }: FloorReflectionProps) {
-  // 条件判定: high品質 + ハードフロア + 有効 + 壁あり
-  if (!enabled || qualityLevel !== 'high' || !HARD_FLOOR_STYLES.has(styleName) || walls.length === 0) {
-    return null;
-  }
-
-  // 壁座標から床ポリゴン範囲を計算
   const { center, size } = useMemo(() => {
+    if (walls.length === 0) return { center: [0, 0] as [number, number], size: [1, 1] as [number, number] };
     const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
     const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
     const minX = Math.min(...xs);
@@ -48,7 +38,6 @@ export const FloorReflection = React.memo(function FloorReflection({
     };
   }, [walls]);
 
-  // スタイル別の微調整
   const materialProps = useMemo(() => {
     switch (styleName) {
       case 'luxury':
@@ -59,10 +48,15 @@ export const FloorReflection = React.memo(function FloorReflection({
         return { roughness: 0.2, opacity: 0.06, clearcoatRoughness: 0.08 };
       case 'minimal':
         return { roughness: 0.13, opacity: 0.08, clearcoatRoughness: 0.04 };
-      default: // modern
+      default:
         return { roughness: 0.15, opacity: 0.08, clearcoatRoughness: 0.05 };
     }
   }, [styleName]);
+
+  // 条件判定: high品質 + ハードフロア + 有効 + 壁あり
+  if (!enabled || qualityLevel !== 'high' || !HARD_FLOOR_STYLES.has(styleName) || walls.length === 0) {
+    return null;
+  }
 
   return (
     <mesh
