@@ -19,6 +19,7 @@ import { OnboardingTutorial, isTutorialDone } from '@/components/ui/OnboardingTu
 import { QuickTipsContainer } from '@/components/ui/QuickTips';
 import { StyleComparisonModal } from '@/components/ui/StyleComparisonModal';
 import { MeasurementTool } from '@/components/three/MeasurementTool';
+import { MiniMap } from '@/components/ui/MiniMap';
 import { exportProposalPDF } from '@/lib/pdf-export';
 
 const FloorPlanEditor = dynamic(
@@ -118,6 +119,13 @@ export default function EditorPage() {
   const photoMode = useEditorStore((s) => s.photoMode);
   const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
   const measurementActive = useEditorStore((s) => s.measurementActive);
+  const walls = useEditorStore((s) => s.walls);
+  const furniture = useEditorStore((s) => s.furniture);
+  const showMinimap = useEditorStore((s) => s.showMinimap);
+  const setShowMinimap = useEditorStore((s) => s.setShowMinimap);
+  const liveCameraPosition = useEditorStore((s) => s.liveCameraPosition);
+  const liveCameraRotationY = useEditorStore((s) => s.liveCameraRotationY);
+  const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef2D = useRef<HTMLCanvasElement | null>(null);
 
@@ -236,6 +244,25 @@ export default function EditorPage() {
     }
   }, [loadFromShareUrl]);
 
+  // Mキーでミニマップ表示切替
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // 入力フォーカス中は無視
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.key === 'm' || e.key === 'M') {
+        setShowMinimap(!showMinimap);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showMinimap, setShowMinimap]);
+
+  // ミニマップクリック時のカメラ移動
+  const handleMinimapNavigate = useCallback((x: number, z: number) => {
+    // カメラプリセットとして座標を送信（CameraControllerがハンドリング）
+    setCameraPreset(`navigate:${x},${z}`);
+  }, [setCameraPreset]);
+
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
@@ -341,6 +368,15 @@ export default function EditorPage() {
               </div>
               <CameraPresetButtons canvasRef={canvasRef} />
               <AlignmentToolbar />
+              {showMinimap && (
+                <MiniMap
+                  walls={walls}
+                  furniture={furniture}
+                  cameraPosition={liveCameraPosition}
+                  cameraRotation={liveCameraRotationY}
+                  onNavigate={handleMinimapNavigate}
+                />
+              )}
               <div className="absolute bottom-14 left-2 bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
                 <span>ドラッグ: 回転</span>
                 <span className="text-white/40">|</span>
@@ -568,6 +604,16 @@ export default function EditorPage() {
               {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}
               {/* 整列ツールバー（複数選択時） */}
               {!photoMode && <AlignmentToolbar />}
+              {/* ミニマップ */}
+              {showMinimap && !photoMode && (
+                <MiniMap
+                  walls={walls}
+                  furniture={furniture}
+                  cameraPosition={liveCameraPosition}
+                  cameraRotation={liveCameraRotationY}
+                  onNavigate={handleMinimapNavigate}
+                />
+              )}
               {/* 操作ヘルプ */}
               {!photoMode && (
                 <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">

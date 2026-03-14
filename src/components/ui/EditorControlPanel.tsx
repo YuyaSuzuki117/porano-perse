@@ -109,6 +109,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     toggleDarkMode,
     measurementActive,
     setMeasurementActive,
+    toggleLockFurniture,
   } = useEditorStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
@@ -1548,10 +1549,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               </div>
             </div>
 
-            {/* 色 */}
+            {/* 家具カラー */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1">色</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-xs text-gray-500 mb-1">家具カラー</label>
+              <div className="flex items-center gap-2 mb-1.5">
                 <input
                   type="color"
                   value={selectedFurnitureItem.color}
@@ -1559,6 +1560,31 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   className="w-8 h-6 rounded border border-gray-300 cursor-pointer"
                 />
                 <span className="text-[10px] font-mono text-gray-400">{selectedFurnitureItem.color}</span>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {[
+                  { color: '#8B6914', label: 'ナチュラル' },
+                  { color: '#4A3520', label: 'ダークウッド' },
+                  { color: '#F5F5F5', label: 'ホワイト' },
+                  { color: '#2A2A2A', label: 'ブラック' },
+                  { color: '#C0392B', label: 'レッド' },
+                  { color: '#2980B9', label: 'ブルー' },
+                  { color: '#27AE60', label: 'グリーン' },
+                  { color: '#7F8C8D', label: 'グレー' },
+                ].map(({ color, label }) => (
+                  <button
+                    key={color}
+                    onClick={() => updateFurnitureColor(selectedFurnitureItem.id, color)}
+                    className={`w-5 h-5 rounded border-2 transition-all hover:scale-110 ${
+                      selectedFurnitureItem.color?.toLowerCase() === color.toLowerCase()
+                        ? 'border-blue-500 ring-1 ring-blue-300'
+                        : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={label}
+                    aria-label={`${label}カラー`}
+                  />
+                ))}
               </div>
             </div>
 
@@ -1580,6 +1606,21 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ロック */}
+            <div>
+              <button
+                onClick={() => toggleLockFurniture(selectedFurnitureItem.id)}
+                className={`w-full px-2 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  selectedFurnitureItem.locked
+                    ? 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <span>{selectedFurnitureItem.locked ? '\uD83D\uDD12' : '\uD83D\uDD13'}</span>
+                <span>{selectedFurnitureItem.locked ? 'ロック解除' : 'ロック'}</span>
+              </button>
             </div>
 
             {/* 3Dモデル */}
@@ -1623,7 +1664,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 deleteFurniture(selectedFurnitureItem.id);
                 setSelectedFurniture(null);
               }}
-              className="w-full px-2 py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 text-xs font-medium"
+              className={`w-full px-2 py-1.5 rounded text-xs font-medium ${
+                selectedFurnitureItem.locked
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-50 text-red-600 hover:bg-red-100'
+              }`}
+              disabled={!!selectedFurnitureItem.locked}
             >
               削除
             </button>

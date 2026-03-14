@@ -48,21 +48,20 @@ function PostProcessingEffects({
     );
   }
 
-  // medium
+  // medium — 軽量版: SSAO少サンプル + Bloom高閾値、Vignette無し
   return (
     <EffectComposer enableNormalPass>
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
-        samples={16}
+        samples={8}
         radius={ssaoRadius}
-        intensity={ssaoIntensity}
+        intensity={ssaoIntensity * 0.7}
       />
       <Bloom
-        luminanceThreshold={bloomLuminanceThreshold}
+        luminanceThreshold={bloomLuminanceThreshold + 0.15}
         luminanceSmoothing={0.4}
-        intensity={bloomIntensity * 0.5}
+        intensity={bloomIntensity * 0.4}
       />
-      <Vignette eskil={false} offset={0.1} darkness={vignetteIntensity} />
     </EffectComposer>
   );
 }

@@ -647,6 +647,13 @@ function generateMetalTexture(width: number, height: number, finish: MetalFinish
   return result;
 }
 
+/** 品質レベル連動テクスチャ解像度ヘルパー */
+function getFurnitureTexSizes(ql: 'high' | 'medium' | 'low') {
+  const size = ql === 'high' ? 1024 : ql === 'medium' ? 512 : 256;
+  const small = ql === 'high' ? 512 : ql === 'medium' ? 256 : 128;
+  return { size, small };
+}
+
 /** 共有ジオメトリ: 椅子/テーブル脚など頻出パーツ */
 const SHARED_LEG_GEO_8 = new THREE.CylinderGeometry(0.015, 0.018, 1, 8);
 const SHARED_FOOT_GEO = new THREE.CylinderGeometry(0.04, 0.04, 0.005, 12);
@@ -676,6 +683,7 @@ interface FurnitureProps {
   onSelect: (id: string) => void;
   onToggleSelect?: (id: string) => void;
   onMove: (id: string, position: [number, number, number]) => void;
+  qualityLevel?: 'high' | 'medium' | 'low';
 }
 
 /** 家具アイテムの比較関数: 必要なpropsが変わった時のみ再レンダリング */
@@ -711,6 +719,7 @@ function furniturePropsAreEqual(
   if (prev.onSelect !== next.onSelect) return false;
   if (prev.onToggleSelect !== next.onToggleSelect) return false;
   if (prev.onMove !== next.onMove) return false;
+  if (prev.qualityLevel !== next.qualityLevel) return false;
   return true;
 }
 
@@ -720,7 +729,7 @@ function snapRotation(rad: number): number {
   return Math.round(rad / ROTATION_SNAP_RAD) * ROTATION_SNAP_RAD;
 }
 
-export const Furniture = React.memo(function Furniture({ item, selected, isDeleting, onSelect, onToggleSelect, onMove }: FurnitureProps) {
+export const Furniture = React.memo(function Furniture({ item, selected, isDeleting, onSelect, onToggleSelect, onMove, qualityLevel = 'high' }: FurnitureProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   // 配置時「ポップ」アニメーション: マウント時にscale 0→1.0 (400ms elastic easing)
@@ -738,6 +747,10 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
   const palette = styleConfig.furniturePalette;
   const stylePbr: FurniturePBR = { roughness: styleConfig.furnitureRoughness, metalness: styleConfig.furnitureMetalness };
   const pbr: FurniturePBR = item.material ? MATERIAL_PBR[item.material] : stylePbr;
+
+  // 品質レベル連動テクスチャ解像度
+  const furnitureTexSize = qualityLevel === 'high' ? 1024 : qualityLevel === 'medium' ? 512 : 256;
+  const furnitureTexSmall = qualityLevel === 'high' ? 512 : qualityLevel === 'medium' ? 256 : 128;
 
   // ヒットエリア用ジオメトリ (scale変更時のみ再生成)
   const hitAreaGeometry = useMemo(
@@ -1177,11 +1190,11 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
       onPointerUp={handlePointerUp}
     >
       {item.modelUrl ? (
-        <Suspense fallback={<FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} />}>
+        <Suspense fallback={<FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} qualityLevel={qualityLevel} />}>
           <GLTFModelRenderer modelUrl={item.modelUrl} scale={item.scale} color={item.color} selected={selected} />
         </Suspense>
       ) : (
-        <FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} />
+        <FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} qualityLevel={qualityLevel} />
       )}
       {/* モバイル用: 拡大ヒットエリア（不可視メッシュ、ジオメトリmemo化） */}
       <mesh
@@ -1605,10 +1618,12 @@ interface FurniturePartProps {
   fabricType: FabricType;
   /** スタイル別金属仕上げ */
   metalFinish: MetalFinish;
+  /** 描画品質レベル */
+  qualityLevel: 'high' | 'medium' | 'low';
 }
 
-function FurnitureModel({ type, scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish }: { type: string; scale: [number, number, number]; color: string; palette: FurniturePalette; pbr: FurniturePBR; selected?: boolean; styleName: string; woodType: WoodType; fabricType: FabricType; metalFinish: MetalFinish }) {
-  const props: FurniturePartProps = { scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish };
+function FurnitureModel({ type, scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish, qualityLevel }: { type: string; scale: [number, number, number]; color: string; palette: FurniturePalette; pbr: FurniturePBR; selected?: boolean; styleName: string; woodType: WoodType; fabricType: FabricType; metalFinish: MetalFinish; qualityLevel: 'high' | 'medium' | 'low' }) {
+  const props: FurniturePartProps = { scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish, qualityLevel };
   switch (type) {
     case 'counter':
       return <Counter {...props} />;
@@ -1692,7 +1707,8 @@ function FurnitureModel({ type, scale, color, palette, pbr, selected, styleName,
   }
 }
 
-function Counter({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
+function Counter({ scale, color, palette, pbr, selected, woodType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const bodyW = w - 0.04;
   const bodyD = d - 0.06;
@@ -1702,11 +1718,11 @@ function Counter({ scale, color, palette, pbr, selected, woodType }: FurniturePa
   const topColor = color || palette.secondary;
   const bodyColor = color || palette.primary;
   // 木目テクスチャ適用（カスタムカラー未指定時のみ）
-  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSize, furnitureTexSize, woodType) : null, [color, woodType, furnitureTexSize]);
   return (
     <group>
       {/* 天板（オーバーハング強化 + 面取り） */}
-      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
+      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={qualityLevel === 'high' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={1.2} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* トリムライン（天板と本体の間） */}
@@ -1742,7 +1758,8 @@ function Counter({ scale, color, palette, pbr, selected, woodType }: FurniturePa
   );
 }
 
-function TableSquare({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
+function TableSquare({ scale, color, palette, pbr, selected, woodType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const legInset = 0.06;
   const legTopR = 0.025;
@@ -1752,14 +1769,15 @@ function TableSquare({ scale, color, palette, pbr, selected, woodType }: Furnitu
   const topColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
   const apronColor = color ? adjustColor(color, -15) : palette.primary;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSize, furnitureTexSize, woodType) : null, [color, woodType, furnitureTexSize]);
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
   const legH = h - 0.04;
-  const legGeoKey = `table-leg-${legH.toFixed(2)}`;
+  const legSegs = qualityLevel === 'high' ? 24 : 8;
+  const legGeoKey = `table-leg-${legH.toFixed(2)}-${legSegs}`;
   const legGeo = useMemo(() =>
-    getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(legTopR, legBotR, legH, 8)),
-  [legGeoKey, legH]);
+    getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(legTopR, legBotR, legH, legSegs)),
+  [legGeoKey, legH, legSegs]);
 
   // キャッシュされたフットパッドジオメトリ
   const footGeo = SHARED_FOOT_GEO;
@@ -1777,7 +1795,7 @@ function TableSquare({ scale, color, palette, pbr, selected, woodType }: Furnitu
   return (
     <group>
       {/* 天板 — 面取りを強化した木目風の自然な艶 */}
-      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
+      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={qualityLevel === 'high' ? 4 : 2} position={[0, h, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.2} clearcoatRoughness={0.4} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* 天板エッジハイライト */}
@@ -1813,13 +1831,14 @@ function TableSquare({ scale, color, palette, pbr, selected, woodType }: Furnitu
   );
 }
 
-function TableRound({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
+function TableRound({ scale, color, palette, pbr, selected, woodType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h] = scale;
   const topR = w / 2;
   const pedestalMidH = h - 0.03 - 0.1 - 0.04;
   const topColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -25) : palette.metal;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSize, furnitureTexSize, woodType) : null, [color, woodType, furnitureTexSize]);
   return (
     <group>
       {/* 天板 */}
@@ -1856,23 +1875,25 @@ function TableRound({ scale, color, palette, pbr, selected, woodType }: Furnitur
   );
 }
 
-function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, metalFinish, woodType }: FurniturePartProps) {
+function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, metalFinish, woodType, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const seatH = h * 0.5;
   const legInset = 0.035;
   // 椅子: フレーム=primary, クッション=fabric, 脚=metal
   const frameColor = color || palette.primary;
   const cushionColor = color ? adjustColor(color, 12) : palette.fabric;
-  const fabricTex = useMemo(() => !color ? generateFabricTexture(128, 128, styleName, fabricType) : null, [color, styleName, fabricType]);
-  const metalTex = useMemo(() => !color ? generateMetalTexture(128, 128, metalFinish) : null, [color, metalFinish]);
-  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(furnitureTexSmall, furnitureTexSmall, styleName, fabricType) : null, [color, styleName, fabricType, furnitureTexSmall]);
+  const metalTex = useMemo(() => !color ? generateMetalTexture(furnitureTexSmall, furnitureTexSmall, metalFinish) : null, [color, metalFinish, furnitureTexSmall]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSmall, furnitureTexSmall, woodType) : null, [color, woodType, furnitureTexSmall]);
   const legColor = color ? adjustColor(color, -40) : palette.metal;
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
-  const legGeoKey = `chair-leg-${seatH.toFixed(2)}`;
+  const chairLegSegs = qualityLevel === 'high' ? 24 : 8;
+  const legGeoKey = `chair-leg-${seatH.toFixed(2)}-${chairLegSegs}`;
   const legGeo = useMemo(() =>
-    getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(0.015, 0.018, seatH, 8)),
-  [legGeoKey, seatH]);
+    getCachedGeometry(legGeoKey, () => new THREE.CylinderGeometry(0.015, 0.018, seatH, chairLegSegs)),
+  [legGeoKey, seatH, chairLegSegs]);
 
   // キャッシュされた脚マテリアル
   const legMatKey = `chair-leg-mat-${legColor}-${pbr.roughness}-${pbr.metalness}`;
@@ -1899,7 +1920,7 @@ function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, me
       <RoundedBox
         args={[w - 0.03, 0.04, d - 0.03]}
         radius={0.02}
-        smoothness={2}
+        smoothness={qualityLevel === 'high' ? 4 : 2}
         position={[0, seatH + 0.032, 0.005]}
         rotation={[-0.03, 0, 0]}
         castShadow
@@ -1910,7 +1931,7 @@ function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, me
       <RoundedBox
         args={[w - 0.01, h * 0.45, 0.025]}
         radius={0.02}
-        smoothness={2}
+        smoothness={qualityLevel === 'high' ? 4 : 2}
         position={[0, h * 0.73, -d / 2 + 0.015]}
         rotation={[0.1, 0, 0]}
         castShadow
@@ -1994,7 +2015,8 @@ function Stool({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: FurniturePartProps) {
+function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const armW = 0.13;
   const innerW = w - armW * 2 - 0.04;
@@ -2005,13 +2027,14 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: F
   const frameColor = color ? adjustColor(color, -45) : adjustColor(palette.primary, -20);
   const cushionColor = color || palette.fabric;
   const legColor = color ? adjustColor(color, -50) : palette.metal;
-  const fabricTex = useMemo(() => !color ? generateFabricTexture(256, 256, styleName, fabricType) : null, [color, styleName, fabricType]);
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(furnitureTexSize, furnitureTexSize, styleName, fabricType) : null, [color, styleName, fabricType, furnitureTexSize]);
 
   // キャッシュされた脚ジオメトリ/マテリアル
-  const footGeoKey = `sofa-foot-${footR.toFixed(3)}`;
+  const footSegs = qualityLevel === 'high' ? 24 : 8;
+  const footGeoKey = `sofa-foot-${footR.toFixed(3)}-${footSegs}`;
   const footGeo = useMemo(() =>
-    getCachedGeometry(footGeoKey, () => new THREE.CylinderGeometry(footR, footR, footR * 2, 8)),
-  [footGeoKey, footR]);
+    getCachedGeometry(footGeoKey, () => new THREE.CylinderGeometry(footR, footR, footR * 2, footSegs)),
+  [footGeoKey, footR, footSegs]);
   const footMatKey = `sofa-foot-mat-${legColor}`;
   const footMat = useMemo(() =>
     getCachedPhysicalMaterial(footMatKey, {
@@ -2044,7 +2067,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: F
           key={`seat-${i}`}
           args={[cushionW, h * 0.25, d * 0.7]}
           radius={0.06}
-          smoothness={2}
+          smoothness={qualityLevel === 'high' ? 4 : 2}
           position={[side * (cushionW / 2 + 0.01), h * 0.38, d * 0.05]}
           castShadow
         >
@@ -2067,7 +2090,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: F
           key={`back-${i}`}
           args={[cushionW, h * 0.5, d * 0.22]}
           radius={0.05}
-          smoothness={2}
+          smoothness={qualityLevel === 'high' ? 4 : 2}
           position={[side * (cushionW / 2 + 0.01), h * 0.6, -d * 0.33]}
           castShadow
         >
@@ -2089,7 +2112,7 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: F
           key={`arm-${i}`}
           args={[armW, h * 0.4, d * 0.9]}
           radius={0.04}
-          smoothness={2}
+          smoothness={qualityLevel === 'high' ? 4 : 2}
           position={[side * (w / 2 - armW / 2 - 0.01), h * 0.42, -d * 0.02]}
           castShadow
         >
@@ -2100,13 +2123,14 @@ function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: F
   );
 }
 
-function Shelf({ scale, color, palette, pbr, selected, woodType, metalFinish }: FurniturePartProps) {
+function Shelf({ scale, color, palette, pbr, selected, woodType, metalFinish, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const shelves = 4;
   // 棚: 本体=primary
   const c = color || palette.primary;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
-  const metalTex = useMemo(() => !color ? generateMetalTexture(64, 64, metalFinish) : null, [color, metalFinish]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSmall, furnitureTexSmall, woodType) : null, [color, woodType, furnitureTexSmall]);
+  const metalTex = useMemo(() => !color ? generateMetalTexture(furnitureTexSmall / 2, furnitureTexSmall / 2, metalFinish) : null, [color, metalFinish, furnitureTexSmall]);
   // 棚に置く装飾アイテム（棚番号→アイテム配列）
   const decorItems: Record<number, { x: number; color: string; size: [number, number, number] }[]> = {
     1: [
@@ -2578,15 +2602,16 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
   );
 }
 
-function Bench({ scale, color, palette, pbr, woodType, styleName, fabricType }: FurniturePartProps) {
+function Bench({ scale, color, palette, pbr, woodType, styleName, fabricType, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const legInset = 0.1;
   const legThick = 0.04;
   // ベンチ: 座面=secondary, 脚=metal
   const seatColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
-  const fabricTex = useMemo(() => !color ? generateFabricTexture(128, 128, styleName, fabricType) : null, [color, styleName, fabricType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSmall, furnitureTexSmall, woodType) : null, [color, woodType, furnitureTexSmall]);
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(furnitureTexSmall, furnitureTexSmall, styleName, fabricType) : null, [color, styleName, fabricType, furnitureTexSmall]);
   return (
     <group>
       {/* 座面 */}
@@ -2814,10 +2839,11 @@ function CoatRack({ scale, color, palette }: FurniturePartProps) {
   );
 }
 
-function AirConditioner({ scale, color, palette, metalFinish }: FurniturePartProps) {
+function AirConditioner({ scale, color, palette, metalFinish, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const c = color || palette.metal;
-  const metalTex = useMemo(() => !color ? generateMetalTexture(128, 128, metalFinish) : null, [color, metalFinish]);
+  const metalTex = useMemo(() => !color ? generateMetalTexture(furnitureTexSmall, furnitureTexSmall, metalFinish) : null, [color, metalFinish, furnitureTexSmall]);
   return (
     <group>
       {/* 本体（壁掛け位置） */}
@@ -2844,7 +2870,8 @@ function AirConditioner({ scale, color, palette, metalFinish }: FurniturePartPro
   );
 }
 
-function Desk({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
+function Desk({ scale, color, palette, pbr, woodType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const legInset = 0.06;
   const legTopR = 0.025;
@@ -2857,7 +2884,7 @@ function Desk({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
   const topColor = color || palette.secondary;
   const bodyColor = color || palette.primary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSize, furnitureTexSize, woodType) : null, [color, woodType, furnitureTexSize]);
   return (
     <group>
       {/* 天板 */}
@@ -2922,11 +2949,12 @@ function Desk({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
   );
 }
 
-function Bookcase({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
+function Bookcase({ scale, color, palette, pbr, woodType, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const shelves = 5;
   const c = color || palette.primary;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSmall, furnitureTexSmall, woodType) : null, [color, woodType, furnitureTexSmall]);
   return (
     <group>
       {/* 側板 */}
@@ -3077,7 +3105,8 @@ function BarTable({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function Wardrobe({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
+function Wardrobe({ scale, color, palette, pbr, woodType, qualityLevel }: FurniturePartProps) {
+  const { size: furnitureTexSize } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const doorW = (w - 0.005) / 2;
   const doorH = h * 0.82;
@@ -3085,7 +3114,7 @@ function Wardrobe({ scale, color, palette, pbr, woodType }: FurniturePartProps) 
   const panelInset = 0.012;
   const c = color || palette.primary;
   const handleColor = color ? '#bbb' : palette.metal;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSize, furnitureTexSize, woodType) : null, [color, woodType, furnitureTexSize]);
   return (
     <group>
       {/* 本体 */}
@@ -3130,10 +3159,11 @@ function Wardrobe({ scale, color, palette, pbr, woodType }: FurniturePartProps) 
   );
 }
 
-function ShoeRack({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
+function ShoeRack({ scale, color, palette, pbr, selected, woodType, qualityLevel }: FurniturePartProps) {
+  const { small: furnitureTexSmall } = getFurnitureTexSizes(qualityLevel);
   const [w, h, d] = scale;
   const c = color || palette.primary;
-  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(furnitureTexSmall, furnitureTexSmall, woodType) : null, [color, woodType, furnitureTexSmall]);
   const shelfCount = 3;
   const slotCount = Math.max(2, Math.floor(w / 0.15));
   return (

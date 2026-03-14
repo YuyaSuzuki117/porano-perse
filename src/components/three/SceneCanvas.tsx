@@ -165,7 +165,7 @@ export function SceneCanvas({
     } else {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.0 : 1.5));
     }
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
@@ -187,8 +187,8 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={[1, 1.5]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
+      dpr={[1, 2]}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', ...(qualityLevel === 'high' ? { samples: 4 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -212,6 +212,7 @@ export function SceneCanvas({
           background={false}
           environmentIntensity={qualityLevel === 'high' ? 1.5 : qualityLevel === 'medium' ? 1.2 : 0.8}
           environmentRotation={[0, Math.PI / 4, 0]}
+          resolution={qualityLevel === 'high' ? 512 : 256}
         />
 
         <WallMeshGroup walls={walls} openings={openings} style={styleConfig} />
@@ -250,6 +251,7 @@ export function SceneCanvas({
             onSelect={onSelectFurniture}
             onToggleSelect={onToggleFurnitureSelection}
             onMove={onMoveFurniture}
+            qualityLevel={qualityLevel}
           />
         ))}
 
@@ -361,8 +363,8 @@ export function SceneCanvas({
           <PanoramaExporter trigger={panoramaTrigger} onComplete={onPanoramaComplete} />
         )}
 
-        {/* PostProcessingはhigh品質のみ（SSAO/Bloom/Vignetteは最大のボトルネック） */}
-        {qualityLevel === 'high' && (
+        {/* PostProcessingはmedium/high品質で有効（lowでは無効） */}
+        {qualityLevel !== 'low' && (
           <Suspense fallback={null}>
             <LazyPostProcessing
               qualityLevel={qualityLevel}

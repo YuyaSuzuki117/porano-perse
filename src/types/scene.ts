@@ -77,6 +77,10 @@ export interface FurnitureItem {
   material?: FurnitureMaterial;
   /** glTF/GLBモデルのURL（指定時は3Dモデルを使用、未指定時はプリミティブ描画） */
   modelUrl?: string;
+  /** ロック状態（ロック時は移動・回転・削除不可） */
+  locked?: boolean;
+  /** グループID（同一グループの家具をまとめて操作） */
+  groupId?: string;
 }
 
 export type FurnitureType =

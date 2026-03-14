@@ -287,6 +287,25 @@ interface EditorState {
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
 
+  // 衝突検出
+  furnitureCollision: boolean;
+  setFurnitureCollision: (colliding: boolean) => void;
+
+  // 家具ロック
+  toggleLockFurniture: (id: string) => void;
+  lockSelected: () => void;
+  unlockSelected: () => void;
+
+  // カメラトラッキング（ミニマップ用）
+  liveCameraPosition: [number, number, number];
+  liveCameraRotationY: number;
+  setLiveCameraPosition: (pos: [number, number, number]) => void;
+  setLiveCameraRotationY: (rot: number) => void;
+
+  // ミニマップ表示
+  showMinimap: boolean;
+  setShowMinimap: (v: boolean) => void;
+
   // 部屋形状
   initLShapeRoom: (w: number, d: number) => void;
   initUShapeRoom: (w: number, d: number) => void;
@@ -368,6 +387,49 @@ function pushHistory(
   return { history, historyIndex: history.length - 1 };
 }
 
+/** 家具のAABBバウンディングボックスを計算（回転考慮、XZ平面の2D） */
+function getFurnitureAABB(item: FurnitureItem): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const [px, , pz] = item.position;
+  const [sx, , sz] = item.scale;
+  const rotY = item.rotation[1];
+  // 回転後の幅と奥行を計算
+  const cosR = Math.abs(Math.cos(rotY));
+  const sinR = Math.abs(Math.sin(rotY));
+  const halfW = (sx * cosR + sz * sinR) / 2;
+  const halfD = (sx * sinR + sz * cosR) / 2;
+  return {
+    minX: px - halfW,
+    maxX: px + halfW,
+    minZ: pz - halfD,
+    maxZ: pz + halfD,
+  };
+}
+
+/** 2つのAABBが重なっているか判定（XZ平面） */
+function aabbOverlap(
+  a: { minX: number; maxX: number; minZ: number; maxZ: number },
+  b: { minX: number; maxX: number; minZ: number; maxZ: number },
+): boolean {
+  return a.minX < b.maxX && a.maxX > b.minX && a.minZ < b.maxZ && a.maxZ > b.minZ;
+}
+
+/** 家具の衝突を判定。movingIdの家具をnewPosに移動した際に他家具と衝突するかを返す */
+function checkFurnitureCollision(
+  furniture: FurnitureItem[],
+  movingId: string,
+  newPos: [number, number, number],
+): boolean {
+  const moving = furniture.find((f) => f.id === movingId);
+  if (!moving) return false;
+  const movedItem = { ...moving, position: newPos };
+  const movedAABB = getFurnitureAABB(movedItem);
+  for (const f of furniture) {
+    if (f.id === movingId) continue;
+    if (aabbOverlap(movedAABB, getFurnitureAABB(f))) return true;
+  }
+  return false;
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   projectName: '新規プロジェクト',
 
@@ -427,6 +489,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   darkMode: false,
   measurementActive: false,
   enableWatermark: false,
+  furnitureCollision: false,
+  liveCameraPosition: [0, 0, 0],
+  liveCameraRotationY: 0,
+  showMinimap: true,
   clipboard: null,
   cameraBookmarks: [],
   styleCompareMode: false,
@@ -691,15 +757,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-update-${id}`) };
     }),
   deleteFurniture: (id) => {
+    // ロック中の家具は削除不可
+    const target = get().furniture.find((f) => f.id === id);
+    if (target?.locked) return;
     // 削除アニメーション付き: まずmarkしてアニメーション後にcompleteDeleteで実削除
     get().markFurnitureForDeletion(id);
   },
   markFurnitureForDeletion: (id) =>
-    set((s) => ({
-      deletingFurnitureIds: s.deletingFurnitureIds.includes(id)
-        ? s.deletingFurnitureIds
-        : [...s.deletingFurnitureIds, id],
-    })),
+    set((s) => {
+      // ロック中の家具は削除不可
+      const target = s.furniture.find((f) => f.id === id);
+      if (target?.locked) return s;
+      return {
+        deletingFurnitureIds: s.deletingFurnitureIds.includes(id)
+          ? s.deletingFurnitureIds
+          : [...s.deletingFurnitureIds, id],
+      };
+    }),
   completeDeleteFurniture: (id) =>
     set((s) => {
       const furniture = s.furniture.filter((f) => f.id !== id);
@@ -715,11 +789,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }),
   moveFurniture: (id, position) =>
     set((s) => {
+      // ロック中の家具は移動不可
+      const target = s.furniture.find((f) => f.id === id);
+      if (target?.locked) return s;
+      // 衝突検出
+      const colliding = checkFurnitureCollision(s.furniture, id, position);
       const furniture = s.furniture.map((f) => (f.id === id ? { ...f, position } : f));
-      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-${id}`) };
+      return { furniture, furnitureCollision: colliding, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-${id}`) };
     }),
   rotateFurniture: (id, rotationY) =>
     set((s) => {
+      // ロック中の家具は回転不可
+      const target = s.furniture.find((f) => f.id === id);
+      if (target?.locked) return s;
       const furniture = s.furniture.map((f) =>
         f.id === id ? { ...f, rotation: [f.rotation[0], rotationY, f.rotation[2]] as [number, number, number] } : f
       );
@@ -956,6 +1038,40 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSnapToWall: (snapToWall) => set({ snapToWall }),
   setShowFurniture: (showFurniture) => set({ showFurniture }),
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
+
+  // 衝突検出
+  setFurnitureCollision: (furnitureCollision) => set({ furnitureCollision }),
+
+  // 家具ロック
+  toggleLockFurniture: (id) =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        f.id === id ? { ...f, locked: !f.locked } : f
+      ),
+    })),
+  lockSelected: () =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        s.selectedFurnitureIds.includes(f.id) || f.id === s.selectedFurnitureId
+          ? { ...f, locked: true }
+          : f
+      ),
+    })),
+  unlockSelected: () =>
+    set((s) => ({
+      furniture: s.furniture.map((f) =>
+        s.selectedFurnitureIds.includes(f.id) || f.id === s.selectedFurnitureId
+          ? { ...f, locked: false }
+          : f
+      ),
+    })),
+
+  // カメラトラッキング（ミニマップ用）
+  setLiveCameraPosition: (liveCameraPosition) => set({ liveCameraPosition }),
+  setLiveCameraRotationY: (liveCameraRotationY) => set({ liveCameraRotationY }),
+
+  // ミニマップ表示
+  setShowMinimap: (showMinimap) => set({ showMinimap }),
 
   // ダークモード: localStorage永続化付き
   toggleDarkMode: () =>
