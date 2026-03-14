@@ -105,6 +105,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setPhotoMode,
     activeRoomAtmosphere,
     applyRoomAtmosphere,
+    darkMode,
+    toggleDarkMode,
+    measurementActive,
+    setMeasurementActive,
   } = useEditorStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
@@ -1080,6 +1084,36 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* ダークモード + 計測ツール */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => toggleDarkMode()}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all border ${
+                darkMode
+                  ? 'bg-indigo-900 text-indigo-200 border-indigo-600 ring-1 ring-indigo-500'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+              }`}
+              aria-label="ダークモード切替"
+            >
+              <span className="text-sm">{darkMode ? '\uD83C\uDF19' : '\u2600\uFE0F'}</span>
+              <span>{darkMode ? 'ダーク' : 'ライト'}</span>
+            </button>
+            <button
+              onClick={() => setMeasurementActive(!measurementActive)}
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all border ${
+                measurementActive
+                  ? 'bg-blue-600 text-white border-blue-500 ring-1 ring-blue-400'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+              }`}
+              aria-label="計測ツール切替"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h13A1.5 1.5 0 0118 3.5v2.256A1.5 1.5 0 0116.5 7.25h-.878l.042.042a1 1 0 01-1.414 1.414L13.5 7.957V16.5a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5V3.5z" clipRule="evenodd" />
+              </svg>
+              <span>計測</span>
+            </button>
           </div>
 
           {/* カスタム調整 */}

@@ -18,6 +18,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#8B6914', secondary: '#C4A97D', accent: '#2E4A30', metal: '#4A3728', fabric: '#D4C5A0' },
     furnitureRoughness: 0.78,   // 漆器: やや光沢のある木
     furnitureMetalness: 0.02,   // 漆の微かな映り込み
+    woodType: 'walnut',
+    fabricType: 'linen',
+    metalFinish: 'matte',
   },
   modern: {
     name: 'modern',
@@ -35,6 +38,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#404040', secondary: '#808080', accent: '#2196F3', metal: '#C0C0C0', fabric: '#E0E0E0' },
     furnitureRoughness: 0.4,
     furnitureMetalness: 0.05,
+    woodType: 'ash',
+    fabricType: 'linen',
+    metalFinish: 'polished',
   },
   cafe: {
     name: 'cafe',
@@ -52,6 +58,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#6B3A2A', secondary: '#D4A76A', accent: '#8B6914', metal: '#8B7355', fabric: '#C8A882' },
     furnitureRoughness: 0.6,
     furnitureMetalness: 0.05,
+    woodType: 'oak',
+    fabricType: 'canvas',
+    metalFinish: 'brass',
   },
   industrial: {
     name: 'industrial',
@@ -69,6 +78,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#505050', secondary: '#707070', accent: '#FF6B35', metal: '#A0A0A0', fabric: '#808080' },
     furnitureRoughness: 0.75,   // コンクリート・鉄のマット感
     furnitureMetalness: 0.3,    // 金属パーツの映り込み強化
+    woodType: 'oak',
+    fabricType: 'canvas',
+    metalFinish: 'oxidized',
   },
   minimal: {
     name: 'minimal',
@@ -86,6 +98,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#F0F0F0', secondary: '#D0D0D0', accent: '#333333', metal: '#E0E0E0', fabric: '#F5F5F5' },
     furnitureRoughness: 0.6,
     furnitureMetalness: 0.05,
+    woodType: 'ash',
+    fabricType: 'linen',
+    metalFinish: 'matte',
   },
   luxury: {
     name: 'luxury',
@@ -103,6 +118,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#3D1F0A', secondary: '#6B3A2A', accent: '#C9B037', metal: '#D4AF37', fabric: '#4A0E2E' },
     furnitureRoughness: 0.25,   // 大理石・漆仕上げの光沢
     furnitureMetalness: 0.18,   // 深い映り込み
+    woodType: 'mahogany',
+    fabricType: 'velvet',
+    metalFinish: 'polished',
   },
   scandinavian: {
     name: 'scandinavian',
@@ -120,6 +138,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#E8D5B5', secondary: '#F0E6D3', accent: '#4A7C59', metal: '#B8B8B8', fabric: '#F5E6CC' },
     furnitureRoughness: 0.6,
     furnitureMetalness: 0.05,
+    woodType: 'birch',
+    fabricType: 'tweed',
+    metalFinish: 'brushed',
   },
   retro: {
     name: 'retro',
@@ -137,6 +158,9 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#8B4513', secondary: '#D2691E', accent: '#FF6347', metal: '#CD853F', fabric: '#DEB887' },
     furnitureRoughness: 0.6,
     furnitureMetalness: 0.05,
+    woodType: 'teak',
+    fabricType: 'canvas',
+    metalFinish: 'brass',
   },
   medical: {
     name: 'medical',
@@ -154,5 +178,8 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     furniturePalette: { primary: '#E8E8E8', secondary: '#FFFFFF', accent: '#4A90D9', metal: '#D0D0D0', fabric: '#F0F0F0' },
     furnitureRoughness: 0.3,
     furnitureMetalness: 0.0,
+    woodType: 'pine',
+    fabricType: 'linen',
+    metalFinish: 'matte',
   },
 };

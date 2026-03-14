@@ -5,6 +5,7 @@ import { useEditorStore } from '@/stores/useEditorStore';
 import { computeFloorArea } from '@/lib/geometry';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FurnitureItem } from '@/types/scene';
+import { useVideoExport } from '@/hooks/useVideoExport';
 
 /** 提案書の顧客情報 */
 interface ProposalInfo {
@@ -17,6 +18,8 @@ interface ProposalInfo {
 interface ExportPanelProps {
   onCapture3D: (scale?: number) => void;
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  /** パノラマ書き出しトリガー */
+  onPanoramaExport?: () => void;
 }
 
 /** 坪数への変換 (1坪 = 3.305785 m2) */
@@ -251,7 +254,7 @@ function buildProposalHTML(
 </html>`;
 }
 
-export function ExportPanel({ onCapture3D, canvasRef }: ExportPanelProps) {
+export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: ExportPanelProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'proposal' | 'image' | 'data'>('proposal');
   const [previewHtml, setPreviewHtml] = useState('');
@@ -265,6 +268,7 @@ export function ExportPanel({ onCapture3D, canvasRef }: ExportPanelProps) {
   });
 
   const modalRef = useRef<HTMLDivElement>(null);
+  const videoExport = useVideoExport(canvasRef ?? { current: null });
   const projectName = useEditorStore((s) => s.projectName);
   const exportProject = useEditorStore((s) => s.exportProject);
 
@@ -413,16 +417,29 @@ export function ExportPanel({ onCapture3D, canvasRef }: ExportPanelProps) {
 
   /** 出力ボタン（トリガー） */
   const triggerButton = (
-    <button
-      onClick={() => setIsModalOpen(true)}
-      className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors shadow-sm"
-    >
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
-        <path d="M8 2v8M5 7l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" strokeLinecap="round" />
-      </svg>
-      <span>出力</span>
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors shadow-sm"
+      >
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+          <path d="M8 2v8M5 7l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" strokeLinecap="round" />
+        </svg>
+        <span>出力</span>
+      </button>
+      {/* 録画中インジケーター */}
+      {videoExport.isRecording && (
+        <button
+          onClick={() => videoExport.stopRecording()}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors shadow-sm animate-pulse"
+          title="クリックで録画停止"
+        >
+          <span className="w-2 h-2 bg-white rounded-full" />
+          <span>REC {videoExport.recordingProgress}s</span>
+        </button>
+      )}
+    </div>
   );
 
   if (!isModalOpen) return triggerButton;
@@ -607,6 +624,78 @@ export function ExportPanel({ onCapture3D, canvasRef }: ExportPanelProps) {
                       )}
                     </button>
                   ))}
+                </div>
+
+                {/* 動画・パノラマ セクション */}
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-3">動画・パノラマ出力</p>
+                  <div className="space-y-2">
+                    {/* 動画録画ボタン */}
+                    <button
+                      onClick={() => {
+                        if (videoExport.isRecording) {
+                          videoExport.stopRecording();
+                        } else {
+                          videoExport.startRecording();
+                          setIsModalOpen(false);
+                        }
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
+                        videoExport.isRecording
+                          ? 'bg-red-50 border-red-300 hover:bg-red-100'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        videoExport.isRecording ? 'bg-red-200' : 'bg-red-100'
+                      }`}>
+                        {videoExport.isRecording ? (
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                            <span className="text-red-700 text-xs font-bold">
+                              {videoExport.recordingProgress}s
+                            </span>
+                          </div>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth={1.5} className="w-5 h-5">
+                            <path d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-800">
+                          {videoExport.isRecording ? '録画停止 (クリックで保存)' : '動画録画'}
+                        </div>
+                        <div className="text-[11px] text-gray-400">
+                          {videoExport.isRecording
+                            ? `録画中... ${videoExport.recordingProgress}/60秒`
+                            : 'カメラ操作をWebM動画として録画 (最大60秒)'}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* パノラマ出力ボタン */}
+                    <button
+                      onClick={() => {
+                        if (onPanoramaExport) {
+                          onPanoramaExport();
+                          setIsModalOpen(false);
+                        }
+                      }}
+                      disabled={!onPanoramaExport}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth={1.5} className="w-5 h-5">
+                          <path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-gray-800">パノラマ</div>
+                        <div className="text-[11px] text-gray-400">6面キューブマップ (クロスレイアウト PNG)</div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

@@ -275,6 +275,14 @@ interface EditorState {
   activeRoomAtmosphere: string | null;
   applyRoomAtmosphere: (presetName: string) => void;
 
+  // ダークモード
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+
+  // 計測ツール
+  measurementActive: boolean;
+  setMeasurementActive: (active: boolean) => void;
+
   // ウォーターマーク設定
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
@@ -416,6 +424,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   photoMode: false,
   photoModePrevState: null,
   activeRoomAtmosphere: null,
+  darkMode: false,
+  measurementActive: false,
   enableWatermark: false,
   clipboard: null,
   cameraBookmarks: [],
@@ -570,6 +580,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   restoreFromLocalStorage: () => {
     try {
+      // ダークモード復元
+      const dm = localStorage.getItem('porano-perse-dark-mode');
+      if (dm === '1') {
+        set({ darkMode: true });
+      }
       const saved = localStorage.getItem(LOCALSTORAGE_KEY);
       if (saved) {
         get().importProject(saved);
@@ -941,6 +956,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSnapToWall: (snapToWall) => set({ snapToWall }),
   setShowFurniture: (showFurniture) => set({ showFurniture }),
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
+
+  // ダークモード: localStorage永続化付き
+  toggleDarkMode: () =>
+    set((s) => {
+      const next = !s.darkMode;
+      try {
+        localStorage.setItem('porano-perse-dark-mode', next ? '1' : '0');
+      } catch { /* noop */ }
+      return { darkMode: next };
+    }),
+
+  // 計測ツール
+  setMeasurementActive: (measurementActive) => set({ measurementActive }),
 
   // フォトモード
   setPhotoMode: (v) => set((s) => {

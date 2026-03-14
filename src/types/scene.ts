@@ -52,7 +52,17 @@ export interface StyleConfig {
   furnitureRoughness: number;
   /** 家具マテリアルのメタルネス */
   furnitureMetalness: number;
+  /** スタイル別木材タイプ */
+  woodType: WoodType;
+  /** スタイル別布地タイプ */
+  fabricType: FabricType;
+  /** スタイル別金属仕上げ */
+  metalFinish: MetalFinish;
 }
+
+export type WoodType = 'oak' | 'walnut' | 'pine' | 'birch' | 'mahogany' | 'teak' | 'ash' | 'kiri';
+export type FabricType = 'linen' | 'velvet' | 'tweed' | 'canvas' | 'wool';
+export type MetalFinish = 'brushed' | 'polished' | 'oxidized' | 'matte' | 'brass';
 
 export type FurnitureMaterial = 'wood' | 'metal' | 'fabric' | 'leather' | 'glass' | 'plastic' | 'stone';
 

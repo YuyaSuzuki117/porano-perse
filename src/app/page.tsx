@@ -18,6 +18,7 @@ import { ToastContainer, showToast } from '@/components/ui/Toast';
 import { OnboardingTutorial, isTutorialDone } from '@/components/ui/OnboardingTutorial';
 import { QuickTipsContainer } from '@/components/ui/QuickTips';
 import { StyleComparisonModal } from '@/components/ui/StyleComparisonModal';
+import { MeasurementTool } from '@/components/three/MeasurementTool';
 import { exportProposalPDF } from '@/lib/pdf-export';
 
 const FloorPlanEditor = dynamic(
@@ -116,6 +117,7 @@ export default function EditorPage() {
   const setWallDisplayMode = useEditorStore((s) => s.setWallDisplayMode);
   const photoMode = useEditorStore((s) => s.photoMode);
   const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
+  const measurementActive = useEditorStore((s) => s.measurementActive);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef2D = useRef<HTMLCanvasElement | null>(null);
 
@@ -187,6 +189,16 @@ export default function EditorPage() {
     };
   }, []);
 
+  // ダークモード: htmlタグにクラスを切り替え
+  const darkMode = useEditorStore((s) => s.darkMode);
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   // Auto-save
   useAutoSave();
 
@@ -237,6 +249,7 @@ export default function EditorPage() {
       style: state.style,
       roomHeight: state.roomHeight,
       annotations: state.annotations,
+      openings: state.openings,
     });
   }, []);
 
@@ -279,6 +292,7 @@ export default function EditorPage() {
         <ToastContainer />
         <StyleComparisonModal canvasRef={canvasRef} />
         <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+        <MeasurementTool active={measurementActive} canvasRef={canvasRef} />
 
         {/* Rendering overlay */}
         {isRendering && (
@@ -452,6 +466,7 @@ export default function EditorPage() {
       <ToastContainer />
         <StyleComparisonModal canvasRef={canvasRef} />
       <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+      <MeasurementTool active={measurementActive} canvasRef={canvasRef} />
 
       {/* Rendering overlay */}
       {isRendering && (

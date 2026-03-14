@@ -154,6 +154,117 @@ input[type="range"]:active {
   }
 }
 
+/* ── Dark Mode ── */
+.dark {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #2a2a4a;
+  --accent: #3b82f6;
+  --background: #1a1a2e;
+  --foreground: #e0e0e0;
+}
+
+/* ダークモード: 背景・テキスト・ボーダー */
+.dark body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* パネル・サイドバー */
+.dark .bg-white {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary);
+}
+.dark .bg-gray-50 {
+  background-color: var(--bg-primary) !important;
+}
+.dark .bg-gray-100 {
+  background-color: #1e2a45 !important;
+}
+
+/* ボーダー */
+.dark .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+.dark .border-gray-100 {
+  border-color: #232845 !important;
+}
+
+/* テキスト */
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700 {
+  color: var(--text-primary) !important;
+}
+.dark .text-gray-600 {
+  color: #b0b8c8 !important;
+}
+.dark .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+.dark .text-gray-400 {
+  color: #707a8a !important;
+}
+.dark .text-gray-300 {
+  color: #5a6478 !important;
+}
+
+/* 入力フィールド */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="search"],
+.dark select,
+.dark textarea {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* ボタン（ホバー・アクティブ） */
+.dark button:not([class*="bg-blue"]):not([class*="bg-gradient"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="bg-green"]) {
+  color: var(--text-primary);
+}
+.dark .hover\:bg-gray-100:hover {
+  background-color: #252d48 !important;
+}
+.dark .hover\:bg-gray-200:hover {
+  background-color: #2a3458 !important;
+}
+
+/* スクロールバー */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3a3a6a;
+}
+
+/* モバイルボトムシート */
+.dark .bottom-sheet {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* フォーカスリング */
+.dark *:focus-visible {
+  outline-color: var(--accent);
+}
+
+/* prefers-color-scheme フォールバック */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #1a1a2e;
+    --foreground: #e0e0e0;
+  }
+}
+
 /* フォーカス可視性: キーボードナビゲーション用 */
 *:focus-visible {
   outline: 2px solid #3b82f6;

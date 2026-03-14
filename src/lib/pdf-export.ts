@@ -1,8 +1,9 @@
 import { jsPDF } from 'jspdf';
 import { StylePreset, Annotation } from '@/types/scene';
-import { WallSegment } from '@/types/floor-plan';
+import { WallSegment, Opening } from '@/types/floor-plan';
 import { FurnitureItem } from '@/types/scene';
 import { FURNITURE_CATALOG } from '@/data/furniture';
+import { STYLE_PRESETS } from '@/data/styles';
 
 const STYLE_NAMES: Record<StylePreset, string> = {
   japanese: 'Wafuu (Japanese)',
@@ -29,6 +30,12 @@ interface RoomInfo {
   style: StylePreset;
   roomHeight: number;
   annotations?: Annotation[];
+  openings?: Opening[];
+  /** 追加アングル画像（data URL） - マルチアングルページ用 */
+  extraViews?: {
+    label: string;
+    dataUrl: string;
+  }[];
 }
 
 // Accent color
@@ -117,13 +124,16 @@ function groupFurniture(furniture: FurnitureItem[]): Array<{
 }
 
 /**
- * Export a multi-page professional proposal PDF.
+ * Export a multi-page professional proposal PDF (8 pages).
  *
  * Page 1: Cover
  * Page 2: 3D Perspective View
  * Page 3: Floor Plan + Room Info
  * Page 4: Furniture List
- * Page 5: Notes
+ * Page 5: Material Specification Sheet
+ * Page 6: Multi-Angle Views
+ * Page 7: Room Dimensions & Area Analysis
+ * Page 8: Notes & Annotations
  */
 export function exportProposalPDF(
   canvasRef3D: React.RefObject<HTMLCanvasElement | null>,
@@ -148,7 +158,7 @@ export function exportProposalPDF(
   const dims = computeRoomDimensions(roomInfo.walls);
   const area = dims.width * dims.depth;
   const tsubo = area / 3.306;
-  const totalPages = 5;
+  const totalPages = 8;
 
   // ============================================================
   // PAGE 1: COVER
@@ -469,7 +479,399 @@ export function exportProposalPDF(
   }
 
   // ============================================================
-  // PAGE 5: NOTES & ANNOTATIONS
+  // PAGE 5: MATERIAL SPECIFICATION SHEET
+  // ============================================================
+  pdf.addPage();
+  {
+    drawContentHeader(pdf, 'Material Specifications  /  Sozai Shiyou', margin);
+
+    const styleConfig = STYLE_PRESETS[roomInfo.style];
+    const styleName = STYLE_NAMES[roomInfo.style] || roomInfo.style;
+    let y = margin + 22;
+
+    // スタイル概要カード
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(220, 225, 230);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(margin, y, contentW, 28, 3, 3, 'FD');
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.text(`Style: ${styleName}`, margin + 8, y + 10);
+    if (styleConfig) {
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`${styleConfig.nameJa} Style`, margin + 8, y + 18);
+    }
+
+    y += 36;
+
+    // 素材テーブル
+    const tableHeaders = ['Property', 'Value', 'Details'];
+    const headerX = [margin, margin + 70, margin + 160];
+
+    // ヘッダー行
+    pdf.setFillColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.rect(margin, y, contentW, 8, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(255, 255, 255);
+    for (let i = 0; i < tableHeaders.length; i++) {
+      pdf.text(tableHeaders[i], headerX[i] + 4, y + 5.5);
+    }
+    y += 8;
+
+    // 素材データ行
+    const rowH = 12;
+    const matRows: Array<{ property: string; value: string; details: string; colorHex?: string }> = [];
+
+    if (styleConfig) {
+      matRows.push(
+        { property: 'Wall Color (Kabe-iro)', value: styleConfig.wallColor, details: `Roughness: N/A`, colorHex: styleConfig.wallColor },
+        { property: 'Floor Color (Yuka-iro)', value: styleConfig.floorColor, details: `Texture: ${styleConfig.floorTexture}`, colorHex: styleConfig.floorColor },
+        { property: 'Floor Texture (Yuka Moyo)', value: styleConfig.floorTexture, details: 'Pattern type' },
+        { property: 'Ceiling Color (Tenjou-iro)', value: styleConfig.ceilingColor, details: '', colorHex: styleConfig.ceilingColor },
+        { property: 'Accent Color', value: styleConfig.accentColor, details: '', colorHex: styleConfig.accentColor },
+        { property: 'Furniture Roughness', value: styleConfig.furnitureRoughness.toFixed(2), details: '0=Glossy, 1=Matte' },
+        { property: 'Furniture Metalness', value: styleConfig.furnitureMetalness.toFixed(2), details: '0=Dielectric, 1=Metal' },
+        { property: 'Ambient Light', value: styleConfig.ambientIntensity.toFixed(1), details: 'Intensity' },
+        { property: 'Spotlight Intensity', value: styleConfig.spotlightIntensity.toFixed(1), details: '' },
+        { property: 'Spotlight Color', value: styleConfig.spotlightColor, details: '', colorHex: styleConfig.spotlightColor },
+      );
+    }
+
+    matRows.forEach((row, idx) => {
+      if (idx % 2 === 0) {
+        pdf.setFillColor(248, 250, 252);
+        pdf.rect(margin, y, contentW, rowH, 'F');
+      }
+
+      pdf.setDrawColor(235, 235, 235);
+      pdf.setLineWidth(0.2);
+      pdf.line(margin, y + rowH, margin + contentW, y + rowH);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(row.property, headerX[0] + 4, y + 8);
+
+      // カラースウォッチ描画
+      if (row.colorHex) {
+        const hex = row.colorHex.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        pdf.setFillColor(r, g, b);
+        pdf.rect(headerX[1] + 4, y + 2.5, 8, 7, 'F');
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(0.2);
+        pdf.rect(headerX[1] + 4, y + 2.5, 8, 7, 'S');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(row.value, headerX[1] + 16, y + 8);
+      } else {
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(row.value, headerX[1] + 4, y + 8);
+      }
+
+      pdf.setTextColor(140, 140, 140);
+      pdf.text(row.details, headerX[2] + 4, y + 8);
+
+      y += rowH;
+    });
+
+    // 家具カラーパレット
+    if (styleConfig) {
+      y += 8;
+      pdf.setFontSize(10);
+      pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+      pdf.text('Furniture Color Palette  /  Kagu Color Palette', margin + 4, y);
+      y += 6;
+      drawAccentLine(pdf, margin, y, pageW - margin, 0.3);
+      y += 6;
+
+      const paletteItems = [
+        { label: 'Primary', color: styleConfig.furniturePalette.primary },
+        { label: 'Secondary', color: styleConfig.furniturePalette.secondary },
+        { label: 'Accent', color: styleConfig.furniturePalette.accent },
+        { label: 'Metal', color: styleConfig.furniturePalette.metal },
+        { label: 'Fabric', color: styleConfig.furniturePalette.fabric },
+      ];
+
+      const swatchW = 30;
+      const swatchH = 18;
+      const gap = 8;
+      const startX = margin + 4;
+
+      paletteItems.forEach((item, i) => {
+        const x = startX + i * (swatchW + gap);
+        const hex = item.color.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+
+        pdf.setFillColor(r, g, b);
+        pdf.roundedRect(x, y, swatchW, swatchH, 2, 2, 'F');
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(0.2);
+        pdf.roundedRect(x, y, swatchW, swatchH, 2, 2, 'S');
+
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(item.label, x + swatchW / 2, y + swatchH + 5, { align: 'center' });
+        pdf.setFontSize(6);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(item.color, x + swatchW / 2, y + swatchH + 9, { align: 'center' });
+      });
+    }
+
+    drawPageNumber(pdf, 5, totalPages);
+  }
+
+  // ============================================================
+  // PAGE 6: MULTI-ANGLE VIEWS
+  // ============================================================
+  pdf.addPage();
+  {
+    drawContentHeader(pdf, 'Multi-Angle Views  /  Tashiten Zu', margin);
+
+    const viewLabels = ['Front View (Shomen)', "Bird's Eye (Fuchou)", 'Corner View (Kado)', 'Entrance View (Iriguchi)'];
+
+    // 2x2グリッドの計算
+    const gridTop = margin + 20;
+    const gridGap = 6;
+    const cellW = (contentW - gridGap) / 2;
+    const cellH = (pageH - gridTop - 30 - gridGap) / 2;
+
+    if (roomInfo.extraViews && roomInfo.extraViews.length > 0) {
+      // 提供されたアングル画像を使用
+      for (let i = 0; i < Math.min(4, roomInfo.extraViews.length); i++) {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const x = margin + col * (cellW + gridGap);
+        const y = gridTop + row * (cellH + gridGap);
+
+        // 影
+        pdf.setFillColor(235, 235, 235);
+        pdf.roundedRect(x + 1, y + 1, cellW, cellH - 10, 2, 2, 'F');
+
+        // 画像
+        try {
+          pdf.addImage(roomInfo.extraViews[i].dataUrl, 'PNG', x, y, cellW, cellH - 10);
+        } catch {
+          // 画像が無効な場合はプレースホルダー
+          pdf.setFillColor(248, 248, 248);
+          pdf.roundedRect(x, y, cellW, cellH - 10, 2, 2, 'F');
+        }
+
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(x, y, cellW, cellH - 10, 2, 2, 'S');
+
+        // ラベル
+        const label = roomInfo.extraViews[i].label || viewLabels[i] || `View ${i + 1}`;
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(label, x + cellW / 2, y + cellH - 4, { align: 'center' });
+      }
+    } else {
+      // extraViewsがない場合はメインの3D画像を中央大きく + プレースホルダー
+      for (let i = 0; i < 4; i++) {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const x = margin + col * (cellW + gridGap);
+        const y = gridTop + row * (cellH + gridGap);
+
+        if (i === 0) {
+          // メイン3Dビューを使用
+          pdf.setFillColor(235, 235, 235);
+          pdf.roundedRect(x + 1, y + 1, cellW, cellH - 10, 2, 2, 'F');
+          pdf.addImage(image3D, 'PNG', x, y, cellW, cellH - 10);
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(x, y, cellW, cellH - 10, 2, 2, 'S');
+        } else {
+          // プレースホルダー
+          pdf.setFillColor(248, 248, 248);
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(x, y, cellW, cellH - 10, 2, 2, 'FD');
+          pdf.setFontSize(9);
+          pdf.setTextColor(180, 180, 180);
+          pdf.text(viewLabels[i], x + cellW / 2, y + (cellH - 10) / 2, { align: 'center' });
+          pdf.setFontSize(7);
+          pdf.text('(Camera angle not captured)', x + cellW / 2, y + (cellH - 10) / 2 + 6, { align: 'center' });
+        }
+
+        // ラベル
+        pdf.setFontSize(8);
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(viewLabels[i], x + cellW / 2, y + cellH - 4, { align: 'center' });
+      }
+    }
+
+    drawPageNumber(pdf, 6, totalPages);
+  }
+
+  // ============================================================
+  // PAGE 7: ROOM DIMENSIONS & AREA ANALYSIS
+  // ============================================================
+  pdf.addPage();
+  {
+    drawContentHeader(pdf, 'Room Dimensions & Area Analysis  /  Shitsu Sunpou Bunseki', margin);
+
+    let y = margin + 22;
+
+    // メイン寸法カード
+    const cardW = contentW * 0.45;
+    const cardH = 70;
+    const cardX1 = margin;
+    const cardX2 = margin + cardW + 10;
+
+    // カード1: 室寸法
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(220, 225, 230);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(cardX1, y, cardW, cardH, 3, 3, 'FD');
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.text('Room Dimensions (Shitsu Sunpou)', cardX1 + 8, y + 10);
+
+    drawAccentLine(pdf, cardX1 + 8, y + 14, cardX1 + cardW - 8, 0.3);
+
+    const dimSpecs = [
+      { label: 'Width (Haba)', value: `${dims.width} m` },
+      { label: 'Depth (Okuyuki)', value: `${dims.depth} m` },
+      { label: 'Height (Takasa)', value: `${roomInfo.roomHeight} m` },
+    ];
+
+    let specY = y + 22;
+    pdf.setFontSize(9);
+    for (const spec of dimSpecs) {
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(spec.label, cardX1 + 12, specY);
+      pdf.setTextColor(30, 30, 30);
+      pdf.text(spec.value, cardX1 + cardW - 12, specY, { align: 'right' });
+      specY += 12;
+    }
+
+    // 大きな数字表示
+    pdf.setFontSize(16);
+    pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.text(`${dims.width}m x ${dims.depth}m x ${roomInfo.roomHeight}m`, cardX1 + 8, y + cardH - 6);
+
+    // カード2: 面積分析
+    pdf.setFillColor(248, 250, 252);
+    pdf.setDrawColor(220, 225, 230);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(cardX2, y, contentW - cardW - 10, cardH, 3, 3, 'FD');
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.text('Area Analysis (Menseki Bunseki)', cardX2 + 8, y + 10);
+
+    drawAccentLine(pdf, cardX2 + 8, y + 14, cardX2 + contentW - cardW - 18, 0.3);
+
+    // 壁面積計算
+    const wallPerimeter = roomInfo.walls.reduce((sum, w) => {
+      const dx = w.end.x - w.start.x;
+      const dy = w.end.y - w.start.y;
+      return sum + Math.sqrt(dx * dx + dy * dy);
+    }, 0);
+    const wallArea = wallPerimeter * roomInfo.roomHeight;
+
+    const areaSpecs = [
+      { label: 'Floor Area (Yuka Menseki)', value: `${area.toFixed(1)} m2` },
+      { label: 'Tsubo Conversion', value: `${tsubo.toFixed(1)} tsubo` },
+      { label: 'Wall Area (est.)', value: `${wallArea.toFixed(1)} m2` },
+      { label: 'Volume (Taiseki)', value: `${(area * roomInfo.roomHeight).toFixed(1)} m3` },
+    ];
+
+    specY = y + 22;
+    pdf.setFontSize(9);
+    const card2W = contentW - cardW - 10;
+    for (const spec of areaSpecs) {
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(spec.label, cardX2 + 12, specY);
+      pdf.setTextColor(30, 30, 30);
+      pdf.text(spec.value, cardX2 + card2W - 12, specY, { align: 'right' });
+      specY += 12;
+    }
+
+    y += cardH + 12;
+
+    // 構成要素テーブル
+    pdf.setFontSize(10);
+    pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.text('Composition Summary  /  Kousei Youso', margin + 4, y);
+    y += 4;
+    drawAccentLine(pdf, margin, y, pageW - margin, 0.3);
+    y += 6;
+
+    // テーブルヘッダー
+    pdf.setFillColor(ACCENT.r, ACCENT.g, ACCENT.b);
+    pdf.rect(margin, y, contentW, 8, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Category (Bunrui)', margin + 4, y + 5.5);
+    pdf.text('Count (Suuryou)', margin + 120, y + 5.5);
+    pdf.text('Details (Shousai)', margin + 170, y + 5.5);
+    y += 8;
+
+    // 開口部の数
+    const doorCount = (roomInfo.openings || []).filter((o) => o.type === 'door').length;
+    const windowCount = (roomInfo.openings || []).filter((o) => o.type === 'window').length;
+
+    // 家具カテゴリ別集計
+    const furnitureByCategory = new Map<string, number>();
+    for (const f of roomInfo.furniture) {
+      furnitureByCategory.set(f.type, (furnitureByCategory.get(f.type) || 0) + 1);
+    }
+
+    const compositionRows = [
+      { category: 'Walls (Kabe)', count: String(roomInfo.walls.length), details: `Total perimeter: ${wallPerimeter.toFixed(1)}m` },
+      { category: 'Doors (Door)', count: String(doorCount), details: doorCount > 0 ? 'Entry/exit points' : 'None placed' },
+      { category: 'Windows (Mado)', count: String(windowCount), details: windowCount > 0 ? 'Natural lighting' : 'None placed' },
+      { category: 'Furniture (Kagu)', count: String(roomInfo.furniture.length), details: `${furnitureByCategory.size} types` },
+    ];
+
+    // 家具カテゴリ上位5つ追加
+    const sortedCategories = Array.from(furnitureByCategory.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    for (const [type, count] of sortedCategories) {
+      const catalogName = FURNITURE_NAMES[type] || type;
+      compositionRows.push({
+        category: `  - ${catalogName}`,
+        count: String(count),
+        details: '',
+      });
+    }
+
+    const cRowH = 9;
+    compositionRows.forEach((row, idx) => {
+      if (idx % 2 === 0) {
+        pdf.setFillColor(248, 250, 252);
+        pdf.rect(margin, y, contentW, cRowH, 'F');
+      }
+      pdf.setDrawColor(235, 235, 235);
+      pdf.setLineWidth(0.2);
+      pdf.line(margin, y + cRowH, margin + contentW, y + cRowH);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(row.category, margin + 4, y + 6);
+      pdf.setTextColor(ACCENT.r, ACCENT.g, ACCENT.b);
+      pdf.text(row.count, margin + 120, y + 6);
+      pdf.setTextColor(140, 140, 140);
+      pdf.text(row.details, margin + 170, y + 6);
+
+      y += cRowH;
+    });
+
+    drawPageNumber(pdf, 7, totalPages);
+  }
+
+  // ============================================================
+  // PAGE 8: NOTES & ANNOTATIONS
   // ============================================================
   pdf.addPage();
   {
@@ -572,7 +974,7 @@ export function exportProposalPDF(
       { align: 'center' }
     );
 
-    drawPageNumber(pdf, 5, totalPages);
+    drawPageNumber(pdf, 8, totalPages);
   }
 
   // Save

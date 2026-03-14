@@ -81,6 +81,15 @@ function useFloorTexture(
       case 'medical':
         drawLinoleumTexture(ctx, base);
         break;
+      case 'herringbone':
+        drawHerringboneTexture(ctx, base);
+        break;
+      case 'chevron':
+        drawChevronTexture(ctx, base);
+        break;
+      case 'basketweave':
+        drawBasketWeaveTexture(ctx, base);
+        break;
       default:
         drawConcreteTexture(ctx, base);
     }
@@ -136,6 +145,11 @@ function useFloorTexture(
       case 'medical':
         drawLinoleumNormal(ctx);
         break;
+      case 'herringbone':
+      case 'chevron':
+      case 'basketweave':
+        drawWoodNormal(ctx);
+        break;
       default:
         drawConcreteNormal(ctx);
     }
@@ -184,6 +198,11 @@ function useFloorTexture(
         break;
       case 'medical':
         drawLinoleumRoughness(ctx);
+        break;
+      case 'herringbone':
+      case 'chevron':
+      case 'basketweave':
+        drawWoodRoughness(ctx);
         break;
       default:
         drawConcreteRoughness(ctx);
@@ -255,7 +274,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
   const qualityLevel = useEditorStore((s) => s.qualityLevel);
 
   // 反射性のある床タイプ: marble, tile, checkerboard, linoleum, 木目(clearcoat)
-  const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical', 'cafe', 'scandinavian']);
+  const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical', 'cafe', 'scandinavian', 'herringbone', 'chevron', 'basketweave']);
 
   const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness } = useMemo(() => {
     switch (effectiveFloorType) {
@@ -286,6 +305,15 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
       case 'industrial':
         // コンクリート打ちっぱなし — 非常にマット
         return { metalness: 0.05, roughness: 0.92, envMapIntensity: 0.25, clearcoat: 0, clearcoatRoughness: 0 };
+      case 'herringbone':
+        // ヘリンボーン木目 — ワックスがけした高級木床
+        return { metalness: 0.05, roughness: 0.45, envMapIntensity: 1.0, clearcoat: 0.2, clearcoatRoughness: 0.3 };
+      case 'chevron':
+        // シェブロン木目 — モダンな光沢
+        return { metalness: 0.06, roughness: 0.4, envMapIntensity: 1.2, clearcoat: 0.25, clearcoatRoughness: 0.25 };
+      case 'basketweave':
+        // 市松模様 — 伝統的な木床
+        return { metalness: 0.03, roughness: 0.55, envMapIntensity: 0.7, clearcoat: 0.1, clearcoatRoughness: 0.4 };
       default:
         return { metalness: 0.0, roughness: 0.9, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
     }
@@ -1010,6 +1038,213 @@ function drawLinoleumTexture(ctx: CanvasRenderingContext2D, base: string) {
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
   }
   ctx.globalAlpha = 1;
+}
+
+/** 10. herringbone — ヘリンボーン（45°交互配置の木目板） */
+function drawHerringboneTexture(ctx: CanvasRenderingContext2D, base: string) {
+  // プランクサイズ（テクスチャスケール）
+  const plankW = 82;  // ≈0.08m比率
+  const plankH = 410; // ≈0.4m比率
+  const halfW = plankW / 2;
+
+  // 木目用のカラーパレット
+  const colors = [
+    adjustBrightness(base, 0),
+    adjustBrightness(base, -8),
+    adjustBrightness(base, 5),
+    adjustBrightness(base, -14),
+    adjustBrightness(base, 3),
+  ];
+
+  ctx.save();
+  // 45度回転パターンで描画
+  // 行ごとに左右交互に45度/-45度の板を配置
+  const step = plankW;
+  for (let row = -20; row < 30; row++) {
+    for (let col = -20; col < 30; col++) {
+      const isEven = (row + col) % 2 === 0;
+      const cx = col * step;
+      const cy = row * step;
+      const plankColor = colors[Math.abs((row * 7 + col * 13) % colors.length)];
+      const variation = ((row * 3 + col * 5) % 7 - 3) * 1.5;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(isEven ? Math.PI / 4 : -Math.PI / 4);
+
+      // プランクベース
+      ctx.fillStyle = adjustBrightness(plankColor, variation);
+      ctx.fillRect(-halfW, -plankH / 2, plankW, plankH);
+
+      // 木目ライン
+      ctx.strokeStyle = adjustBrightness(plankColor, -18);
+      ctx.lineWidth = 0.4;
+      ctx.globalAlpha = 0.2;
+      const grainSpacing = 4 + (Math.abs(row + col) % 3);
+      for (let g = -plankH / 2 + 3; g < plankH / 2 - 3; g += grainSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(-halfW + 2, g);
+        ctx.lineTo(halfW - 2, g + ((row * col) % 3 - 1) * 0.8);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // プランク境界線
+      ctx.strokeStyle = adjustBrightness(base, -35);
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.4;
+      ctx.strokeRect(-halfW, -plankH / 2, plankW, plankH);
+      ctx.globalAlpha = 1;
+
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/** 11. chevron — シェブロン（V字パターンの木目板） */
+function drawChevronTexture(ctx: CanvasRenderingContext2D, base: string) {
+  const plankW = 64;
+  const plankH = 300;
+  const halfH = plankH / 2;
+
+  const colors = [
+    adjustBrightness(base, 0),
+    adjustBrightness(base, -10),
+    adjustBrightness(base, 6),
+    adjustBrightness(base, -6),
+  ];
+
+  ctx.save();
+  // V字パターン: 中心線を挟んで左右45度で配置
+  const vWidth = plankH * Math.cos(Math.PI / 4); // V字1列の幅
+  const rowHeight = plankW;
+
+  for (let row = -10; row < 20; row++) {
+    for (let vCol = -5; vCol < 10; vCol++) {
+      const baseX = vCol * vWidth * 2;
+      const baseY = row * rowHeight;
+      const plankColor = colors[Math.abs((row * 3 + vCol * 7) % colors.length)];
+
+      // 左半分（45度）
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = adjustBrightness(plankColor, ((row + vCol) % 5 - 2) * 2);
+      ctx.fillRect(-plankW / 2, -halfH, plankW, plankH);
+      // 木目
+      ctx.strokeStyle = adjustBrightness(plankColor, -15);
+      ctx.lineWidth = 0.3;
+      ctx.globalAlpha = 0.18;
+      for (let g = -halfH + 4; g < halfH - 2; g += 5) {
+        ctx.beginPath();
+        ctx.moveTo(-plankW / 2 + 1, g);
+        ctx.lineTo(plankW / 2 - 1, g + (row % 3 - 1) * 0.5);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      // 境界
+      ctx.strokeStyle = adjustBrightness(base, -30);
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = 0.35;
+      ctx.strokeRect(-plankW / 2, -halfH, plankW, plankH);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // 右半分（-45度）— 鏡像
+      ctx.save();
+      ctx.translate(baseX + vWidth, baseY);
+      ctx.rotate(-Math.PI / 4);
+      const rightColor = colors[Math.abs((row * 5 + vCol * 11) % colors.length)];
+      ctx.fillStyle = adjustBrightness(rightColor, ((row + vCol + 1) % 5 - 2) * 2);
+      ctx.fillRect(-plankW / 2, -halfH, plankW, plankH);
+      ctx.strokeStyle = adjustBrightness(rightColor, -15);
+      ctx.lineWidth = 0.3;
+      ctx.globalAlpha = 0.18;
+      for (let g = -halfH + 4; g < halfH - 2; g += 5) {
+        ctx.beginPath();
+        ctx.moveTo(-plankW / 2 + 1, g);
+        ctx.lineTo(plankW / 2 - 1, g);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = adjustBrightness(base, -30);
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = 0.35;
+      ctx.strokeRect(-plankW / 2, -halfH, plankW, plankH);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/** 12. basketweave — 市松編み（2-3本の並行板を交互に水平/垂直配置） */
+function drawBasketWeaveTexture(ctx: CanvasRenderingContext2D, base: string) {
+  const stripCount = 3; // 1グループ内の板数
+  const stripW = 40;    // 各板の幅
+  const groupSize = stripCount * stripW; // 1グループのサイズ
+
+  const colors = [
+    adjustBrightness(base, 0),
+    adjustBrightness(base, -8),
+    adjustBrightness(base, 5),
+    adjustBrightness(base, -12),
+  ];
+
+  for (let gx = 0; gx < 1024; gx += groupSize) {
+    for (let gy = 0; gy < 1024; gy += groupSize) {
+      const isHorizontal = ((gx / groupSize) + (gy / groupSize)) % 2 === 0;
+      const groupColor = colors[Math.abs(((gx / groupSize) * 3 + (gy / groupSize) * 7) % colors.length)];
+
+      for (let s = 0; s < stripCount; s++) {
+        const stripColor = adjustBrightness(groupColor, (s - 1) * 3);
+
+        if (isHorizontal) {
+          // 水平方向の板
+          const sy = gy + s * stripW;
+          ctx.fillStyle = stripColor;
+          ctx.fillRect(gx, sy, groupSize, stripW - 1);
+
+          // 木目（水平方向）
+          ctx.strokeStyle = adjustBrightness(stripColor, -12);
+          ctx.lineWidth = 0.3;
+          ctx.globalAlpha = 0.15;
+          for (let g = sy + 3; g < sy + stripW - 2; g += 4) {
+            ctx.beginPath();
+            ctx.moveTo(gx + 1, g);
+            ctx.lineTo(gx + groupSize - 1, g + (s % 2) * 0.5);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        } else {
+          // 垂直方向の板
+          const sx = gx + s * stripW;
+          ctx.fillStyle = stripColor;
+          ctx.fillRect(sx, gy, stripW - 1, groupSize);
+
+          // 木目（垂直方向）
+          ctx.strokeStyle = adjustBrightness(stripColor, -12);
+          ctx.lineWidth = 0.3;
+          ctx.globalAlpha = 0.15;
+          for (let g = sx + 3; g < sx + stripW - 2; g += 4) {
+            ctx.beginPath();
+            ctx.moveTo(g, gy + 1);
+            ctx.lineTo(g + (s % 2) * 0.5, gy + groupSize - 1);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // グループ境界線
+      ctx.strokeStyle = adjustBrightness(base, -30);
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.35;
+      ctx.strokeRect(gx, gy, groupSize, groupSize);
+      ctx.globalAlpha = 1;
+    }
+  }
 }
 
 // ===========================================================================

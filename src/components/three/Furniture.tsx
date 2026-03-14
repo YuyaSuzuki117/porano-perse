@@ -4,7 +4,7 @@ import React, { useRef, useState, Suspense, useEffect, useCallback, useMemo } fr
 import * as THREE from 'three';
 import { ThreeEvent, useFrame } from '@react-three/fiber';
 import { RoundedBox, Html } from '@react-three/drei';
-import { FurnitureItem, FurnitureMaterial } from '@/types/scene';
+import { FurnitureItem, FurnitureMaterial, WoodType, FabricType, MetalFinish } from '@/types/scene';
 import { WallSegment } from '@/types/floor-plan';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
@@ -182,6 +182,469 @@ function getCachedPhysicalMaterial(
 export function cleanupFurnitureCaches(): void {
   geometryCache.clear();
   materialCache.clear();
+}
+
+/* ─── プロシージャルテクスチャ生成 (Canvas API) ────── */
+
+/** 木目の基本色定義 */
+const WOOD_BASE_COLORS: Record<WoodType, { base: [number, number, number]; shades: [number, number, number][] }> = {
+  oak:      { base: [180, 140, 80],  shades: [[170, 130, 70], [190, 150, 90], [175, 135, 75]] },
+  walnut:   { base: [85, 55, 30],    shades: [[75, 45, 20], [95, 65, 40], [80, 50, 25]] },
+  pine:     { base: [220, 195, 150], shades: [[210, 185, 140], [230, 205, 160], [215, 190, 145]] },
+  birch:    { base: [235, 220, 195], shades: [[225, 210, 185], [240, 225, 200], [230, 215, 190]] },
+  mahogany: { base: [120, 40, 20],   shades: [[110, 30, 15], [130, 50, 30], [115, 35, 18]] },
+  teak:     { base: [160, 110, 55],  shades: [[150, 100, 45], [170, 120, 65], [155, 105, 50]] },
+  ash:      { base: [230, 220, 200], shades: [[220, 210, 190], [235, 225, 205], [225, 215, 195]] },
+  kiri:     { base: [210, 190, 165], shades: [[200, 180, 155], [220, 200, 175], [205, 185, 160]] },
+};
+
+/** 木目テクスチャキャッシュ */
+const woodTextureCache = new Map<string, THREE.CanvasTexture>();
+
+/** 木目プロシージャルテクスチャ生成 */
+function generateWoodTexture(width: number, height: number, woodType: WoodType): THREE.CanvasTexture {
+  const key = `wood-${woodType}-${width}-${height}`;
+  const cached = woodTextureCache.get(key);
+  if (cached) return cached;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const colors = WOOD_BASE_COLORS[woodType];
+  const [br, bg, bb] = colors.base;
+
+  // ベースカラー塗りつぶし
+  ctx.fillStyle = `rgb(${br},${bg},${bb})`;
+  ctx.fillRect(0, 0, width, height);
+
+  // 木目ライン（縦方向の平行線 + sin波の揺れ）
+  const lineCount = Math.floor(width / 4);
+  for (let i = 0; i < lineCount; i++) {
+    const shade = colors.shades[i % colors.shades.length];
+    const alpha = 0.15 + Math.random() * 0.25;
+    ctx.strokeStyle = `rgba(${shade[0]},${shade[1]},${shade[2]},${alpha})`;
+    ctx.lineWidth = 0.5 + Math.random() * 1.5;
+    ctx.beginPath();
+    const baseX = (i / lineCount) * width;
+    const amplitude = 2 + Math.random() * 1;
+    const period = 40 + Math.random() * 20;
+    const phase = Math.random() * Math.PI * 2;
+    for (let y = 0; y < height; y += 2) {
+      const x = baseX + Math.sin((y / period) * Math.PI * 2 + phase) * amplitude;
+      if (y === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // 年輪ノット（1-2個）
+  const knotCount = 1 + Math.floor(Math.random() * 2);
+  for (let k = 0; k < knotCount; k++) {
+    const kx = Math.random() * width;
+    const ky = Math.random() * height;
+    const kRadius = 5 + Math.random() * 3;
+    const grad = ctx.createRadialGradient(kx, ky, 0, kx, ky, kRadius);
+    const darkShade = colors.shades[0];
+    grad.addColorStop(0, `rgba(${darkShade[0] - 30},${darkShade[1] - 30},${darkShade[2] - 20},0.6)`);
+    grad.addColorStop(0.5, `rgba(${darkShade[0] - 15},${darkShade[1] - 15},${darkShade[2] - 10},0.3)`);
+    grad.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(kx - kRadius, ky - kRadius, kRadius * 2, kRadius * 2);
+
+    // ノット周辺の同心年輪
+    for (let ring = 1; ring <= 3; ring++) {
+      ctx.strokeStyle = `rgba(${darkShade[0]},${darkShade[1]},${darkShade[2]},${0.15 / ring})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.arc(kx, ky, kRadius + ring * 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // クロスグレイン（端材のように横方向の細い線を少し加える）
+  const crossCount = 3 + Math.floor(Math.random() * 4);
+  for (let c = 0; c < crossCount; c++) {
+    const cy = Math.random() * height;
+    ctx.strokeStyle = `rgba(${colors.shades[1][0]},${colors.shades[1][1]},${colors.shades[1][2]},0.08)`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    ctx.lineTo(width, cy + (Math.random() - 0.5) * 4);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  woodTextureCache.set(key, texture);
+  return texture;
+}
+
+/** 布地パターン基本色 */
+const FABRIC_BASE_COLORS: Record<FabricType, Record<string, [number, number, number]>> = {
+  linen:  { japanese: [200, 185, 155], luxury: [180, 160, 130], scandinavian: [230, 220, 205], cafe: [195, 170, 130], industrial: [160, 155, 145], default: [210, 195, 170] },
+  velvet: { japanese: [100, 60, 50], luxury: [70, 15, 50], scandinavian: [80, 80, 100], cafe: [120, 70, 50], industrial: [70, 70, 70], default: [90, 40, 60] },
+  tweed:  { japanese: [170, 160, 140], luxury: [140, 130, 110], scandinavian: [200, 195, 185], cafe: [165, 145, 120], industrial: [130, 130, 130], default: [180, 170, 155] },
+  canvas: { japanese: [190, 175, 150], luxury: [170, 155, 130], scandinavian: [215, 205, 190], cafe: [185, 160, 120], industrial: [100, 100, 100], default: [195, 180, 160] },
+  wool:   { japanese: [185, 175, 155], luxury: [160, 145, 120], scandinavian: [210, 205, 200], cafe: [180, 160, 130], industrial: [120, 120, 120], default: [195, 185, 170] },
+};
+
+/** 布地テクスチャキャッシュ */
+const fabricTextureCache = new Map<string, { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture }>();
+
+/** 布地プロシージャルテクスチャ生成 */
+function generateFabricTexture(width: number, height: number, styleName: string, fabricType: FabricType): { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture } {
+  const key = `fabric-${fabricType}-${styleName}-${width}-${height}`;
+  const cached = fabricTextureCache.get(key);
+  if (cached) return cached;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const normalCanvas = document.createElement('canvas');
+  normalCanvas.width = width;
+  normalCanvas.height = height;
+  const nCtx = normalCanvas.getContext('2d')!;
+  // ノーマルマップベース (フラットな法線 = (128,128,255))
+  nCtx.fillStyle = 'rgb(128,128,255)';
+  nCtx.fillRect(0, 0, width, height);
+
+  const colorSet = FABRIC_BASE_COLORS[fabricType];
+  const baseColor = colorSet[styleName] || colorSet.default;
+  const [cr, cg, cb] = baseColor;
+
+  ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+  ctx.fillRect(0, 0, width, height);
+
+  switch (fabricType) {
+    case 'linen': {
+      // クロスハッチ 1pxスペーシング
+      for (let y = 0; y < height; y += 2) {
+        const light = Math.random() > 0.5;
+        const alpha = 0.06 + Math.random() * 0.08;
+        ctx.strokeStyle = `rgba(${light ? cr + 20 : cr - 20},${light ? cg + 20 : cg - 20},${light ? cb + 20 : cb - 20},${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+        // ノーマル
+        nCtx.strokeStyle = `rgba(${light ? 138 : 118},128,255,${alpha * 2})`;
+        nCtx.lineWidth = 0.5;
+        nCtx.beginPath();
+        nCtx.moveTo(0, y);
+        nCtx.lineTo(width, y);
+        nCtx.stroke();
+      }
+      for (let x = 0; x < width; x += 2) {
+        const light = Math.random() > 0.5;
+        const alpha = 0.06 + Math.random() * 0.08;
+        ctx.strokeStyle = `rgba(${light ? cr + 15 : cr - 15},${light ? cg + 15 : cg - 15},${light ? cb + 15 : cb - 15},${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+        nCtx.strokeStyle = `rgba(128,${light ? 138 : 118},255,${alpha * 2})`;
+        nCtx.lineWidth = 0.5;
+        nCtx.beginPath();
+        nCtx.moveTo(x, 0);
+        nCtx.lineTo(x, height);
+        nCtx.stroke();
+      }
+      break;
+    }
+    case 'tweed': {
+      // 斜めラインとフレック
+      for (let i = -height; i < width + height; i += 3) {
+        const alpha = 0.08 + Math.random() * 0.1;
+        const darker = Math.random() > 0.5;
+        ctx.strokeStyle = `rgba(${darker ? cr - 25 : cr + 15},${darker ? cg - 25 : cg + 15},${darker ? cb - 25 : cb + 15},${alpha})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + height, height);
+        ctx.stroke();
+        nCtx.strokeStyle = `rgba(${darker ? 115 : 140},${darker ? 115 : 140},255,${alpha * 2})`;
+        nCtx.lineWidth = 0.8;
+        nCtx.beginPath();
+        nCtx.moveTo(i, 0);
+        nCtx.lineTo(i + height, height);
+        nCtx.stroke();
+      }
+      // フレックドット
+      const dotCount = Math.floor((width * height) / 80);
+      for (let d = 0; d < dotCount; d++) {
+        const dx = Math.random() * width;
+        const dy = Math.random() * height;
+        const dotAlpha = 0.15 + Math.random() * 0.2;
+        const fleck = [cr + (Math.random() - 0.5) * 40, cg + (Math.random() - 0.5) * 40, cb + (Math.random() - 0.5) * 40];
+        ctx.fillStyle = `rgba(${fleck[0]},${fleck[1]},${fleck[2]},${dotAlpha})`;
+        ctx.fillRect(dx, dy, 1.5, 1.5);
+      }
+      break;
+    }
+    case 'velvet': {
+      // スムースグラデーション + 方向性シェーディング
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, `rgba(${cr + 20},${cg + 20},${cb + 20},0.3)`);
+      grad.addColorStop(0.5, `rgba(${cr},${cg},${cb},0.1)`);
+      grad.addColorStop(1, `rgba(${cr - 15},${cg - 15},${cb - 15},0.3)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+      // 微細なノイズ
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (Math.random() > 0.7) {
+            const noise = (Math.random() - 0.5) * 8;
+            ctx.fillStyle = `rgba(${cr + noise},${cg + noise},${cb + noise},0.05)`;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      // ノーマルマップ: 方向性
+      const nGrad = nCtx.createLinearGradient(0, 0, width, height);
+      nGrad.addColorStop(0, 'rgba(140,140,255,0.3)');
+      nGrad.addColorStop(1, 'rgba(116,116,255,0.3)');
+      nCtx.fillStyle = nGrad;
+      nCtx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'canvas': {
+      // 粗いクロスハッチ 2pxスペーシング
+      for (let y = 0; y < height; y += 4) {
+        const alpha = 0.1 + Math.random() * 0.12;
+        const light = Math.random() > 0.5;
+        ctx.strokeStyle = `rgba(${light ? cr + 15 : cr - 20},${light ? cg + 15 : cg - 20},${light ? cb + 15 : cb - 20},${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+        nCtx.strokeStyle = `rgba(${light ? 142 : 114},128,255,${alpha * 2})`;
+        nCtx.lineWidth = 1;
+        nCtx.beginPath();
+        nCtx.moveTo(0, y);
+        nCtx.lineTo(width, y);
+        nCtx.stroke();
+      }
+      for (let x = 0; x < width; x += 4) {
+        const alpha = 0.1 + Math.random() * 0.12;
+        const light = Math.random() > 0.5;
+        ctx.strokeStyle = `rgba(${light ? cr + 15 : cr - 20},${light ? cg + 15 : cg - 20},${light ? cb + 15 : cb - 20},${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+        nCtx.strokeStyle = `rgba(128,${light ? 142 : 114},255,${alpha * 2})`;
+        nCtx.lineWidth = 1;
+        nCtx.beginPath();
+        nCtx.moveTo(x, 0);
+        nCtx.lineTo(x, height);
+        nCtx.stroke();
+      }
+      break;
+    }
+    case 'wool': {
+      // ツイードに似ているが、より密で柔らかい
+      for (let y = 0; y < height; y += 2) {
+        const alpha = 0.05 + Math.random() * 0.08;
+        const light = Math.random() > 0.5;
+        ctx.strokeStyle = `rgba(${light ? cr + 10 : cr - 10},${light ? cg + 10 : cg - 10},${light ? cb + 10 : cb - 10},${alpha})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (let x = 0; x < width; x += 3) {
+          const wavY = y + Math.sin(x * 0.3) * 0.5;
+          if (x === 0) ctx.moveTo(x, wavY);
+          else ctx.lineTo(x, wavY);
+        }
+        ctx.stroke();
+      }
+      // フレックドット（少なめ）
+      const wDots = Math.floor((width * height) / 120);
+      for (let d = 0; d < wDots; d++) {
+        const dx = Math.random() * width;
+        const dy = Math.random() * height;
+        ctx.fillStyle = `rgba(${cr + (Math.random() - 0.5) * 30},${cg + (Math.random() - 0.5) * 30},${cb + (Math.random() - 0.5) * 30},0.1)`;
+        ctx.fillRect(dx, dy, 1, 1);
+      }
+      break;
+    }
+  }
+
+  const mapTex = new THREE.CanvasTexture(canvas);
+  mapTex.wrapS = THREE.RepeatWrapping;
+  mapTex.wrapT = THREE.RepeatWrapping;
+  const normalTex = new THREE.CanvasTexture(normalCanvas);
+  normalTex.wrapS = THREE.RepeatWrapping;
+  normalTex.wrapT = THREE.RepeatWrapping;
+
+  const result = { map: mapTex, normalMap: normalTex };
+  fabricTextureCache.set(key, result);
+  return result;
+}
+
+/** 金属テクスチャキャッシュ */
+const metalTextureCache = new Map<string, { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture }>();
+
+/** 金属仕上げプロシージャルテクスチャ生成 */
+function generateMetalTexture(width: number, height: number, finish: MetalFinish): { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture } {
+  const key = `metal-${finish}-${width}-${height}`;
+  const cached = metalTextureCache.get(key);
+  if (cached) return cached;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const normalCanvas = document.createElement('canvas');
+  normalCanvas.width = width;
+  normalCanvas.height = height;
+  const nCtx = normalCanvas.getContext('2d')!;
+  nCtx.fillStyle = 'rgb(128,128,255)';
+  nCtx.fillRect(0, 0, width, height);
+
+  switch (finish) {
+    case 'brushed': {
+      // ベース: 明るいシルバー
+      ctx.fillStyle = 'rgb(190,190,195)';
+      ctx.fillRect(0, 0, width, height);
+      // 水平方向の非常に細い平行線
+      for (let y = 0; y < height; y += 1) {
+        const alpha = 0.03 + Math.random() * 0.06;
+        const brightness = 180 + Math.random() * 30;
+        ctx.strokeStyle = `rgba(${brightness},${brightness},${brightness + 5},${alpha})`;
+        ctx.lineWidth = 0.3 + Math.random() * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+        // ノーマルマップ: 水平ラインの微細な凹凸
+        nCtx.strokeStyle = `rgba(128,${125 + Math.random() * 6},255,${alpha * 3})`;
+        nCtx.lineWidth = 0.3;
+        nCtx.beginPath();
+        nCtx.moveTo(0, y);
+        nCtx.lineTo(width, y);
+        nCtx.stroke();
+      }
+      break;
+    }
+    case 'polished': {
+      // ほぼ均一 + わずかなグラデーション
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, 'rgb(215,215,220)');
+      grad.addColorStop(0.4, 'rgb(200,200,205)');
+      grad.addColorStop(0.6, 'rgb(210,210,215)');
+      grad.addColorStop(1, 'rgb(195,195,200)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+      // 微細スペキュラポイント
+      for (let i = 0; i < 20; i++) {
+        const sx = Math.random() * width;
+        const sy = Math.random() * height;
+        ctx.fillStyle = `rgba(240,240,245,${0.05 + Math.random() * 0.1})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1 + Math.random() * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case 'oxidized': {
+      // ベース: ダークメタル
+      ctx.fillStyle = 'rgb(100,95,90)';
+      ctx.fillRect(0, 0, width, height);
+      // パッチ状の暗いスポット
+      const patchCount = 15 + Math.floor(Math.random() * 10);
+      for (let p = 0; p < patchCount; p++) {
+        const px = Math.random() * width;
+        const py = Math.random() * height;
+        const pr = 5 + Math.random() * 15;
+        const pGrad = ctx.createRadialGradient(px, py, 0, px, py, pr);
+        const dark = 60 + Math.random() * 30;
+        pGrad.addColorStop(0, `rgba(${dark},${dark - 5},${dark - 10},0.4)`);
+        pGrad.addColorStop(1, `rgba(${dark + 20},${dark + 15},${dark + 10},0)`);
+        ctx.fillStyle = pGrad;
+        ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+        // ノーマルマップ: パッチ凹凸
+        const nGrad = nCtx.createRadialGradient(px, py, 0, px, py, pr);
+        nGrad.addColorStop(0, 'rgba(118,118,255,0.3)');
+        nGrad.addColorStop(1, 'rgba(128,128,255,0)');
+        nCtx.fillStyle = nGrad;
+        nCtx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+      }
+      // 細かいノイズ
+      for (let y = 0; y < height; y += 2) {
+        for (let x = 0; x < width; x += 2) {
+          if (Math.random() > 0.6) {
+            const n = 80 + Math.random() * 40;
+            ctx.fillStyle = `rgba(${n},${n - 5},${n - 10},0.08)`;
+            ctx.fillRect(x, y, 2, 2);
+          }
+        }
+      }
+      break;
+    }
+    case 'matte': {
+      // 均一なマット仕上げ
+      ctx.fillStyle = 'rgb(175,175,180)';
+      ctx.fillRect(0, 0, width, height);
+      // 極微細ノイズ
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (Math.random() > 0.8) {
+            const n = 170 + Math.random() * 15;
+            ctx.fillStyle = `rgba(${n},${n},${n + 3},0.04)`;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      break;
+    }
+    case 'brass': {
+      // ブラス/真鍮
+      ctx.fillStyle = 'rgb(195,170,80)';
+      ctx.fillRect(0, 0, width, height);
+      // パティナ（緑青）のスポット
+      const patCount = 8 + Math.floor(Math.random() * 8);
+      for (let p = 0; p < patCount; p++) {
+        const px = Math.random() * width;
+        const py = Math.random() * height;
+        const pr = 3 + Math.random() * 10;
+        const pGrad = ctx.createRadialGradient(px, py, 0, px, py, pr);
+        pGrad.addColorStop(0, `rgba(100,140,90,0.2)`);
+        pGrad.addColorStop(1, `rgba(120,150,100,0)`);
+        ctx.fillStyle = pGrad;
+        ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+      }
+      // ブラッシュライン（わずか）
+      for (let y = 0; y < height; y += 3) {
+        ctx.strokeStyle = `rgba(210,185,95,${0.03 + Math.random() * 0.05})`;
+        ctx.lineWidth = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      break;
+    }
+  }
+
+  const mapTex = new THREE.CanvasTexture(canvas);
+  mapTex.wrapS = THREE.RepeatWrapping;
+  mapTex.wrapT = THREE.RepeatWrapping;
+  const normalTex = new THREE.CanvasTexture(normalCanvas);
+  normalTex.wrapS = THREE.RepeatWrapping;
+  normalTex.wrapT = THREE.RepeatWrapping;
+
+  const result = { map: mapTex, normalMap: normalTex };
+  metalTextureCache.set(key, result);
+  return result;
 }
 
 /** 共有ジオメトリ: 椅子/テーブル脚など頻出パーツ */
@@ -714,11 +1177,11 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
       onPointerUp={handlePointerUp}
     >
       {item.modelUrl ? (
-        <Suspense fallback={<FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} />}>
+        <Suspense fallback={<FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} />}>
           <GLTFModelRenderer modelUrl={item.modelUrl} scale={item.scale} color={item.color} selected={selected} />
         </Suspense>
       ) : (
-        <FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} />
+        <FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} />
       )}
       {/* モバイル用: 拡大ヒットエリア（不可視メッシュ、ジオメトリmemo化） */}
       <mesh
@@ -1134,10 +1597,18 @@ interface FurniturePartProps {
   palette: FurniturePalette;
   pbr: FurniturePBR;
   selected?: boolean;
+  /** スタイル名（テクスチャ選択に使用） */
+  styleName: string;
+  /** スタイル別木材タイプ */
+  woodType: WoodType;
+  /** スタイル別布地タイプ */
+  fabricType: FabricType;
+  /** スタイル別金属仕上げ */
+  metalFinish: MetalFinish;
 }
 
-function FurnitureModel({ type, scale, color, palette, pbr, selected }: { type: string; scale: [number, number, number]; color: string; palette: FurniturePalette; pbr: FurniturePBR; selected?: boolean }) {
-  const props: FurniturePartProps = { scale, color, palette, pbr, selected };
+function FurnitureModel({ type, scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish }: { type: string; scale: [number, number, number]; color: string; palette: FurniturePalette; pbr: FurniturePBR; selected?: boolean; styleName: string; woodType: WoodType; fabricType: FabricType; metalFinish: MetalFinish }) {
+  const props: FurniturePartProps = { scale, color, palette, pbr, selected, styleName, woodType, fabricType, metalFinish };
   switch (type) {
     case 'counter':
       return <Counter {...props} />;
@@ -1221,7 +1692,7 @@ function FurnitureModel({ type, scale, color, palette, pbr, selected }: { type: 
   }
 }
 
-function Counter({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function Counter({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const bodyW = w - 0.04;
   const bodyD = d - 0.06;
@@ -1230,11 +1701,13 @@ function Counter({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   // カウンター: 天板=secondary, 本体=primary, トリム/パネル=metal
   const topColor = color || palette.secondary;
   const bodyColor = color || palette.primary;
+  // 木目テクスチャ適用（カスタムカラー未指定時のみ）
+  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
   return (
     <group>
       {/* 天板（オーバーハング強化 + 面取り） */}
       <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={1.2} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
+        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={1.2} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* トリムライン（天板と本体の間） */}
       <mesh position={[0, h - 0.035, 0]}>
@@ -1243,7 +1716,7 @@ function Counter({ scale, color, palette, pbr, selected }: FurniturePartProps) {
       </mesh>
       {/* 本体 */}
       <RoundedBox args={[bodyW, h - 0.08, bodyD]} radius={0.01} position={[0, (h - 0.08) / 2 + 0.04, 0]} castShadow>
-        <meshPhysicalMaterial color={color ? adjustColor(color, -20) : palette.primary} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={color ? adjustColor(color, -20) : palette.primary} emissiveIntensity={selected ? 0.15 : 0} />
+        <meshPhysicalMaterial color={color ? adjustColor(color, -20) : palette.primary} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={color ? adjustColor(color, -20) : palette.primary} emissiveIntensity={selected ? 0.15 : 0} />
       </RoundedBox>
       {/* フロントパネルライン（縦の装飾） — 小さな装飾のためcastShadow省略 */}
       {Array.from({ length: panelCount }).map((_, i) => (
@@ -1269,7 +1742,7 @@ function Counter({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   );
 }
 
-function TableSquare({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function TableSquare({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const legInset = 0.06;
   const legTopR = 0.025;
@@ -1279,6 +1752,7 @@ function TableSquare({ scale, color, palette, pbr, selected }: FurniturePartProp
   const topColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
   const apronColor = color ? adjustColor(color, -15) : palette.primary;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
   const legH = h - 0.04;
@@ -1304,7 +1778,7 @@ function TableSquare({ scale, color, palette, pbr, selected }: FurniturePartProp
     <group>
       {/* 天板 — 面取りを強化した木目風の自然な艶 */}
       <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.2} clearcoatRoughness={0.4} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
+        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.2} clearcoatRoughness={0.4} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* 天板エッジハイライト */}
       <mesh position={[0, h + 0.021, 0]} frustumCulled>
@@ -1339,18 +1813,19 @@ function TableSquare({ scale, color, palette, pbr, selected }: FurniturePartProp
   );
 }
 
-function TableRound({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function TableRound({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
   const [w, h] = scale;
   const topR = w / 2;
   const pedestalMidH = h - 0.03 - 0.1 - 0.04;
   const topColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -25) : palette.metal;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
   return (
     <group>
       {/* 天板 */}
       <mesh position={[0, h, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[topR, topR, 0.03, 32]} />
-        <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0} />
+        <meshPhysicalMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0} />
       </mesh>
       {/* 天板ベベルエッジ（トーラス） */}
       <mesh position={[0, h - 0.015, 0]} rotation={[Math.PI / 2, 0, 0]}>
@@ -1381,13 +1856,16 @@ function TableRound({ scale, color, palette, pbr, selected }: FurniturePartProps
   );
 }
 
-function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function Chair({ scale, color, palette, pbr, selected, styleName, fabricType, metalFinish, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const seatH = h * 0.5;
   const legInset = 0.035;
   // 椅子: フレーム=primary, クッション=fabric, 脚=metal
   const frameColor = color || palette.primary;
   const cushionColor = color ? adjustColor(color, 12) : palette.fabric;
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(128, 128, styleName, fabricType) : null, [color, styleName, fabricType]);
+  const metalTex = useMemo(() => !color ? generateMetalTexture(128, 128, metalFinish) : null, [color, metalFinish]);
+  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
   const legColor = color ? adjustColor(color, -40) : palette.metal;
 
   // キャッシュされた脚ジオメトリ（テーパー脚）
@@ -1415,7 +1893,7 @@ function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
         rotation={[-0.03, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={frameColor} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={frameColor} emissiveIntensity={selected ? 0.15 : 0} />
+        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={frameColor} emissiveIntensity={selected ? 0.15 : 0} />
       </RoundedBox>
       {/* 座面クッション — 丸みを持たせたふっくら形状 */}
       <RoundedBox
@@ -1426,7 +1904,7 @@ function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
         rotation={[-0.03, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} roughness={0.98} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.3} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+        <meshPhysicalMaterial color={adjustColor(cushionColor, -10)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.98} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.3} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
       </RoundedBox>
       {/* 背もたれフレーム — わずかに曲面化 */}
       <RoundedBox
@@ -1437,7 +1915,7 @@ function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
         rotation={[0.1, 0, 0]}
         castShadow
       >
-        <meshPhysicalMaterial color={frameColor} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
+        <meshPhysicalMaterial color={frameColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
       </RoundedBox>
       {/* 背もたれ横スラット（2本） — ジオメトリ共有 */}
       {[0.62, 0.82].map((ratio, i) => (
@@ -1516,7 +1994,7 @@ function Stool({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function Sofa({ scale, color, palette, pbr, selected, styleName, fabricType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const armW = 0.13;
   const innerW = w - armW * 2 - 0.04;
@@ -1527,6 +2005,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   const frameColor = color ? adjustColor(color, -45) : adjustColor(palette.primary, -20);
   const cushionColor = color || palette.fabric;
   const legColor = color ? adjustColor(color, -50) : palette.metal;
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(256, 256, styleName, fabricType) : null, [color, styleName, fabricType]);
 
   // キャッシュされた脚ジオメトリ/マテリアル
   const footGeoKey = `sofa-foot-${footR.toFixed(3)}`;
@@ -1569,7 +2048,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           position={[side * (cushionW / 2 + 0.01), h * 0.38, d * 0.05]}
           castShadow
         >
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 座面クッション中央の膨らみ（ピロー感） */}
@@ -1579,7 +2058,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           scale={[cushionW * 0.7, 1, d * 0.5]}
           frustumCulled>
           <sphereGeometry args={[0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} roughness={0.92} metalness={0} transparent opacity={0.7} sheen={0.4} sheenRoughness={0.55} sheenColor={cushionColor} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} map={fabricTex?.map ?? null} roughness={0.92} metalness={0} transparent opacity={0.7} sheen={0.4} sheenRoughness={0.55} sheenColor={cushionColor} />
         </mesh>
       ))}
       {/* 背もたれクッション（2分割）— より丸みのある形状 */}
@@ -1592,7 +2071,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           position={[side * (cushionW / 2 + 0.01), h * 0.6, -d * 0.33]}
           castShadow
         >
-          <meshPhysicalMaterial color={backColor} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={backSheen} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={backColor} map={fabricTex?.map ?? null} normalMap={fabricTex?.normalMap ?? null} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={backSheen} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 背もたれフレーム */}
@@ -1621,11 +2100,13 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   );
 }
 
-function Shelf({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function Shelf({ scale, color, palette, pbr, selected, woodType, metalFinish }: FurniturePartProps) {
   const [w, h, d] = scale;
   const shelves = 4;
   // 棚: 本体=primary
   const c = color || palette.primary;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
+  const metalTex = useMemo(() => !color ? generateMetalTexture(64, 64, metalFinish) : null, [color, metalFinish]);
   // 棚に置く装飾アイテム（棚番号→アイテム配列）
   const decorItems: Record<number, { x: number; color: string; size: [number, number, number] }[]> = {
     1: [
@@ -1664,13 +2145,13 @@ function Shelf({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           radius={0.003}
           position={[0, (h / shelves) * i, 0]}
         >
-          <meshPhysicalMaterial color={c} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
+          <meshPhysicalMaterial color={c} map={woodTex} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
         </RoundedBox>
       ))}
       {/* 背板 */}
       <mesh position={[0, h / 2, -d / 2 + 0.0075]}>
         <boxGeometry args={[w - 0.04, h, 0.015]} />
-        <meshPhysicalMaterial color={adjustColor(c, -20)} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
+        <meshPhysicalMaterial color={adjustColor(c, -20)} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
       </mesh>
       {/* 縦仕切り板 */}
       <mesh position={[0, h / 2, 0]}>
@@ -1706,7 +2187,7 @@ function Shelf({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   );
 }
 
-function PendantLight({ scale, color, palette }: FurniturePartProps) {
+function PendantLight({ scale, color, palette, metalFinish }: FurniturePartProps) {
   const [w, h] = scale;
   const style = useEditorStore((s) => s.style);
   const dayNight = useEditorStore((s) => s.dayNight);
@@ -2097,18 +2578,20 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
   );
 }
 
-function Bench({ scale, color, palette, pbr }: FurniturePartProps) {
+function Bench({ scale, color, palette, pbr, woodType, styleName, fabricType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const legInset = 0.1;
   const legThick = 0.04;
   // ベンチ: 座面=secondary, 脚=metal
   const seatColor = color || palette.secondary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
+  const fabricTex = useMemo(() => !color ? generateFabricTexture(128, 128, styleName, fabricType) : null, [color, styleName, fabricType]);
   return (
     <group>
       {/* 座面 */}
       <RoundedBox args={[w, 0.04, d]} radius={0.015} position={[0, h, 0]} castShadow>
-        <meshStandardMaterial color={seatColor} roughness={pbr.roughness} metalness={pbr.metalness} />
+        <meshStandardMaterial color={seatColor} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} />
       </RoundedBox>
       {/* 座面端カーブ */}
       {[-1, 1].map((side, i) => (
@@ -2331,15 +2814,16 @@ function CoatRack({ scale, color, palette }: FurniturePartProps) {
   );
 }
 
-function AirConditioner({ scale, color, palette }: FurniturePartProps) {
+function AirConditioner({ scale, color, palette, metalFinish }: FurniturePartProps) {
   const [w, h, d] = scale;
   const c = color || palette.metal;
+  const metalTex = useMemo(() => !color ? generateMetalTexture(128, 128, metalFinish) : null, [color, metalFinish]);
   return (
     <group>
       {/* 本体（壁掛け位置） */}
       <mesh position={[0, 2.2, 0]} castShadow>
         <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={c} roughness={0.3} />
+        <meshStandardMaterial color={c} map={metalTex?.map ?? null} normalMap={metalTex?.normalMap ?? null} roughness={0.3} />
       </mesh>
       {/* フロントパネル */}
       <mesh position={[0, 2.2, d / 2 + 0.005]}>
@@ -2360,7 +2844,7 @@ function AirConditioner({ scale, color, palette }: FurniturePartProps) {
   );
 }
 
-function Desk({ scale, color, palette, pbr }: FurniturePartProps) {
+function Desk({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const legInset = 0.06;
   const legTopR = 0.025;
@@ -2373,11 +2857,12 @@ function Desk({ scale, color, palette, pbr }: FurniturePartProps) {
   const topColor = color || palette.secondary;
   const bodyColor = color || palette.primary;
   const legColor = color ? adjustColor(color, -30) : palette.metal;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
   return (
     <group>
       {/* 天板 */}
       <RoundedBox args={[w, 0.035, d]} radius={0.008} position={[0, h, 0]} castShadow>
-        <meshStandardMaterial color={topColor} roughness={pbr.roughness * 0.7} metalness={pbr.metalness} />
+        <meshStandardMaterial color={topColor} map={woodTex} roughness={pbr.roughness * 0.7} metalness={pbr.metalness} />
       </RoundedBox>
       {/* ケーブルホール（天板後方） */}
       <mesh position={[0, h + 0.001, -d / 2 + 0.06]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -2437,24 +2922,25 @@ function Desk({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function Bookcase({ scale, color, palette, pbr }: FurniturePartProps) {
+function Bookcase({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const shelves = 5;
   const c = color || palette.primary;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
   return (
     <group>
       {/* 側板 */}
       {[-1, 1].map((side, i) => (
         <mesh key={i} position={[side * (w / 2 - 0.015), h / 2, 0]} castShadow>
           <boxGeometry args={[0.03, h, d]} />
-          <meshStandardMaterial color={adjustColor(c, -10)} roughness={pbr.roughness} metalness={pbr.metalness} />
+          <meshStandardMaterial color={adjustColor(c, -10)} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} />
         </mesh>
       ))}
       {/* 棚板 */}
       {Array.from({ length: shelves + 1 }).map((_, i) => (
         <mesh key={`s-${i}`} position={[0, (h / shelves) * i, 0]}>
           <boxGeometry args={[w - 0.04, 0.02, d]} />
-          <meshStandardMaterial color={c} roughness={pbr.roughness} metalness={pbr.metalness} />
+          <meshStandardMaterial color={c} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} />
         </mesh>
       ))}
       {/* 背板 */}
@@ -2591,7 +3077,7 @@ function BarTable({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function Wardrobe({ scale, color, palette, pbr }: FurniturePartProps) {
+function Wardrobe({ scale, color, palette, pbr, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const doorW = (w - 0.005) / 2;
   const doorH = h * 0.82;
@@ -2599,11 +3085,12 @@ function Wardrobe({ scale, color, palette, pbr }: FurniturePartProps) {
   const panelInset = 0.012;
   const c = color || palette.primary;
   const handleColor = color ? '#bbb' : palette.metal;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(256, 256, woodType) : null, [color, woodType]);
   return (
     <group>
       {/* 本体 */}
       <RoundedBox args={[w, h, d]} radius={0.01} position={[0, h / 2, 0]} castShadow>
-        <meshStandardMaterial color={c} roughness={pbr.roughness} metalness={pbr.metalness} />
+        <meshStandardMaterial color={c} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} />
       </RoundedBox>
       {/* 左ドア — 外枠 */}
       <RoundedBox args={[doorW, doorH, 0.015]} radius={0.006} position={[-doorW / 2 - 0.0025, doorY, d / 2 + 0.002]}>
@@ -2643,9 +3130,10 @@ function Wardrobe({ scale, color, palette, pbr }: FurniturePartProps) {
   );
 }
 
-function ShoeRack({ scale, color, palette, pbr, selected }: FurniturePartProps) {
+function ShoeRack({ scale, color, palette, pbr, selected, woodType }: FurniturePartProps) {
   const [w, h, d] = scale;
   const c = color || palette.primary;
+  const woodTex = useMemo(() => !color ? generateWoodTexture(128, 128, woodType) : null, [color, woodType]);
   const shelfCount = 3;
   const slotCount = Math.max(2, Math.floor(w / 0.15));
   return (
@@ -2654,14 +3142,14 @@ function ShoeRack({ scale, color, palette, pbr, selected }: FurniturePartProps) 
       {[-1, 1].map((side, i) => (
         <mesh key={i} position={[side * (w / 2 - 0.015), h / 2, 0]} castShadow>
           <boxGeometry args={[0.03, h, d]} />
-          <meshPhysicalMaterial color={adjustColor(c, -10)} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={adjustColor(c, -10)} emissiveIntensity={selected ? 0.15 : 0} />
+          <meshPhysicalMaterial color={adjustColor(c, -10)} map={woodTex} roughness={pbr.roughness} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={adjustColor(c, -10)} emissiveIntensity={selected ? 0.15 : 0} />
         </mesh>
       ))}
       {/* 棚板 */}
       {Array.from({ length: shelfCount + 1 }).map((_, i) => (
         <mesh key={`shelf-${i}`} position={[0, (h / shelfCount) * i, 0]}>
           <boxGeometry args={[w - 0.04, 0.015, d]} />
-          <meshPhysicalMaterial color={c} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
+          <meshPhysicalMaterial color={c} map={woodTex} roughness={pbr.roughness * 0.8} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} />
         </mesh>
       ))}
       {/* スロット仕切り（各段に配置） */}

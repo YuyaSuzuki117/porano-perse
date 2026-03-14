@@ -19,6 +19,11 @@ import { WindowLightBeams } from './WindowLightBeams';
 import { FurnitureRug } from './FurnitureRug';
 import { AnnotationMarkers, AnnotationPlacement } from './AnnotationMarkers';
 import { PerformanceManager } from './PerformanceManager';
+import { Baseboards } from './Baseboards';
+import { Wainscoting } from './Wainscoting';
+import { CeilingBeams } from './CeilingBeams';
+import { DustParticles } from './DustParticles';
+import PanoramaExporter from './PanoramaExporter';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -33,6 +38,8 @@ interface SceneCanvasProps {
   onToggleFurnitureSelection?: (id: string) => void;
   onMoveFurniture: (id: string, position: [number, number, number]) => void;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  panoramaTrigger?: boolean;
+  onPanoramaComplete?: () => void;
 }
 
 export function SceneCanvas({
@@ -42,6 +49,8 @@ export function SceneCanvas({
   onToggleFurnitureSelection,
   onMoveFurniture,
   canvasRef,
+  panoramaTrigger = false,
+  onPanoramaComplete,
 }: SceneCanvasProps) {
   const walls = useEditorStore((s) => s.walls);
   const openings = useEditorStore((s) => s.openings);
@@ -216,6 +225,18 @@ export function SceneCanvas({
         <FloorMesh walls={walls} style={styleConfig} />
         <CeilingMesh walls={walls} roomHeight={roomHeight} style={styleConfig} />
 
+        {/* 建築ディテール: 巾木・廻り縁・腰壁・天井梁 */}
+        {wallDisplayMode !== 'hidden' && (
+          <Baseboards walls={walls} openings={openings} roomHeight={roomHeight} style={styleConfig} />
+        )}
+        {wallDisplayMode !== 'hidden' && (
+          <Wainscoting walls={walls} openings={openings} roomHeight={roomHeight} style={styleConfig} />
+        )}
+        <CeilingBeams walls={walls} roomHeight={roomHeight} style={styleConfig} />
+
+        {/* ダストパーティクル（high品質のみ） */}
+        <DustParticles walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
+
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 
         <WindowLightBeams walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
@@ -334,6 +355,11 @@ export function SceneCanvas({
 
         {/* FPSカウンター: 開発モードで常時表示 */}
         {process.env.NODE_ENV === 'development' && <Stats />}
+
+        {/* パノラマエクスポーター */}
+        {onPanoramaComplete && (
+          <PanoramaExporter trigger={panoramaTrigger} onComplete={onPanoramaComplete} />
+        )}
 
         {/* PostProcessingはhigh品質のみ（SSAO/Bloom/Vignetteは最大のボトルネック） */}
         {qualityLevel === 'high' && (
