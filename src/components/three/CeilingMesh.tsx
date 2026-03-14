@@ -8,6 +8,7 @@ import { StyleConfig } from '@/types/scene';
 import { computeFloorPolygon, wallLength, wallAngle } from '@/lib/geometry';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useCeilingTexture } from '@/hooks/useCeilingTexture';
+import { RecessedLight } from './RecessedLight';
 
 // useFrame内でのnew演算子を避けるためコンポーネント外に確保
 const _ceilCamDir = new THREE.Vector3();
@@ -133,6 +134,7 @@ function ceilingMeshPropsAreEqual(prev: CeilingMeshProps, next: CeilingMeshProps
 export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, style }: CeilingMeshProps) {
   const dayNight = useEditorStore((s) => s.dayNight);
   const ceilingVisible = useEditorStore((s) => s.ceilingVisible);
+  const qualityLevel = useEditorStore((s) => s.qualityLevel);
   const isNight = dayNight === 'night';
 
   // 天井マテリアルの参照（カメラ角度ベースのフェードに使用）
@@ -479,15 +481,17 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
         </group>
       ))}
 
-      {/* リセス型ダウンライト */}
+      {/* リセス型ダウンライト（高品質RecessedLight） */}
       {downlightPositions.map((pos, i) => (
-        <DownLight
+        <RecessedLight
           key={`downlight-${i}`}
-          x={pos.x}
-          z={pos.z}
-          y={roomHeight}
-          emissiveColor={downlightColor}
-          isNight={isNight}
+          position={[pos.x, roomHeight, pos.z]}
+          color={downlightColor}
+          intensity={isNight ? 1.5 : 0.8}
+          size={0.06}
+          housingDepth={0.05}
+          qualityLevel={qualityLevel}
+          castShadow={isNight}
         />
       ))}
     </group>

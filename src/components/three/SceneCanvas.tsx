@@ -37,6 +37,13 @@ import PlacementPreview from './PlacementPreview';
 import { GodRays } from './GodRays';
 import { LensFlare } from './LensFlare';
 import { WetFloorEffect } from './WetFloorEffect';
+import { ProceduralSkybox } from './ProceduralSkybox';
+import { AreaLightSystem } from './AreaLightSystem';
+import { GlassCondensation } from './GlassCondensation';
+import { CausticEffect } from './CausticEffect';
+import { SunSimulation } from './SunSimulation';
+import { AcousticVisualization } from './AcousticVisualization';
+import { WindowDoorFrame3D } from './WindowDoorFrame3D';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -103,6 +110,16 @@ export function SceneCanvas({
   const wetFloorEnabled = useEditorStore((s) => s.wetFloorEnabled);
   const wetFloorWetness = useEditorStore((s) => s.wetFloorWetness);
   const showLensFlare = useEditorStore((s) => s.showLensFlare);
+  const skyTimeOfDay = useEditorStore((s) => s.skyTimeOfDay);
+  const showProceduralSky = useEditorStore((s) => s.showProceduralSky);
+  const showAreaLights = useEditorStore((s) => s.showAreaLights);
+  const glassCondensation = useEditorStore((s) => s.glassCondensation);
+  const showCaustics = useEditorStore((s) => s.showCaustics);
+  const causticsIntensity = useEditorStore((s) => s.causticsIntensity);
+  const showSunSimulation = useEditorStore((s) => s.showSunSimulation);
+  const showAcoustics = useEditorStore((s) => s.showAcoustics);
+  const showWindowDoorFrames = useEditorStore((s) => s.showWindowDoorFrames);
+  const setSkyTimeOfDay = useEditorStore((s) => s.setSkyTimeOfDay);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -370,6 +387,79 @@ export function SceneCanvas({
             enabled={true}
           />
         )}
+
+        {/* プロシージャルスカイボックス */}
+        {showProceduralSky && (
+          <ProceduralSkybox timeOfDay={skyTimeOfDay} enabled={true} />
+        )}
+
+        {/* エリアライトシステム */}
+        {showAreaLights && openings.length > 0 && (
+          <AreaLightSystem
+            openings={openings}
+            walls={walls}
+            roomHeight={roomHeight}
+            style={styleConfig}
+            qualityLevel={qualityLevel}
+          />
+        )}
+
+        {/* ガラス結露エフェクト */}
+        {glassCondensation !== 'off' && openings.length > 0 && (
+          <GlassCondensation
+            walls={walls}
+            openings={openings}
+            roomHeight={roomHeight}
+            temperature={glassCondensation}
+            enabled={true}
+          />
+        )}
+
+        {/* コースティクスエフェクト */}
+        {showCaustics && openings.length > 0 && (
+          <CausticEffect
+            openings={openings}
+            walls={walls}
+            intensity={causticsIntensity}
+            enabled={true}
+          />
+        )}
+
+        {/* 太陽シミュレーション */}
+        {showSunSimulation && (
+          <SunSimulation
+            enabled={true}
+            timeOfDay={skyTimeOfDay}
+            latitude={35}
+            onTimeChange={setSkyTimeOfDay}
+          />
+        )}
+
+        {/* 音響シミュレーション可視化 */}
+        {showAcoustics && (
+          <AcousticVisualization
+            walls={walls}
+            furniture={furniture}
+            roomHeight={roomHeight}
+            enabled={true}
+          />
+        )}
+
+        {/* 3D窓・ドアフレーム */}
+        {showWindowDoorFrames && qualityLevel !== 'low' && openings.map((opening) => {
+          const wall = walls.find((w) => w.id === opening.wallId);
+          if (!wall) return null;
+          return (
+            <WindowDoorFrame3D
+              key={`frame-${opening.id}`}
+              opening={opening}
+              wall={wall}
+              roomHeight={roomHeight}
+              style={styleName}
+              qualityLevel={qualityLevel}
+            />
+          );
+        })}
 
         {/* レンズフレア（ペンダントライト） */}
         {showLensFlare && qualityLevel !== 'low' && furniture.filter(f => f.type === 'pendant_light').map(light => (

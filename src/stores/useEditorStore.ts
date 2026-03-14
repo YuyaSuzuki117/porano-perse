@@ -419,6 +419,47 @@ interface EditorState {
   // Round 8: レンダリング品質プリセット
   renderQualityPreset: string;
   setRenderQualityPreset: (preset: string) => void;
+
+  // Round 9: プロシージャルスカイ
+  skyTimeOfDay: number;
+  showProceduralSky: boolean;
+  setSkyTimeOfDay: (v: number) => void;
+  toggleProceduralSky: () => void;
+
+  // Round 9: エリアライト
+  showAreaLights: boolean;
+  toggleAreaLights: () => void;
+
+  // Round 9: ガラス結露
+  glassCondensation: 'off' | 'warm' | 'cold' | 'frost';
+  setGlassCondensation: (v: 'off' | 'warm' | 'cold' | 'frost') => void;
+
+  // Round 9: コースティクス
+  showCaustics: boolean;
+  causticsIntensity: number;
+  toggleCaustics: () => void;
+  setCausticsIntensity: (v: number) => void;
+
+  // Round 9: 太陽シミュレーション
+  showSunSimulation: boolean;
+  toggleSunSimulation: () => void;
+
+  // Round 9: 音響可視化
+  showAcoustics: boolean;
+  toggleAcoustics: () => void;
+
+  // Round 9: ビフォーアフター
+  beforeAfterActive: boolean;
+  beforeAfterLeft: string | null;
+  beforeAfterRight: string | null;
+  beforeAfterLeftLabel: string;
+  beforeAfterRightLabel: string;
+  setBeforeAfter: (left: string, right: string, leftLabel: string, rightLabel: string) => void;
+  closeBeforeAfter: () => void;
+
+  // Round 9: 3Dフレーム表示
+  showWindowDoorFrames: boolean;
+  toggleWindowDoorFrames: () => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -591,6 +632,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showLensFlare: false,
   toneMappingPreset: 'aces',
   renderQualityPreset: 'cinema',
+  skyTimeOfDay: 12,
+  showProceduralSky: false,
+  showAreaLights: true,
+  glassCondensation: 'off' as const,
+  showCaustics: false,
+  causticsIntensity: 0.5,
+  showSunSimulation: false,
+  showAcoustics: false,
+  beforeAfterActive: false,
+  beforeAfterLeft: null,
+  beforeAfterRight: null,
+  beforeAfterLeftLabel: '',
+  beforeAfterRightLabel: '',
+  showWindowDoorFrames: true,
   clipboard: null,
   cameraBookmarks: [],
   snapshots: (() => {
@@ -1857,6 +1912,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   toggleLensFlare: () => set((s) => ({ showLensFlare: !s.showLensFlare })),
   setToneMappingPreset: (preset) => set({ toneMappingPreset: preset }),
   setRenderQualityPreset: (preset) => set({ renderQualityPreset: preset }),
+  // Round 9
+  setSkyTimeOfDay: (v) => set({ skyTimeOfDay: v }),
+  toggleProceduralSky: () => set((s) => ({ showProceduralSky: !s.showProceduralSky })),
+  toggleAreaLights: () => set((s) => ({ showAreaLights: !s.showAreaLights })),
+  setGlassCondensation: (v) => set({ glassCondensation: v }),
+  toggleCaustics: () => set((s) => ({ showCaustics: !s.showCaustics })),
+  setCausticsIntensity: (v) => set({ causticsIntensity: v }),
+  toggleSunSimulation: () => set((s) => ({ showSunSimulation: !s.showSunSimulation })),
+  toggleAcoustics: () => set((s) => ({ showAcoustics: !s.showAcoustics })),
+  setBeforeAfter: (left, right, leftLabel, rightLabel) => set({
+    beforeAfterActive: true,
+    beforeAfterLeft: left,
+    beforeAfterRight: right,
+    beforeAfterLeftLabel: leftLabel,
+    beforeAfterRightLabel: rightLabel,
+  }),
+  closeBeforeAfter: () => set({
+    beforeAfterActive: false,
+    beforeAfterLeft: null,
+    beforeAfterRight: null,
+    beforeAfterLeftLabel: '',
+    beforeAfterRightLabel: '',
+  }),
+  toggleWindowDoorFrames: () => set((s) => ({ showWindowDoorFrames: !s.showWindowDoorFrames })),
 }));
 
 export { LOCALSTORAGE_KEY };
