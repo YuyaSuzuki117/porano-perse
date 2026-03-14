@@ -7,6 +7,7 @@ import { getRoomTemplateById } from '@/data/room-templates';
 import { LightingPreset } from '@/data/lighting-presets';
 import { FurnitureSet } from '@/data/furniture-sets';
 import { invalidateTextureCache } from '@/lib/texture-cache';
+import { FURNITURE_CATALOG } from '@/data/furniture';
 import LZString from 'lz-string';
 
 const MAX_HISTORY = 50;
@@ -283,6 +284,13 @@ interface EditorState {
   measurementActive: boolean;
   setMeasurementActive: (active: boolean) => void;
 
+  // 分析ツール
+  showFlowHeatmap: boolean;
+  showLightingAnalysis: boolean;
+  toggleFlowHeatmap: () => void;
+  toggleLightingAnalysis: () => void;
+  applyAutoLayout: (roomType: string) => void;
+
   // ウォーターマーク設定
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
@@ -316,6 +324,18 @@ interface EditorState {
   pasteFurniture: () => void;
   selectAllFurniture: () => void;
   deleteSelected: () => void;
+
+  // グループ操作
+  createGroup: (furnitureIds: string[]) => void;
+  ungroupSelected: () => void;
+  moveGroup: (groupId: string, delta: [number, number, number]) => void;
+
+  // スナップショット（バージョン履歴）
+  snapshots: Array<{ id: string; name: string; timestamp: number; data: string }>;
+  saveSnapshot: (name?: string) => void;
+  loadSnapshot: (id: string) => void;
+  deleteSnapshot: (id: string) => void;
+  renameSnapshot: (id: string, name: string) => void;
 
   // Undo/Redo
   undo: () => void;
@@ -488,6 +508,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   activeRoomAtmosphere: null,
   darkMode: false,
   measurementActive: false,
+  showFlowHeatmap: false,
+  showLightingAnalysis: false,
   enableWatermark: false,
   furnitureCollision: false,
   liveCameraPosition: [0, 0, 0],
@@ -495,6 +517,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showMinimap: true,
   clipboard: null,
   cameraBookmarks: [],
+  snapshots: (() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('porano-perse-snapshots') : null;
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  })(),
   styleCompareMode: false,
   styleCompareLeft: null,
   styleCompareRight: null,
@@ -760,6 +788,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     // ロック中の家具は削除不可
     const target = get().furniture.find((f) => f.id === id);
     if (target?.locked) return;
+    // グループ削除: 同一groupIdの全家具を削除
+    if (target?.groupId) {
+      const groupItems = get().furniture.filter((f) => f.groupId === target.groupId && !f.locked);
+      for (const gi of groupItems) {
+        get().markFurnitureForDeletion(gi.id);
+      }
+      return;
+    }
     // 削除アニメーション付き: まずmarkしてアニメーション後にcompleteDeleteで実削除
     get().markFurnitureForDeletion(id);
   },
@@ -792,6 +828,33 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       // ロック中の家具は移動不可
       const target = s.furniture.find((f) => f.id === id);
       if (target?.locked) return s;
+
+      // グループ移動: 同一groupIdの全家具をデルタ分移動
+      if (target?.groupId) {
+        const delta: [number, number, number] = [
+          position[0] - target.position[0],
+          position[1] - target.position[1],
+          position[2] - target.position[2],
+        ];
+        const colliding = checkFurnitureCollision(s.furniture, id, position);
+        const furniture = s.furniture.map((f) => {
+          if (f.groupId === target.groupId) {
+            if (f.id === id) return { ...f, position };
+            if (f.locked) return f;
+            return {
+              ...f,
+              position: [
+                f.position[0] + delta[0],
+                f.position[1] + delta[1],
+                f.position[2] + delta[2],
+              ] as [number, number, number],
+            };
+          }
+          return f;
+        });
+        return { furniture, furnitureCollision: colliding, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-group-${target.groupId}`) };
+      }
+
       // 衝突検出
       const colliding = checkFurnitureCollision(s.furniture, id, position);
       const furniture = s.furniture.map((f) => (f.id === id ? { ...f, position } : f));
@@ -802,6 +865,38 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       // ロック中の家具は回転不可
       const target = s.furniture.find((f) => f.id === id);
       if (target?.locked) return s;
+
+      // グループ回転: グループ中心を軸に全メンバーを回転
+      if (target?.groupId) {
+        const groupItems = s.furniture.filter((f) => f.groupId === target.groupId);
+        // グループ中心を計算
+        const cx = groupItems.reduce((sum, f) => sum + f.position[0], 0) / groupItems.length;
+        const cz = groupItems.reduce((sum, f) => sum + f.position[2], 0) / groupItems.length;
+        const deltaAngle = rotationY - target.rotation[1];
+
+        const furniture = s.furniture.map((f) => {
+          if (f.groupId === target.groupId) {
+            if (f.locked) return f;
+            // 中心からの相対位置を回転
+            const rx = f.position[0] - cx;
+            const rz = f.position[2] - cz;
+            const cos = Math.cos(deltaAngle);
+            const sin = Math.sin(deltaAngle);
+            return {
+              ...f,
+              position: [
+                cx + rx * cos - rz * sin,
+                f.position[1],
+                cz + rx * sin + rz * cos,
+              ] as [number, number, number],
+              rotation: [f.rotation[0], f.rotation[1] + deltaAngle, f.rotation[2]] as [number, number, number],
+            };
+          }
+          return f;
+        });
+        return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-rotate-group-${target.groupId}`) };
+      }
+
       const furniture = s.furniture.map((f) =>
         f.id === id ? { ...f, rotation: [f.rotation[0], rotationY, f.rotation[2]] as [number, number, number] } : f
       );
@@ -905,7 +1000,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setActiveTool: (activeTool) =>
     set({ activeTool, isDrawingWall: false, wallDrawStart: null }),
   setSelectedWall: (selectedWallId) => set({ selectedWallId }),
-  setSelectedFurniture: (selectedFurnitureId) => set({ selectedFurnitureId, selectedFurnitureIds: selectedFurnitureId ? [selectedFurnitureId] : [] }),
+  setSelectedFurniture: (selectedFurnitureId) => {
+    if (!selectedFurnitureId) {
+      set({ selectedFurnitureId: null, selectedFurnitureIds: [] });
+      return;
+    }
+    // グループ選択: 同一groupIdの全家具を選択
+    const { furniture } = get();
+    const target = furniture.find((f) => f.id === selectedFurnitureId);
+    if (target?.groupId) {
+      const groupIds = furniture.filter((f) => f.groupId === target.groupId).map((f) => f.id);
+      set({ selectedFurnitureId, selectedFurnitureIds: groupIds });
+    } else {
+      set({ selectedFurnitureId, selectedFurnitureIds: [selectedFurnitureId] });
+    }
+  },
   toggleFurnitureSelection: (id) => set((s) => {
     const ids = s.selectedFurnitureIds.includes(id)
       ? s.selectedFurnitureIds.filter((fid) => fid !== id)
@@ -1086,6 +1195,45 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // 計測ツール
   setMeasurementActive: (measurementActive) => set({ measurementActive }),
 
+  // 分析ツール
+  toggleFlowHeatmap: () => set((s) => ({ showFlowHeatmap: !s.showFlowHeatmap })),
+  toggleLightingAnalysis: () => set((s) => ({ showLightingAnalysis: !s.showLightingAnalysis })),
+  applyAutoLayout: (roomType: string) => {
+    const s = get();
+    // 遅延インポートで循環参照を回避
+    import('@/lib/auto-layout').then(({ generateAutoLayout }) => {
+      const suggestions = generateAutoLayout(
+        s.walls,
+        s.openings,
+        roomType as 'cafe' | 'restaurant' | 'office' | 'salon' | 'retail' | 'bar' | 'clinic',
+        s.roomHeight,
+      );
+      const newFurniture = suggestions.map((sg, i) => ({
+        id: `auto_${roomType}_${Date.now()}_${i}`,
+        type: sg.furnitureType,
+        name: sg.reason.slice(0, 20),
+        position: sg.position,
+        rotation: [0, sg.rotation, 0] as [number, number, number],
+        scale: sg.scale ?? ((): [number, number, number] => {
+          const cat = FURNITURE_CATALOG.find(c => c.type === sg.furnitureType);
+          return cat ? [...cat.defaultScale] : [1, 1, 1];
+        })(),
+        color: ((): string | undefined => {
+          const cat = FURNITURE_CATALOG.find(c => c.type === sg.furnitureType);
+          return cat?.defaultColor;
+        })(),
+        material: ((): import('@/types/scene').FurnitureMaterial | undefined => {
+          const cat = FURNITURE_CATALOG.find(c => c.type === sg.furnitureType);
+          return cat?.defaultMaterial;
+        })(),
+      }));
+      set((prev) => {
+        const snapshot = pushHistory(prev, { walls: prev.walls, openings: prev.openings, furniture: newFurniture, roomLabels: prev.roomLabels });
+        return { ...snapshot, furniture: newFurniture };
+      });
+    });
+  },
+
   // フォトモード
   setPhotoMode: (v) => set((s) => {
     if (v) {
@@ -1253,6 +1401,106 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     };
     get().addFurniture(newItem);
   },
+  // グループ操作
+  createGroup: (furnitureIds) =>
+    set((s) => {
+      if (furnitureIds.length < 2) return s;
+      const groupId = `group_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const furniture = s.furniture.map((f) =>
+        furnitureIds.includes(f.id) ? { ...f, groupId } : f
+      );
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
+    }),
+  ungroupSelected: () =>
+    set((s) => {
+      const selectedIds = s.selectedFurnitureIds.length > 0
+        ? s.selectedFurnitureIds
+        : s.selectedFurnitureId
+          ? [s.selectedFurnitureId]
+          : [];
+      if (selectedIds.length === 0) return s;
+      const furniture = s.furniture.map((f) =>
+        selectedIds.includes(f.id) ? { ...f, groupId: undefined } : f
+      );
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
+    }),
+  moveGroup: (groupId, delta) =>
+    set((s) => {
+      const furniture = s.furniture.map((f) => {
+        if (f.groupId === groupId && !f.locked) {
+          return {
+            ...f,
+            position: [
+              f.position[0] + delta[0],
+              f.position[1] + delta[1],
+              f.position[2] + delta[2],
+            ] as [number, number, number],
+          };
+        }
+        return f;
+      });
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `group-move-${groupId}`) };
+    }),
+
+  // スナップショット（バージョン履歴）
+  saveSnapshot: (name) => {
+    const s = get();
+    const now = Date.now();
+    const autoName = name || `スナップショット ${new Date(now).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
+    const snapshotData = JSON.stringify({
+      walls: s.walls,
+      furniture: s.furniture,
+      openings: s.openings,
+      style: s.style,
+      roomHeight: s.roomHeight,
+    });
+    const newSnapshot = {
+      id: `snap_${now}_${Math.random().toString(36).slice(2, 8)}`,
+      name: autoName,
+      timestamp: now,
+      data: snapshotData,
+    };
+    const snapshots = [...s.snapshots, newSnapshot];
+    // 10件超過時は古いものを削除
+    while (snapshots.length > 10) snapshots.shift();
+    set({ snapshots });
+    try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
+  },
+  loadSnapshot: (id) => {
+    const s = get();
+    const snapshot = s.snapshots.find((snap) => snap.id === id);
+    if (!snapshot) return;
+    try {
+      const parsed = JSON.parse(snapshot.data);
+      // 現在の状態をundo履歴にプッシュしてから復元
+      const histUpdate = pushHistory(s, { walls: s.walls, openings: s.openings, furniture: s.furniture, roomHeight: s.roomHeight, style: s.style });
+      set({
+        walls: parsed.walls ?? s.walls,
+        furniture: parsed.furniture ?? s.furniture,
+        openings: parsed.openings ?? s.openings,
+        style: parsed.style ?? s.style,
+        roomHeight: parsed.roomHeight ?? s.roomHeight,
+        ...histUpdate,
+      });
+    } catch { /* invalid data */ }
+  },
+  deleteSnapshot: (id) => {
+    set((s) => {
+      const snapshots = s.snapshots.filter((snap) => snap.id !== id);
+      try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
+      return { snapshots };
+    });
+  },
+  renameSnapshot: (id, name) => {
+    set((s) => {
+      const snapshots = s.snapshots.map((snap) =>
+        snap.id === id ? { ...snap, name } : snap
+      );
+      try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
+      return { snapshots };
+    });
+  },
+
   selectAllFurniture: () => {
     const { furniture } = get();
     if (furniture.length > 0) {

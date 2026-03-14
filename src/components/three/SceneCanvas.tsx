@@ -24,6 +24,8 @@ import { Wainscoting } from './Wainscoting';
 import { CeilingBeams } from './CeilingBeams';
 import { DustParticles } from './DustParticles';
 import PanoramaExporter from './PanoramaExporter';
+import { FlowHeatmap } from './FlowHeatmap';
+import { LightingAnalysis } from './LightingAnalysis';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -73,6 +75,8 @@ export function SceneCanvas({
   const annotations = useEditorStore((s) => s.annotations);
   const showAnnotations = useEditorStore((s) => s.showAnnotations);
   const activeTool = useEditorStore((s) => s.activeTool);
+  const showFlowHeatmap = useEditorStore((s) => s.showFlowHeatmap);
+  const showLightingAnalysis = useEditorStore((s) => s.showLightingAnalysis);
   const deletingFurnitureIds = useEditorStore((s) => s.deletingFurnitureIds);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
@@ -237,6 +241,10 @@ export function SceneCanvas({
 
         {/* ダストパーティクル（high品質のみ） */}
         <DustParticles walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
+
+        {/* 分析オーバーレイ: 動線ヒートマップ・照明分析 */}
+        <FlowHeatmap walls={walls} openings={openings} furniture={furniture} visible={showFlowHeatmap} />
+        <LightingAnalysis walls={walls} openings={openings} furniture={furniture} roomHeight={roomHeight} visible={showLightingAnalysis} brightness={lightBrightness} />
 
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 

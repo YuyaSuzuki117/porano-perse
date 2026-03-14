@@ -14,6 +14,7 @@ import {
   applyModelHighlight,
   enableModelShadows,
 } from '@/lib/gltf-loader';
+import { FurnitureDimensionLabel } from './FurnitureDimensionLabel';
 
 /** グリッドスナップ: 値を最寄りのグリッドポイントに吸着 */
 function snapToGridValue(value: number, gridSize: number): number {
@@ -758,6 +759,9 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     [item.scale[0], item.scale[1], item.scale[2]],
   );
 
+  // ホバー状態（寸法ラベル表示用）
+  const [isHovered, setIsHovered] = useState(false);
+
   // ドラッグ状態をrefで管理（React再レンダリングを避ける）
   const isDraggingRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -1188,6 +1192,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
     >
       {item.modelUrl ? (
         <Suspense fallback={<FurnitureModel type={item.type} scale={item.scale} color={item.color ?? ''} palette={palette} pbr={pbr} selected={selected} styleName={styleConfig.name} woodType={styleConfig.woodType} fabricType={styleConfig.fabricType} metalFinish={styleConfig.metalFinish} qualityLevel={qualityLevel} />}>
@@ -1241,6 +1247,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
           snappedToGrid={snappedToGrid}
         />
       )}
+      {/* ホバー時寸法ラベル（ドラッグ中は非表示） */}
+      <FurnitureDimensionLabel item={item} visible={isHovered && !isDragging} />
     </group>
   );
 }, furniturePropsAreEqual);

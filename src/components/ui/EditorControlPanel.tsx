@@ -110,6 +110,11 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     measurementActive,
     setMeasurementActive,
     toggleLockFurniture,
+    showFlowHeatmap,
+    showLightingAnalysis,
+    toggleFlowHeatmap,
+    toggleLightingAnalysis,
+    applyAutoLayout,
   } = useEditorStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
@@ -1850,6 +1855,77 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         </div>
       </Section>
 
+      {/* 分析ツール */}
+      <Section title="分析ツール" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <div className="space-y-3">
+          {/* 自動レイアウト */}
+          <div>
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">自動レイアウト</label>
+            <div className="flex gap-1.5">
+              <select
+                id="auto-layout-room-type"
+                className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                defaultValue="cafe"
+              >
+                <option value="cafe">カフェ</option>
+                <option value="restaurant">レストラン</option>
+                <option value="office">オフィス</option>
+                <option value="salon">美容室</option>
+                <option value="retail">物販</option>
+                <option value="bar">バー</option>
+                <option value="clinic">クリニック</option>
+              </select>
+              <button
+                onClick={() => {
+                  const select = document.getElementById('auto-layout-room-type') as HTMLSelectElement;
+                  if (select && window.confirm(`現在の什器を全て置き換えて「${select.options[select.selectedIndex].text}」レイアウトを適用しますか？`)) {
+                    applyAutoLayout(select.value);
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors whitespace-nowrap"
+              >
+                🤖 適用
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">部屋タイプに最適な什器配置を自動生成します</p>
+          </div>
+          {/* ヒートマップ・照明分析トグル */}
+          <div className="flex gap-2">
+            <button
+              onClick={toggleFlowHeatmap}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                showFlowHeatmap
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              🔥 動線ヒートマップ
+            </button>
+            <button
+              onClick={toggleLightingAnalysis}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                showLightingAnalysis
+                  ? 'bg-yellow-500 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              💡 照明分析
+            </button>
+          </div>
+          {showFlowHeatmap && (
+            <p className="text-[10px] text-orange-600 bg-orange-50 rounded px-2 py-1">入口→カウンター→座席の動線を可視化中。赤=高頻度、青=低頻度</p>
+          )}
+          {showLightingAnalysis && (
+            <p className="text-[10px] text-yellow-700 bg-yellow-50 rounded px-2 py-1">窓・照明からの近似ルクス値を表示中。赤=明るい、青=暗い</p>
+          )}
+        </div>
+      </Section>
+
+      {/* バージョン履歴 */}
+      <Section title="バージョン履歴" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <SnapshotPanel />
+      </Section>
+
       {/* Help Panel */}
       <Section title="ヘルプ" collapsible defaultOpen={false}>
         <div className="space-y-3">
@@ -2033,6 +2109,116 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
   return (
     <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col text-sm scroll-smooth-panel" role="complementary" aria-label="エディタコントロールパネル">
       {panelContent}
+    </div>
+  );
+}
+
+/** 相対時間表示ヘルパー */
+function relativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return `${sec}秒前`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}分前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}時間前`;
+  const day = Math.floor(hr / 24);
+  return `${day}日前`;
+}
+
+/** スナップショットパネル: バージョン履歴のUI */
+function SnapshotPanel() {
+  const snapshots = useEditorStore((s) => s.snapshots);
+  const saveSnapshot = useEditorStore((s) => s.saveSnapshot);
+  const loadSnapshot = useEditorStore((s) => s.loadSnapshot);
+  const deleteSnapshot = useEditorStore((s) => s.deleteSnapshot);
+  const renameSnapshot = useEditorStore((s) => s.renameSnapshot);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const handleStartRename = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditName(currentName);
+    // 次のレンダリング後にフォーカス
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const handleFinishRename = () => {
+    if (editingId && editName.trim()) {
+      renameSnapshot(editingId, editName.trim());
+    }
+    setEditingId(null);
+    setEditName('');
+  };
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => saveSnapshot()}
+        className="w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+      >
+        <span>📸</span>
+        <span>スナップショット保存</span>
+      </button>
+
+      {snapshots.length === 0 ? (
+        <p className="text-[10px] text-gray-400 text-center py-2">
+          スナップショットがありません
+        </p>
+      ) : (
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {[...snapshots].reverse().map((snap) => (
+            <div
+              key={snap.id}
+              className="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-lg text-[11px] group hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex-1 min-w-0 mr-2">
+                {editingId === snap.id ? (
+                  <input
+                    ref={editInputRef}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={handleFinishRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFinishRename();
+                      if (e.key === 'Escape') { setEditingId(null); setEditName(''); }
+                    }}
+                    className="w-full text-[11px] px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                  />
+                ) : (
+                  <div
+                    onClick={() => handleStartRename(snap.id, snap.name)}
+                    className="truncate cursor-pointer text-gray-700 hover:text-blue-600"
+                    title="クリックで名前変更"
+                  >
+                    {snap.name}
+                  </div>
+                )}
+                <div className="text-[9px] text-gray-400">
+                  {relativeTime(snap.timestamp)}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => loadSnapshot(snap.id)}
+                  className="px-1.5 py-0.5 text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                >
+                  読込
+                </button>
+                <button
+                  onClick={() => deleteSnapshot(snap.id)}
+                  className="px-1 py-0.5 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                  title="削除"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

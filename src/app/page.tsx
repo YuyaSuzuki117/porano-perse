@@ -20,6 +20,7 @@ import { QuickTipsContainer } from '@/components/ui/QuickTips';
 import { StyleComparisonModal } from '@/components/ui/StyleComparisonModal';
 import { MeasurementTool } from '@/components/three/MeasurementTool';
 import { MiniMap } from '@/components/ui/MiniMap';
+import { FurnitureContextMenu } from '@/components/ui/FurnitureContextMenu';
 import { exportProposalPDF } from '@/lib/pdf-export';
 
 const FloorPlanEditor = dynamic(
@@ -178,6 +179,14 @@ export default function EditorPage() {
   const [fabOpen, setFabOpen] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
 
+  // モバイル長押しコンテキストメニュー
+  const [contextMenu, setContextMenu] = useState<{ furnitureId: string; position: { x: number; y: number } } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFurnitureRef = useRef<string | null>(null);
+
+  // ピンチズーム用
+  const lastPinchDistRef = useRef<number | null>(null);
+
   // カスタムフック: ドラッグ&ドロップ
   const { isDragOver, dragHandlers } = useDragDrop();
 
@@ -263,6 +272,63 @@ export default function EditorPage() {
     setCameraPreset(`navigate:${x},${z}`);
   }, [setCameraPreset]);
 
+  // ピンチズーム: 2D図面エリア用タッチハンドラ
+  const handleTouchStart2D = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastPinchDistRef.current = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, []);
+
+  const handleTouchMove2D = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const ratio = dist / lastPinchDistRef.current;
+      const currentZoom = useEditorStore.getState().zoom;
+      useEditorStore.getState().setZoom(currentZoom * ratio);
+      lastPinchDistRef.current = dist;
+    }
+  }, []);
+
+  const handleTouchEnd2D = useCallback(() => {
+    lastPinchDistRef.current = null;
+  }, []);
+
+  // 3Dビュー長押しコンテキストメニュー用ハンドラ
+  const handle3DTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const touchPos = { x: touch.clientX, y: touch.clientY };
+    // 長押しタイマー設定
+    longPressFurnitureRef.current = selectedFurnitureId;
+    longPressTimerRef.current = setTimeout(() => {
+      if (longPressFurnitureRef.current) {
+        setContextMenu({
+          furnitureId: longPressFurnitureRef.current,
+          position: touchPos,
+        });
+      }
+    }, 500);
+  }, [selectedFurnitureId]);
+
+  const handle3DTouchMove = useCallback(() => {
+    // 指が動いたら長押しキャンセル
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handle3DTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
@@ -339,7 +405,13 @@ export default function EditorPage() {
             </div>
           )}
           {mobileTab !== 'pixel' && (viewMode === '2d' || viewMode === 'split') && (
-            <div className="absolute inset-0 bg-white tab-content-enter" aria-label="2D図面エディタ">
+            <div
+              className="absolute inset-0 bg-white tab-content-enter"
+              aria-label="2D図面エディタ"
+              onTouchStart={handleTouchStart2D}
+              onTouchMove={handleTouchMove2D}
+              onTouchEnd={handleTouchEnd2D}
+            >
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs text-gray-500 font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md border border-gray-200 pointer-events-none">
                 2D 図面
@@ -351,6 +423,9 @@ export default function EditorPage() {
               className="absolute inset-0 tab-content-enter"
               aria-label="3Dプレビュー"
               {...dragHandlers}
+              onTouchStart={handle3DTouchStart}
+              onTouchMove={handle3DTouchMove}
+              onTouchEnd={handle3DTouchEnd}
             >
               <ErrorBoundary>
                 <SceneCanvas
@@ -489,6 +564,15 @@ export default function EditorPage() {
             setMobileTab(viewMode === '3d' ? '3d' : '2d');
           }}
         />
+
+        {/* モバイル長押しコンテキストメニュー */}
+        {contextMenu && (
+          <FurnitureContextMenu
+            furnitureId={contextMenu.furnitureId}
+            position={contextMenu.position}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
       </div>
     );
   }
