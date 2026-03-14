@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { StyleConfig } from '@/types/scene';
 import { WallSegment } from '@/types/floor-plan';
 
@@ -57,7 +57,7 @@ function lerpColor(cold: string, warm: string, t: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth = 0.5, qualityLevel = 'high' }: LightingRigProps) {
+export const LightingRig = React.memo(function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth = 0.5, qualityLevel = 'high' }: LightingRigProps) {
   const roomBounds = useMemo(() => {
     if (walls.length === 0) return { cx: 0, cz: 0, w: 8, d: 6, maxDim: 8 };
     const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
@@ -165,7 +165,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
         intensity={1.2 * b}
         color={lightColor}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [1024, 1024] : qualityLevel === 'medium' ? [2048, 2048] : [4096, 4096]}
+        shadow-mapSize={qualityLevel === 'low' ? [512, 512] : qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0003}
         shadow-radius={qualityLevel === 'high' ? 8 : 5}
         shadow-blurSamples={qualityLevel === 'high' ? 20 : 10}
@@ -184,7 +184,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 3}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [512, 512] : qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
+        shadow-mapSize={qualityLevel === 'low' ? [256, 256] : qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
         shadow-bias={-0.001}
         shadow-normalBias={0.02}
       />
@@ -202,7 +202,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 2}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [512, 512] : qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
+        shadow-mapSize={qualityLevel === 'low' ? [256, 256] : qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
         shadow-radius={qualityLevel === 'high' ? 8 : 4}
@@ -280,7 +280,7 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
           intensity={1.2 * 0.3 * b}
           color={fillColor}
           castShadow
-          shadow-mapSize={qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
+          shadow-mapSize={qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
           shadow-bias={-0.0003}
           shadow-radius={qualityLevel === 'high' ? 6 : 3}
           shadow-blurSamples={qualityLevel === 'high' ? 16 : 8}
@@ -312,4 +312,4 @@ export function LightingRig({ style, walls, roomHeight, brightness = 1.0, warmth
       />
     </>
   );
-}
+});

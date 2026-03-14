@@ -459,30 +459,43 @@ function drawMarbleTexture(ctx: CanvasRenderingContext2D, base: string) {
   ctx.globalAlpha = 1;
 }
 
-/** 3. industrial — コンクリート風（グレーのムラ、ひび割れ線） */
+/** 3. industrial — コンクリート風（微妙な色ムラ、ピンホール、ひび割れ線） */
 function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
-  // 大きなムラ
-  for (let i = 0; i < 30; i++) {
+  // 大きな色ムラ（Perlin風）
+  for (let i = 0; i < 40; i++) {
     const x = Math.random() * 1024;
     const y = Math.random() * 1024;
-    const radius = 20 + Math.random() * 60;
+    const radius = 30 + Math.random() * 100;
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, adjustBrightness(base, (Math.random() - 0.5) * 15));
+    gradient.addColorStop(0, adjustBrightness(base, (Math.random() - 0.5) * 18));
     gradient.addColorStop(1, 'transparent');
     ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.35;
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
   }
   ctx.globalAlpha = 1;
 
-  // 細かい砂粒
-  for (let i = 0; i < 600; i++) {
+  // 細かい砂粒/骨材
+  for (let i = 0; i < 800; i++) {
     const x = Math.random() * 1024;
     const y = Math.random() * 1024;
     const size = Math.random() * 3 + 0.5;
-    ctx.fillStyle = adjustBrightness(base, (Math.random() - 0.5) * 20);
+    ctx.fillStyle = adjustBrightness(base, (Math.random() - 0.5) * 22);
     ctx.globalAlpha = 0.5;
     ctx.fillRect(x, y, size, size);
+  }
+  ctx.globalAlpha = 1;
+
+  // ピンホール（コンクリート打設時の気泡跡）
+  for (let i = 0; i < 60; i++) {
+    const px = Math.random() * 1024;
+    const py = Math.random() * 1024;
+    const pr = 0.8 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fillStyle = adjustBrightness(base, -25);
+    ctx.globalAlpha = 0.3;
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
 
@@ -501,6 +514,19 @@ function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
       ctx.lineTo(x, y);
     }
     ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // 型枠跡（かすかな長方形の痕跡）
+  ctx.strokeStyle = adjustBrightness(base, -15);
+  ctx.lineWidth = 0.8;
+  ctx.globalAlpha = 0.08;
+  for (let i = 0; i < 3; i++) {
+    const rx = Math.random() * 800;
+    const ry = Math.random() * 800;
+    const rw = 100 + Math.random() * 200;
+    const rh = 60 + Math.random() * 120;
+    ctx.strokeRect(rx, ry, rw, rh);
   }
   ctx.globalAlpha = 1;
 }

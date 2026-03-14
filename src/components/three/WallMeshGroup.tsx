@@ -15,6 +15,8 @@ import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 // useFrame内でのnew演算子を避けるため、コンポーネント外にベクトルを確保
 const _camDir = new THREE.Vector3();
 const _wallNormal3D = new THREE.Vector3();
+// フレームスロットリング: 壁の透過計算を2フレームに1回に間引く
+let _wallFrameCounter = 0;
 
 /**
  * 壁の2D法線を計算する（左側方向）
@@ -78,24 +80,54 @@ function useWallTexture(
 
     switch (styleName) {
       case 'japanese': {
-        // 漆喰風 — 微かな凹凸テクスチャ、オフホワイト
-        // 砂粒
-        for (let i = 0; i < 1200; i++) {
+        // 漆喰風 — より強いザラつき感、左官コテ跡、微かな色ムラ
+        // 広い色ムラ（Perlin風の大きな斑点）
+        for (let i = 0; i < 20; i++) {
+          const cx = Math.random() * S;
+          const cy = Math.random() * S;
+          const radius = 30 + Math.random() * 80;
+          const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+          gradient.addColorStop(0, adjustBrightness(baseColor, (Math.random() - 0.5) * 10));
+          gradient.addColorStop(1, 'transparent');
+          ctx.fillStyle = gradient;
+          ctx.globalAlpha = 0.2;
+          ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+        }
+        ctx.globalAlpha = 1;
+        // 砂粒（密度増加）
+        for (let i = 0; i < 1800; i++) {
           const x = Math.random() * S;
           const y = Math.random() * S;
-          const sz = Math.random() * 2 + 0.5;
-          ctx.fillStyle = adjustBrightness(baseColor, Math.random() > 0.5 ? 8 : -8);
+          const sz = Math.random() * 2.5 + 0.3;
+          ctx.fillStyle = adjustBrightness(baseColor, Math.random() > 0.5 ? 10 : -10);
           ctx.fillRect(x, y, sz, sz);
         }
-        // 左官コテ跡（横方向の薄い筋）
-        ctx.globalAlpha = 0.06;
+        // 左官コテ跡（横方向の薄い筋 — より多様な太さ）
+        ctx.globalAlpha = 0.08;
         ctx.strokeStyle = adjustBrightness(baseColor, -20);
-        ctx.lineWidth = 1;
-        for (let y = 0; y < S; y += 3 + Math.random() * 5) {
+        for (let y = 0; y < S; y += 2 + Math.random() * 5) {
+          ctx.lineWidth = 0.5 + Math.random() * 1.5;
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(S, y + (Math.random() - 0.5) * 2);
+          // わずかにうねる曲線
+          const cp1x = S * 0.33;
+          const cp1y = y + (Math.random() - 0.5) * 3;
+          const cp2x = S * 0.66;
+          const cp2y = y + (Math.random() - 0.5) * 3;
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, S, y + (Math.random() - 0.5) * 2);
           ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // 微かなピンホール（漆喰特有の小さな気泡跡）
+        for (let i = 0; i < 40; i++) {
+          const px = Math.random() * S;
+          const py = Math.random() * S;
+          const pr = 0.5 + Math.random() * 1;
+          ctx.beginPath();
+          ctx.arc(px, py, pr, 0, Math.PI * 2);
+          ctx.fillStyle = adjustBrightness(baseColor, -18);
+          ctx.globalAlpha = 0.15;
+          ctx.fill();
         }
         ctx.globalAlpha = 1;
         break;
@@ -330,17 +362,42 @@ function useWallTexture(
 
     switch (styleName) {
       case 'japanese': {
-        // 左官コテ跡 — 横方向の微妙なラインと変化
-        for (let y = 0; y < S; y += 3 + Math.random() * 2) {
-          const r = 128 + (Math.random() - 0.5) * 12;
-          const g = 128 + (Math.random() - 0.5) * 6;
+        // 左官コテ跡 — 横方向の微妙なラインと変化（強化版）
+        for (let y = 0; y < S; y += 2 + Math.random() * 3) {
+          const r = 128 + (Math.random() - 0.5) * 18;
+          const g = 128 + (Math.random() - 0.5) * 10;
           ctx.strokeStyle = `rgb(${r}, ${g}, 255)`;
-          ctx.lineWidth = 1 + Math.random() * 0.5;
-          ctx.globalAlpha = 0.6;
+          ctx.lineWidth = 0.8 + Math.random() * 1.2;
+          ctx.globalAlpha = 0.7;
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(S, y + (Math.random() - 0.5) * 3);
+          const cp1x = S * 0.33;
+          const cp1y = y + (Math.random() - 0.5) * 4;
+          const cp2x = S * 0.66;
+          const cp2y = y + (Math.random() - 0.5) * 4;
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, S, y + (Math.random() - 0.5) * 3);
           ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // 砂粒の凹凸（ノーマルマップ上のランダムなドット）
+        for (let i = 0; i < 400; i++) {
+          const px = Math.random() * S;
+          const py = Math.random() * S;
+          const r = 128 + (Math.random() - 0.5) * 25;
+          const g = 128 + (Math.random() - 0.5) * 25;
+          ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+          ctx.fillRect(px, py, 1.5, 1.5);
+        }
+        // ピンホールの凹み
+        for (let i = 0; i < 30; i++) {
+          const px = Math.random() * S;
+          const py = Math.random() * S;
+          const pr = 0.5 + Math.random() * 1.5;
+          ctx.beginPath();
+          ctx.arc(px, py, pr, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgb(100, 100, 255)';
+          ctx.globalAlpha = 0.4;
+          ctx.fill();
         }
         ctx.globalAlpha = 1;
         break;
@@ -864,6 +921,9 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
   }, [wall, openings]);
 
   // カメラ角度ベースの壁不透明度を useFrame でスムーズに更新
+  // targetOpacityを保持して安定時にスキップ
+  const targetOpacityRef = useRef(1.0);
+
   useFrame(({ camera }) => {
     if (!materialRef.current) return;
 
@@ -873,8 +933,16 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
       return;
     }
 
+    // opacityが安定している場合は2フレームに1回だけ計算
+    const opacityDelta = Math.abs(targetOpacityRef.current - currentOpacityRef.current);
+    if (opacityDelta < 0.005) {
+      _wallFrameCounter++;
+      if (_wallFrameCounter % 3 !== 0) return;
+    }
+
     // カメラ方向ベクトル（カメラが向いている方向）
     camera.getWorldDirection(_camDir);
+
     // 壁の法線を3D空間に変換（2DのnxはX、nyはZ）
     _wallNormal3D.set(wallNormal2D[0], 0, wallNormal2D[1]);
 
@@ -883,9 +951,15 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
     const dot = _camDir.dot(_wallNormal3D);
 
     const targetOpacity = computeWallTargetOpacity(dot);
+    targetOpacityRef.current = targetOpacity;
 
     // lerp でスムーズな遷移（0.08 = ダンピング係数）
-    currentOpacityRef.current += (targetOpacity - currentOpacityRef.current) * 0.08;
+    const delta = targetOpacity - currentOpacityRef.current;
+    if (Math.abs(delta) < 0.002) {
+      currentOpacityRef.current = targetOpacity;
+    } else {
+      currentOpacityRef.current += delta * 0.08;
+    }
 
     const mat = materialRef.current;
     mat.opacity = currentOpacityRef.current;

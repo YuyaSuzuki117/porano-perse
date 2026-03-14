@@ -152,10 +152,10 @@ export function SceneCanvas({
     // lowモード: BasicShadowMap + ピクセル比制限
     if (qualityLevel === 'low') {
       gl.shadowMap.type = THREE.BasicShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
     } else {
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     }
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
@@ -177,7 +177,7 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={qualityLevel === 'low' ? [1, 1.5] : [1, 2]}
+      dpr={[1, 1.5]}
       gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
       camera={{
         position: cameraPosition,
@@ -185,6 +185,7 @@ export function SceneCanvas({
         near: 0.01,
         far: 200,
       }}
+      performance={{ min: 0.5, max: 1 }}
       onCreated={handleCanvasCreated}
       onPointerMissed={handlePointerMissed}
       style={{ background: bgColor }}
