@@ -16,6 +16,13 @@ import { LayerManager, getFurnitureCategory, type CategoryName } from '@/compone
 import CostEstimatePanel from '@/components/ui/CostEstimatePanel';
 import CrossSectionPanel from '@/components/ui/CrossSectionPanel';
 import { ReferenceImagePanel } from '@/components/ui/ReferenceImagePanel';
+import { ErgonomicPanel } from '@/components/ui/ErgonomicPanel';
+import { ExpertModeToggle, useExpertMode } from '@/components/ui/ExpertModeToggle';
+import { ColorBlindSimulator } from '@/components/ui/ColorBlindSimulator';
+import { UndoTimeline } from '@/components/ui/UndoTimeline';
+import { BatchEditPanel } from '@/components/ui/BatchEditPanel';
+import { TextureUploadPanel } from '@/components/ui/TextureUploadPanel';
+import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
 
 interface EditorControlPanelProps {
   isMobile?: boolean;
@@ -129,6 +136,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     toggleLightGlow,
     showFlowSimulation,
     toggleFlowSimulation,
+    showCollisionHeatmap,
+    toggleCollisionHeatmap,
     selectedFurnitureIds,
     updateFurnitureHeight,
     updateFurnitureMaterialOverride,
@@ -1936,6 +1945,15 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           {showLightingAnalysis && (
             <p className="text-[10px] text-yellow-700 bg-yellow-50 rounded px-2 py-1">窓・照明からの近似ルクス値を表示中。赤=明るい、青=暗い</p>
           )}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showCollisionHeatmap}
+              onChange={() => toggleCollisionHeatmap()}
+              className="rounded text-blue-500 focus:ring-blue-400"
+            />
+            <span className="text-xs text-gray-700">衝突ヒートマップ</span>
+          </label>
           {/* 動線シミュレーションの説明 */}
           {showFlowSimulation && (
             <p className="text-[10px] text-green-600 bg-green-50 rounded px-2 py-1">入口から各エリアへの動線をアニメーション表示中</p>
@@ -2086,6 +2104,21 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </Section>
         );
       })()}
+
+      {/* エルゴノミクスチェック */}
+      <Section title="エルゴノミクス" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <ErgonomicPanel />
+      </Section>
+
+      {/* 色覚シミュレーター */}
+      <Section title="色覚シミュレーター" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <ColorBlindSimulator />
+      </Section>
+
+      {/* カラーハーモニー */}
+      <Section title="カラーハーモニー" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <ColorHarmonyPanel />
+      </Section>
 
       {/* バージョン履歴 */}
       <Section title="バージョン履歴" collapsible defaultOpen={false} mobileCollapsible={isMobile}>

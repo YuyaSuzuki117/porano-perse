@@ -32,6 +32,8 @@ import { MotionBlurEffect } from './MotionBlurEffect';
 import { LightGlow } from './LightGlow';
 import FlowSimulation from './FlowSimulation';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
+import { CollisionHeatmap } from './CollisionHeatmap';
+import PlacementPreview from './PlacementPreview';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
@@ -92,6 +94,7 @@ export function SceneCanvas({
   const showFlowSimulation = useEditorStore((s) => s.showFlowSimulation);
   const referenceImageUrl = useEditorStore((s) => s.referenceImageUrl);
   const referenceImageOpacity = useEditorStore((s) => s.referenceImageOpacity);
+  const showCollisionHeatmap = useEditorStore((s) => s.showCollisionHeatmap);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -257,6 +260,13 @@ export function SceneCanvas({
         {/* 分析オーバーレイ: 動線ヒートマップ・照明分析 */}
         <FlowHeatmap walls={walls} openings={openings} furniture={furniture} visible={showFlowHeatmap} />
         <LightingAnalysis walls={walls} openings={openings} furniture={furniture} roomHeight={roomHeight} visible={showLightingAnalysis} brightness={lightBrightness} />
+
+        {/* 衝突ヒートマップ */}
+        <CollisionHeatmap
+          furniture={furniture}
+          walls={walls}
+          visible={showCollisionHeatmap}
+        />
 
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 

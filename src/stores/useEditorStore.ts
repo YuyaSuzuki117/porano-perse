@@ -391,6 +391,10 @@ interface EditorState {
   // 家具個別マテリアル
   updateFurnitureMaterialOverride: (id: string, overrides: FurnitureItem['materialOverride']) => void;
   resetFurnitureMaterialOverride: (id: string) => void;
+
+  // Round 7: 衝突ヒートマップ
+  showCollisionHeatmap: boolean;
+  toggleCollisionHeatmap: () => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -555,6 +559,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showFlowSimulation: false,
   referenceImageUrl: null,
   referenceImageOpacity: 0.5,
+  showCollisionHeatmap: false,
   clipboard: null,
   cameraBookmarks: [],
   snapshots: (() => {
@@ -1811,6 +1816,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         f.id === id ? { ...f, materialOverride: undefined } : f
       ),
     })),
+  // Round 7: 衝突ヒートマップ
+  toggleCollisionHeatmap: () => set((s) => ({ showCollisionHeatmap: !s.showCollisionHeatmap })),
 }));
 
 export { LOCALSTORAGE_KEY };
