@@ -256,11 +256,11 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
   const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness } = useMemo(() => {
     switch (effectiveFloorType) {
       case 'luxury':
-        // 磨き大理石 — 高い反射・クリアコート
-        return { metalness: 0.35, roughness: 0.15, envMapIntensity: 2.5, clearcoat: 0.5, clearcoatRoughness: 0.1 };
+        // 磨き大理石 — 強い反射・高クリアコート（Panelka風の高級感）
+        return { metalness: 0.4, roughness: 0.08, envMapIntensity: 3.5, clearcoat: 0.8, clearcoatRoughness: 0.05 };
       case 'modern':
-        // 大判磁器タイル — 中程度の反射
-        return { metalness: 0.2, roughness: 0.3, envMapIntensity: 1.8, clearcoat: 0.3, clearcoatRoughness: 0.2 };
+        // 大判磁器タイル — 強めの反射（モダン空間の光沢感）
+        return { metalness: 0.25, roughness: 0.2, envMapIntensity: 2.8, clearcoat: 0.5, clearcoatRoughness: 0.1 };
       case 'retro':
         // チェッカーボードタイル — ワックスがけした光沢
         return { metalness: 0.15, roughness: 0.35, envMapIntensity: 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25 };
@@ -538,7 +538,7 @@ function drawLargeTileTexture(ctx: CanvasRenderingContext2D, base: string) {
   }
 }
 
-/** 5. cafe — 木目フローリング風（縦方向の木目筋、板の境界線） */
+/** 5. cafe — 木目フローリング風（縦方向の木目筋、板の境界線、木目節・グレイン変化） */
 function drawWoodFlooringTexture(ctx: CanvasRenderingContext2D, base: string) {
   const plankHeight = 64;
   const plankWidth = 128;
@@ -548,15 +548,19 @@ function drawWoodFlooringTexture(ctx: CanvasRenderingContext2D, base: string) {
 
     for (let px = -plankWidth; px < 1024 + plankWidth; px += plankWidth) {
       const x = px + offset;
-      const variation = (Math.random() - 0.5) * 15;
-      ctx.fillStyle = adjustBrightness(base, variation);
+      // 板ごとに微妙に異なる色調（グレイン変化）
+      const plankHueShift = (Math.random() - 0.5) * 15;
+      const plankBase = adjustBrightness(base, plankHueShift);
+      ctx.fillStyle = plankBase;
       ctx.fillRect(x, py, plankWidth - 2, plankHeight - 1);
 
-      // 木目の線（縦方向メイン）
-      ctx.strokeStyle = adjustBrightness(base, -25);
-      ctx.lineWidth = 0.5;
-      ctx.globalAlpha = 0.3;
-      for (let ly = py + 4; ly < py + plankHeight - 2; ly += 6 + Math.random() * 4) {
+      // 木目の線（縦方向メイン）— 密度と太さを板ごとにバリエーション
+      const grainDensity = 5 + Math.random() * 4;
+      const grainThickness = 0.3 + Math.random() * 0.4;
+      ctx.strokeStyle = adjustBrightness(base, -25 + (Math.random() - 0.5) * 8);
+      ctx.lineWidth = grainThickness;
+      ctx.globalAlpha = 0.25 + Math.random() * 0.15;
+      for (let ly = py + 4; ly < py + plankHeight - 2; ly += grainDensity + Math.random() * 3) {
         ctx.beginPath();
         ctx.moveTo(x + 2, ly);
         const cp1x = x + plankWidth * 0.3;
@@ -567,6 +571,28 @@ function drawWoodFlooringTexture(ctx: CanvasRenderingContext2D, base: string) {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+
+      // 木目の節（knot）— まれに出現（約20%の確率）
+      if (Math.random() < 0.2) {
+        const knotX = x + plankWidth * (0.2 + Math.random() * 0.6);
+        const knotY = py + plankHeight * (0.2 + Math.random() * 0.6);
+        const knotR = 2 + Math.random() * 4;
+        ctx.beginPath();
+        ctx.arc(knotX, knotY, knotR, 0, Math.PI * 2);
+        ctx.fillStyle = adjustBrightness(base, -30);
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        // 節の周囲の年輪
+        ctx.strokeStyle = adjustBrightness(base, -20);
+        ctx.lineWidth = 0.5;
+        ctx.globalAlpha = 0.15;
+        for (let r = knotR + 2; r < knotR + 10; r += 2.5) {
+          ctx.beginPath();
+          ctx.arc(knotX, knotY, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
 
       // 板の継ぎ目
       ctx.strokeStyle = adjustBrightness(base, -35);
@@ -627,7 +653,7 @@ function drawWhiteTileTexture(ctx: CanvasRenderingContext2D, base: string) {
   ctx.globalAlpha = 1;
 }
 
-/** 7. scandinavian — ライトオーク木目風（明るい木目筋） */
+/** 7. scandinavian — ライトオーク木目風（明るい木目筋、自然なグレイン変化） */
 function drawLightOakTexture(ctx: CanvasRenderingContext2D, base: string) {
   const plankHeight = 80;
   const plankWidth = 160;
@@ -637,15 +663,17 @@ function drawLightOakTexture(ctx: CanvasRenderingContext2D, base: string) {
 
     for (let px = -plankWidth; px < 1024 + plankWidth; px += plankWidth) {
       const x = px + offset;
-      const variation = (Math.random() - 0.5) * 10;
-      ctx.fillStyle = adjustBrightness(base, variation);
+      // 板ごとの色調バリエーション（自然な無垢材感）
+      const plankShift = (Math.random() - 0.5) * 10;
+      ctx.fillStyle = adjustBrightness(base, plankShift);
       ctx.fillRect(x, py, plankWidth - 2, plankHeight - 1);
 
-      // 明るい木目の線（細く、控えめ）
-      ctx.strokeStyle = adjustBrightness(base, -15);
-      ctx.lineWidth = 0.4;
-      ctx.globalAlpha = 0.25;
-      for (let ly = py + 5; ly < py + plankHeight - 3; ly += 7 + Math.random() * 5) {
+      // 明るい木目の線（板ごとにグレイン密度を変化）
+      const grainSpacing = 6 + Math.random() * 5;
+      ctx.strokeStyle = adjustBrightness(base, -15 + (Math.random() - 0.5) * 5);
+      ctx.lineWidth = 0.3 + Math.random() * 0.3;
+      ctx.globalAlpha = 0.2 + Math.random() * 0.1;
+      for (let ly = py + 5; ly < py + plankHeight - 3; ly += grainSpacing + Math.random() * 3) {
         ctx.beginPath();
         ctx.moveTo(x + 2, ly);
         const cp1x = x + plankWidth * 0.3;
@@ -656,6 +684,19 @@ function drawLightOakTexture(ctx: CanvasRenderingContext2D, base: string) {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+
+      // 微細な節（knot）— 10%の確率で小さめの節
+      if (Math.random() < 0.1) {
+        const knotX = x + plankWidth * (0.25 + Math.random() * 0.5);
+        const knotY = py + plankHeight * (0.25 + Math.random() * 0.5);
+        const knotR = 1.5 + Math.random() * 2.5;
+        ctx.beginPath();
+        ctx.arc(knotX, knotY, knotR, 0, Math.PI * 2);
+        ctx.fillStyle = adjustBrightness(base, -20);
+        ctx.globalAlpha = 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
 
       // 板の継ぎ目（薄い）
       ctx.strokeStyle = adjustBrightness(base, -20);
@@ -918,17 +959,31 @@ function drawTatamiRoughness(ctx: CanvasRenderingContext2D) {
 }
 
 function drawMarbleRoughness(ctx: CanvasRenderingContext2D) {
-  // 磨かれた大理石 — 低ラフネス
-  const baseVal = 60;
+  // 磨かれた大理石 — 非常に低ラフネス（強い鏡面反射）
+  const baseVal = 35;
   ctx.fillStyle = `rgb(${baseVal}, ${baseVal}, ${baseVal})`;
   ctx.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 80; i++) {
+  // 脈に沿ったわずかなラフネス変化
+  for (let i = 0; i < 60; i++) {
     const px = Math.random() * 256;
     const py = Math.random() * 256;
-    const v = baseVal + (Math.random() - 0.5) * 20;
+    const v = baseVal + (Math.random() - 0.5) * 15;
     ctx.fillStyle = `rgb(${v}, ${v}, ${v})`;
     ctx.fillRect(px, py, 3, 3);
   }
+  // 磨きムラ（広い範囲の微妙な光沢差）
+  for (let i = 0; i < 6; i++) {
+    const cx = Math.random() * 256;
+    const cy = Math.random() * 256;
+    const radius = 20 + Math.random() * 40;
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    gradient.addColorStop(0, `rgb(${baseVal + 10}, ${baseVal + 10}, ${baseVal + 10})`);
+    gradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = gradient;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawConcreteRoughness(ctx: CanvasRenderingContext2D) {
@@ -986,14 +1041,27 @@ function drawWoodRoughness(ctx: CanvasRenderingContext2D) {
   for (let y = 0; y < 256; y += 32) {
     ctx.fillRect(0, y, 256, 2);
   }
-  for (let y = 0; y < 256; y += 6) {
-    const v = 128 + Math.random() * 100;
-    ctx.fillStyle = `rgba(${v}, ${v}, ${v}, 0.15)`;
+  // グレイン方向のラフネス変化（木目に沿った微妙な質感差）
+  for (let y = 0; y < 256; y += 4) {
+    const v = baseVal + (Math.random() - 0.5) * 40;
+    ctx.fillStyle = `rgba(${v}, ${v}, ${v}, 0.2)`;
     ctx.fillRect(0, y, 256, 3);
   }
+  // 板ごとのラフネス差（ワックスのムラ）
   for (let x = 0; x < 256; x += 64) {
+    const plankRoughness = baseVal + (Math.random() - 0.5) * 30;
+    ctx.fillStyle = `rgba(${plankRoughness}, ${plankRoughness}, ${plankRoughness}, 0.1)`;
+    ctx.fillRect(x, 0, 62, 256);
     ctx.fillStyle = 'rgb(220, 220, 220)';
     ctx.fillRect(x, 0, 2, 256);
+  }
+  // 微細なスペックル（木肌の質感）
+  for (let i = 0; i < 100; i++) {
+    const px = Math.random() * 256;
+    const py = Math.random() * 256;
+    const v = baseVal + (Math.random() - 0.5) * 50;
+    ctx.fillStyle = `rgb(${v}, ${v}, ${v})`;
+    ctx.fillRect(px, py, 2, 1);
   }
 }
 

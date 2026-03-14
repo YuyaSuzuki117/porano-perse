@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
+import React, { useMemo, useRef } from 'react';
+import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WallSegment, Opening } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
@@ -9,6 +9,36 @@ import { wallLength, wallAngle } from '@/lib/geometry';
 import { DoorWindowMesh } from './DoorWindowMesh';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
+
+/* ─── カメラ角度ベースの壁透過ユーティリティ ─────────────────── */
+
+// useFrame内でのnew演算子を避けるため、コンポーネント外にベクトルを確保
+const _camDir = new THREE.Vector3();
+const _wallNormal3D = new THREE.Vector3();
+
+/**
+ * 壁の2D法線を計算する（左側方向）
+ * @returns [nx, ny] 正規化された法線ベクトル
+ */
+function computeWallNormal2D(wall: WallSegment): [number, number] {
+  const dx = wall.end.x - wall.start.x;
+  const dy = wall.end.y - wall.start.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len === 0) return [0, 0];
+  return [-dy / len, dx / len];
+}
+
+/**
+ * カメラ方向と壁法線のドット積からターゲット不透明度を計算する。
+ * dot > 0.3: カメラに向いている壁 → 透過 (0.15)
+ * dot < -0.3: カメラから離れている壁 → 不透明 (1.0)
+ * 中間: 滑らかに補間
+ */
+function computeWallTargetOpacity(dot: number): number {
+  // dot を [-0.3, 0.3] の範囲で [1.0, 0.15] にマッピング
+  const t = Math.max(0, Math.min(1, (dot + 0.3) / 0.6));
+  return 1.0 - t * 0.85; // 1.0 → 0.15
+}
 
 /* ─── useWallTexture フック ─────────────────────────────────────
    Canvas API (512x512) でスタイル別プロシージャルテクスチャを生成し、
@@ -757,6 +787,7 @@ export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings
             wallTextureType={wallTextureType}
             wallDisplayMode={wallDisplayMode}
             sectionClipPlane={isSectionCut ? sectionClipPlane : null}
+            sectionCutHeight={sectionCutHeight}
           />
         );
       })}
@@ -773,9 +804,16 @@ interface WallMeshProps {
   wallTextureType: string | null;
   wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
   sectionClipPlane: THREE.Plane | null;
+  sectionCutHeight: number;
 }
 
-function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, sectionClipPlane }: WallMeshProps) {
+function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, sectionClipPlane, sectionCutHeight }: WallMeshProps) {
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const currentOpacityRef = useRef(1.0);
+
+  // 壁の2D法線を事前計算
+  const wallNormal2D = useMemo(() => computeWallNormal2D(wall), [wall]);
+
   const { geometry, position, rotationY } = useMemo(() => {
     const len = wallLength(wall);
     const angle = wallAngle(wall);
@@ -825,6 +863,40 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
     };
   }, [wall, openings]);
 
+  // カメラ角度ベースの壁不透明度を useFrame でスムーズに更新
+  useFrame(({ camera }) => {
+    if (!materialRef.current) return;
+
+    // 「transparent」モードでは固定不透明度0.3、「hidden」では非表示なのでスキップ
+    if (wallDisplayMode === 'transparent') {
+      materialRef.current.opacity = 0.3;
+      return;
+    }
+
+    // カメラ方向ベクトル（カメラが向いている方向）
+    camera.getWorldDirection(_camDir);
+    // 壁の法線を3D空間に変換（2DのnxはX、nyはZ）
+    _wallNormal3D.set(wallNormal2D[0], 0, wallNormal2D[1]);
+
+    // カメラ方向と壁法線のドット積
+    // 正: カメラが壁に向いている → 透過させる
+    const dot = _camDir.dot(_wallNormal3D);
+
+    const targetOpacity = computeWallTargetOpacity(dot);
+
+    // lerp でスムーズな遷移（0.08 = ダンピング係数）
+    currentOpacityRef.current += (targetOpacity - currentOpacityRef.current) * 0.08;
+
+    const mat = materialRef.current;
+    mat.opacity = currentOpacityRef.current;
+
+    // 透過中はdepthWrite無効 + DoubleSide、不透明時は通常設定に復帰
+    const isTransparent = currentOpacityRef.current < 0.95;
+    mat.transparent = true; // 常にtrue（lerp中の中間値に対応）
+    mat.depthWrite = !isTransparent;
+    mat.side = isTransparent ? THREE.DoubleSide : THREE.FrontSide;
+  });
+
   // 壁色: オーバーライド → 壁個別色 → スタイルデフォルト
   const color = wallColorOverride
     ? wallColorOverride
@@ -841,6 +913,14 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
   const { map: wallTexture, normalMap, roughnessMap: wallRoughnessMap, metalness } =
     useWallTexture(effectiveTextureType, color, wall);
 
+  // セクションカットの断面エッジ（切断位置に暗色の線を表示）
+  const sectionEdge = useMemo(() => {
+    if (!sectionClipPlane) return null;
+    const len = wallLength(wall);
+    const edgeColor = adjustBrightness(color, -40);
+    return { len, edgeColor };
+  }, [sectionClipPlane, wall, color]);
+
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh
@@ -849,13 +929,14 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
         receiveShadow
       >
         <meshStandardMaterial
+          ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
           normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}
-          transparent={wallDisplayMode === 'transparent'}
+          transparent
           opacity={wallDisplayMode === 'transparent' ? 0.3 : 1}
           side={wallDisplayMode === 'transparent' ? THREE.DoubleSide : THREE.FrontSide}
           depthWrite={wallDisplayMode !== 'transparent'}
@@ -863,6 +944,22 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           clipShadows={!!sectionClipPlane}
         />
       </mesh>
+
+      {/* セクションカット断面エッジ（切断線の可視化） */}
+      {sectionEdge && (
+        <mesh
+          position={[sectionEdge.len / 2, sectionCutHeight, 0]}
+          rotation={[0, 0, 0]}
+        >
+          <boxGeometry args={[sectionEdge.len, 0.03, wall.thickness + 0.005]} />
+          <meshStandardMaterial
+            color={sectionEdge.edgeColor}
+            roughness={0.6}
+            metalness={0.0}
+          />
+        </mesh>
+      )}
+
       {openings.map((op) => (
         <DoorWindowMesh key={op.id} opening={op} wallThickness={wall.thickness} style={style} />
       ))}

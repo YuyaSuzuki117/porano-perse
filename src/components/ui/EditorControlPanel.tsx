@@ -77,6 +77,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setWallDisplayMode,
     ceilingVisible,
     setCeilingVisible,
+    sectionCutHeight,
+    setSectionCutHeight,
+    activateDioramaMode,
     wallColorOverride,
     floorColorOverride,
     wallTextureType,
@@ -98,6 +101,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setShowAnnotations,
     activeTool,
     setActiveTool,
+    photoMode,
+    setPhotoMode,
+    activeRoomAtmosphere,
+    applyRoomAtmosphere,
   } = useEditorStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
@@ -300,6 +307,26 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         </div>
       )}
 
+      {/* フォトモード */}
+      <div className="px-3 py-2 border-b border-gray-100">
+        <button
+          onClick={() => setPhotoMode(!photoMode)}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+            photoMode
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600'
+              : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border border-gray-200 hover:from-amber-50 hover:to-orange-50 hover:text-amber-700 hover:border-amber-300'
+          }`}
+        >
+          <span className="text-base">{photoMode ? '🔙' : '📷'}</span>
+          {photoMode ? 'フォトモード終了' : 'フォトモード'}
+        </button>
+        {photoMode && (
+          <p className="text-[9px] text-amber-600 mt-1 text-center">
+            UI非表示・高品質・暖色照明で撮影に最適化
+          </p>
+        )}
+      </div>
+
       {/* 新規プロジェクト + 部屋テンプレート */}
       <Section title="テンプレート" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         {/* 新規プロジェクトボタン */}
@@ -439,6 +466,30 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 </button>
               ))}
             </div>
+            {/* 断面カット高さスライダー */}
+            {wallDisplayMode === 'section' && (
+              <div className="mt-1.5">
+                <label className="block text-[9px] text-gray-400 mb-0.5">
+                  カット高さ: {sectionCutHeight.toFixed(1)}m
+                </label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2.5}
+                  step={0.1}
+                  value={sectionCutHeight}
+                  onChange={(e) => setSectionCutHeight(parseFloat(e.target.value))}
+                  className="w-full h-1.5 accent-blue-600"
+                />
+              </div>
+            )}
+            {/* ジオラマモードボタン */}
+            <button
+              onClick={activateDioramaMode}
+              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold hover:from-orange-600 hover:to-amber-600 transition-all"
+            >
+              ジオラマモード
+            </button>
           </div>
           {/* 天井の表示制御 */}
           <div>
@@ -879,6 +930,44 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               全てスタイルデフォルトに戻す
             </button>
           )}
+        </div>
+      </Section>
+
+      {/* Room Atmosphere Presets */}
+      <Section title="ルーム雰囲気プリセット" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+        <div className="space-y-2">
+          <p className="text-[9px] text-gray-400 mb-1">
+            壁・床・照明を一括で切り替え
+          </p>
+          <div className="grid grid-cols-1 gap-1.5">
+            {([
+              { key: 'natural', label: 'ナチュラル', desc: '明るい木目・白壁・暖かい自然光', icon: '🌿', gradient: 'from-amber-50 to-green-50', border: 'border-green-200', activeBg: 'bg-green-50', activeText: 'text-green-800', activeBorder: 'border-green-400' },
+              { key: 'modern', label: 'モダン', desc: 'ダークフロア・グレー壁・クール白', icon: '🏙️', gradient: 'from-gray-50 to-blue-50', border: 'border-blue-200', activeBg: 'bg-blue-50', activeText: 'text-blue-800', activeBorder: 'border-blue-400' },
+              { key: 'retro', label: 'レトロ', desc: 'ヘリンボーン・クリーム壁・暖琥珀', icon: '🎵', gradient: 'from-amber-50 to-orange-50', border: 'border-amber-200', activeBg: 'bg-amber-50', activeText: 'text-amber-800', activeBorder: 'border-amber-400' },
+              { key: 'japanese', label: '和風', desc: '畳・土壁・柔らかな暖光', icon: '🏯', gradient: 'from-yellow-50 to-green-50', border: 'border-yellow-200', activeBg: 'bg-yellow-50', activeText: 'text-yellow-800', activeBorder: 'border-yellow-400' },
+              { key: 'industrial', label: 'インダストリアル', desc: 'コンクリート・レンガ壁・クールスポット', icon: '🏭', gradient: 'from-gray-100 to-orange-50', border: 'border-gray-300', activeBg: 'bg-gray-100', activeText: 'text-gray-800', activeBorder: 'border-gray-500' },
+            ] as const).map((preset) => {
+              const isActive = activeRoomAtmosphere === preset.key;
+              return (
+                <button
+                  key={preset.key}
+                  onClick={() => applyRoomAtmosphere(preset.key)}
+                  className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                    isActive
+                      ? `${preset.activeBg} ${preset.activeText} ${preset.activeBorder} ring-1 ring-opacity-50 shadow-sm`
+                      : `bg-gradient-to-r ${preset.gradient} ${preset.border} hover:shadow-sm`
+                  }`}
+                >
+                  <span className="text-lg flex-shrink-0">{preset.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-semibold leading-tight">{preset.label}</div>
+                    <div className="text-[9px] text-gray-400 leading-snug">{preset.desc}</div>
+                  </div>
+                  {isActive && <span className="text-[10px] text-green-600 flex-shrink-0">✓</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </Section>
 

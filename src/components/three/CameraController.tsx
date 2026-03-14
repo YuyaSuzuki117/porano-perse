@@ -192,6 +192,17 @@ const _lookTarget = new THREE.Vector3();
 const _splinePos = new THREE.Vector3();
 const _splineTgt = new THREE.Vector3();
 
+// Camera preset transition state (module-level to avoid GC)
+const _presetTransition = {
+  active: false,
+  fromPos: new THREE.Vector3(),
+  toPos: new THREE.Vector3(),
+  fromTarget: new THREE.Vector3(),
+  toTarget: new THREE.Vector3(),
+  elapsed: 0,
+  duration: 1.0, // 1 second
+};
+
 export function CameraController() {
   const { camera, gl } = useThree();
   const cameraPreset = useEditorStore((s) => s.cameraPreset);
@@ -305,7 +316,7 @@ export function CameraController() {
     }
   }, [walkthroughPlaying, isAutoWalkthrough, walls, roomHeight]);
 
-  // Camera preset handling
+  // Camera preset handling — smooth animated transition
   useEffect(() => {
     if (!cameraPreset) return;
 
@@ -320,103 +331,139 @@ export function CameraController() {
       setFirstPersonMode(false);
     }
 
+    // Compute target position and lookAt for the preset
+    let targetPos: THREE.Vector3 | null = null;
+    let targetLookAt: THREE.Vector3 | null = null;
+
     // Handle camera bookmark presets
     if (cameraPreset.startsWith('bookmark:')) {
       const bookmarkId = cameraPreset.slice('bookmark:'.length);
       const bookmark = cameraBookmarks.find((b) => b.id === bookmarkId);
       if (bookmark) {
-        camera.position.set(...bookmark.position);
-        camera.lookAt(...bookmark.target);
-        camera.updateProjectionMatrix();
+        targetPos = new THREE.Vector3(...bookmark.position);
+        targetLookAt = new THREE.Vector3(...bookmark.target);
       }
       setCameraPreset(null);
-      return;
+      if (!targetPos || !targetLookAt) return;
     }
 
-    let cx = 0, cz = 0, w = 8, d = 6;
-    if (walls.length > 0) {
-      const xs = walls.flatMap((wall) => [wall.start.x, wall.end.x]);
-      const ys = walls.flatMap((wall) => [wall.start.y, wall.end.y]);
-      cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-      cz = (Math.min(...ys) + Math.max(...ys)) / 2;
-      w = Math.max(...xs) - Math.min(...xs);
-      d = Math.max(...ys) - Math.min(...ys);
-    }
-    const maxDim = Math.max(w, d);
-
-    switch (cameraPreset) {
-      case 'perspective':
-        camera.position.set(cx + w * 0.4, roomHeight * 0.6, cz + d * 0.4);
-        camera.lookAt(cx - w * 0.2, roomHeight * 0.3, cz - d * 0.2);
-        break;
-      case 'top':
-        camera.position.set(cx, maxDim * 1.5, cz + 0.001);
-        camera.lookAt(cx, 0, cz);
-        break;
-      case 'front':
-        camera.position.set(cx, roomHeight * 0.55, cz - d * 0.4);
-        camera.lookAt(cx, roomHeight * 0.3, cz + d * 0.3);
-        break;
-      case 'side':
-        camera.position.set(cx - w * 0.4, roomHeight * 0.55, cz);
-        camera.lookAt(cx + w * 0.3, roomHeight * 0.3, cz);
-        break;
-      case 'bird-eye':
-        camera.position.set(cx, maxDim * 1.5, cz + d * 0.1);
-        camera.lookAt(cx, 0, cz);
-        break;
-      case 'entrance':
-        camera.position.set(cx, roomHeight * 0.55, cz + d * 0.5 - 0.3);
-        camera.lookAt(cx, roomHeight * 0.3, cz - d * 0.5);
-        break;
-      case 'window':
-        camera.position.set(cx - w * 0.5 + 0.5, roomHeight * 0.55, cz);
-        camera.lookAt(cx + w * 0.5, roomHeight * 0.3, cz);
-        break;
-      case 'interior':
-        camera.position.set(cx, roomHeight * 0.95, cz);
-        camera.lookAt(cx, 0, cz);
-        break;
-      case 'corner': {
-        const cornerMinX = cx - w / 2;
-        const cornerMaxZ = cz + d / 2;
-        const cornerMargin = 0.4;
-        camera.position.set(
-          cornerMinX + cornerMargin,
-          Math.min(1.5, roomHeight * 0.55),
-          cornerMaxZ - cornerMargin
-        );
-        camera.lookAt(cx + w * 0.2, roomHeight * 0.3, cz - d * 0.2);
-        break;
+    if (!targetPos || !targetLookAt) {
+      let cx = 0, cz = 0, w = 8, d = 6;
+      if (walls.length > 0) {
+        const xs = walls.flatMap((wall) => [wall.start.x, wall.end.x]);
+        const ys = walls.flatMap((wall) => [wall.start.y, wall.end.y]);
+        cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+        cz = (Math.min(...ys) + Math.max(...ys)) / 2;
+        w = Math.max(...xs) - Math.min(...xs);
+        d = Math.max(...ys) - Math.min(...ys);
       }
-      case 'diorama': {
-        // アイソメトリック風ジオラマビュー: 45度回転 + 35度仰角
-        // 部屋のコーナーから対角線方向に見下ろす
-        const diag = Math.sqrt(w * w + d * d);
-        const camDist = diag * 0.65;
-        const elevation = Math.tan(35 * Math.PI / 180) * camDist;
-        // 45度回転でコーナーに配置
-        const offsetX = Math.cos(Math.PI / 4) * camDist;
-        const offsetZ = Math.sin(Math.PI / 4) * camDist;
-        camera.position.set(
-          cx + offsetX,
-          elevation,
-          cz + offsetZ
-        );
-        camera.lookAt(cx, roomHeight * 0.15, cz);
-        // FOVを低くしてアイソメトリック感を出す（PerspectiveCameraの場合）
-        if ('fov' in camera && typeof camera.fov === 'number') {
-          (camera as THREE.PerspectiveCamera).fov = 28;
+      const maxDim = Math.max(w, d);
+
+      switch (cameraPreset) {
+        case 'perspective':
+          targetPos = new THREE.Vector3(cx + w * 0.4, roomHeight * 0.6, cz + d * 0.4);
+          targetLookAt = new THREE.Vector3(cx - w * 0.2, roomHeight * 0.3, cz - d * 0.2);
+          break;
+        case 'top':
+          targetPos = new THREE.Vector3(cx, maxDim * 1.5, cz + 0.001);
+          targetLookAt = new THREE.Vector3(cx, 0, cz);
+          break;
+        case 'front':
+          targetPos = new THREE.Vector3(cx, roomHeight * 0.55, cz - d * 0.4);
+          targetLookAt = new THREE.Vector3(cx, roomHeight * 0.3, cz + d * 0.3);
+          break;
+        case 'side':
+          targetPos = new THREE.Vector3(cx - w * 0.4, roomHeight * 0.55, cz);
+          targetLookAt = new THREE.Vector3(cx + w * 0.3, roomHeight * 0.3, cz);
+          break;
+        case 'bird-eye':
+          targetPos = new THREE.Vector3(cx, maxDim * 1.5, cz + d * 0.1);
+          targetLookAt = new THREE.Vector3(cx, 0, cz);
+          break;
+        case 'entrance':
+          targetPos = new THREE.Vector3(cx, roomHeight * 0.55, cz + d * 0.5 - 0.3);
+          targetLookAt = new THREE.Vector3(cx, roomHeight * 0.3, cz - d * 0.5);
+          break;
+        case 'window':
+          targetPos = new THREE.Vector3(cx - w * 0.5 + 0.5, roomHeight * 0.55, cz);
+          targetLookAt = new THREE.Vector3(cx + w * 0.5, roomHeight * 0.3, cz);
+          break;
+        case 'interior':
+          targetPos = new THREE.Vector3(cx, roomHeight * 0.95, cz);
+          targetLookAt = new THREE.Vector3(cx, 0, cz);
+          break;
+        case 'corner': {
+          const cornerMinX = cx - w / 2;
+          const cornerMaxZ = cz + d / 2;
+          const cornerMargin = 0.4;
+          targetPos = new THREE.Vector3(
+            cornerMinX + cornerMargin,
+            Math.min(1.5, roomHeight * 0.55),
+            cornerMaxZ - cornerMargin
+          );
+          targetLookAt = new THREE.Vector3(cx + w * 0.2, roomHeight * 0.3, cz - d * 0.2);
+          break;
         }
-        break;
+        case 'diorama': {
+          const diag = Math.sqrt(w * w + d * d);
+          const camDist = diag * 0.65;
+          const elevation = Math.tan(35 * Math.PI / 180) * camDist;
+          const offsetX = Math.cos(Math.PI / 4) * camDist;
+          const offsetZ = Math.sin(Math.PI / 4) * camDist;
+          targetPos = new THREE.Vector3(cx + offsetX, elevation, cz + offsetZ);
+          targetLookAt = new THREE.Vector3(cx, roomHeight * 0.15, cz);
+          // FOVを低くしてアイソメトリック感を出す（PerspectiveCameraの場合）
+          if ('fov' in camera && typeof camera.fov === 'number') {
+            (camera as THREE.PerspectiveCamera).fov = 28;
+            camera.updateProjectionMatrix();
+          }
+          break;
+        }
       }
+      setCameraPreset(null);
     }
-    camera.updateProjectionMatrix();
-    setCameraPreset(null);
+
+    if (targetPos && targetLookAt) {
+      // Start smooth transition
+      _presetTransition.fromPos.copy(camera.position);
+      _presetTransition.toPos.copy(targetPos);
+      // Compute current lookAt target from camera direction
+      const currentDir = new THREE.Vector3();
+      camera.getWorldDirection(currentDir);
+      _presetTransition.fromTarget.copy(camera.position).add(currentDir.multiplyScalar(5));
+      _presetTransition.toTarget.copy(targetLookAt);
+      _presetTransition.elapsed = 0;
+      _presetTransition.duration = 1.0;
+      _presetTransition.active = true;
+    }
   }, [cameraPreset, camera, walls, roomHeight, setCameraPreset, walkthroughPlaying, setWalkthroughPlaying, isAutoWalkthrough, setAutoWalkthrough, isFirstPersonMode, setFirstPersonMode, cameraBookmarks]);
 
   // Animation in useFrame
   useFrame((state, delta) => {
+    // Camera preset smooth transition (ease-in-out over 1 second)
+    if (_presetTransition.active) {
+      _presetTransition.elapsed += delta;
+      const rawT = Math.min(_presetTransition.elapsed / _presetTransition.duration, 1);
+      // Ease-in-out cubic
+      const t = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+
+      camera.position.lerpVectors(_presetTransition.fromPos, _presetTransition.toPos, t);
+      _lookTarget.lerpVectors(_presetTransition.fromTarget, _presetTransition.toTarget, t);
+      camera.lookAt(_lookTarget);
+
+      // Update OrbitControls target
+      const controls = state.controls as unknown as { target?: THREE.Vector3; update?: () => void };
+      if (controls?.target) {
+        controls.target.copy(_lookTarget);
+        controls.update?.();
+      }
+
+      if (rawT >= 1) {
+        _presetTransition.active = false;
+      }
+      return;
+    }
+
     // Auto walkthrough (cinematic CatmullRom spline)
     if (isAutoWalkthrough && autoWalkthroughRef.current.active) {
       const awt = autoWalkthroughRef.current;

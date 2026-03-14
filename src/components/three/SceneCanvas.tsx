@@ -58,7 +58,6 @@ export function SceneCanvas({
   const lightWarmth = useEditorStore((s) => s.lightWarmth);
   const qualityLevel = useEditorStore((s) => s.qualityLevel);
   const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
-  const ceilingVisible = useEditorStore((s) => s.ceilingVisible);
   const isDraggingFurniture = useEditorStore((s) => s.isDraggingFurniture);
   const isFirstPersonMode = useEditorStore((s) => s.isFirstPersonMode);
   const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);
@@ -213,7 +212,7 @@ export function SceneCanvas({
           <WallNiches walls={walls} openings={openings} roomHeight={roomHeight} style={styleConfig} />
         )}
         <FloorMesh walls={walls} style={styleConfig} />
-        {ceilingVisible && <CeilingMesh walls={walls} roomHeight={roomHeight} style={styleConfig} />}
+        <CeilingMesh walls={walls} roomHeight={roomHeight} style={styleConfig} />
 
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 

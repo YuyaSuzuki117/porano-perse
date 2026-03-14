@@ -167,6 +167,10 @@ function snapRotation(rad: number): number {
 
 export const Furniture = React.memo(function Furniture({ item, selected, onSelect, onToggleSelect, onMove }: FurnitureProps) {
   const groupRef = useRef<THREE.Group>(null);
+
+  // 配置時「ポップ」アニメーション: マウント時にscale 0.5→1.0 (300ms ease-out)
+  const placementAnimRef = useRef({ active: true, elapsed: 0, duration: 0.3 });
+
   const style = useEditorStore((s) => s.style);
   // スナップ設定はドラッグ中getState()で直接取得（サブスクリプション不要）
   const styleConfig = STYLE_PRESETS[style];
@@ -254,6 +258,22 @@ export const Furniture = React.memo(function Furniture({ item, selected, onSelec
 
   // パルスアニメーション: 選択中の家具に微妙な脈動リング
   useFrame((_, delta) => {
+    // 配置ポップアニメーション (マウント時300ms)
+    if (placementAnimRef.current.active && groupRef.current) {
+      placementAnimRef.current.elapsed += delta;
+      const t = Math.min(placementAnimRef.current.elapsed / placementAnimRef.current.duration, 1);
+      // ease-out cubic: 1 - (1-t)^3
+      const eased = 1 - Math.pow(1 - t, 3);
+      const s = 0.5 + 0.5 * eased; // 0.5 → 1.0
+      groupRef.current.scale.setScalar(s);
+      if (t >= 1) {
+        placementAnimRef.current.active = false;
+        groupRef.current.scale.setScalar(1);
+      }
+      // Skip normal scale logic during placement animation
+      if (t < 1) return;
+    }
+
     // pointerDown即時フィードバック: 1.02xスケール (タッチレスポンス向上)
     if (groupRef.current) {
       const targetScale = isPointerDownRef.current ? 1.02 : 1.0;

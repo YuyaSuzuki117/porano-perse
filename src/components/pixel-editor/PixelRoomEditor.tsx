@@ -450,6 +450,326 @@ const SPRITES: Record<string, SpriteData> = {
     [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
     [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
   ]),
+
+  // ── Reception desk: L-shaped counter ──
+  reception_desk: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_],
+    [_,'darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','white','white','white','white','white','white','white','white','white','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','white','white','white','white','white','white','white','white','white','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown',_],
+    [_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','cream','cream','cream','cream','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,'darkBrown','cream','cream','cream','cream','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,'darkBrown','cream','cream','cream','cream','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,'darkBrown','cream','cream','cream','cream','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,'darkBrown','cream','cream','cream','cream','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Bar table / high table: tall narrow round top ──
+  bar_table: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','darkGray',_,_,_],
+    [_,_,_,'darkGray','midGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','midGray','darkGray',_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'midGray','midGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Kitchen island: wide counter with stovetop ──
+  kitchen_island: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_],
+    [_,'darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','darkGray','darkGray','cream','cream','cream','cream','cream','darkGray','darkGray','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','darkGray','red','cream','cream','cream','cream','cream','darkGray','red','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','darkGray','darkGray','cream','cream','cream','cream','cream','darkGray','darkGray','cream','cream','darkBrown',_],
+    [_,'darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown',_],
+    [_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_],
+    [_,'darkBrown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','darkBrown',_],
+    [_,'darkBrown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','darkBrown',_],
+    [_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Bookcase: tall shelf with books ──
+  bookcase: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','red','red','blue','blue','green','brown','red','blue','orange','brown','darkBrown',_,_],
+    [_,_,'darkBrown','red','red','blue','blue','green','brown','red','blue','orange','brown','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','blue','green','red','orange','brown','blue','red','green','brown','red','darkBrown',_,_],
+    [_,_,'darkBrown','blue','green','red','orange','brown','blue','red','green','brown','red','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','orange','brown','blue','red','green','orange','blue','red','brown','green','darkBrown',_,_],
+    [_,_,'darkBrown','orange','brown','blue','red','green','orange','blue','red','brown','green','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','green','red','orange','blue','brown','red','green','orange','blue','brown','darkBrown',_,_],
+    [_,_,'darkBrown','green','red','orange','blue','brown','red','green','orange','blue','brown','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Wardrobe: tall cabinet with doors ──
+  wardrobe: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','brown','brown','brown','darkBrown','darkBrown','brown','brown','brown','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','gold','darkBrown','darkBrown','gold','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','cream','cream','brown','darkBrown','darkBrown','brown','cream','cream','brown','darkBrown',_,_],
+    [_,_,'darkBrown','brown','brown','brown','brown','darkBrown','darkBrown','brown','brown','brown','brown','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Shoe rack: low shelves with shoes ──
+  shoe_rack: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','cream','brown','brown','cream','cream','cream','red','red','cream','cream','darkBrown',_,_],
+    [_,_,'darkBrown','cream','brown','brown','cream','cream','cream','red','red','cream','cream','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','cream','cream','blue','blue','cream','cream','cream','darkBrown','darkBrown','cream','darkBrown',_,_],
+    [_,_,'darkBrown','cream','cream','blue','blue','cream','cream','cream','darkBrown','darkBrown','cream','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,'darkBrown','cream','green','green','cream','cream','orange','orange','cream','cream','cream','darkBrown',_,_],
+    [_,_,'darkBrown','cream','green','green','cream','cream','orange','orange','cream','cream','cream','darkBrown',_,_],
+    [_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── TV monitor: wide screen on stand ──
+  tv_monitor: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_],
+    [_,'darkGray','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkGray',_],
+    [_,'darkGray','darkBlue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','darkBlue','darkGray',_],
+    [_,'darkGray','darkBlue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','darkBlue','darkGray',_],
+    [_,'darkGray','darkBlue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','darkBlue','darkGray',_],
+    [_,'darkGray','darkBlue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','darkBlue','darkGray',_],
+    [_,'darkGray','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkBlue','darkGray',_],
+    [_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_],
+    [_,_,_,_,_,_,_,'darkGray','darkGray',_,_,_,_,_,_,_],
+    [_,_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Cash register: small box with buttons and display ──
+  cash_register: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,'darkGray','green','green','green','green','green','darkGray',_,_,_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','lightGray','white','white','lightGray','white','white','lightGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','lightGray','white','white','lightGray','white','white','lightGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','lightGray','white','white','lightGray','white','white','lightGray','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Washing machine: front-load drum ──
+  washing_machine: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray','lightGray','lightGray','midGray','midGray','blue','lightGray','silver',_,_,_],
+    [_,_,_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray',_,'teal','teal','teal',_,'lightGray','silver',_,_,_],
+    [_,_,_,'silver','lightGray',_,'teal','blue','blue','blue','teal',_,'silver',_,_,_],
+    [_,_,_,'silver','lightGray',_,'teal','blue','blue','blue','teal',_,'silver',_,_,_],
+    [_,_,_,'silver','lightGray',_,'teal','blue','blue','blue','teal',_,'silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray',_,'teal','teal','teal',_,'lightGray','silver',_,_,_],
+    [_,_,_,'silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver',_,_,_],
+    [_,_,_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Coat rack: vertical pole with hooks ──
+  coat_rack: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,'midGray','midGray',_,'darkGray',_,'midGray','midGray',_,_,_,_,_],
+    [_,_,_,_,_,'midGray',_,'darkGray',_,'midGray',_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,'midGray',_,_,_,'darkGray',_,_,_,'midGray',_,_,_,_],
+    [_,_,_,_,'midGray',_,_,'darkGray',_,_,'midGray',_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'darkGray',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_,_],
+    [_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Umbrella stand: cylinder with umbrellas ──
+  umbrella_stand: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,'blue',_,_,'red',_,_,_,_,_,_],
+    [_,_,_,_,_,'blue','blue',_,'red','red',_,_,_,_,_,_],
+    [_,_,_,_,_,'blue',_,_,_,'red',_,_,_,_,_,_],
+    [_,_,_,_,_,'blue',_,_,_,'red',_,_,_,_,_,_],
+    [_,_,_,_,_,'blue',_,_,_,'red',_,_,_,_,_,_],
+    [_,_,_,_,_,'midGray','midGray','midGray','midGray','midGray',_,_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','darkGray','darkGray','darkGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','midGray','midGray','midGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','midGray','midGray','midGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','midGray','midGray','midGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','midGray','midGray','midGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,'midGray','darkGray','darkGray','darkGray','darkGray','darkGray','midGray',_,_,_,_,_],
+    [_,_,_,_,_,'midGray','midGray','midGray','midGray','midGray',_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Air conditioner: wall unit with vents ──
+  air_conditioner: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_],
+    [_,'silver','white','white','white','white','white','white','white','white','white','white','white','white','silver',_],
+    [_,'silver','white','white','white','white','white','white','white','white','white','white','green','white','silver',_],
+    [_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_],
+    [_,'silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver',_],
+    [_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_],
+    [_,'silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver',_],
+    [_,'silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver',_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,'teal','teal','teal','teal',_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Curtain: draped fabric ──
+  curtain: createSprite([
+    [_,'gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold',_],
+    [_,'gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold','gold',_],
+    [_,_,'silver','silver','lightGray','lightGray','lightGray',_,_,'lightGray','lightGray','lightGray','silver','silver',_,_],
+    [_,_,'silver','lightGray','lightGray','lightGray',_,_,_,_,'lightGray','lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray',_,_,_,_,_,_,'lightGray','lightGray','silver',_,_],
+    [_,_,'silver','lightGray','lightGray','lightGray',_,_,_,_,'lightGray','lightGray','lightGray','silver',_,_],
+    [_,_,'silver','silver','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','lightGray','silver','silver',_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Menu board: blackboard with writing ──
+  menu_board: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','yellow','yellow','yellow','yellow','yellow','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','white','white','white','white','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','white','white','white','white','white','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','white','white','white','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkBrown',_,_,_],
+    [_,_,_,'darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown',_,_,_],
+    [_,_,_,_,_,_,_,'brown',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,'brown','brown','brown','brown','brown',_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Ceiling fan: top-down view with blades ──
+  ceiling_fan: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'silver',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,'silver','silver','silver',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'silver',_,_,_,_,_,_,_,_],
+    [_,_,_,'lightGray','lightGray',_,_,'silver',_,_,'lightGray','lightGray',_,_,_,_],
+    [_,_,'lightGray','lightGray',_,_,_,'silver',_,_,_,'lightGray','lightGray',_,_,_],
+    [_,_,_,_,_,_,'silver','silver','silver',_,_,_,_,_,_,_],
+    [_,'silver','silver','silver','silver','silver','midGray','gold','midGray','silver','silver','silver','silver','silver',_,_],
+    [_,_,_,_,_,_,'silver','silver','silver',_,_,_,_,_,_,_],
+    [_,_,'lightGray','lightGray',_,_,_,'silver',_,_,_,'lightGray','lightGray',_,_,_],
+    [_,_,_,'lightGray','lightGray',_,_,'silver',_,_,'lightGray','lightGray',_,_,_,_],
+    [_,_,_,_,_,_,_,'silver',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,'silver','silver','silver',_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,'silver',_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
+
+  // ── Clock: round face with hands ──
+  clock: createSprite([
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,'darkGray','white','white','white','white','white','white','darkGray',_,_,_,_],
+    [_,_,_,'darkGray','white','white','white','darkGray','white','white','white','white','darkGray',_,_,_],
+    [_,_,_,'darkGray','white','white','white','darkGray','white','white','white','white','darkGray',_,_,_],
+    [_,_,_,'darkGray','white','white','white','darkGray','white','white','white','white','darkGray',_,_,_],
+    [_,_,_,'darkGray','white','white','white','darkGray','darkGray','darkGray','white','white','darkGray',_,_,_],
+    [_,_,_,'darkGray','white','white','white','white','white','white','white','white','darkGray',_,_,_],
+    [_,_,_,'darkGray','white','white','white','white','white','white','white','white','darkGray',_,_,_],
+    [_,_,_,_,'darkGray','white','white','white','white','white','white','darkGray',_,_,_,_],
+    [_,_,_,_,_,'darkGray','darkGray','darkGray','darkGray','darkGray','darkGray',_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+    [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
+  ]),
 };
 
 // Fallback generic sprite for types without dedicated pixel art
@@ -472,30 +792,9 @@ const GENERIC_SPRITE: SpriteData = createSprite([
   [_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_],
 ]);
 
-// Map furniture types to sprite aliases
+// Map furniture types to sprites
 function getSpriteForType(type: string): SpriteData {
-  // Direct match
   if (SPRITES[type]) return SPRITES[type];
-  // Aliases
-  const aliases: Record<string, string> = {
-    reception_desk: 'counter',
-    bar_table: 'table_square',
-    kitchen_island: 'counter',
-    bookcase: 'shelf',
-    wardrobe: 'shelf',
-    shoe_rack: 'shelf',
-    tv_monitor: 'register',
-    cash_register: 'register',
-    menu_board: 'partition',
-    curtain: 'partition',
-    coat_rack: 'stool',
-    umbrella_stand: 'stool',
-    air_conditioner: 'register',
-    washing_machine: 'fridge',
-    ceiling_fan: 'pendant_light',
-    clock: 'mirror',
-  };
-  if (aliases[type] && SPRITES[aliases[type]]) return SPRITES[aliases[type]];
   return GENERIC_SPRITE;
 }
 
@@ -586,6 +885,8 @@ function drawMiniSprite(
 export default function PixelRoomEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const needsRedrawRef = useRef(true);
+  const rafIdRef = useRef<number>(0);
 
   // Store access
   const walls = useEditorStore((s) => s.walls);
@@ -611,11 +912,15 @@ export default function PixelRoomEditor() {
   const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const [dragging, setDragging] = useState<{ id: string; startWorld: { x: number; z: number }; startPos: [number, number, number] } | null>(null);
 
-  // Blink timer for selection highlight
+  // Blink timer for selection highlight — only triggers redraw when an item is selected
   useEffect(() => {
-    const interval = setInterval(() => setBlinkPhase((p) => (p + 1) % 2), 400);
+    if (!selectedFurnitureId) return;
+    const interval = setInterval(() => {
+      setBlinkPhase((p) => (p + 1) % 2);
+      needsRedrawRef.current = true;
+    }, 400);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedFurnitureId]);
 
   // ── Compute room bounds from walls ──
   const roomBounds = useMemo(() => {
@@ -701,6 +1006,21 @@ export default function PixelRoomEditor() {
     [furniture, zoom, worldToScreen],
   );
 
+  // ── Resize: set canvas dimensions only on resize ──
+  const syncCanvasSize = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      needsRedrawRef.current = true;
+    }
+  }, []);
+
   // ── Main render ──
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -710,9 +1030,7 @@ export default function PixelRoomEditor() {
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const W = rect.width;
     const H = rect.height;
 
@@ -857,23 +1175,36 @@ export default function PixelRoomEditor() {
     }
   }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, worldToScreen, blinkPhase, roomArea]);
 
-  // ── Animation loop ──
+  // ── Mark redraw needed when deps change ──
   useEffect(() => {
-    let frameId: number;
+    needsRedrawRef.current = true;
+  }, [walls, furniture, openings, selectedFurnitureId, zoom, panOffset, roomBounds, blinkPhase, roomArea]);
+
+  // ── Render loop: only redraws when flagged ──
+  useEffect(() => {
+    let running = true;
     const loop = () => {
-      render();
-      frameId = requestAnimationFrame(loop);
+      if (!running) return;
+      if (needsRedrawRef.current) {
+        needsRedrawRef.current = false;
+        syncCanvasSize();
+        render();
+      }
+      rafIdRef.current = requestAnimationFrame(loop);
     };
-    frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, [render]);
+    rafIdRef.current = requestAnimationFrame(loop);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafIdRef.current);
+    };
+  }, [render, syncCanvasSize]);
 
   // ── Resize observer ──
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const observer = new ResizeObserver(() => {
-      // Canvas size is set in render()
+      needsRedrawRef.current = true;
     });
     observer.observe(container);
     return () => observer.disconnect();
@@ -1052,11 +1383,17 @@ export default function PixelRoomEditor() {
     { key: 'delete', label: 'DELETE', iconPath: 'M4 4l10 10M14 4L4 14' },
   ];
 
-  // Side palette: top 12 furniture from catalog
-  const paletteFurniture = useMemo(() =>
-    FURNITURE_CATALOG.slice(0, 12),
-    [],
-  );
+  // Side palette: ALL furniture grouped by category
+  const paletteCategories = useMemo(() => {
+    const cats: { label: string; items: typeof FURNITURE_CATALOG }[] = [
+      { label: 'TABLE', items: FURNITURE_CATALOG.filter(f => ['counter','table_square','table_round','bar_table','kitchen_island','reception_desk','desk'].includes(f.type)) },
+      { label: 'SEAT', items: FURNITURE_CATALOG.filter(f => ['chair','stool','sofa','bench'].includes(f.type)) },
+      { label: 'STORAGE', items: FURNITURE_CATALOG.filter(f => ['shelf','bookcase','wardrobe','shoe_rack','display_case'].includes(f.type)) },
+      { label: 'APPLIANCE', items: FURNITURE_CATALOG.filter(f => ['fridge','sink','washing_machine','register','cash_register','tv_monitor','air_conditioner'].includes(f.type)) },
+      { label: 'DECOR', items: FURNITURE_CATALOG.filter(f => ['plant','flower_pot','rug','mirror','pendant_light','ceiling_fan','clock','curtain','partition','menu_board','coat_rack','umbrella_stand','trash_can'].includes(f.type)) },
+    ];
+    return cats.filter(c => c.items.length > 0);
+  }, []);
 
   const handlePaletteAdd = useCallback((type: FurnitureType) => {
     const catalogItem = FURNITURE_CATALOG.find(c => c.type === type);
@@ -1129,20 +1466,29 @@ export default function PixelRoomEditor() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── Side furniture palette ── */}
         <div className="flex-shrink-0 w-[52px] bg-[#16213e] border-r border-[#0f3460] overflow-y-auto scrollbar-thin">
-          <div className="py-1 px-0.5 space-y-1">
-            {paletteFurniture.map((item) => (
-              <button
-                key={item.type}
-                onClick={() => handlePaletteAdd(item.type)}
-                className="w-full aspect-square bg-[#1a1a40] rounded border border-[#2a2a50] hover:border-[#e94560] hover:bg-[#2a2a50] transition-all group relative"
-                title={item.name}
-              >
-                <PaletteThumbnail type={item.type} />
-                {/* Tooltip */}
-                <div className="absolute left-full ml-1 top-1/2 -translate-y-1/2 bg-black/90 text-white text-[9px] font-mono px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  {item.name}
+          <div className="py-1 px-0.5">
+            {paletteCategories.map((cat) => (
+              <div key={cat.label}>
+                <div className="text-[7px] font-mono font-bold text-[#5a5a5a] text-center py-0.5 border-b border-[#2a2a50] mb-0.5">
+                  {cat.label}
                 </div>
-              </button>
+                <div className="space-y-1 mb-1">
+                  {cat.items.map((item) => (
+                    <button
+                      key={item.type}
+                      onClick={() => handlePaletteAdd(item.type)}
+                      className="w-full aspect-square bg-[#1a1a40] rounded border border-[#2a2a50] hover:border-[#e94560] hover:bg-[#2a2a50] transition-all group relative"
+                      title={item.name}
+                    >
+                      <PaletteThumbnail type={item.type} />
+                      {/* Tooltip */}
+                      <div className="absolute left-full ml-1 top-1/2 -translate-y-1/2 bg-black/90 text-white text-[9px] font-mono px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        {item.name}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>

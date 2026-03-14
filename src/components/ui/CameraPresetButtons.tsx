@@ -32,6 +32,7 @@ interface CameraPresetButtonsProps {
 
 export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
   const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
+  const activateDioramaMode = useEditorStore((s) => s.activateDioramaMode);
   const walkthroughPlaying = useEditorStore((s) => s.walkthroughPlaying);
   const setWalkthroughPlaying = useEditorStore((s) => s.setWalkthroughPlaying);
   const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);
@@ -72,6 +73,16 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
 
   return (
     <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+      {/* ジオラマモード: ワンクリックでアイソメ断面ビュー */}
+      <button
+        onClick={activateDioramaMode}
+        className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] md:min-h-0 md:py-1.5 md:px-2 bg-gradient-to-r from-orange-600/80 to-amber-600/80 backdrop-blur-sm text-white text-xs md:text-[11px] font-bold rounded active:from-orange-700 active:to-amber-700 hover:from-orange-600 hover:to-amber-600 transition-all ring-1 ring-orange-400/30"
+        title="ジオラマモード（アイソメトリック断面ビュー）"
+      >
+        <span>&#x1F3E0;</span>
+        <span>ジオラマ</span>
+      </button>
+      <div className="h-px bg-white/20 my-0.5" />
       {PRESETS.map((p) => (
         <button
           key={p.id}

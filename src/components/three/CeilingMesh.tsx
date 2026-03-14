@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WallSegment } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
 import { computeFloorPolygon, wallLength, wallAngle } from '@/lib/geometry';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useCeilingTexture } from '@/hooks/useCeilingTexture';
+
+// useFrame内でのnew演算子を避けるためコンポーネント外に確保
+const _ceilCamDir = new THREE.Vector3();
 
 interface CeilingMeshProps {
   walls: WallSegment[];
@@ -129,8 +133,43 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
   const ceilingVisible = useEditorStore((s) => s.ceilingVisible);
   const isNight = dayNight === 'night';
 
-  // 天井非表示
-  if (!ceilingVisible) return null;
+  // 天井マテリアルの参照（カメラ角度ベースのフェードに使用）
+  const ceilingMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const currentCeilingOpacityRef = useRef(0.7); // 基本不透明度
+  const groupRef = useRef<THREE.Group>(null);
+
+  // カメラ仰角に基づく天井の自動フェード
+  useFrame(({ camera }) => {
+    if (!ceilingMatRef.current) return;
+
+    // カメラの向きからY成分（下向きの度合い）を取得
+    camera.getWorldDirection(_ceilCamDir);
+    // elevation = カメラの下向き角度（-Y方向が正 = 見下ろし）
+    // _ceilCamDir.y が負 = カメラが下を見ている = 見下ろし
+    const elevationAngle = Math.asin(-_ceilCamDir.y) * (180 / Math.PI); // 度に変換
+
+    // 基本の不透明度（ceilingVisible が false の場合は 0 を目標に）
+    let baseOpacity = ceilingVisible ? 0.7 : 0.0;
+
+    // カメラ仰角が高い（30度以上見下ろし）場合、天井をフェードアウト
+    if (elevationAngle > 30) {
+      // 30度～50度の間で 0.7 → 0.05 に補間
+      const fadeT = Math.min(1, (elevationAngle - 30) / 20);
+      // smoothstep的な補間
+      const smooth = fadeT * fadeT * (3 - 2 * fadeT);
+      baseOpacity = baseOpacity * (1 - smooth) + 0.05 * smooth;
+    }
+
+    // lerp でスムーズ遷移
+    currentCeilingOpacityRef.current += (baseOpacity - currentCeilingOpacityRef.current) * 0.08;
+
+    ceilingMatRef.current.opacity = currentCeilingOpacityRef.current;
+
+    // グループ全体の可視性制御（不透明度がほぼゼロの場合非表示）
+    if (groupRef.current) {
+      groupRef.current.visible = currentCeilingOpacityRef.current > 0.01;
+    }
+  });
 
   const ceilingGeometry = useMemo(() => {
     const polygon = computeFloorPolygon(walls);
@@ -326,7 +365,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
   if (!ceilingGeometry || !roomBounds) return null;
 
   return (
-    <group>
+    <group ref={groupRef}>
       {/* 廻り縁（Crown Molding） */}
       {crownMoldings.map((m, i) => (
         <group
@@ -372,6 +411,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
         position={[0, roomHeight, 0]}
       >
         <meshStandardMaterial
+          ref={ceilingMatRef}
           color={styleConfig.ceilingColor}
           map={ceilingTexture}
           roughness={0.95}

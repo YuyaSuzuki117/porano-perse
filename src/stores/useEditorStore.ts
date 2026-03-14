@@ -260,6 +260,16 @@ interface EditorState {
   setShowFurniture: (v: boolean) => void;
   applyLightingPreset: (preset: LightingPreset) => void;
 
+  // フォトモード
+  photoMode: boolean;
+  setPhotoMode: (v: boolean) => void;
+  /** フォトモード直前の表示設定を保存（復帰用） */
+  photoModePrevState: { showGrid: boolean; showDimensions: boolean; qualityLevel: 'high' | 'medium' | 'low' } | null;
+
+  // ルーム雰囲気プリセット
+  activeRoomAtmosphere: string | null;
+  applyRoomAtmosphere: (presetName: string) => void;
+
   // ウォーターマーク設定
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
@@ -397,6 +407,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isFirstPersonMode: false,
   activeLightingPreset: null,
   qualityLevel: detectQualityLevel(),
+  photoMode: false,
+  photoModePrevState: null,
+  activeRoomAtmosphere: null,
   enableWatermark: false,
   clipboard: null,
   cameraBookmarks: [],
@@ -909,6 +922,114 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSnapToWall: (snapToWall) => set({ snapToWall }),
   setShowFurniture: (showFurniture) => set({ showFurniture }),
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
+
+  // フォトモード
+  setPhotoMode: (v) => set((s) => {
+    if (v) {
+      // フォトモード開始: 現在の状態を保存してUI非表示 + 高品質化
+      return {
+        photoMode: true,
+        photoModePrevState: {
+          showGrid: s.showGrid,
+          showDimensions: s.showDimensions,
+          qualityLevel: s.qualityLevel,
+        },
+        showGrid: false,
+        showDimensions: false,
+        qualityLevel: 'high',
+        lightWarmth: Math.max(s.lightWarmth, 0.6), // 暖色寄りに
+      };
+    } else {
+      // フォトモード終了: 元の設定に復帰
+      const prev = s.photoModePrevState;
+      return {
+        photoMode: false,
+        photoModePrevState: null,
+        showGrid: prev?.showGrid ?? s.showGrid,
+        showDimensions: prev?.showDimensions ?? s.showDimensions,
+        qualityLevel: prev?.qualityLevel ?? s.qualityLevel,
+      };
+    }
+  }),
+
+  // ルーム雰囲気プリセット
+  applyRoomAtmosphere: (presetName) => set((s) => {
+    const ROOM_ATMOSPHERE_MAP: Record<string, {
+      style: StylePreset;
+      wallColor: string;
+      floorColor: string;
+      floorTextureType: string;
+      wallTextureType: string | null;
+      brightness: number;
+      warmth: number;
+      dayNight: 'day' | 'night';
+    }> = {
+      'natural': {
+        style: 'scandinavian',
+        wallColor: '#FFFFFF',
+        floorColor: '#C9A96E',
+        floorTextureType: 'scandinavian',
+        wallTextureType: null,
+        brightness: 1.0,
+        warmth: 0.55,
+        dayNight: 'day',
+      },
+      'modern': {
+        style: 'modern',
+        wallColor: '#E0E0E0',
+        floorColor: '#2A2A3A',
+        floorTextureType: 'modern',
+        wallTextureType: null,
+        brightness: 1.1,
+        warmth: 0.3,
+        dayNight: 'day',
+      },
+      'retro': {
+        style: 'retro',
+        wallColor: '#FFF5E1',
+        floorColor: '#8B6914',
+        floorTextureType: 'cafe',
+        wallTextureType: null,
+        brightness: 0.8,
+        warmth: 0.8,
+        dayNight: 'day',
+      },
+      'japanese': {
+        style: 'japanese',
+        wallColor: '#F0E6D0',
+        floorColor: '#B8A84C',
+        floorTextureType: 'japanese',
+        wallTextureType: null,
+        brightness: 0.75,
+        warmth: 0.65,
+        dayNight: 'day',
+      },
+      'industrial': {
+        style: 'industrial',
+        wallColor: '#A0522D',
+        floorColor: '#808080',
+        floorTextureType: 'industrial',
+        wallTextureType: null,
+        brightness: 0.9,
+        warmth: 0.35,
+        dayNight: 'day',
+      },
+    };
+    const preset = ROOM_ATMOSPHERE_MAP[presetName];
+    if (!preset) return {};
+    return {
+      style: preset.style,
+      wallColorOverride: preset.wallColor,
+      floorColorOverride: preset.floorColor,
+      floorTextureType: preset.floorTextureType,
+      wallTextureType: preset.wallTextureType,
+      lightBrightness: preset.brightness,
+      lightWarmth: preset.warmth,
+      dayNight: preset.dayNight,
+      activeLightingPreset: null,
+      activeRoomAtmosphere: presetName,
+    };
+  }),
   setWallDisplayMode: (wallDisplayMode) => set({ wallDisplayMode }),
   setCeilingVisible: (ceilingVisible) => set({ ceilingVisible }),
   setSectionCutHeight: (sectionCutHeight) => set({ sectionCutHeight: Math.max(0.5, Math.min(2.5, sectionCutHeight)) }),

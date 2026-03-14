@@ -127,6 +127,8 @@ export default function EditorPage() {
   const setShowDimensions = useEditorStore((s) => s.setShowDimensions);
   const showFurniture = useEditorStore((s) => s.showFurniture);
   const setShowFurniture = useEditorStore((s) => s.setShowFurniture);
+  const photoMode = useEditorStore((s) => s.photoMode);
+  const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef2D = useRef<HTMLCanvasElement | null>(null);
 
@@ -788,17 +790,37 @@ export default function EditorPage() {
                 3D プレビュー
               </div>
               {/* カメラプリセット */}
-              <CameraPresetButtons canvasRef={canvasRef} />
+              {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}
               {/* 整列ツールバー（複数選択時） */}
-              <AlignmentToolbar />
+              {!photoMode && <AlignmentToolbar />}
               {/* 操作ヘルプ */}
-              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2">
-                <span>ドラッグ: 回転</span>
-                <span className="text-white/40">|</span>
-                <span>右ドラッグ: 移動</span>
-                <span className="text-white/40">|</span>
-                <span>スクロール: ズーム</span>
-              </div>
+              {!photoMode && (
+                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2">
+                  <span>ドラッグ: 回転</span>
+                  <span className="text-white/40">|</span>
+                  <span>右ドラッグ: 移動</span>
+                  <span className="text-white/40">|</span>
+                  <span>スクロール: ズーム</span>
+                </div>
+              )}
+              {/* フォトモード: 撮影フローティングボタン */}
+              {photoMode && (
+                <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-40">
+                  <button
+                    onClick={() => takeHiResScreenshot()}
+                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-xl transition-all active:scale-95"
+                  >
+                    <span className="text-lg">📷</span>
+                    <span>撮影 (4K)</span>
+                  </button>
+                  <button
+                    onClick={() => setPhotoMode(false)}
+                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 transition-all"
+                  >
+                    フォトモード終了
+                  </button>
+                </div>
+              )}
               {isDragOver && (
                 <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
                   <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
