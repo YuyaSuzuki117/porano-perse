@@ -211,8 +211,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
   const pbr: FurniturePBR = item.material ? MATERIAL_PBR[item.material] : stylePbr;
 
   // 品質レベル連動テクスチャ解像度
-  const furnitureTexSize = qualityLevel === 'high' ? 1024 : qualityLevel === 'medium' ? 512 : 256;
-  const furnitureTexSmall = qualityLevel === 'high' ? 512 : qualityLevel === 'medium' ? 256 : 128;
+  const furnitureTexSize = qualityLevel === 'high' ? 2048 : qualityLevel === 'medium' ? 512 : 256;
+  const furnitureTexSmall = qualityLevel === 'high' ? 1024 : qualityLevel === 'medium' ? 256 : 128;
 
   // ヒットエリア用ジオメトリ (scale変更時のみ再生成)
   const hitAreaGeometry = useMemo(

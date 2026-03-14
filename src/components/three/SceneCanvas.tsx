@@ -186,7 +186,7 @@ export function SceneCanvas({
     } else {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.0 : 1.5));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
     }
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
@@ -209,7 +209,7 @@ export function SceneCanvas({
     <Canvas
       shadows
       dpr={[1, 2]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', ...(qualityLevel === 'high' ? { samples: 4 } : {}) }}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 4 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -354,9 +354,9 @@ export function SceneCanvas({
             position={[0, 0.001, 0]}
             opacity={isNight ? 0.35 : 0.55}
             scale={maxDim * 1.5}
-            blur={3.5}
-            far={4}
-            resolution={1024}
+            blur={4.0}
+            far={5}
+            resolution={2048}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}
           />
         )}

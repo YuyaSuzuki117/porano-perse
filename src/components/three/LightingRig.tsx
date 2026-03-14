@@ -227,10 +227,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.2 * b}
         color={lightColor}
         castShadow
-        shadow-mapSize={[4096, 4096]}
+        shadow-mapSize={[8192, 8192]}
         shadow-bias={-0.0001}
         shadow-radius={4}
-        shadow-blurSamples={20}
+        shadow-blurSamples={25}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -264,11 +264,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 2}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[4096, 4096]}
         shadow-bias={-0.0001}
         shadow-normalBias={0.02}
         shadow-radius={8}
-        shadow-blurSamples={16}
+        shadow-blurSamples={20}
       />
 
       <spotLight
@@ -338,10 +338,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.2 * 0.3 * b}
         color={fillColor}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[4096, 4096]}
         shadow-bias={-0.0001}
         shadow-radius={6}
-        shadow-blurSamples={16}
+        shadow-blurSamples={20}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}

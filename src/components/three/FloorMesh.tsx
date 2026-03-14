@@ -110,12 +110,17 @@ function useFloorTexture(
     if (!res.useNormalMap) {
       return null;
     }
-    const cacheKey = `floor-normal-${effectiveTextureType}`;
+    // 品質連動ノーマルマップ解像度: HIGH=1024, MEDIUM=512
+    const normalSize = qualityLevel === 'high' ? 1024 : 512;
+    const cacheKey = `floor-normal-${effectiveTextureType}-${normalSize}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = normalSize;
+    canvas.height = normalSize;
     const ctx = canvas.getContext('2d')!;
+    // 描画関数は512ベースなのでスケーリングで対応
+    const scaleFactor = normalSize / 512;
+    if (scaleFactor !== 1) ctx.scale(scaleFactor, scaleFactor);
     ctx.fillStyle = '#8080FF';
     ctx.fillRect(0, 0, 512, 512);
 
@@ -163,15 +168,20 @@ function useFloorTexture(
       Math.max(1, Math.round(roundedD))
     );
     return tex;
-  }, [effectiveTextureType, roundedW, roundedD, res.useNormalMap]);
+  }, [effectiveTextureType, roundedW, roundedD, res.useNormalMap, qualityLevel]);
 
   const roughnessMap = useMemo(() => {
-    const cacheKey = `floor-roughness-${effectiveTextureType}`;
+    // 品質連動ラフネスマップ解像度: HIGH=512, MEDIUM=256
+    const roughSize = qualityLevel === 'high' ? 512 : 256;
+    const cacheKey = `floor-roughness-${effectiveTextureType}-${roughSize}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = roughSize;
+    canvas.height = roughSize;
     const ctx = canvas.getContext('2d')!;
+    // 描画関数は256ベースなのでスケーリングで対応
+    const scaleFactor = roughSize / 256;
+    if (scaleFactor !== 1) ctx.scale(scaleFactor, scaleFactor);
 
     switch (effectiveTextureType) {
       case 'japanese':
@@ -217,7 +227,7 @@ function useFloorTexture(
       Math.max(1, Math.round(roundedD))
     );
     return tex;
-  }, [effectiveTextureType, roundedW, roundedD]);
+  }, [effectiveTextureType, roundedW, roundedD, qualityLevel]);
 
   return { map, normalMap, roughnessMap };
 }
@@ -295,7 +305,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         return {
           metalness: isHigh ? 0.4 : 0.4,
           roughness: isHigh ? 0.1 : 0.08,
-          envMapIntensity: isHigh ? 2.0 : 3.5,
+          envMapIntensity: isHigh ? 2.4 : 3.5,
           clearcoat: isHigh ? 0.5 : 0.8,
           clearcoatRoughness: isHigh ? 0.1 : 0.05,
         };
@@ -304,7 +314,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         return {
           metalness: isHigh ? 0.25 : 0.25,
           roughness: isHigh ? 0.15 : 0.2,
-          envMapIntensity: isHigh ? 1.5 : 2.8,
+          envMapIntensity: isHigh ? 1.8 : 2.8,
           clearcoat: isHigh ? 0.3 : 0.5,
           clearcoatRoughness: isHigh ? 0.2 : 0.1,
         };
@@ -313,39 +323,39 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         return {
           metalness: isHigh ? 0.1 : 0.1,
           roughness: isHigh ? 0.25 : 0.45,
-          envMapIntensity: isHigh ? 1.5 : 1.0,
+          envMapIntensity: isHigh ? 1.8 : 1.0,
           clearcoat: isHigh ? 0.3 : 0.15,
           clearcoatRoughness: isHigh ? 0.2 : 0.35,
         };
       case 'retro':
         // チェッカーボードタイル — ワックスがけした光沢
-        return { metalness: 0.15, roughness: 0.35, envMapIntensity: 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25 };
+        return { metalness: 0.15, roughness: 0.35, envMapIntensity: isHigh ? 1.8 : 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25 };
       case 'minimal':
         // 白タイル — 控えめな反射
-        return { metalness: 0.1, roughness: 0.4, envMapIntensity: 1.2, clearcoat: 0.2, clearcoatRoughness: 0.3 };
+        return { metalness: 0.1, roughness: 0.4, envMapIntensity: isHigh ? 1.44 : 1.2, clearcoat: 0.2, clearcoatRoughness: 0.3 };
       case 'cafe':
         // 木目フローリング — ワックスがけした控えめな光沢
-        return { metalness: 0.05, roughness: 0.55, envMapIntensity: 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4 };
+        return { metalness: 0.05, roughness: 0.55, envMapIntensity: isHigh ? 0.96 : 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4 };
       case 'scandinavian':
         // ライトオーク — ナチュラルオイル仕上げ
-        return { metalness: 0.03, roughness: 0.6, envMapIntensity: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.45 };
+        return { metalness: 0.03, roughness: 0.6, envMapIntensity: isHigh ? 0.72 : 0.6, clearcoat: 0.1, clearcoatRoughness: 0.45 };
       case 'japanese':
         // 畳 — マットだが微かな繊維のツヤ
-        return { metalness: 0.0, roughness: 0.85, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.0, roughness: 0.85, envMapIntensity: isHigh ? 0.36 : 0.3, clearcoat: 0, clearcoatRoughness: 0 };
       case 'industrial':
         // コンクリート打ちっぱなし — 非常にマット
-        return { metalness: 0.05, roughness: 0.92, envMapIntensity: 0.25, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.05, roughness: 0.92, envMapIntensity: isHigh ? 0.3 : 0.25, clearcoat: 0, clearcoatRoughness: 0 };
       case 'herringbone':
         // ヘリンボーン木目 — ワックスがけした高級木床
-        return { metalness: 0.05, roughness: 0.45, envMapIntensity: 1.0, clearcoat: 0.2, clearcoatRoughness: 0.3 };
+        return { metalness: 0.05, roughness: 0.45, envMapIntensity: isHigh ? 1.2 : 1.0, clearcoat: 0.2, clearcoatRoughness: 0.3 };
       case 'chevron':
         // シェブロン木目 — モダンな光沢
-        return { metalness: 0.06, roughness: 0.4, envMapIntensity: 1.2, clearcoat: 0.25, clearcoatRoughness: 0.25 };
+        return { metalness: 0.06, roughness: 0.4, envMapIntensity: isHigh ? 1.44 : 1.2, clearcoat: 0.25, clearcoatRoughness: 0.25 };
       case 'basketweave':
         // 市松模様 — 伝統的な木床
-        return { metalness: 0.03, roughness: 0.55, envMapIntensity: 0.7, clearcoat: 0.1, clearcoatRoughness: 0.4 };
+        return { metalness: 0.03, roughness: 0.55, envMapIntensity: isHigh ? 0.84 : 0.7, clearcoat: 0.1, clearcoatRoughness: 0.4 };
       default:
-        return { metalness: 0.0, roughness: 0.9, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
+        return { metalness: 0.0, roughness: 0.9, envMapIntensity: isHigh ? 0.36 : 0.3, clearcoat: 0, clearcoatRoughness: 0 };
     }
   }, [effectiveFloorType, qualityLevel]);
 
@@ -364,7 +374,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshPhysicalMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.5, 0.5) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}
@@ -376,7 +386,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshStandardMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.3, 0.3) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.5, 0.5) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}

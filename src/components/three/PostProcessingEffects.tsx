@@ -40,8 +40,10 @@ interface PostProcessingEffectsProps {
   photoMode?: boolean;
 }
 
-/** 色収差オフセットベクトル（コンポーネント外で定義してGC防止） */
-const chromaticOffset = new THREE.Vector2(0.0005, 0.0005);
+/** 色収差オフセット — high用 (シネマティック強め・GC防止のためコンポーネント外定義) */
+const chromaticOffsetHigh = new THREE.Vector2(0.0008, 0.0006);
+/** 色収差オフセット — medium用 (控えめ) */
+const chromaticOffsetMedium = new THREE.Vector2(0.0003, 0.0003);
 
 function PostProcessingEffects({
   qualityLevel,
@@ -58,27 +60,28 @@ function PostProcessingEffects({
       <EffectComposer enableNormalPass>
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
-          samples={48}
+          samples={64}
           radius={ssaoRadius}
           intensity={ssaoIntensity}
-          luminanceInfluence={0.6}
+          luminanceInfluence={0.7}
           bias={0.001}
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
           luminanceSmoothing={0.4}
           intensity={bloomIntensity}
+          mipmapBlur
         />
         <BrightnessContrast brightness={0.02} contrast={0.08} />
         <HueSaturation saturation={0.05} />
-        <ChromaticAberration offset={chromaticOffset} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
+        <ChromaticAberration offset={chromaticOffsetHigh} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.05} />
         <DepthOfField
           focusDistance={0}
           focalLength={0.05}
-          bokehScale={3.0}
+          bokehScale={4.0}
         />
-        <Vignette eskil={false} offset={0.1} darkness={vignetteIntensity} />
+        <Vignette eskil={false} offset={0.12} darkness={vignetteIntensity} />
         <SMAA />
       </EffectComposer>
     );
@@ -90,22 +93,23 @@ function PostProcessingEffects({
       <EffectComposer enableNormalPass>
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
-          samples={48}
+          samples={64}
           radius={ssaoRadius}
           intensity={ssaoIntensity}
-          luminanceInfluence={0.6}
+          luminanceInfluence={0.7}
           bias={0.001}
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
           luminanceSmoothing={0.4}
           intensity={bloomIntensity}
+          mipmapBlur
         />
         <BrightnessContrast brightness={0.02} contrast={0.08} />
         <HueSaturation saturation={0.05} />
-        <ChromaticAberration offset={chromaticOffset} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
-        <Vignette eskil={false} offset={0.1} darkness={vignetteIntensity} />
+        <ChromaticAberration offset={chromaticOffsetHigh} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.05} />
+        <Vignette eskil={false} offset={0.12} darkness={vignetteIntensity} />
         <SMAA />
       </EffectComposer>
     );
@@ -116,19 +120,22 @@ function PostProcessingEffects({
     <EffectComposer enableNormalPass>
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
-        samples={16}
+        samples={32}
         radius={ssaoRadius}
-        intensity={ssaoIntensity * 0.7}
+        intensity={ssaoIntensity * 0.85}
         luminanceInfluence={0.6}
         bias={0.001}
       />
       <Bloom
-        luminanceThreshold={bloomLuminanceThreshold + 0.15}
+        luminanceThreshold={bloomLuminanceThreshold + 0.08}
         luminanceSmoothing={0.4}
-        intensity={bloomIntensity * 0.4}
+        intensity={bloomIntensity * 0.6}
       />
       <BrightnessContrast brightness={0.02} contrast={0.08} />
       <HueSaturation saturation={0.05} />
+      <ChromaticAberration offset={chromaticOffsetMedium} />
+      <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.025} />
+      <SMAA />
     </EffectComposer>
   );
 }

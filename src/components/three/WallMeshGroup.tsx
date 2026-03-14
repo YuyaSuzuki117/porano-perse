@@ -351,7 +351,8 @@ function useWallTexture(
     if (!res.useNormalMap) {
       return null;
     }
-    const S = res.normal;
+    // 壁ノーマルマップ: HIGH=1024, MEDIUM=512 (resのnormalとは独立)
+    const S = qualityLevel === 'high' ? 1024 : res.normal;
     const cacheKey = `wall-normal-${styleName}-${S}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
@@ -602,10 +603,11 @@ function useWallTexture(
     const len = wallLength(wall);
     texture.repeat.set(Math.max(1, len / 2), Math.max(1, wall.height / 2));
     return texture;
-  }, [wall, styleName, res.normal, res.useNormalMap]);
+  }, [wall, styleName, res.normal, res.useNormalMap, qualityLevel]);
 
   const roughnessMap = useMemo(() => {
-    const S = res.roughness;
+    // 壁ラフネスマップ: HIGH=512, MEDIUM=256 (resのroughnessとは独立)
+    const S = qualityLevel === 'high' ? 512 : res.roughness;
     const cacheKey = `wall-roughness-${styleName}-${S}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
@@ -773,7 +775,7 @@ function useWallTexture(
     const len = wallLength(wall);
     texture.repeat.set(Math.max(1, len / 2), Math.max(1, wall.height / 2));
     return texture;
-  }, [wall, styleName, res.roughness]);
+  }, [wall, styleName, res.roughness, qualityLevel]);
 
   const metalness = styleName === 'luxury' ? 0.1 : 0.0;
 
@@ -1029,7 +1031,7 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.2, 0.2) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(0.35, 0.35) : undefined}
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}

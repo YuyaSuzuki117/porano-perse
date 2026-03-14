@@ -466,7 +466,7 @@ export function generateMetalTexture(width: number, height: number, finish: Meta
 
 /** 品質レベル連動テクスチャ解像度ヘルパー */
 export function getFurnitureTexSizes(ql: 'high' | 'medium' | 'low') {
-  const size = ql === 'high' ? 1024 : ql === 'medium' ? 512 : 256;
-  const small = ql === 'high' ? 512 : ql === 'medium' ? 256 : 128;
+  const size = ql === 'high' ? 2048 : ql === 'medium' ? 512 : 256;
+  const small = ql === 'high' ? 1024 : ql === 'medium' ? 256 : 128;
   return { size, small };
 }
