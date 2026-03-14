@@ -273,26 +273,56 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
   const effectiveFloorType = floorTextureType ?? style.name;
   const qualityLevel = useEditorStore((s) => s.qualityLevel);
 
+  // high品質時: テクスチャの異方性フィルタリングを最大化（斜め視点でもシャープ）
+  useMemo(() => {
+    if (qualityLevel === 'high') {
+      const maxAniso = 16;
+      if (map) map.anisotropy = maxAniso;
+      if (normalMap) normalMap.anisotropy = maxAniso;
+      if (roughnessMap) roughnessMap.anisotropy = maxAniso;
+    }
+  }, [qualityLevel, map, normalMap, roughnessMap]);
+
   // 反射性のある床タイプ: marble, tile, checkerboard, linoleum, 木目(clearcoat)
   const REFLECTIVE_FLOORS = new Set(['luxury', 'modern', 'retro', 'minimal', 'medical', 'cafe', 'scandinavian', 'herringbone', 'chevron', 'basketweave']);
 
   const { metalness, roughness, envMapIntensity, clearcoat, clearcoatRoughness } = useMemo(() => {
+    // high品質ではポリッシュ系床の反射をさらに強化
+    const isHigh = qualityLevel === 'high';
     switch (effectiveFloorType) {
       case 'luxury':
-        // 磨き大理石 — 強い反射・高クリアコート（Panelka風の高級感）
-        return { metalness: 0.4, roughness: 0.08, envMapIntensity: 3.5, clearcoat: 0.8, clearcoatRoughness: 0.05 };
+        // 磨き大理石 — 非常に強い反射 (high品質でさらに強化)
+        return {
+          metalness: isHigh ? 0.4 : 0.4,
+          roughness: isHigh ? 0.1 : 0.08,
+          envMapIntensity: isHigh ? 2.0 : 3.5,
+          clearcoat: isHigh ? 0.5 : 0.8,
+          clearcoatRoughness: isHigh ? 0.1 : 0.05,
+        };
       case 'modern':
-        // 大判磁器タイル — 強めの反射（モダン空間の光沢感）
-        return { metalness: 0.25, roughness: 0.2, envMapIntensity: 2.8, clearcoat: 0.5, clearcoatRoughness: 0.1 };
+        // 大判磁器タイル — 反射強化 (polished)
+        return {
+          metalness: isHigh ? 0.25 : 0.25,
+          roughness: isHigh ? 0.15 : 0.2,
+          envMapIntensity: isHigh ? 1.5 : 2.8,
+          clearcoat: isHigh ? 0.3 : 0.5,
+          clearcoatRoughness: isHigh ? 0.2 : 0.1,
+        };
+      case 'medical':
+        // リノリウム — ポリッシュ床 (high品質で反射強化)
+        return {
+          metalness: isHigh ? 0.1 : 0.1,
+          roughness: isHigh ? 0.25 : 0.45,
+          envMapIntensity: isHigh ? 1.5 : 1.0,
+          clearcoat: isHigh ? 0.3 : 0.15,
+          clearcoatRoughness: isHigh ? 0.2 : 0.35,
+        };
       case 'retro':
         // チェッカーボードタイル — ワックスがけした光沢
         return { metalness: 0.15, roughness: 0.35, envMapIntensity: 1.5, clearcoat: 0.25, clearcoatRoughness: 0.25 };
       case 'minimal':
         // 白タイル — 控えめな反射
         return { metalness: 0.1, roughness: 0.4, envMapIntensity: 1.2, clearcoat: 0.2, clearcoatRoughness: 0.3 };
-      case 'medical':
-        // リノリウム — 微かな光沢
-        return { metalness: 0.1, roughness: 0.45, envMapIntensity: 1.0, clearcoat: 0.15, clearcoatRoughness: 0.35 };
       case 'cafe':
         // 木目フローリング — ワックスがけした控えめな光沢
         return { metalness: 0.05, roughness: 0.55, envMapIntensity: 0.8, clearcoat: 0.15, clearcoatRoughness: 0.4 };
@@ -317,7 +347,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
       default:
         return { metalness: 0.0, roughness: 0.9, envMapIntensity: 0.3, clearcoat: 0, clearcoatRoughness: 0 };
     }
-  }, [effectiveFloorType]);
+  }, [effectiveFloorType, qualityLevel]);
 
   if (!floorGeometry) return null;
 

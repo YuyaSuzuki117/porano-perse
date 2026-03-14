@@ -2219,7 +2219,7 @@ function Shelf({ scale, color, palette, pbr, selected, woodType, metalFinish, qu
   );
 }
 
-function PendantLight({ scale, color, palette, metalFinish }: FurniturePartProps) {
+function PendantLight({ scale, color, palette, metalFinish, qualityLevel }: FurniturePartProps) {
   const [w, h] = scale;
   const style = useEditorStore((s) => s.style);
   const dayNight = useEditorStore((s) => s.dayNight);
@@ -2276,20 +2276,22 @@ function PendantLight({ scale, color, palette, metalFinish }: FurniturePartProps
         <cylinderGeometry args={[0.004, 0.004, h, 6]} />
         <meshStandardMaterial color={cordColor} roughness={0.8} metalness={0.3} />
       </mesh>
-      {/* シェード外側 */}
+      {/* シェード外側 — emissive glow追加 */}
       <mesh geometry={shadeGeo} position={[0, 0, 0]}>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={shadeColor}
           side={THREE.DoubleSide}
           metalness={0.3}
           roughness={0.4}
           transparent
           opacity={0.9}
+          emissive={cfg.color}
+          emissiveIntensity={0.8}
         />
       </mesh>
-      {/* シェード内側（明るめ + emissive） */}
+      {/* シェード内側（明るめ + 強emissive） */}
       <mesh geometry={innerGeo} position={[0, 0, 0]}>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={adjustColor(shadeColor, 40)}
           side={THREE.BackSide}
           roughness={0.6}
@@ -2301,9 +2303,18 @@ function PendantLight({ scale, color, palette, metalFinish }: FurniturePartProps
       {/* 電球（やや縦長） — 発光色はそのまま暖色系 */}
       <mesh position={[0, -0.05, 0]} scale={[1, 1.3, 1]}>
         <sphereGeometry args={[0.035, 16, 16]} />
-        <meshStandardMaterial color="#FFF8E1" emissive="#FFF8E1" emissiveIntensity={isNight ? 4 : 2} />
+        <meshPhysicalMaterial color="#FFF8E1" emissive="#FFF8E1" emissiveIntensity={isNight ? 4 : 2} />
       </mesh>
-      <pointLight position={[0, -0.1, 0]} intensity={0.6} color="#FFE4B5" distance={5} decay={1.5} castShadow />
+      {/* PointLight — シェードからの暖色拡散光 (medium+high) */}
+      <pointLight
+        position={[0, -0.1, 0]}
+        intensity={0.5}
+        color="#FFF4E0"
+        distance={3}
+        decay={1.5}
+        castShadow={qualityLevel === 'high'}
+        {...(qualityLevel === 'high' ? { 'shadow-mapSize': [512, 512] as [number, number] } : {})}
+      />
       {/* SpotLight — テーブルを照らすリアルな光のプール */}
       <spotLight
         position={[0, shadeBottomY, 0]}
@@ -2570,7 +2581,7 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
           ior={1.52}
           thickness={0.04}
           envMapIntensity={2.5}
-          clearcoat={0.3}
+          clearcoat={1.0}
           clearcoatRoughness={0.05}
         />
       </mesh>
@@ -2683,7 +2694,7 @@ function Mirror({ scale, color, palette }: FurniturePartProps) {
       {/* ミラー面 — 高い映り込み */}
       <mesh position={[0, centerY, frameDepth / 2 - 0.002]}>
         <boxGeometry args={[w, h, 0.003]} />
-        <meshPhysicalMaterial color={color || palette.metal} metalness={0.99} roughness={0.01} envMapIntensity={3.0} clearcoat={0.5} clearcoatRoughness={0.02} />
+        <meshPhysicalMaterial color={color || palette.metal} metalness={0.99} roughness={0.01} envMapIntensity={3.0} clearcoat={1.0} clearcoatRoughness={0.0} />
       </mesh>
       {/* ミラー下部の小物棚 */}
       <RoundedBox args={[w * 0.7, 0.015, 0.06]} radius={0.004} position={[0, centerY - h / 2 - frameW - 0.005, frameDepth / 2 - 0.01]}>

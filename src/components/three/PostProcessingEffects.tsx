@@ -6,10 +6,29 @@
  * EffectComposer, SSAO, Bloom, Vignette, SMAA は重量級のため、
  * medium/high品質時のみ dynamic import で遅延ロードする。
  * low品質では一切ロードされず、初期表示が高速になる。
+ *
+ * ■ シネマティック強化 (2026-03-14)
+ * - BrightnessContrast / HueSaturation: medium+high で色調補正
+ * - ChromaticAberration: high のみ、微細なレンズ収差
+ * - Noise (フィルムグレイン): high のみ、映画的テクスチャ
+ * - DepthOfField: high + photoMode 時のみ被写界深度
+ * - SSAO チューニング強化: サンプル数増・bias微細化
  */
 
-import { EffectComposer, SSAO, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
+import {
+  EffectComposer,
+  SSAO,
+  Bloom,
+  Vignette,
+  SMAA,
+  BrightnessContrast,
+  HueSaturation,
+  ChromaticAberration,
+  Noise,
+  DepthOfField,
+} from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
+import * as THREE from 'three';
 
 interface PostProcessingEffectsProps {
   qualityLevel: 'high' | 'medium' | 'low';
@@ -18,7 +37,11 @@ interface PostProcessingEffectsProps {
   bloomLuminanceThreshold: number;
   bloomIntensity: number;
   vignetteIntensity: number;
+  photoMode?: boolean;
 }
+
+/** 色収差オフセットベクトル（コンポーネント外で定義してGC防止） */
+const chromaticOffset = new THREE.Vector2(0.0005, 0.0005);
 
 function PostProcessingEffects({
   qualityLevel,
@@ -27,20 +50,33 @@ function PostProcessingEffects({
   bloomLuminanceThreshold,
   bloomIntensity,
   vignetteIntensity,
+  photoMode = false,
 }: PostProcessingEffectsProps) {
-  if (qualityLevel === 'high') {
+  // ── high + photoMode: DOF含む全エフェクト ──
+  if (qualityLevel === 'high' && photoMode) {
     return (
       <EffectComposer enableNormalPass>
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
-          samples={32}
+          samples={48}
           radius={ssaoRadius}
           intensity={ssaoIntensity}
+          luminanceInfluence={0.6}
+          bias={0.001}
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
           luminanceSmoothing={0.4}
           intensity={bloomIntensity}
+        />
+        <BrightnessContrast brightness={0.02} contrast={0.08} />
+        <HueSaturation saturation={0.05} />
+        <ChromaticAberration offset={chromaticOffset} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
+        <DepthOfField
+          focusDistance={0}
+          focalLength={0.05}
+          bokehScale={3.0}
         />
         <Vignette eskil={false} offset={0.1} darkness={vignetteIntensity} />
         <SMAA />
@@ -48,20 +84,51 @@ function PostProcessingEffects({
     );
   }
 
-  // medium — 軽量版: SSAO少サンプル + Bloom高閾値、Vignette無し
+  // ── high (非photoMode): DOF以外の全エフェクト ──
+  if (qualityLevel === 'high') {
+    return (
+      <EffectComposer enableNormalPass>
+        <SSAO
+          blendFunction={BlendFunction.MULTIPLY}
+          samples={48}
+          radius={ssaoRadius}
+          intensity={ssaoIntensity}
+          luminanceInfluence={0.6}
+          bias={0.001}
+        />
+        <Bloom
+          luminanceThreshold={bloomLuminanceThreshold}
+          luminanceSmoothing={0.4}
+          intensity={bloomIntensity}
+        />
+        <BrightnessContrast brightness={0.02} contrast={0.08} />
+        <HueSaturation saturation={0.05} />
+        <ChromaticAberration offset={chromaticOffset} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.04} />
+        <Vignette eskil={false} offset={0.1} darkness={vignetteIntensity} />
+        <SMAA />
+      </EffectComposer>
+    );
+  }
+
+  // ── medium — BrightnessContrast + HueSaturation 追加、SSAOサンプル16に強化 ──
   return (
     <EffectComposer enableNormalPass>
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
-        samples={8}
+        samples={16}
         radius={ssaoRadius}
         intensity={ssaoIntensity * 0.7}
+        luminanceInfluence={0.6}
+        bias={0.001}
       />
       <Bloom
         luminanceThreshold={bloomLuminanceThreshold + 0.15}
         luminanceSmoothing={0.4}
         intensity={bloomIntensity * 0.4}
       />
+      <BrightnessContrast brightness={0.02} contrast={0.08} />
+      <HueSaturation saturation={0.05} />
     </EffectComposer>
   );
 }

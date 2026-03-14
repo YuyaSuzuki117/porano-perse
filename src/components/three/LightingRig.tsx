@@ -169,7 +169,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
     );
   }
 
-  // ── highモード: フルライティング（現状維持） ──
+  // ── highモード: フルライティング + シネマティック強化 ──
   return (
     <>
       <ambientLight intensity={style.ambientIntensity * b} color={ambientColor} />
@@ -179,6 +179,13 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
         groundColor={styleLighting.groundWarmth}
         intensity={0.6 * b}
+      />
+
+      {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 */}
+      <hemisphereLight
+        color="#87CEEB"
+        groundColor="#4A3520"
+        intensity={0.15}
       />
 
       {/* バウンスライト（床からの間接光シミュレーション） */}
@@ -222,7 +229,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         castShadow
         shadow-mapSize={[4096, 4096]}
         shadow-bias={-0.0001}
-        shadow-radius={8}
+        shadow-radius={4}
         shadow-blurSamples={20}
         shadow-normalBias={0.02}
         shadow-camera-near={0.1}
@@ -359,6 +366,17 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         ]}
         intensity={styleLighting.rimIntensity * 0.7 * b}
         color={lerpColor(fillColor, styleLighting.color, 0.4)}
+      />
+
+      {/* シネマティック背面リムライト — 家具の輪郭分離用 (影なし) */}
+      <directionalLight
+        position={[
+          roomBounds.cx - roomBounds.w * 0.5,
+          roomHeight * 2.2,
+          roomBounds.cz - roomBounds.d * 0.7,
+        ]}
+        intensity={0.1}
+        color="#E8F0FF"
       />
     </>
   );

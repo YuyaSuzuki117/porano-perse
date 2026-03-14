@@ -78,6 +78,7 @@ export function SceneCanvas({
   const showFlowHeatmap = useEditorStore((s) => s.showFlowHeatmap);
   const showLightingAnalysis = useEditorStore((s) => s.showLightingAnalysis);
   const deletingFurnitureIds = useEditorStore((s) => s.deletingFurnitureIds);
+  const photoMode = useEditorStore((s) => s.photoMode);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
@@ -381,6 +382,7 @@ export function SceneCanvas({
               bloomLuminanceThreshold={bloomLuminanceThreshold}
               bloomIntensity={bloomIntensity}
               vignetteIntensity={vignetteIntensity}
+              photoMode={photoMode}
             />
           </Suspense>
         )}
