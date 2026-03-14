@@ -1388,9 +1388,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // フォトモード
   setPhotoMode: (v) => set((s) => {
     if (v) {
-      // フォトモード開始: 現在の状態を保存してUI非表示 + 高品質化
+      // フォトモード開始: 3Dビューに強制切替 + UI非表示 + 高品質化
       return {
         photoMode: true,
+        viewMode: '3d' as const,
         photoModePrevState: {
           showGrid: s.showGrid,
           showDimensions: s.showDimensions,

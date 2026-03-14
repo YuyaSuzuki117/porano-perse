@@ -366,7 +366,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* フォトモード */}
       <div className="px-3 py-2 border-b border-gray-100">
         <button
-          onClick={() => setPhotoMode(!photoMode)}
+          onClick={() => {
+            const next = !photoMode;
+            setPhotoMode(next);
+            // フォトモード開始時はパネルを閉じて3Dビューを表示
+            if (next && isMobile && onClose) onClose();
+          }}
           className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
             photoMode
               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600'

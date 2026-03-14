@@ -503,8 +503,8 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* Floating Action Button — モバイルクイックアクション（セーフエリア対応） */}
-        <div className="absolute bottom-[calc(var(--safe-bottom)+76px)] right-3 z-30 flex flex-col-reverse items-center gap-2">
+        {/* Floating Action Button — モバイルクイックアクション（セーフエリア対応）フォトモード中は非表示 */}
+        <div className={`absolute bottom-[calc(var(--safe-bottom)+76px)] right-3 z-30 flex flex-col-reverse items-center gap-2 ${photoMode ? 'hidden' : ''}`}>
           {/* FABメニュー項目（展開時のみ表示） */}
           {fabOpen && (
             <>
@@ -563,8 +563,8 @@ export default function EditorPage() {
           </button>
         </div>
 
-        {/* Bottom tab bar — セーフエリア対応 + タッチフィードバック */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe" role="tablist" aria-label="エディタビュー切替">
+        {/* Bottom tab bar — セーフエリア対応 + タッチフィードバック（フォトモード中は非表示） */}
+        <div className={`flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe ${photoMode ? 'hidden' : ''}`} role="tablist" aria-label="エディタビュー切替">
           {([
             { key: '2d' as const, label: '図面', icon: '📐' },
             { key: '3d' as const, label: '3D', icon: '🏠' },
