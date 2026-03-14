@@ -16,8 +16,8 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     hemisphereSkyColor: '#FFF5E0',
     hemisphereGroundColor: '#8B7D3C',
     furniturePalette: { primary: '#8B6914', secondary: '#C4A97D', accent: '#2E4A30', metal: '#4A3728', fabric: '#D4C5A0' },
-    furnitureRoughness: 0.85,
-    furnitureMetalness: 0.0,
+    furnitureRoughness: 0.78,   // 漆器: やや光沢のある木
+    furnitureMetalness: 0.02,   // 漆の微かな映り込み
   },
   modern: {
     name: 'modern',
@@ -67,8 +67,8 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     hemisphereSkyColor: '#D0D0D8',
     hemisphereGroundColor: '#606068',
     furniturePalette: { primary: '#505050', secondary: '#707070', accent: '#FF6B35', metal: '#A0A0A0', fabric: '#808080' },
-    furnitureRoughness: 0.7,
-    furnitureMetalness: 0.25,
+    furnitureRoughness: 0.75,   // コンクリート・鉄のマット感
+    furnitureMetalness: 0.3,    // 金属パーツの映り込み強化
   },
   minimal: {
     name: 'minimal',
@@ -101,8 +101,8 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     hemisphereSkyColor: '#3A2A1A',
     hemisphereGroundColor: '#0A0808',
     furniturePalette: { primary: '#3D1F0A', secondary: '#6B3A2A', accent: '#C9B037', metal: '#D4AF37', fabric: '#4A0E2E' },
-    furnitureRoughness: 0.3,
-    furnitureMetalness: 0.15,
+    furnitureRoughness: 0.25,   // 大理石・漆仕上げの光沢
+    furnitureMetalness: 0.18,   // 深い映り込み
   },
   scandinavian: {
     name: 'scandinavian',

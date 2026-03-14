@@ -147,13 +147,13 @@ export function SceneCanvas({
       ? 0.8 + lightBrightness / 400
       : 1.3 + lightBrightness / 200 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
-    gl.shadowMap.enabled = true;
     gl.localClippingEnabled = true;
-    // lowモード: BasicShadowMap + ピクセル比制限
+    // lowモード: シャドウ完全無効 + ピクセル比1.0制限
     if (qualityLevel === 'low') {
-      gl.shadowMap.type = THREE.BasicShadowMap;
+      gl.shadowMap.enabled = false;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
     } else {
+      gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     }
@@ -200,7 +200,7 @@ export function SceneCanvas({
         <Environment
           preset={envPreset}
           background={false}
-          environmentIntensity={qualityLevel === 'high' ? 2.5 : qualityLevel === 'medium' ? 1.8 : 1.0}
+          environmentIntensity={qualityLevel === 'high' ? 1.5 : qualityLevel === 'medium' ? 1.2 : 0.8}
           environmentRotation={[0, Math.PI / 4, 0]}
         />
 
@@ -217,7 +217,7 @@ export function SceneCanvas({
 
         {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
 
-        <WindowLightBeams walls={walls} openings={openings} roomHeight={roomHeight} />
+        <WindowLightBeams walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
 
         {showFurniture && furniture.map((item) => (
           <Furniture
@@ -247,15 +247,15 @@ export function SceneCanvas({
           onPlace={handleAnnotationPlace}
         />
 
-        {/* lowモードではContactShadows無効 — 暖色スタイルは暖色影で自然な印象 */}
-        {qualityLevel !== 'low' && (
+        {/* ContactShadows はhigh品質のみ（非常に重い） */}
+        {qualityLevel === 'high' && (
           <ContactShadows
             position={[0, 0.001, 0]}
             opacity={isNight ? 0.35 : 0.55}
             scale={maxDim * 1.5}
             blur={3.5}
             far={4}
-            resolution={qualityLevel === 'high' ? 1024 : 512}
+            resolution={1024}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}
           />
         )}
@@ -333,8 +333,8 @@ export function SceneCanvas({
         {/* FPSカウンター: 開発モードで常時表示 */}
         {process.env.NODE_ENV === 'development' && <Stats />}
 
-        {/* lowモードではPostProcessing全無効、high/mediumは遅延ロード */}
-        {qualityLevel !== 'low' && (
+        {/* PostProcessingはhigh品質のみ（SSAO/Bloom/Vignetteは最大のボトルネック） */}
+        {qualityLevel === 'high' && (
           <Suspense fallback={null}>
             <LazyPostProcessing
               qualityLevel={qualityLevel}

@@ -4,321 +4,16 @@ import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { FURNITURE_CATALOG } from '@/data/furniture';
 import { FurnitureType, FurnitureItem } from '@/types/scene';
-import { WallSegment } from '@/types/floor-plan';
-
-// ─── Legend of Mana inspired color palette ─────────────────────────────
-const PAL = {
-  // Base
-  black: '#2a1f14',
-  darkBrown: '#5c3a1e',
-  brown: '#8b6b3e',
-  lightBrown: '#c4a06a',
-  cream: '#f0e8d0',
-  white: '#fff8f0',
-
-  // Warm
-  warmRed: '#c8584a',
-  softOrange: '#e8a060',
-  golden: '#e8c860',
-  peach: '#f0c8a8',
-
-  // Cool (low saturation)
-  sage: '#7ca868',
-  olive: '#5c8850',
-  skyBlue: '#88b8d0',
-  slate: '#607888',
-
-  // Accent
-  rose: '#d08888',
-  lavender: '#a888c0',
-  mint: '#88c8b0',
-
-  // Shadow / Highlight
-  shadow1: '#4a3828',
-  shadow2: '#6a5438',
-  highlight: '#fff0d8',
-
-  // Extra utility
-  silver: '#b8c0c8',
-  midGray: '#8a8a90',
-  darkGray: '#4a4a50',
-} as const;
-
-type PalKey = keyof typeof PAL;
-const _ = 0; // transparent
-
-// ─── 32x32 isometric sprite definitions ─────────────────────────────────
-type SpriteRow = (PalKey | 0)[];
-type SpriteData = SpriteRow[];
-
-const SPRITE_SIZE = 32;
-
-function createSprite(rows: SpriteData): SpriteData {
-  while (rows.length < SPRITE_SIZE) rows.push(new Array(SPRITE_SIZE).fill(0));
-  return rows.map(r => {
-    while (r.length < SPRITE_SIZE) r.push(0);
-    return r.slice(0, SPRITE_SIZE);
-  });
-}
-
-// Helper to create a filled row segment
-function seg(pre: number, fills: (PalKey | 0)[], post: number): SpriteRow {
-  const row: SpriteRow = [];
-  for (let i = 0; i < pre; i++) row.push(0);
-  row.push(...fills);
-  for (let i = 0; i < post; i++) row.push(0);
-  while (row.length < SPRITE_SIZE) row.push(0);
-  return row.slice(0, SPRITE_SIZE);
-}
-
-// ── Isometric Chair (32x32): viewed from 45deg ──
-const SPRITES: Record<string, SpriteData> = {
-  chair: createSprite([
-    // rows 0-5: backrest top
-    seg(10,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],10),
-    seg(9,['darkBrown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','darkBrown','darkBrown'],9),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','brown','darkBrown','darkBrown'],8),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','brown','darkBrown'],9),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],10),
-    seg(8,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],10),
-    // rows 6-9: backrest bottom / seat top
-    seg(8,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],10),
-    seg(7,['shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2','shadow2'],10),
-    // rows 8-13: seat diamond
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    seg(3,['darkBrown','brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','cream','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','cream','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','cream','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','cream','brown','darkBrown'],3),
-    seg(4,['darkBrown','brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],4),
-    seg(5,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],5),
-    // rows 14-19: legs
-    seg(5,['darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown'],5),
-    seg(5,['darkBrown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'darkBrown'],5),
-    seg(6,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],6),
-    seg(6,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],6),
-    seg(6,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],6),
-    seg(6,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],6),
-    // 20-31 empty
-    ...Array(12).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  table_square: createSprite([
-    // rows 0-3 empty
-    ...Array(4).fill(new Array(SPRITE_SIZE).fill(0)),
-    // rows 4-7: tabletop diamond
-    seg(6,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],6),
-    seg(4,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],4),
-    seg(3,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown','darkBrown'],3),
-    seg(2,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown','darkBrown'],2),
-    seg(2,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown','darkBrown'],2),
-    seg(3,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown','darkBrown'],3),
-    seg(4,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],4),
-    seg(6,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],6),
-    // rows 12-13: front edge thickness
-    seg(6,['shadow2','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow2'],6),
-    seg(7,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],7),
-    // rows 14-19: legs
-    seg(7,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],7),
-    seg(7,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],7),
-    seg(8,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],8),
-    seg(8,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],8),
-    seg(9,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],9),
-    seg(9,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],9),
-    // 20-31
-    ...Array(12).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  table_round: createSprite([
-    ...Array(3).fill(new Array(SPRITE_SIZE).fill(0)),
-    // Oval/diamond tabletop
-    seg(9,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],9),
-    seg(6,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],6),
-    seg(4,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown'],4),
-    seg(3,['darkBrown','brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],3),
-    seg(4,['darkBrown','brown','lightBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','lightBrown','brown'],4),
-    seg(6,['darkBrown','brown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','lightBrown','brown','darkBrown'],6),
-    seg(9,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],9),
-    // Edge
-    seg(9,['shadow2','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow2'],9),
-    // Pedestal
-    seg(14,['brown','brown','brown','brown'],14),
-    seg(14,['brown','brown','brown','brown'],14),
-    seg(14,['brown','brown','brown','brown'],14),
-    seg(13,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],13),
-    ...Array(14).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  sofa: createSprite([
-    ...Array(2).fill(new Array(SPRITE_SIZE).fill(0)),
-    // Back cushion
-    seg(2,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],2),
-    seg(1,['darkBrown','brown','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','brown','darkBrown'],1),
-    seg(1,['darkBrown','brown','softOrange','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','softOrange','brown','darkBrown'],1),
-    seg(1,['darkBrown','brown','softOrange','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','peach','softOrange','brown','darkBrown'],1),
-    seg(1,['darkBrown','brown','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','softOrange','brown','darkBrown'],1),
-    seg(2,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],2),
-    // Seat cushion
-    seg(2,['brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown'],2),
-    seg(2,['brown','cream','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','cream','brown'],2),
-    seg(2,['brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown'],2),
-    seg(2,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],2),
-    // Front face
-    seg(2,['shadow2','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow2'],2),
-    seg(3,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],3),
-    // Legs
-    seg(3,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],3),
-    seg(3,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],3),
-    ...Array(14).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  counter: createSprite([
-    ...Array(4).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    seg(3,['darkBrown','brown','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','golden','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','golden','brown','darkBrown'],3),
-    seg(3,['darkBrown','brown','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','brown','darkBrown'],3),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    // Front face
-    seg(4,['shadow2','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','shadow2'],4),
-    seg(4,['shadow2','brown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','brown','shadow2'],4),
-    seg(4,['shadow2','brown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','brown','shadow2'],4),
-    seg(4,['shadow2','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','shadow2'],4),
-    seg(5,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],5),
-    ...Array(14).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  plant: createSprite([
-    ...Array(1).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(10,['olive','olive','olive','sage','sage','sage','olive','olive','sage','sage','olive','olive'],10),
-    seg(8,['olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive'],8),
-    seg(7,['olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive'],7),
-    seg(6,['olive','sage','sage','sage','sage','mint','sage','sage','sage','sage','sage','sage','mint','sage','sage','sage','sage','sage','sage','olive'],6),
-    seg(6,['olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive'],6),
-    seg(7,['olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive'],7),
-    seg(8,['olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive'],8),
-    seg(9,['olive','olive','sage','sage','sage','sage','sage','sage','sage','sage','sage','sage','olive','olive'],9),
-    seg(11,['olive','olive','sage','sage','sage','sage','sage','sage','sage','olive','olive'],11),
-    seg(13,['olive','brown','brown','brown','brown','olive'],13),
-    seg(14,['brown','brown','brown','brown'],14),
-    // Pot
-    seg(10,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],10),
-    seg(10,['darkBrown','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','darkBrown'],10),
-    seg(11,['darkBrown','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','warmRed','darkBrown'],11),
-    seg(11,['darkBrown','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','darkBrown'],11),
-    seg(12,['darkBrown','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','darkBrown'],12),
-    seg(12,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],12),
-    ...Array(14).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  shelf: createSprite([
-    ...Array(2).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    seg(4,['darkBrown','brown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],4),
-    seg(4,['darkBrown','brown','cream','skyBlue','skyBlue','cream','cream','warmRed','warmRed','cream','cream','cream','sage','cream','cream','cream','cream','lavender','cream','cream','cream','cream','brown','darkBrown'],4),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    seg(4,['darkBrown','brown','cream','cream','sage','cream','cream','cream','cream','golden','golden','cream','cream','cream','cream','cream','cream','cream','softOrange','cream','cream','cream','brown','darkBrown'],4),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    seg(4,['darkBrown','brown','cream','cream','cream','cream','warmRed','cream','cream','cream','cream','skyBlue','skyBlue','cream','cream','cream','cream','cream','cream','cream','cream','cream','brown','darkBrown'],4),
-    seg(4,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],4),
-    // Front face
-    seg(4,['shadow2','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','brown','shadow2'],4),
-    seg(4,['shadow2','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','shadow2'],4),
-    seg(4,['shadow2','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','shadow2'],4),
-    seg(5,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],5),
-    ...Array(16).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  pendant_light: createSprite([
-    seg(15,['midGray','midGray'],15),
-    seg(15,['midGray','midGray'],15),
-    seg(15,['midGray','midGray'],15),
-    seg(14,['midGray','midGray','midGray','midGray'],14),
-    seg(12,['golden','golden','golden','golden','golden','golden','golden','golden'],12),
-    seg(10,['golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden'],10),
-    seg(9,['golden','golden','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','golden','golden'],9),
-    seg(9,['golden','golden','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','highlight','golden','golden'],9),
-    seg(10,['golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden','golden'],10),
-    seg(12,['golden','golden','golden','golden','golden','golden','golden','golden'],12),
-    ...Array(22).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  register: createSprite([
-    ...Array(4).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(8,['darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray'],8),
-    seg(7,['darkGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','darkGray'],7),
-    seg(7,['darkGray','midGray','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','skyBlue','midGray','midGray','darkGray'],7),
-    seg(7,['darkGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','darkGray'],7),
-    seg(8,['darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray'],8),
-    // Front
-    seg(8,['shadow2','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','shadow2'],8),
-    seg(8,['shadow2','silver','white','white','silver','white','white','silver','white','white','silver','white','white','silver','silver','shadow2'],8),
-    seg(8,['shadow2','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','shadow2'],8),
-    seg(9,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],9),
-    ...Array(19).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  stool: createSprite([
-    ...Array(6).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(9,['darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray'],9),
-    seg(8,['darkGray','midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray','darkGray'],8),
-    seg(8,['darkGray','midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray','darkGray'],8),
-    seg(9,['darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray','darkGray'],9),
-    // Legs
-    seg(10,['midGray','midGray',0,0,0,0,0,0,0,0,'midGray','midGray'],10),
-    seg(10,['midGray',0,0,0,0,0,0,0,0,0,0,'midGray'],10),
-    seg(9,['midGray',0,0,0,0,0,0,0,0,0,0,0,0,'midGray'],9),
-    seg(9,['midGray',0,0,0,0,0,0,0,0,0,0,0,0,'midGray'],9),
-    seg(8,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],8),
-    seg(8,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],8),
-    ...Array(16).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-
-  partition: createSprite([
-    ...Array(2).fill(new Array(SPRITE_SIZE).fill(0)),
-    seg(2,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','cream','darkBrown'],2),
-    seg(2,['darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown','darkBrown'],2),
-    // Front
-    seg(2,['shadow2','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow2'],2),
-    seg(3,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],3),
-    // Legs
-    seg(3,['brown',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'brown'],3),
-    seg(3,['shadow1',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'shadow1'],3),
-    ...Array(18).fill(new Array(SPRITE_SIZE).fill(0)),
-  ]),
-};
-
-// Fallback generic sprite
-const GENERIC_SPRITE: SpriteData = createSprite([
-  ...Array(6).fill(new Array(SPRITE_SIZE).fill(0)),
-  seg(6,['midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray'],6),
-  seg(5,['midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray'],5),
-  seg(5,['midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray'],5),
-  seg(5,['midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray'],5),
-  seg(5,['midGray','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','silver','midGray'],5),
-  seg(6,['midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray','midGray'],6),
-  seg(6,['shadow2','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow2'],6),
-  seg(7,['shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1','shadow1'],7),
-  ...Array(18).fill(new Array(SPRITE_SIZE).fill(0)),
-]);
-
-function getSpriteForType(type: string): SpriteData {
-  if (SPRITES[type]) return SPRITES[type];
-  return GENERIC_SPRITE;
-}
+import {
+  PAL, PalKey, SpriteData, SPRITE_SIZE,
+  getSpriteForType,
+} from './pixel-sprites';
 
 // ─── Constants ─────────────────────────────────────────────────────────
 const TILE_W_BASE = 64;        // isometric tile width at zoom=1
 const GRID_SNAP_M = 0.25;
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 4;
-const SHADOW_COLOR = 'rgba(42,31,20,0.25)';
 const SELECTION_COLORS = [PAL.golden, PAL.softOrange];
 
 // ─── Isometric coordinate helpers ──────────────────────────────────────
@@ -338,6 +33,55 @@ function isoUnproject(ix: number, iy: number, tileW: number): { wx: number; wy: 
   };
 }
 
+// ─── Sprite Cache (offscreen canvas pre-rendering) ─────────────────────
+const spriteCanvasCache = new Map<string, HTMLCanvasElement>();
+
+function getCachedSprite(type: string, pixelSize: number, rotationSteps: number): HTMLCanvasElement {
+  const key = `${type}_${pixelSize.toFixed(2)}_${rotationSteps}`;
+  const cached = spriteCanvasCache.get(key);
+  if (cached) return cached;
+
+  const size = SPRITE_SIZE;
+  const canvasSize = Math.ceil(size * pixelSize);
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvasSize;
+  offscreen.height = canvasSize;
+  const ctx = offscreen.getContext('2d');
+  if (!ctx) return offscreen;
+
+  const sprite = getSpriteForType(type);
+  const steps = ((rotationSteps % 4) + 4) % 4;
+
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      let srcRow = row;
+      let srcCol = col;
+      if (steps === 1) { srcRow = col; srcCol = size - 1 - row; }
+      else if (steps === 2) { srcRow = size - 1 - row; srcCol = size - 1 - col; }
+      else if (steps === 3) { srcRow = size - 1 - col; srcCol = row; }
+
+      const palKey = sprite[srcRow]?.[srcCol];
+      if (!palKey) continue;
+      ctx.fillStyle = PAL[palKey as PalKey] || '#ff00ff';
+      ctx.fillRect(
+        col * pixelSize,
+        row * pixelSize,
+        pixelSize + 0.5,
+        pixelSize + 0.5,
+      );
+    }
+  }
+
+  spriteCanvasCache.set(key, offscreen);
+  // Limit cache size
+  if (spriteCanvasCache.size > 200) {
+    const firstKey = spriteCanvasCache.keys().next().value;
+    if (firstKey) spriteCanvasCache.delete(firstKey);
+  }
+
+  return offscreen;
+}
+
 // ─── Context menu / Catalog popup ──────────────────────────────────────
 interface ContextMenuState {
   x: number;
@@ -354,39 +98,7 @@ interface CatalogPopupState {
 
 type PixelTool = 'select' | 'move' | 'rotate' | 'delete' | 'crt';
 
-// ─── Helper: render sprite to canvas ───────────────────────────────────
-function drawSprite(
-  ctx: CanvasRenderingContext2D,
-  sprite: SpriteData,
-  x: number,
-  y: number,
-  pixelSize: number,
-  rotationSteps: number = 0,
-) {
-  const size = SPRITE_SIZE;
-  for (let row = 0; row < size; row++) {
-    for (let col = 0; col < size; col++) {
-      let srcRow = row;
-      let srcCol = col;
-      const steps = ((rotationSteps % 4) + 4) % 4;
-      if (steps === 1) { srcRow = col; srcCol = size - 1 - row; }
-      else if (steps === 2) { srcRow = size - 1 - row; srcCol = size - 1 - col; }
-      else if (steps === 3) { srcRow = size - 1 - col; srcCol = row; }
-
-      const palKey = sprite[srcRow]?.[srcCol];
-      if (!palKey) continue;
-      ctx.fillStyle = PAL[palKey as PalKey] || '#ff00ff';
-      ctx.fillRect(
-        x + col * pixelSize,
-        y + row * pixelSize,
-        pixelSize + 0.5,
-        pixelSize + 0.5,
-      );
-    }
-  }
-}
-
-// ─── Mini sprite thumbnail ─────────────────────────────────────────────
+// ─── Mini sprite thumbnail (no caching needed, small) ──────────────────
 function drawMiniSprite(
   ctx: CanvasRenderingContext2D,
   sprite: SpriteData,
@@ -480,7 +192,6 @@ export default function PixelRoomEditor() {
       const cy = canvasHeight / 2;
       const roomCX = (roomBounds.minX + roomBounds.maxX) / 2;
       const roomCY = (roomBounds.minY + roomBounds.maxY) / 2;
-      // Isometric projection relative to room center
       const relX = wx - roomCX;
       const relY = wy - roomCY;
       const iso = isoProject(relX, relY, tileW);
@@ -607,9 +318,27 @@ export default function PixelRoomEditor() {
     const currentTileH = currentTileW / 2;
     const spritePixelSize = zoom * 1.2;
 
+    // ── Find window positions for light effects ──
+    const windowPositions: { wx: number; wy: number }[] = [];
+    for (const op of openings) {
+      if (op.type !== 'window') continue;
+      const wall = walls.find(w => w.id === op.wallId);
+      if (!wall) continue;
+      const dx = wall.end.x - wall.start.x;
+      const dy = wall.end.y - wall.start.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len === 0) continue;
+      const nx = dx / len;
+      const ny = dy / len;
+      const midM = op.positionAlongWall + op.width / 2;
+      windowPositions.push({
+        wx: wall.start.x + nx * midM,
+        wy: wall.start.y + ny * midM,
+      });
+    }
+
     // ── Draw floor tiles (isometric diamond grid) ──
     if (walls.length > 0) {
-      // Build wall polygon for clipping
       ctx.save();
       if (walls.length >= 3) {
         ctx.beginPath();
@@ -623,7 +352,6 @@ export default function PixelRoomEditor() {
         ctx.clip();
       }
 
-      // Tile the floor area
       const step = GRID_SNAP_M;
       const padTiles = 2;
       const minTX = Math.floor((roomBounds.minX - padTiles) / step) * step;
@@ -637,55 +365,95 @@ export default function PixelRoomEditor() {
           const tilePxW = step * currentTileW;
           const tilePxH = step * currentTileH;
 
-          // Warm wood color with variation for handpainted feel
+          // Warm wood color with variation
           const hash = ((Math.floor(tx * 4) * 7 + Math.floor(ty * 4) * 13) & 0xFF);
           const colorIdx = hash % 5;
           const tileColors = ['#d4bc8a', '#cdb480', '#c8ae78', '#d0b888', '#c4a870'];
           const baseColor = tileColors[colorIdx];
 
-          drawDiamond(ctx, center.sx, center.sy, tilePxW, tilePxH, baseColor, '#b89860');
+          // Thin grout/joint line (shadow between tiles)
+          drawDiamond(ctx, center.sx, center.sy, tilePxW + 0.5, tilePxH + 0.5, '#a08050');
+          drawDiamond(ctx, center.sx, center.sy, tilePxW - 0.5, tilePxH - 0.5, baseColor);
 
-          // Subtle wood grain
-          if (hash % 3 === 0) {
-            const grainX = center.sx + (hash % 5 - 2) * tilePxW * 0.1;
-            const grainY = center.sy + ((hash >> 2) % 3 - 1) * tilePxH * 0.1;
-            ctx.fillStyle = colorIdx % 2 === 0 ? '#dcc898' : '#b89860';
-            ctx.fillRect(grainX, grainY, Math.max(1, tilePxW * 0.15), Math.max(1, tilePxH * 0.08));
+          // Wood grain: 2-3 subtle lines per tile
+          const grainCount = 2 + (hash % 2);
+          for (let g = 0; g < grainCount; g++) {
+            const grainOffset = (g + 1) / (grainCount + 1);
+            const gx1 = center.sx - tilePxW * 0.35 + tilePxW * 0.7 * grainOffset;
+            const gy1 = center.sy - tilePxH * 0.15;
+            const gx2 = gx1 + tilePxW * 0.05;
+            const gy2 = center.sy + tilePxH * 0.15;
+            ctx.strokeStyle = (hash + g) % 3 === 0 ? '#dcc898' : '#b89860';
+            ctx.lineWidth = 0.5;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(gx1, gy1);
+            ctx.lineTo(gx2, gy2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
           }
+
+          // Highlight on top-left edge (1px light line)
+          ctx.save();
+          ctx.globalAlpha = 0.2;
+          ctx.strokeStyle = '#fff8f0';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(center.sx - tilePxW * 0.45, center.sy);
+          ctx.lineTo(center.sx, center.sy - tilePxH * 0.45);
+          ctx.stroke();
+          ctx.restore();
         }
       }
+
+      // ── Window light effect on floor ──
+      for (const wp of windowPositions) {
+        const { sx: wsx, sy: wsy } = worldToScreen(wp.wx, wp.wy, W, H);
+        const lightRadius = currentTileW * 2;
+        const lightGrad = ctx.createRadialGradient(wsx, wsy, 0, wsx, wsy, lightRadius);
+        lightGrad.addColorStop(0, 'rgba(255,240,200,0.12)');
+        lightGrad.addColorStop(0.5, 'rgba(255,230,180,0.06)');
+        lightGrad.addColorStop(1, 'rgba(255,220,160,0)');
+        ctx.fillStyle = lightGrad;
+        ctx.fillRect(wsx - lightRadius, wsy - lightRadius, lightRadius * 2, lightRadius * 2);
+      }
+
       ctx.restore();
     }
 
     // ── Draw walls (isometric 3D walls with height) ──
-    // Sort walls: draw back walls first (higher world Y first for isometric)
     const sortedWalls = [...walls].sort((a, b) => {
       const aY = Math.min(a.start.y, a.end.y);
       const bY = Math.min(b.start.y, b.end.y);
-      return aY - bY;  // draw walls with smaller Y (back) first
+      return aY - bY;
     });
 
-    const wallHeight = 0.8; // visual wall height in world units
+    const wallHeight = 0.8;
+    const roomMidY = (roomBounds.minY + roomBounds.maxY) / 2;
+    const roomMidX = (roomBounds.minX + roomBounds.maxX) / 2;
+
     for (const w of sortedWalls) {
       const p1 = worldToScreen(w.start.x, w.start.y, W, H);
       const p2 = worldToScreen(w.end.x, w.end.y, W, H);
-
-      // Wall top position (shifted up by wallHeight in iso projection)
       const wallUpPx = wallHeight * currentTileH;
 
-      // Determine if this is a "back" wall (top/left) or "front" wall
       const midY = (w.start.y + w.end.y) / 2;
-      const roomMidY = (roomBounds.minY + roomBounds.maxY) / 2;
       const isBackWall = midY < roomMidY;
       const midX = (w.start.x + w.end.x) / 2;
-      const roomMidX = (roomBounds.minX + roomBounds.maxX) / 2;
       const isLeftWall = midX < roomMidX;
 
-      // Wall colors - pastel LoM style
       const wallTopColor = w.color || '#e8d8c0';
       const wallFrontColor = isBackWall || isLeftWall ? '#c8b8a0' : '#a89878';
 
-      // Draw wall front face (quadrilateral)
+      // Check for openings on this wall
+      const wallOpenings = openings.filter(op => op.wallId === w.id);
+      const wallDx = w.end.x - w.start.x;
+      const wallDy = w.end.y - w.start.y;
+      const wallLen = Math.sqrt(wallDx * wallDx + wallDy * wallDy);
+      const wallNx = wallLen > 0 ? wallDx / wallLen : 0;
+      const wallNy = wallLen > 0 ? wallDy / wallLen : 0;
+
+      // Draw wall front face
       ctx.beginPath();
       ctx.moveTo(p1.sx, p1.sy);
       ctx.lineTo(p2.sx, p2.sy);
@@ -698,7 +466,36 @@ export default function PixelRoomEditor() {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Draw wall top face (parallelogram for depth illusion)
+      // Stucco texture pattern (random dots for plaster feel)
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      const stuccoSeed = Math.abs(Math.round(w.start.x * 100 + w.start.y * 73));
+      for (let i = 0; i < 20; i++) {
+        const px = p1.sx + ((stuccoSeed * (i + 1) * 17) % 1000) / 1000 * (p2.sx - p1.sx);
+        const py = p1.sy - wallUpPx + ((stuccoSeed * (i + 1) * 23) % 1000) / 1000 * wallUpPx;
+        ctx.fillStyle = i % 2 === 0 ? '#fff8f0' : '#8a7a60';
+        ctx.fillRect(px, py, 1, 1);
+      }
+      ctx.restore();
+
+      // Moulding line at top of wall
+      ctx.save();
+      ctx.strokeStyle = '#d8c8a8';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy - wallUpPx + 2);
+      ctx.lineTo(p2.sx, p2.sy - wallUpPx + 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#b8a888';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy - wallUpPx + 4);
+      ctx.lineTo(p2.sx, p2.sy - wallUpPx + 4);
+      ctx.stroke();
+      ctx.restore();
+
+      // Wall top face (parallelogram)
       const topDepth = currentTileH * 0.06;
       ctx.beginPath();
       ctx.moveTo(p1.sx, p1.sy - wallUpPx);
@@ -724,40 +521,137 @@ export default function PixelRoomEditor() {
       ctx.fillStyle = '#2a1f14';
       ctx.fill();
       ctx.restore();
-    }
 
-    // ── Draw openings ──
-    ctx.strokeStyle = PAL.skyBlue;
-    ctx.lineWidth = 2;
-    for (const op of openings) {
-      const wall = walls.find(w => w.id === op.wallId);
-      if (!wall) continue;
-      const dx = wall.end.x - wall.start.x;
-      const dy = wall.end.y - wall.start.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len === 0) continue;
-      const nx = dx / len;
-      const ny = dy / len;
-      const startM = op.positionAlongWall;
-      const endM = startM + op.width;
-      const o1 = worldToScreen(wall.start.x + nx * startM, wall.start.y + ny * startM, W, H);
-      const o2 = worldToScreen(wall.start.x + nx * endM, wall.start.y + ny * endM, W, H);
-      ctx.beginPath();
-      ctx.moveTo(o1.sx, o1.sy);
-      ctx.lineTo(o2.sx, o2.sy);
-      ctx.stroke();
-      if (op.type === 'door') {
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.arc(o1.sx, o1.sy, Math.abs(o2.sx - o1.sx) || Math.abs(o2.sy - o1.sy), 0, Math.PI / 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
+      // ── Draw openings on this wall ──
+      for (const op of wallOpenings) {
+        const startM = op.positionAlongWall;
+        const endM = startM + op.width;
+        const o1 = worldToScreen(w.start.x + wallNx * startM, w.start.y + wallNy * startM, W, H);
+        const o2 = worldToScreen(w.start.x + wallNx * endM, w.start.y + wallNy * endM, W, H);
+
+        const opHeight = op.height * currentTileH;
+        const opElevation = op.elevation * currentTileH;
+
+        if (op.type === 'door') {
+          // Door: opening in wall from floor to door height
+          const doorTop = wallUpPx * 0.9;
+
+          // Cut out door opening (draw dark inside)
+          ctx.fillStyle = '#1a1208';
+          ctx.beginPath();
+          ctx.moveTo(o1.sx, o1.sy);
+          ctx.lineTo(o2.sx, o2.sy);
+          ctx.lineTo(o2.sx, o2.sy - doorTop);
+          ctx.lineTo(o1.sx, o1.sy - doorTop);
+          ctx.closePath();
+          ctx.fill();
+
+          // Door frame
+          ctx.strokeStyle = PAL.darkBrown;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(o1.sx, o1.sy);
+          ctx.lineTo(o1.sx, o1.sy - doorTop);
+          ctx.lineTo(o2.sx, o2.sy - doorTop);
+          ctx.lineTo(o2.sx, o2.sy);
+          ctx.stroke();
+
+          // Open door panel (angled)
+          const doorPanelW = Math.abs(o2.sx - o1.sx) * 0.3;
+          ctx.save();
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = PAL.brown;
+          ctx.beginPath();
+          ctx.moveTo(o1.sx, o1.sy);
+          ctx.lineTo(o1.sx - doorPanelW, o1.sy - 3);
+          ctx.lineTo(o1.sx - doorPanelW, o1.sy - doorTop + 3);
+          ctx.lineTo(o1.sx, o1.sy - doorTop);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = PAL.darkBrown;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // Door handle
+          ctx.fillStyle = PAL.golden;
+          ctx.fillRect(o1.sx - doorPanelW + 3, o1.sy - doorTop * 0.45, 2, 3);
+          ctx.restore();
+
+        } else if (op.type === 'window') {
+          // Window: opening at elevation
+          const winBottom = opElevation;
+          const winTop = opElevation + opHeight;
+          const winBottomPx = Math.min(winBottom, wallUpPx * 0.95);
+          const winTopPx = Math.min(winTop, wallUpPx);
+
+          // Window hole
+          ctx.fillStyle = '#0d1b2a';
+          ctx.beginPath();
+          ctx.moveTo(o1.sx, o1.sy - winBottomPx);
+          ctx.lineTo(o2.sx, o2.sy - winBottomPx);
+          ctx.lineTo(o2.sx, o2.sy - winTopPx);
+          ctx.lineTo(o1.sx, o1.sy - winTopPx);
+          ctx.closePath();
+          ctx.fill();
+
+          // Glass (semi-transparent blue)
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          ctx.fillStyle = '#88b8d0';
+          ctx.beginPath();
+          ctx.moveTo(o1.sx + 1, o1.sy - winBottomPx - 1);
+          ctx.lineTo(o2.sx - 1, o2.sy - winBottomPx - 1);
+          ctx.lineTo(o2.sx - 1, o2.sy - winTopPx + 1);
+          ctx.lineTo(o1.sx + 1, o1.sy - winTopPx + 1);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+
+          // Glass highlight (light reflection)
+          ctx.save();
+          ctx.globalAlpha = 0.25;
+          ctx.fillStyle = '#e0f0ff';
+          const hlW = Math.abs(o2.sx - o1.sx) * 0.3;
+          const hlH = (winTopPx - winBottomPx) * 0.6;
+          ctx.fillRect(o1.sx + 2, o1.sy - winTopPx + 2, hlW, hlH);
+          ctx.restore();
+
+          // Window frame
+          ctx.strokeStyle = PAL.cream;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.rect(o1.sx, o1.sy - winTopPx, o2.sx - o1.sx, winTopPx - winBottomPx);
+          ctx.stroke();
+
+          // Cross frame
+          ctx.strokeStyle = PAL.cream;
+          ctx.lineWidth = 1;
+          const winCx = (o1.sx + o2.sx) / 2;
+          const winCy = o1.sy - (winBottomPx + winTopPx) / 2;
+          ctx.beginPath();
+          ctx.moveTo(winCx, o1.sy - winTopPx);
+          ctx.lineTo(winCx, o1.sy - winBottomPx);
+          ctx.moveTo(o1.sx, winCy);
+          ctx.lineTo(o2.sx, winCy);
+          ctx.stroke();
+
+          // Light streaming from window (warm glow on wall below)
+          ctx.save();
+          ctx.globalAlpha = 0.08;
+          const lightGrad2 = ctx.createLinearGradient(
+            (o1.sx + o2.sx) / 2, o1.sy - winBottomPx,
+            (o1.sx + o2.sx) / 2, o1.sy
+          );
+          lightGrad2.addColorStop(0, '#ffe8c0');
+          lightGrad2.addColorStop(1, 'rgba(255,232,192,0)');
+          ctx.fillStyle = lightGrad2;
+          ctx.fillRect(o1.sx, o1.sy - winBottomPx, o2.sx - o1.sx, winBottomPx);
+          ctx.restore();
+        }
       }
     }
 
     // ── Draw furniture (sorted by iso depth: painter's algorithm) ──
     const sortedFurniture = [...furniture].sort((a, b) => {
-      // Sort by isometric depth (wx + wy gives depth)
       const depthA = a.position[0] + a.position[2];
       const depthB = b.position[0] + b.position[2];
       return depthA - depthB;
@@ -765,24 +659,32 @@ export default function PixelRoomEditor() {
 
     for (const f of sortedFurniture) {
       const { sx: fx, sy: fy } = worldToScreen(f.position[0], f.position[2], W, H);
-      const sprite = getSpriteForType(f.type);
       const spriteSize = SPRITE_SIZE * spritePixelSize;
       const halfSprite = spriteSize / 2;
 
-      // Isometric shadow (diamond-shaped ellipse)
+      // Isometric shadow (elongated, extending to bottom-right)
       ctx.save();
-      ctx.globalAlpha = 0.2;
+      ctx.globalAlpha = 0.18;
       ctx.fillStyle = '#2a1f14';
       ctx.beginPath();
-      ctx.ellipse(fx + 2, fy + halfSprite * 0.3 + 2, halfSprite * 0.7, halfSprite * 0.25, 0, 0, Math.PI * 2);
+      ctx.ellipse(fx + 3, fy + halfSprite * 0.35 + 3, halfSprite * 0.75, halfSprite * 0.22, Math.PI / 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
       // Rotation steps
       const rotSteps = Math.round((f.rotation[1] / (Math.PI / 2))) % 4;
 
-      // Draw sprite (positioned so bottom-center aligns with iso position)
-      drawSprite(ctx, sprite, fx - halfSprite, fy - halfSprite * 0.7, spritePixelSize, rotSteps);
+      // Draw sprite from cache
+      const cachedCanvas = getCachedSprite(f.type, spritePixelSize, rotSteps);
+      ctx.drawImage(cachedCanvas, fx - halfSprite, fy - halfSprite * 0.7);
+
+      // Subtle floor reflection (very faint, flipped vertically)
+      ctx.save();
+      ctx.globalAlpha = 0.04;
+      ctx.translate(fx - halfSprite, fy + halfSprite * 0.35);
+      ctx.scale(1, -0.3);
+      ctx.drawImage(cachedCanvas, 0, 0);
+      ctx.restore();
 
       // Selection highlight (blinking pixel frame)
       if (f.id === selectedFurnitureId) {
@@ -1175,7 +1077,7 @@ export default function PixelRoomEditor() {
     const cats: { label: string; items: typeof FURNITURE_CATALOG }[] = [
       { label: 'TABLE', items: FURNITURE_CATALOG.filter(f => ['counter','table_square','table_round','bar_table','kitchen_island','reception_desk','desk'].includes(f.type)) },
       { label: 'SEAT', items: FURNITURE_CATALOG.filter(f => ['chair','stool','sofa','bench'].includes(f.type)) },
-      { label: 'STORAGE', items: FURNITURE_CATALOG.filter(f => ['shelf','bookcase','wardrobe','shoe_rack','display_case'].includes(f.type)) },
+      { label: 'STORAGE', items: FURNITURE_CATALOG.filter(f => ['shelf','bookcase','wardrobe','shoe_rack','display_case','showcase'].includes(f.type)) },
       { label: 'APPLIANCE', items: FURNITURE_CATALOG.filter(f => ['fridge','sink','washing_machine','register','cash_register','tv_monitor','air_conditioner'].includes(f.type)) },
       { label: 'DECOR', items: FURNITURE_CATALOG.filter(f => ['plant','flower_pot','rug','mirror','pendant_light','ceiling_fan','clock','curtain','partition','menu_board','coat_rack','umbrella_stand','trash_can'].includes(f.type)) },
     ];

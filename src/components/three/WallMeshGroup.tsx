@@ -15,8 +15,11 @@ import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 // useFrame内でのnew演算子を避けるため、コンポーネント外にベクトルを確保
 const _camDir = new THREE.Vector3();
 const _wallNormal3D = new THREE.Vector3();
-// フレームスロットリング: 壁の透過計算を2フレームに1回に間引く
+// フレームスロットリング: 壁の透過計算を間引く
 let _wallFrameCounter = 0;
+// カメラ位置キャッシュ: 移動量が閾値以下なら壁透過計算をスキップ
+const _prevCamPos = new THREE.Vector3();
+let _camPosInitialized = false;
 
 /**
  * 壁の2D法線を計算する（左側方向）
@@ -933,7 +936,27 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
       return;
     }
 
-    // opacityが安定している場合は2フレームに1回だけ計算
+    // カメラ位置変化量チェック: 閾値以下なら完全スキップ（最大の最適化）
+    const camPos = camera.position;
+    if (_camPosInitialized) {
+      const dx = camPos.x - _prevCamPos.x;
+      const dy = camPos.y - _prevCamPos.y;
+      const dz = camPos.z - _prevCamPos.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+      if (distSq < 0.0001) { // 0.01^2 = カメラ移動量0.01未満
+        // opacityのlerp収束だけ処理
+        const delta = targetOpacityRef.current - currentOpacityRef.current;
+        if (Math.abs(delta) >= 0.002) {
+          currentOpacityRef.current += delta * 0.08;
+          materialRef.current.opacity = currentOpacityRef.current;
+        }
+        return;
+      }
+    }
+    _prevCamPos.copy(camPos);
+    _camPosInitialized = true;
+
+    // opacityが安定している場合は3フレームに1回だけ計算
     const opacityDelta = Math.abs(targetOpacityRef.current - currentOpacityRef.current);
     if (opacityDelta < 0.005) {
       _wallFrameCounter++;

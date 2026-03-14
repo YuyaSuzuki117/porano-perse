@@ -11,6 +11,8 @@ import { useCeilingTexture } from '@/hooks/useCeilingTexture';
 
 // useFrame内でのnew演算子を避けるためコンポーネント外に確保
 const _ceilCamDir = new THREE.Vector3();
+const _ceilPrevCamPos = new THREE.Vector3();
+let _ceilCamInitialized = false;
 
 interface CeilingMeshProps {
   walls: WallSegment[];
@@ -141,6 +143,26 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
   // カメラ仰角に基づく天井の自動フェード
   useFrame(({ camera }) => {
     if (!ceilingMatRef.current) return;
+
+    // カメラ位置変化量チェック: 閾値以下なら計算スキップ
+    const cp = camera.position;
+    if (_ceilCamInitialized) {
+      const dx = cp.x - _ceilPrevCamPos.x;
+      const dy = cp.y - _ceilPrevCamPos.y;
+      const dz = cp.z - _ceilPrevCamPos.z;
+      if (dx * dx + dy * dy + dz * dz < 0.0001) {
+        // opacity lerp収束のみ処理
+        const baseOpacity = ceilingVisible ? 0.7 : 0.0;
+        const delta = baseOpacity - currentCeilingOpacityRef.current;
+        if (Math.abs(delta) > 0.001) {
+          currentCeilingOpacityRef.current += delta * 0.08;
+          ceilingMatRef.current.opacity = currentCeilingOpacityRef.current;
+        }
+        return;
+      }
+    }
+    _ceilPrevCamPos.copy(cp);
+    _ceilCamInitialized = true;
 
     // カメラの向きからY成分（下向きの度合い）を取得
     camera.getWorldDirection(_ceilCamDir);

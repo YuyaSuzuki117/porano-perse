@@ -89,15 +89,15 @@ interface FurniturePBR {
   metalness: number;
 }
 
-/** 素材別PBRプリセット — Panelka風の温かみある質感 */
+/** 素材別PBRプリセット — リアルな建材に近い値 */
 const MATERIAL_PBR: Record<FurnitureMaterial, FurniturePBR> = {
-  wood:    { roughness: 0.65, metalness: 0.02 },
-  metal:   { roughness: 0.12, metalness: 0.85 },
-  fabric:  { roughness: 0.98, metalness: 0.0  },
-  leather: { roughness: 0.45, metalness: 0.05 },
-  glass:   { roughness: 0.05, metalness: 0.1  },
-  plastic: { roughness: 0.35, metalness: 0.0  },
-  stone:   { roughness: 0.85, metalness: 0.02 },
+  wood:    { roughness: 0.58, metalness: 0.03 },  // ワックスがけされた木
+  metal:   { roughness: 0.1,  metalness: 0.9  },  // ブラッシュドメタル
+  fabric:  { roughness: 0.95, metalness: 0.0  },  // ファブリック
+  leather: { roughness: 0.4,  metalness: 0.06 },  // なめし革
+  glass:   { roughness: 0.02, metalness: 0.08 },  // クリアガラス
+  plastic: { roughness: 0.3,  metalness: 0.0  },  // ツヤのあるプラスチック
+  stone:   { roughness: 0.82, metalness: 0.03 },  // 天然石
 };
 
 /* ─── モジュールスコープ ジオメトリ/マテリアルキャッシュ ─────────── */
@@ -1105,13 +1105,13 @@ function Counter({ scale, color, palette, pbr, selected }: FurniturePartProps) {
   return (
     <group>
       {/* 天板（オーバーハング強化 + 面取り） */}
-      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={4} position={[0, h, 0]} castShadow receiveShadow>
-        <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.7} metalness={pbr.metalness} clearcoat={0.1} clearcoatRoughness={0.5} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0} />
+      <RoundedBox args={[w + 0.06, 0.05, d + 0.04]} radius={0.015} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.65} metalness={pbr.metalness + 0.02} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={1.2} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* トリムライン（天板と本体の間） */}
       <mesh position={[0, h - 0.035, 0]}>
         <boxGeometry args={[w + 0.02, 0.008, d + 0.01]} />
-        <meshPhysicalMaterial color={color ? adjustColor(color, -35) : palette.metal} roughness={0.3} metalness={0.1} clearcoat={0.3} clearcoatRoughness={0.2} />
+        <meshPhysicalMaterial color={color ? adjustColor(color, -35) : palette.metal} roughness={0.2} metalness={0.15} clearcoat={0.4} clearcoatRoughness={0.15} envMapIntensity={2.0} />
       </mesh>
       {/* 本体 */}
       <RoundedBox args={[bodyW, h - 0.08, bodyD]} radius={0.01} position={[0, (h - 0.08) / 2 + 0.04, 0]} castShadow>
@@ -1175,7 +1175,7 @@ function TableSquare({ scale, color, palette, pbr, selected }: FurniturePartProp
   return (
     <group>
       {/* 天板 — 面取りを強化した木目風の自然な艶 */}
-      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={4} position={[0, h, 0]} castShadow receiveShadow>
+      <RoundedBox args={[w, 0.04, d]} radius={0.018} smoothness={2} position={[0, h, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial color={topColor} roughness={pbr.roughness * 0.75} metalness={pbr.metalness + 0.02} clearcoat={0.2} clearcoatRoughness={0.4} emissive={topColor} emissiveIntensity={selected ? 0.15 : 0.01} />
       </RoundedBox>
       {/* 天板エッジハイライト */}
@@ -1293,7 +1293,7 @@ function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
       <RoundedBox
         args={[w - 0.03, 0.04, d - 0.03]}
         radius={0.02}
-        smoothness={4}
+        smoothness={2}
         position={[0, seatH + 0.032, 0.005]}
         rotation={[-0.03, 0, 0]}
         castShadow
@@ -1304,7 +1304,7 @@ function Chair({ scale, color, palette, pbr, selected }: FurniturePartProps) {
       <RoundedBox
         args={[w - 0.01, h * 0.45, 0.025]}
         radius={0.02}
-        smoothness={4}
+        smoothness={2}
         position={[0, h * 0.73, -d / 2 + 0.015]}
         rotation={[0.1, 0, 0]}
         castShadow
@@ -1437,11 +1437,11 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           key={`seat-${i}`}
           args={[cushionW, h * 0.25, d * 0.7]}
           radius={0.06}
-          smoothness={4}
+          smoothness={2}
           position={[side * (cushionW / 2 + 0.01), h * 0.38, d * 0.05]}
           castShadow
         >
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} roughness={0.98} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.35} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -8)} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={cushionColor} emissive={cushionColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 座面クッション中央の膨らみ（ピロー感） */}
@@ -1451,7 +1451,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           scale={[cushionW * 0.7, 1, d * 0.5]}
           frustumCulled>
           <sphereGeometry args={[0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} roughness={0.98} metalness={0} transparent opacity={0.7} sheen={0.3} sheenColor={cushionColor} />
+          <meshPhysicalMaterial color={adjustColor(cushionColor, -5)} roughness={0.92} metalness={0} transparent opacity={0.7} sheen={0.4} sheenRoughness={0.55} sheenColor={cushionColor} />
         </mesh>
       ))}
       {/* 背もたれクッション（2分割）— より丸みのある形状 */}
@@ -1460,11 +1460,11 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           key={`back-${i}`}
           args={[cushionW, h * 0.5, d * 0.22]}
           radius={0.05}
-          smoothness={4}
+          smoothness={2}
           position={[side * (cushionW / 2 + 0.01), h * 0.6, -d * 0.33]}
           castShadow
         >
-          <meshPhysicalMaterial color={backColor} roughness={0.98} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.35} sheenColor={backSheen} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
+          <meshPhysicalMaterial color={backColor} roughness={0.92} metalness={0} clearcoat={0} clearcoatRoughness={0.6} sheen={0.5} sheenRoughness={0.6} sheenColor={backSheen} emissive={backColor} emissiveIntensity={selected ? 0.15 : 0.02} />
         </RoundedBox>
       ))}
       {/* 背もたれフレーム */}
@@ -1482,7 +1482,7 @@ function Sofa({ scale, color, palette, pbr, selected }: FurniturePartProps) {
           key={`arm-${i}`}
           args={[armW, h * 0.4, d * 0.9]}
           radius={0.04}
-          smoothness={4}
+          smoothness={2}
           position={[side * (w / 2 - armW / 2 - 0.01), h * 0.42, -d * 0.02]}
           castShadow
         >
@@ -1916,25 +1916,28 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
           <meshStandardMaterial color="#1a1a1a" roughness={0.4} metalness={0.2} />
         </mesh>
       ))}
-      {/* ガラスパネル（meshPhysicalMaterial + transmission） */}
+      {/* ガラスパネル（meshPhysicalMaterial + transmission + thickness でリアルガラス） */}
       <mesh position={[0, baseH + footH + (h - baseH - topH - footH) / 2, 0]}>
         <boxGeometry args={[w - 0.01, h - baseH - topH - footH, d - 0.01]} />
         <meshPhysicalMaterial
-          color={color}
+          color={color || '#e8f0f8'}
           transparent
-          opacity={0.15}
-          roughness={0.02}
-          metalness={0.05}
-          transmission={0.8}
-          ior={1.5}
-          thickness={0.01}
+          opacity={0.12}
+          roughness={0.01}
+          metalness={0.02}
+          transmission={0.92}
+          ior={1.52}
+          thickness={0.04}
+          envMapIntensity={2.5}
+          clearcoat={0.3}
+          clearcoatRoughness={0.05}
         />
       </mesh>
       {/* コーナーフレーム（4本の縦エッジ） */}
       {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z], i) => (
         <mesh key={`edge-${i}`} position={[x * (w / 2 - 0.005), baseH + footH + (h - baseH - topH - footH) / 2, z * (d / 2 - 0.005)]}>
           <cylinderGeometry args={[0.005, 0.005, h - baseH - topH - footH, 6]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.3} metalness={0.4} envMapIntensity={1.5} />
+          <meshPhysicalMaterial color="#1a1a1a" roughness={0.15} metalness={0.6} envMapIntensity={2.0} clearcoat={0.5} clearcoatRoughness={0.1} />
         </mesh>
       ))}
       {/* ガラス棚板（2枚） */}
@@ -1944,20 +1947,21 @@ function DisplayCase({ scale, color, palette: _palette }: FurniturePartProps) {
           <mesh key={`gshelf-${i}`} position={[0, shelfY, 0]}>
             <boxGeometry args={[w - 0.04, 0.005, d - 0.04]} />
             <meshPhysicalMaterial
-              color="#e8e8e8"
+              color="#e8eef4"
               transparent
-              opacity={0.35}
-              roughness={0.02}
-              transmission={0.8}
-              ior={1.5}
-              thickness={0.005}
+              opacity={0.3}
+              roughness={0.01}
+              transmission={0.88}
+              ior={1.52}
+              thickness={0.008}
+              envMapIntensity={1.8}
             />
           </mesh>
         );
       })}
-      {/* 天板（ベースと同じ仕上げ、少し幅広） */}
+      {/* 天板（ベースと同じ仕上げ、少し幅広 — 漆仕上げ風） */}
       <RoundedBox args={[w + 0.02, topH, d + 0.02]} radius={0.006} position={[0, h - topH / 2, 0]} castShadow>
-        <meshStandardMaterial color="#2a2018" roughness={0.5} metalness={0.1} />
+        <meshPhysicalMaterial color="#2a2018" roughness={0.4} metalness={0.12} clearcoat={0.2} clearcoatRoughness={0.3} emissive="#2a2018" emissiveIntensity={0.015} />
       </RoundedBox>
       {/* 内部照明（微弱暖色ポイントライト） */}
       <pointLight position={[0, h * 0.6, 0]} intensity={0.15} color="#FFF5E0" distance={1.5} decay={2} />
@@ -2018,34 +2022,34 @@ function Mirror({ scale, color, palette }: FurniturePartProps) {
     <group>
       {/* フレーム上辺 */}
       <RoundedBox args={[w + frameW * 2, frameW, frameDepth]} radius={0.005} position={[0, centerY + h / 2 + frameW / 2, 0]} castShadow>
-        <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.1} />
+        <meshPhysicalMaterial color={frameColor} roughness={0.25} metalness={0.2} clearcoat={0.4} clearcoatRoughness={0.15} envMapIntensity={1.8} emissive={frameColor} emissiveIntensity={0.01} />
       </RoundedBox>
       {/* フレーム下辺 */}
       <RoundedBox args={[w + frameW * 2, frameW, frameDepth]} radius={0.005} position={[0, centerY - h / 2 - frameW / 2, 0]} castShadow>
-        <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.1} />
+        <meshPhysicalMaterial color={frameColor} roughness={0.25} metalness={0.2} clearcoat={0.4} clearcoatRoughness={0.15} envMapIntensity={1.8} emissive={frameColor} emissiveIntensity={0.01} />
       </RoundedBox>
       {/* フレーム左辺 */}
       <RoundedBox args={[frameW, h, frameDepth]} radius={0.005} position={[-w / 2 - frameW / 2, centerY, 0]} castShadow>
-        <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.1} />
+        <meshPhysicalMaterial color={frameColor} roughness={0.25} metalness={0.2} clearcoat={0.4} clearcoatRoughness={0.15} envMapIntensity={1.8} emissive={frameColor} emissiveIntensity={0.01} />
       </RoundedBox>
       {/* フレーム右辺 */}
       <RoundedBox args={[frameW, h, frameDepth]} radius={0.005} position={[w / 2 + frameW / 2, centerY, 0]} castShadow>
-        <meshStandardMaterial color={frameColor} roughness={0.4} metalness={0.1} />
+        <meshPhysicalMaterial color={frameColor} roughness={0.25} metalness={0.2} clearcoat={0.4} clearcoatRoughness={0.15} envMapIntensity={1.8} emissive={frameColor} emissiveIntensity={0.01} />
       </RoundedBox>
-      {/* ミラー面 */}
+      {/* ミラー面 — 高い映り込み */}
       <mesh position={[0, centerY, frameDepth / 2 - 0.002]}>
         <boxGeometry args={[w, h, 0.003]} />
-        <meshPhysicalMaterial color={color || palette.metal} metalness={0.98} roughness={0.02} envMapIntensity={1.5} />
+        <meshPhysicalMaterial color={color || palette.metal} metalness={0.99} roughness={0.01} envMapIntensity={3.0} clearcoat={0.5} clearcoatRoughness={0.02} />
       </mesh>
       {/* ミラー下部の小物棚 */}
       <RoundedBox args={[w * 0.7, 0.015, 0.06]} radius={0.004} position={[0, centerY - h / 2 - frameW - 0.005, frameDepth / 2 - 0.01]}>
-        <meshStandardMaterial color="#666" roughness={0.3} metalness={0.15} />
+        <meshPhysicalMaterial color="#666" roughness={0.2} metalness={0.2} clearcoat={0.3} clearcoatRoughness={0.2} envMapIntensity={1.5} />
       </RoundedBox>
       {/* 壁マウントブラケット（背面） */}
       {[-1, 1].map((side, i) => (
         <mesh key={`mount-${i}`} position={[side * w * 0.3, centerY, -frameDepth / 2 - 0.01]}>
           <boxGeometry args={[0.04, 0.06, 0.02]} />
-          <meshStandardMaterial color="#444" roughness={0.5} metalness={0.2} />
+          <meshPhysicalMaterial color="#444" roughness={0.35} metalness={0.3} envMapIntensity={1.2} />
         </mesh>
       ))}
     </group>

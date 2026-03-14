@@ -10,17 +10,19 @@ interface WindowLightBeamsProps {
   walls: WallSegment[];
   openings: Opening[];
   roomHeight: number;
+  qualityLevel?: 'high' | 'medium' | 'low';
 }
 
-/** 光条のprops比較: walls数・openings数・天井高のみで判定 */
+/** 光条のprops比較: walls数・openings数・天井高・品質のみで判定 */
 function lightBeamPropsAreEqual(prev: WindowLightBeamsProps, next: WindowLightBeamsProps): boolean {
   if (prev.walls.length !== next.walls.length) return false;
   if (prev.openings.length !== next.openings.length) return false;
   if (prev.roomHeight !== next.roomHeight) return false;
+  if (prev.qualityLevel !== next.qualityLevel) return false;
   return true;
 }
 
-export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, openings, roomHeight }: WindowLightBeamsProps) {
+export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, openings, roomHeight, qualityLevel = 'high' }: WindowLightBeamsProps) {
   const dayNight = useEditorStore((s) => s.dayNight);
   const isNight = dayNight === 'night';
 
@@ -46,6 +48,9 @@ export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, op
     return Math.max(w, d) * 0.3;
   }, [walls]);
 
+  // lowモードでは完全無効化（hooksの後に配置）
+  if (qualityLevel === 'low') return null;
+
   return (
     <group>
       {windowOpenings.map((op) => {
@@ -59,6 +64,7 @@ export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, op
             beamLength={beamLength}
             roomHeight={roomHeight}
             isNight={isNight}
+            qualityLevel={qualityLevel}
           />
         );
       })}
@@ -72,9 +78,10 @@ interface LightBeamMeshProps {
   beamLength: number;
   roomHeight: number;
   isNight: boolean;
+  qualityLevel: 'high' | 'medium' | 'low';
 }
 
-function LightBeamMesh({ opening, wall, beamLength, isNight }: LightBeamMeshProps) {
+function LightBeamMesh({ opening, wall, beamLength, isNight, qualityLevel }: LightBeamMeshProps) {
   const { geometry, vertexColors } = useMemo(() => {
     const angle = wallAngle(wall);
 
@@ -200,7 +207,7 @@ function LightBeamMesh({ opening, wall, beamLength, isNight }: LightBeamMeshProp
       <meshBasicMaterial
         color={isNight ? '#8888CC' : '#FFF5D6'}
         transparent={true}
-        opacity={isNight ? 0.03 : 0.1}
+        opacity={(isNight ? 0.03 : 0.1) * (qualityLevel === 'medium' ? 0.5 : 1)}
         side={THREE.DoubleSide}
         depthWrite={false}
         blending={THREE.AdditiveBlending}

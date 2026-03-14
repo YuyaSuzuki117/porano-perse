@@ -111,6 +111,65 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
     return (totalIntensity / downlights.length) * 4;
   }, [style.spotlightIntensity, b, styleLighting.downlightIntensityMult, downlights.length]);
 
+  // ── lowモード: ambient + 1 directional (shadow無し) = ライト2個 ──
+  if (qualityLevel === 'low') {
+    return (
+      <>
+        <ambientLight intensity={style.ambientIntensity * b * 1.3} color={ambientColor} />
+        <directionalLight
+          position={[
+            roomBounds.cx + roomBounds.w * 0.6,
+            roomHeight * 2.5,
+            roomBounds.cz + roomBounds.d * 0.4,
+          ]}
+          intensity={1.5 * b}
+          color={lightColor}
+        />
+      </>
+    );
+  }
+
+  // ── mediumモード: ambient + directional(shadow) + hemisphere = ライト3個 ──
+  if (qualityLevel === 'medium') {
+    return (
+      <>
+        <ambientLight intensity={style.ambientIntensity * b * 1.1} color={ambientColor} />
+        <hemisphereLight
+          color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
+          groundColor={styleLighting.groundWarmth}
+          intensity={0.6 * b}
+        />
+        <directionalLight
+          position={[
+            roomBounds.cx + roomBounds.w * 0.6,
+            roomHeight * 2.5,
+            roomBounds.cz + roomBounds.d * 0.4,
+          ]}
+          intensity={1.2 * b}
+          color={lightColor}
+          castShadow
+          shadow-mapSize={[1024, 1024]}
+          shadow-bias={-0.0003}
+          shadow-radius={5}
+          shadow-blurSamples={10}
+          shadow-normalBias={0.03}
+          shadow-camera-near={0.1}
+          shadow-camera-far={roomBounds.maxDim * 2.5}
+          shadow-camera-left={-roomBounds.maxDim * 0.8}
+          shadow-camera-right={roomBounds.maxDim * 0.8}
+          shadow-camera-top={roomBounds.maxDim * 0.8}
+          shadow-camera-bottom={-roomBounds.maxDim * 0.8}
+        />
+        {/* コンタクトシャドウ風グラウンドプレーン */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
+          <planeGeometry args={[roomBounds.w + 2, roomBounds.d + 2]} />
+          <shadowMaterial transparent opacity={0.3} />
+        </mesh>
+      </>
+    );
+  }
+
+  // ── highモード: フルライティング（現状維持） ──
   return (
     <>
       <ambientLight intensity={style.ambientIntensity * b} color={ambientColor} />
@@ -122,18 +181,16 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={0.6 * b}
       />
 
-      {/* バウンスライト（床からの間接光シミュレーション）— lowモードでは省略 */}
-      {qualityLevel !== 'low' && (
-        <hemisphereLight
-          color="#8B7355"
-          groundColor={lerpColor('#F5E6D3', styleLighting.color, 0.3)}
-          intensity={0.35 * b * styleLighting.indirectIntensityMult}
-          position={[roomBounds.cx, 0.1, roomBounds.cz]}
-        />
-      )}
+      {/* バウンスライト（床からの間接光シミュレーション） */}
+      <hemisphereLight
+        color="#8B7355"
+        groundColor={lerpColor('#F5E6D3', styleLighting.color, 0.3)}
+        intensity={0.35 * b * styleLighting.indirectIntensityMult}
+        position={[roomBounds.cx, 0.1, roomBounds.cz]}
+      />
 
-      {/* 暖色アンビエントフィル — 木床/暖色素材からの反射光シミュレーション（lowモードでは省略） */}
-      {qualityLevel !== 'low' && styleLighting.warmFillIntensity > 0 && (
+      {/* 暖色アンビエントフィル — 木床/暖色素材からの反射光シミュレーション */}
+      {styleLighting.warmFillIntensity > 0 && (
         <pointLight
           position={[roomBounds.cx, 0.15, roomBounds.cz]}
           intensity={styleLighting.warmFillIntensity * b * 2}
@@ -143,18 +200,16 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         />
       )}
 
-      {/* リムライト強化 — 背面上方からの深い分離光（lowモードでは省略） */}
-      {qualityLevel !== 'low' && (
-        <directionalLight
-          position={[
-            roomBounds.cx - roomBounds.w * 0.7,
-            roomHeight * 2.0,
-            roomBounds.cz - roomBounds.d * 0.6,
-          ]}
-          intensity={styleLighting.rimIntensity * b}
-          color={lerpColor('#E8E0F0', styleLighting.color, 0.3)}
-        />
-      )}
+      {/* リムライト強化 — 背面上方からの深い分離光 */}
+      <directionalLight
+        position={[
+          roomBounds.cx - roomBounds.w * 0.7,
+          roomHeight * 2.0,
+          roomBounds.cz - roomBounds.d * 0.6,
+        ]}
+        intensity={styleLighting.rimIntensity * b}
+        color={lerpColor('#E8E0F0', styleLighting.color, 0.3)}
+      />
 
       <directionalLight
         position={[
@@ -165,10 +220,10 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.2 * b}
         color={lightColor}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [512, 512] : qualityLevel === 'medium' ? [1024, 1024] : [2048, 2048]}
+        shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0003}
-        shadow-radius={qualityLevel === 'high' ? 8 : 5}
-        shadow-blurSamples={qualityLevel === 'high' ? 20 : 10}
+        shadow-radius={8}
+        shadow-blurSamples={20}
         shadow-normalBias={0.03}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
@@ -184,7 +239,7 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 3}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [256, 256] : qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.001}
         shadow-normalBias={0.02}
       />
@@ -202,11 +257,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 2}
         castShadow
-        shadow-mapSize={qualityLevel === 'low' ? [256, 256] : qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
-        shadow-radius={qualityLevel === 'high' ? 8 : 4}
-        shadow-blurSamples={qualityLevel === 'high' ? 16 : 8}
+        shadow-radius={8}
+        shadow-blurSamples={16}
       />
 
       <spotLight
@@ -242,15 +297,12 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
             color="#FFD090"
             distance={roomBounds.w}
           />
-          {/* lowモードでは暖色補助光を1つに削減 */}
-          {qualityLevel !== 'low' && (
-            <pointLight
-              position={[roomBounds.cx, roomHeight * 0.3, roomBounds.cz + roomBounds.d * 0.4]}
-              intensity={0.3 * b * (effectiveWarmth - 0.5) * 2}
-              color="#FFD090"
-              distance={roomBounds.d}
-            />
-          )}
+          <pointLight
+            position={[roomBounds.cx, roomHeight * 0.3, roomBounds.cz + roomBounds.d * 0.4]}
+            intensity={0.3 * b * (effectiveWarmth - 0.5) * 2}
+            color="#FFD090"
+            distance={roomBounds.d}
+          />
         </>
       )}
 
@@ -269,30 +321,28 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         />
       ))}
 
-      {/* フィルライト（反対側からの柔らかな補助光）— lowモードでは無効 */}
-      {qualityLevel !== 'low' && (
-        <directionalLight
-          position={[
-            roomBounds.cx - roomBounds.w * 0.6,
-            roomHeight * 2.0,
-            roomBounds.cz - roomBounds.d * 0.4,
-          ]}
-          intensity={1.2 * 0.3 * b}
-          color={fillColor}
-          castShadow
-          shadow-mapSize={qualityLevel === 'medium' ? [512, 512] : [1024, 1024]}
-          shadow-bias={-0.0003}
-          shadow-radius={qualityLevel === 'high' ? 6 : 3}
-          shadow-blurSamples={qualityLevel === 'high' ? 16 : 8}
-          shadow-normalBias={0.03}
-          shadow-camera-near={0.1}
-          shadow-camera-far={roomBounds.maxDim * 2.5}
-          shadow-camera-left={-roomBounds.maxDim * 0.8}
-          shadow-camera-right={roomBounds.maxDim * 0.8}
-          shadow-camera-top={roomBounds.maxDim * 0.8}
-          shadow-camera-bottom={-roomBounds.maxDim * 0.8}
-        />
-      )}
+      {/* フィルライト（反対側からの柔らかな補助光） */}
+      <directionalLight
+        position={[
+          roomBounds.cx - roomBounds.w * 0.6,
+          roomHeight * 2.0,
+          roomBounds.cz - roomBounds.d * 0.4,
+        ]}
+        intensity={1.2 * 0.3 * b}
+        color={fillColor}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-bias={-0.0003}
+        shadow-radius={6}
+        shadow-blurSamples={16}
+        shadow-normalBias={0.03}
+        shadow-camera-near={0.1}
+        shadow-camera-far={roomBounds.maxDim * 2.5}
+        shadow-camera-left={-roomBounds.maxDim * 0.8}
+        shadow-camera-right={roomBounds.maxDim * 0.8}
+        shadow-camera-top={roomBounds.maxDim * 0.8}
+        shadow-camera-bottom={-roomBounds.maxDim * 0.8}
+      />
 
       {/* コンタクトシャドウ風グラウンドプレーン */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
