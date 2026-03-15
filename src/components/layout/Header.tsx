@@ -10,6 +10,7 @@ import { ProjectListModal } from '@/components/ui/ProjectListModal';
 import { QRCodeModal } from '@/components/ui/QRCodeModal';
 import { showToast } from '@/components/ui/Toast';
 import { AuthButton } from '@/components/ui/AuthButton';
+import { CollaborationPanel } from '@/components/ui/CollaborationPanel';
 import { saveProject as saveToSupabase } from '@/lib/project-storage';
 
 interface HeaderProps {
@@ -338,8 +339,10 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         className="hidden"
       />
 
-      {/* Auth + Undo/Redo + Zoom + Screenshot（デスクトップのみ） */}
+      {/* Collab + Auth + Undo/Redo + Zoom + Screenshot（デスクトップのみ） */}
       <div className="hidden md:flex ml-auto items-center gap-1 relative">
+        <CollaborationPanel />
+        <div className="w-px h-5 bg-gray-200 mx-0.5" />
         <AuthButton />
         <div className="w-px h-5 bg-gray-200 mx-0.5" />
         <KeyboardShortcuts />

@@ -30,6 +30,7 @@ import { SelectionOverlay } from '@/components/ui/SelectionOverlay';
 import { exportProposalPDF } from '@/lib/pdf-export';
 import { FURNITURE_CATALOG } from '@/data/furniture';
 import { preloadGLTFModel } from '@/lib/gltf-loader';
+import { joinRoom } from '@/lib/realtime-collab';
 
 const FloorPlanEditor = dynamic(
   () =>
@@ -254,6 +255,19 @@ export default function EditorPage() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [loadFromShareUrl]);
+
+  // URLの ?room= パラメータで共同編集ルームに自動参加
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room');
+    if (roomId) {
+      joinRoom(roomId).then((ok) => {
+        if (ok) {
+          showToast('共同編集ルームに接続しました', 'success');
+        }
+      });
+    }
+  }, []);
 
   // Mキーでミニマップ表示切替
   useEffect(() => {
