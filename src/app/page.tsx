@@ -24,6 +24,8 @@ import { FurnitureContextMenu } from '@/components/ui/FurnitureContextMenu';
 import SeatCounter from '@/components/ui/SeatCounter';
 import { SelectionOverlay } from '@/components/ui/SelectionOverlay';
 import { exportProposalPDF } from '@/lib/pdf-export';
+import { FURNITURE_CATALOG } from '@/data/furniture';
+import { preloadGLTFModel } from '@/lib/gltf-loader';
 
 const FloorPlanEditor = dynamic(
   () =>
@@ -231,6 +233,13 @@ export default function EditorPage() {
   useEffect(() => {
     restoreFromLocalStorage();
   }, [restoreFromLocalStorage]);
+
+  // GLBモデルのプリロード
+  useEffect(() => {
+    FURNITURE_CATALOG.filter(c => c.modelUrl).forEach(c => {
+      preloadGLTFModel(c.modelUrl!);
+    });
+  }, []);
 
   // URLハッシュまたはクエリパラメータからプロジェクト復元
   useEffect(() => {
