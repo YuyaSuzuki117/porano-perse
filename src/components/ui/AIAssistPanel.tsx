@@ -194,29 +194,29 @@ export default function AIAssistPanel({ isOpen, onClose }: AIAssistPanelProps) {
     <>
       {/* モバイルオーバーレイ */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 md:hidden"
+        className="fixed inset-0 bg-black/30 z-40 md:hidden"
         onClick={onClose}
       />
 
       {/* パネル本体 */}
       <div
         className={
-          'fixed z-50 bg-gray-900/95 backdrop-blur-sm text-gray-100 flex flex-col ' +
+          'fixed z-50 bg-white text-gray-800 flex flex-col ' +
           // デスクトップ: 右サイドバー
-          'md:right-0 md:top-0 md:bottom-0 md:w-80 md:border-l md:border-gray-700 ' +
+          'md:right-0 md:top-0 md:bottom-0 md:w-80 md:border-l md:border-gray-200 ' +
           // モバイル: ボトムシート
           'inset-x-0 bottom-0 max-h-[85vh] md:max-h-none rounded-t-2xl md:rounded-none ' +
-          'transition-transform duration-300 ease-out'
+          'transition-transform duration-300 ease-out shadow-lg'
         }
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
           {/* モバイルドラッグハンドル */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-600 rounded-full md:hidden" />
-          <h2 className="text-sm font-bold tracking-wide">AIアシスト</h2>
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 rounded-full md:hidden" />
+          <h2 className="text-sm font-bold tracking-wide text-gray-700">アシスト</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-200"
+            className="p-1.5 rounded-md hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
             aria-label="閉じる"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -226,7 +226,7 @@ export default function AIAssistPanel({ isOpen, onClose }: AIAssistPanelProps) {
         </div>
 
         {/* タブ */}
-        <div className="flex border-b border-gray-700 shrink-0">
+        <div className="flex border-b border-gray-200 shrink-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -234,8 +234,8 @@ export default function AIAssistPanel({ isOpen, onClose }: AIAssistPanelProps) {
               className={
                 'flex-1 px-3 py-2.5 text-xs font-medium transition-colors ' +
                 (activeTab === tab.id
-                  ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 hover:text-gray-200')
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-400 hover:text-gray-600')
               }
             >
               {tab.label}
@@ -327,10 +327,10 @@ function PhotoAnalysisTab() {
         className={
           'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ' +
           (isDragging
-            ? 'border-blue-400 bg-blue-500/10'
+            ? 'border-blue-400 bg-blue-50'
             : imageData
-              ? 'border-green-500/50 bg-green-500/5'
-              : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50')
+              ? 'border-green-400 bg-green-50'
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50')
         }
       >
         <input
@@ -342,15 +342,15 @@ function PhotoAnalysisTab() {
         />
         {imageData ? (
           <div className="space-y-1">
-            <svg className="w-6 h-6 mx-auto text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-6 h-6 mx-auto text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            <p className="text-xs text-green-400 truncate">{imageName}</p>
-            <p className="text-[10px] text-gray-500">クリックで変更</p>
+            <p className="text-xs text-green-600 truncate">{imageName}</p>
+            <p className="text-[10px] text-gray-400">クリックで変更</p>
           </div>
         ) : (
           <div className="space-y-2">
-            <svg className="w-8 h-8 mx-auto text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-8 h-8 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
             </svg>
             <p className="text-xs text-gray-400">参考写真をドロップ</p>
@@ -361,11 +361,11 @@ function PhotoAnalysisTab() {
 
       {/* 業種選択 */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">業種</label>
+        <label className="block text-xs text-gray-500 mb-1">業種</label>
         <select
           value={businessType}
           onChange={(e) => setBusinessType(e.target.value as BusinessType)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
         >
           {BUSINESS_TYPES.map((bt) => (
             <option key={bt.value} value={bt.value}>{bt.label}</option>
@@ -381,7 +381,7 @@ function PhotoAnalysisTab() {
           'w-full py-2.5 rounded-lg text-sm font-medium transition-all ' +
           (imageData && !loading
             ? 'bg-blue-600 hover:bg-blue-500 text-white'
-            : 'bg-gray-800 text-gray-500 cursor-not-allowed')
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed')
         }
       >
         {loading ? <Spinner label="分析中..." /> : '分析する'}
@@ -400,25 +400,25 @@ function PhotoResult({ result }: { result: StyleAnalysis }) {
   return (
     <div className="space-y-3 pt-2">
       {/* スタイル + 信頼度 */}
-      <div className="bg-gray-800/60 rounded-lg p-3 space-y-2">
+      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{STYLE_LABELS[result.style] ?? result.style}</span>
+          <span className="text-sm font-medium text-gray-700">{STYLE_LABELS[result.style] ?? result.style}</span>
           <span className="text-[10px] text-gray-400">{Math.round(result.confidence * 100)}%</span>
         </div>
-        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${result.confidence * 100}%` }}
           />
         </div>
         {result.atmosphere && (
-          <p className="text-[11px] text-gray-400 leading-relaxed">{result.atmosphere}</p>
+          <p className="text-[11px] text-gray-500 leading-relaxed">{result.atmosphere}</p>
         )}
       </div>
 
       {/* カラーパレット */}
-      <div className="bg-gray-800/60 rounded-lg p-3">
-        <p className="text-xs text-gray-400 mb-2">カラーパレット</p>
+      <div className="bg-gray-50 rounded-lg p-3">
+        <p className="text-xs text-gray-500 mb-2">カラーパレット</p>
         <div className="flex gap-2">
           {[
             { label: 'Primary', color: result.colors.primary },
@@ -427,22 +427,22 @@ function PhotoResult({ result }: { result: StyleAnalysis }) {
           ].map((c) => (
             <div key={c.label} className="flex-1 text-center">
               <div
-                className="w-full h-8 rounded-md border border-gray-600 mb-1"
+                className="w-full h-8 rounded-md border border-gray-200 mb-1"
                 style={{ backgroundColor: c.color }}
               />
-              <p className="text-[10px] text-gray-500">{c.label}</p>
-              <p className="text-[10px] text-gray-400 font-mono">{c.color}</p>
+              <p className="text-[10px] text-gray-400">{c.label}</p>
+              <p className="text-[10px] text-gray-500 font-mono">{c.color}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* 素材タグ */}
-      <div className="bg-gray-800/60 rounded-lg p-3">
-        <p className="text-xs text-gray-400 mb-2">素材</p>
+      <div className="bg-gray-50 rounded-lg p-3">
+        <p className="text-xs text-gray-500 mb-2">素材</p>
         <div className="flex flex-wrap gap-1.5">
           {result.materials.map((m) => (
-            <span key={m} className="px-2 py-0.5 text-[11px] bg-gray-700 rounded-full text-gray-300">
+            <span key={m} className="px-2 py-0.5 text-[11px] bg-gray-200 rounded-full text-gray-600">
               {MATERIAL_LABELS[m] ?? m}
             </span>
           ))}
@@ -451,13 +451,13 @@ function PhotoResult({ result }: { result: StyleAnalysis }) {
 
       {/* 照明・予算 */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-gray-800/60 rounded-lg p-3">
-          <p className="text-[10px] text-gray-500 mb-0.5">照明</p>
-          <p className="text-xs font-medium">{LIGHTING_LABELS[result.lighting] ?? result.lighting}</p>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-400 mb-0.5">照明</p>
+          <p className="text-xs font-medium text-gray-700">{LIGHTING_LABELS[result.lighting] ?? result.lighting}</p>
         </div>
-        <div className="bg-gray-800/60 rounded-lg p-3">
-          <p className="text-[10px] text-gray-500 mb-0.5">予算目安</p>
-          <p className="text-xs font-medium">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-400 mb-0.5">予算目安</p>
+          <p className="text-xs font-medium text-gray-700">
             {result.estimatedBudgetRange.min}〜{result.estimatedBudgetRange.max}万円
           </p>
         </div>
@@ -522,7 +522,7 @@ function LayoutSuggestionTab() {
         <select
           value={businessType}
           onChange={(e) => setBusinessType(e.target.value as BusinessType)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
         >
           {BUSINESS_TYPES.map((bt) => (
             <option key={bt.value} value={bt.value}>{bt.label}</option>
@@ -542,7 +542,7 @@ function LayoutSuggestionTab() {
               min={1}
               max={100}
               step={0.5}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
             />
             <p className="text-[10px] text-gray-500 mt-0.5 text-center">幅 (m)</p>
           </div>
@@ -555,7 +555,7 @@ function LayoutSuggestionTab() {
               min={1}
               max={100}
               step={0.5}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
             />
             <p className="text-[10px] text-gray-500 mt-0.5 text-center">奥行 (m)</p>
           </div>
@@ -568,7 +568,7 @@ function LayoutSuggestionTab() {
         <select
           value={style}
           onChange={(e) => setStyle(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
         >
           {STYLE_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
@@ -584,7 +584,7 @@ function LayoutSuggestionTab() {
           onChange={(e) => setRequirements(e.target.value)}
           placeholder="例: カウンター席を含めたい、個室が必要..."
           rows={3}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-gray-600"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-gray-400"
         />
       </div>
 
@@ -596,7 +596,7 @@ function LayoutSuggestionTab() {
           'w-full py-2.5 rounded-lg text-sm font-medium transition-all ' +
           (!loading
             ? 'bg-blue-600 hover:bg-blue-500 text-white'
-            : 'bg-gray-800 text-gray-500 cursor-not-allowed')
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed')
         }
       >
         {loading ? <Spinner label="提案を取得中..." /> : '提案を取得'}
@@ -623,7 +623,7 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
   const qs = suggestion.qualityScore;
 
   return (
-    <div className="bg-gray-800/60 rounded-lg p-3 space-y-2.5">
+    <div className="bg-gray-50 rounded-lg p-3 space-y-2.5">
       {/* ヘッダー */}
       <div className="flex items-start justify-between">
         <div>
@@ -631,7 +631,7 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
           <h4 className="text-sm font-medium mt-0.5">{suggestion.layoutName}</h4>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-400 bg-gray-700 px-2 py-0.5 rounded-full">
+          <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
             {suggestion.capacityEstimate}人
           </span>
           {qs && (
@@ -639,10 +639,10 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
               className={
                 'text-[11px] font-bold px-2 py-0.5 rounded-full ' +
                 (qs.total >= 80
-                  ? 'bg-green-900/60 text-green-400'
+                  ? 'bg-green-50 text-green-600'
                   : qs.total >= 60
-                    ? 'bg-yellow-900/60 text-yellow-400'
-                    : 'bg-red-900/60 text-red-400')
+                    ? 'bg-yellow-50 text-yellow-600'
+                    : 'bg-red-50 text-red-600')
               }
             >
               {qs.total}点
@@ -677,7 +677,7 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
               {qs.details.length > 0 && (
                 <div className="mt-1.5 space-y-0.5">
                   {qs.details.slice(0, 5).map((d, di) => (
-                    <p key={di} className="text-[9px] text-amber-400/80 leading-tight">
+                    <p key={di} className="text-[9px] text-amber-600 leading-tight">
                       - {d}
                     </p>
                   ))}
@@ -697,7 +697,7 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
           <span className="text-[10px] text-gray-500">AI動線スコア</span>
           <span className="text-[10px] text-gray-400">{suggestion.flowScore}/100</span>
         </div>
-        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div
             className={
               'h-full rounded-full transition-all duration-500 ' +
@@ -733,7 +733,7 @@ function QualityScoreBar({ label, score }: { label: string; score: number }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-[9px] text-gray-500 w-14 shrink-0">{label}</span>
-      <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+      <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
         <div
           className={
             'h-full rounded-full transition-all duration-500 ' +
@@ -854,7 +854,7 @@ function ImageGenerationTab() {
   return (
     <div className="p-4 space-y-4">
       {/* 説明 */}
-      <div className="bg-gray-800/40 rounded-lg p-3">
+      <div className="bg-gray-50 rounded-lg p-3">
         <p className="text-xs text-gray-400 leading-relaxed">
           現在の3Dビューをキャプチャし、AIがフォトリアルな完成パースイメージを生成します。
         </p>
@@ -867,7 +867,7 @@ function ImageGenerationTab() {
           value={style}
           onChange={(e) => setStyle(e.target.value)}
           disabled={loading}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
         >
           {PERSE_STYLE_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
@@ -884,7 +884,7 @@ function ImageGenerationTab() {
           placeholder="例: 夕暮れ時の雰囲気で、観葉植物を多めに..."
           rows={2}
           disabled={loading}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-gray-600 disabled:opacity-50"
+          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-gray-400 disabled:opacity-50"
         />
       </div>
 
@@ -895,8 +895,8 @@ function ImageGenerationTab() {
         className={
           'w-full py-2.5 rounded-lg text-sm font-medium transition-all ' +
           (!loading
-            ? 'bg-purple-600 hover:bg-purple-500 text-white'
-            : 'bg-gray-800 text-gray-500 cursor-not-allowed')
+            ? 'bg-blue-600 hover:bg-blue-500 text-white'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed')
         }
       >
         {loading ? <Spinner label="パースイメージを生成中..." /> : '3Dビューからパースイメージを生成'}
@@ -904,9 +904,9 @@ function ImageGenerationTab() {
 
       {/* ローディング中の進捗表示 */}
       {loading && (
-        <div className="bg-gray-800/60 rounded-lg p-3 space-y-2">
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
             <p className="text-xs text-gray-400">AIが画像を生成しています...</p>
           </div>
           <p className="text-[10px] text-gray-500">
@@ -919,7 +919,7 @@ function ImageGenerationTab() {
               <img
                 src={screenshotPreview}
                 alt="キャプチャされた3Dビュー"
-                className="w-full rounded-md border border-gray-700 opacity-60"
+                className="w-full rounded-md border border-gray-200 opacity-60"
               />
             </div>
           )}
@@ -933,19 +933,19 @@ function ImageGenerationTab() {
       {generatedImage && (
         <div className="space-y-3 pt-2">
           {/* 生成画像プレビュー */}
-          <div className="bg-gray-800/60 rounded-lg p-3 space-y-2">
+          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <p className="text-xs text-gray-400 mb-1">生成されたパースイメージ</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`data:${generatedImage.mimeType};base64,${generatedImage.base64}`}
               alt="生成されたパースイメージ"
-              className="w-full rounded-md border border-gray-700"
+              className="w-full rounded-md border border-gray-200"
             />
           </div>
 
           {/* 説明テキスト */}
           {generatedImage.description && (
-            <div className="bg-gray-800/60 rounded-lg p-3">
+            <div className="bg-gray-50 rounded-lg p-3">
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 {generatedImage.description}
               </p>
@@ -966,7 +966,7 @@ function ImageGenerationTab() {
           {/* 再生成ボタン */}
           <button
             onClick={captureAndGenerate}
-            className="w-full py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+            className="w-full py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
           >
             別のスタイルで再生成
           </button>
@@ -992,15 +992,15 @@ function Spinner({ label }: { label: string }) {
 
 function ErrorBanner({ error }: { error: APIError }) {
   return (
-    <div className="rounded-lg bg-red-900/30 border border-red-800/50 px-3 py-2.5">
+    <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5">
       <div className="flex items-start gap-2">
-        <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
         </svg>
         <div>
-          <p className="text-xs text-red-300">{error.message}</p>
+          <p className="text-xs text-red-600">{error.message}</p>
           {error.code === 'API_KEY_MISSING' && (
-            <p className="text-[10px] text-red-400/70 mt-1">
+            <p className="text-[10px] text-red-400 mt-1">
               .env.local に GEMINI_API_KEY を追加してください
             </p>
           )}

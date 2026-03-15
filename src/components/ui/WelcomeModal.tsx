@@ -76,33 +76,51 @@ export function WelcomeModal({
         tabIndex={-1}
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 mt-[15vh] p-8 animate-welcome-in outline-none"
       >
+        {/* 次回から表示しない — 上部に配置 */}
+        <label className="flex items-center gap-2 cursor-pointer mb-6">
+          <input
+            type="checkbox"
+            checked={dontShowAgain}
+            onChange={(e) => setDontShowAgain(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-500">{t('welcome.dont_show')}</span>
+        </label>
+
         {/* タイトル */}
-        <div className="text-center mb-6">
-          <h2 id="welcome-modal-title" className="text-2xl font-bold text-gray-800 mb-2">
-            {'\uD83C\uDFE0'} {t('welcome.title')}
-          </h2>
-          <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <h2 id="welcome-modal-title" className="text-xl font-semibold text-gray-800">
+              {t('welcome.title')}
+            </h2>
+          </div>
+          <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-line">
             {t('welcome.subtitle')}
           </p>
         </div>
 
-        {/* テンプレート選択 */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        {/* テンプレート選択 — リストスタイル */}
+        <div className="space-y-2 mb-4">
           {availableTemplates.map((ft) => (
             <button
               key={ft.id}
               onClick={() => handleTemplateClick(ft.id)}
-              className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 hover:shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+              className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <span className="text-3xl">{ft.emoji}</span>
-              <span className="text-xs font-medium text-gray-700">{ft.label}</span>
-              <span className="text-[10px] text-gray-400">{t('welcome.template_label')}</span>
+              <span className="text-xl">{ft.emoji}</span>
+              <div>
+                <span className="text-sm font-medium text-gray-700">{ft.label}</span>
+                <span className="text-xs text-gray-400 ml-2">{t('welcome.template_label')}</span>
+              </div>
             </button>
           ))}
         </div>
 
         {/* すべてのテンプレートリンク */}
-        <div className="text-center mb-4">
+        <div className="mb-6">
           <button
             onClick={handleAllTemplatesClick}
             className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
@@ -112,7 +130,7 @@ export function WelcomeModal({
         </div>
 
         {/* 区切り線 */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-px bg-gray-200" />
           <span className="text-xs text-gray-400">{t('welcome.or')}</span>
           <div className="flex-1 h-px bg-gray-200" />
@@ -121,52 +139,41 @@ export function WelcomeModal({
         {/* 空の部屋から始める */}
         <button
           onClick={handleEmptyClick}
-          className="w-full py-2.5 px-4 rounded-lg border-2 border-dashed border-gray-300 text-gray-600 text-sm font-medium hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 mb-5"
+          className="w-full py-2.5 px-4 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 text-sm hover:border-blue-400 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200 mb-6"
         >
           {t('welcome.empty_room')}
         </button>
 
         {/* ヒントセクション */}
-        <div className="bg-blue-50 rounded-lg p-4 mb-5">
-          <p className="text-xs font-semibold text-blue-700 mb-2">
-            {'\uD83D\uDCA1'} {t('welcome.hint_title')}
+        <div className="mb-6">
+          <p className="text-xs font-medium text-gray-500 mb-2">
+            {t('welcome.hint_title')}
           </p>
-          <ul className="text-xs text-blue-600 space-y-1.5">
+          <ul className="text-xs text-gray-400 space-y-1.5">
             <li className="flex items-start gap-1.5">
-              <span className="text-blue-400 mt-0.5">{'・'}</span>
+              <span className="text-gray-300 mt-0.5">{'・'}</span>
               {t('welcome.hint_1')}
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="text-blue-400 mt-0.5">{'・'}</span>
+              <span className="text-gray-300 mt-0.5">{'・'}</span>
               {t('welcome.hint_2')}
             </li>
             <li className="flex items-start gap-1.5">
-              <span className="text-blue-400 mt-0.5">{'・'}</span>
+              <span className="text-gray-300 mt-0.5">{'・'}</span>
               {t('welcome.hint_3')}
             </li>
           </ul>
         </div>
 
         {/* 始めるボタン */}
-        <div className="text-center mb-3">
+        <div className="text-center">
           <button
             onClick={handleStartClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm hover:shadow-md"
+            className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-200 px-8 py-2.5 rounded-lg font-medium text-sm transition-colors"
           >
             {t('welcome.start')}
           </button>
         </div>
-
-        {/* 次回から表示しない */}
-        <label className="flex items-center justify-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={dontShowAgain}
-            onChange={(e) => setDontShowAgain(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-xs text-gray-400">{t('welcome.dont_show')}</span>
-        </label>
       </div>
 
       {/* アニメーション用のスタイル */}

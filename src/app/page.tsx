@@ -104,7 +104,7 @@ const SceneCanvas = dynamic(
       <div className="flex-1 flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <svg viewBox="0 0 20 20" fill="none" className="w-7 h-7">
                 <path d="M3 14L10 4l7 10H3z" fill="white" opacity={0.9} />
                 <path d="M7 14L10 8l3 6H7z" fill="white" opacity={0.5} />
@@ -143,6 +143,36 @@ function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Controls hint that shows only on first visit for 3 seconds, then fades out */
+function ControlsHint() {
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !sessionStorage.getItem('controls-hint-shown');
+  });
+
+  useEffect(() => {
+    if (!visible) return;
+    sessionStorage.setItem('controls-hint-shown', '1');
+    const timer = setTimeout(() => setVisible(false), 3000);
+    return () => clearTimeout(timer);
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2 animate-[fadeOut_0.5s_ease-out_2.5s_forwards]"
+      aria-live="polite"
+    >
+      <span>ドラッグ: 回転</span>
+      <span className="text-white/40">|</span>
+      <span>右ドラッグ: 移動</span>
+      <span className="text-white/40">|</span>
+      <span>スクロール: ズーム</span>
     </div>
   );
 }
@@ -559,7 +589,7 @@ export default function EditorPage() {
                     </button>
                     <button
                       onClick={() => { setPhotoMode(true); }}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 active:bg-blue-700 transition-transform min-h-[44px]"
                       aria-label={t('view.photo')}
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -580,7 +610,7 @@ export default function EditorPage() {
                   </div>
                   <button
                     onClick={() => { setPhotoMode(true); setMobileTab('3d'); }}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 active:bg-blue-700 transition-transform min-h-[44px]"
                     aria-label={t('view.photo')}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -592,11 +622,11 @@ export default function EditorPage() {
                 </div>
               )}
               {isDragOver && (
-                <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
-                  <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
+                <div className="absolute inset-0 bg-blue-500/20 border-4 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
+                  <div className="bg-blue-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
                     <div className="text-3xl mb-2">📦</div>
                     <div className="text-sm font-medium">{t('misc.drop_model')}</div>
-                    <div className="text-xs text-purple-200 mt-1">.glb / .gltf</div>
+                    <div className="text-xs text-blue-200 mt-1">.glb / .gltf</div>
                   </div>
                 </div>
               )}
@@ -608,7 +638,7 @@ export default function EditorPage() {
             <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2 z-50">
               <button
                 onClick={() => takeHiResScreenshot()}
-                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform min-h-[48px]"
+                className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg active:scale-95 active:bg-blue-700 transition-transform min-h-[48px]"
                 aria-label={t('misc.shoot_hd')}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -697,7 +727,7 @@ export default function EditorPage() {
                     setMobileTab('3d');
                     setViewMode('3d');
                   }}
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-12 h-12 rounded-full bg-blue-600 shadow-lg border border-blue-400 flex items-center justify-center active:scale-90 transition-transform"
                   aria-label={t('view.photo')}
                 >
                   <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -708,17 +738,17 @@ export default function EditorPage() {
               </div>
               {/* AIアシスト */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">AI</span>
                 <button
                   onClick={() => {
                     setFabOpen(false);
                     setShowAIPanel(true);
                   }}
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg border border-purple-400 flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-12 h-12 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center active:scale-90 transition-transform hover:bg-gray-50"
                   aria-label="AIアシスト"
+                  title="AIアシスト"
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
                   </svg>
                 </button>
               </div>
@@ -732,7 +762,7 @@ export default function EditorPage() {
                     setMobileTab('3d');
                     setFullscreen3D(true);
                   }}
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg border border-blue-400 flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-12 h-12 rounded-full bg-blue-600 shadow-lg border border-blue-400 flex items-center justify-center active:scale-90 transition-transform"
                   aria-label="フルスクリーン3Dモード"
                 >
                   <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -911,22 +941,20 @@ export default function EditorPage() {
                   onNavigate={handleMinimapNavigate}
                 />
               )}
-              {/* 操作ヘルプ + フォトモード入口 */}
+              {/* 操作ヘルプ（初回のみ3秒表示）+ フォトモード入口 */}
               {!photoMode && (
                 <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                  <div className="bg-black/50 text-white text-[10px] px-2.5 py-1.5 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
-                    <span>ドラッグ: 回転</span>
-                    <span className="text-white/40">|</span>
-                    <span>右ドラッグ: 移動</span>
-                    <span className="text-white/40">|</span>
-                    <span>スクロール: ズーム</span>
-                  </div>
+                  <ControlsHint />
                   <button
                     onClick={() => setPhotoMode(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 text-white text-xs rounded-md backdrop-blur-sm hover:bg-amber-600/80 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 text-gray-700 text-xs rounded-md shadow-sm border border-gray-200 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                     aria-label="フォトモード (P)"
                   >
-                    <span>📷</span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4" aria-hidden="true">
+                      <rect x="2" y="4" width="12" height="9" rx="1.5" />
+                      <circle cx="8" cy="8.5" r="2.5" />
+                      <path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
+                    </svg>
                     <span>フォトモード</span>
                   </button>
                 </div>
@@ -936,27 +964,31 @@ export default function EditorPage() {
                 <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-40">
                   <button
                     onClick={() => takeHiResScreenshot()}
-                    className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
+                    className="group flex items-center gap-2 px-5 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
                     aria-label={t('misc.shoot_hd')}
                   >
-                    <span className="text-lg group-hover:animate-pulse">📷</span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 group-hover:animate-pulse" aria-hidden="true">
+                      <rect x="2" y="4" width="12" height="9" rx="1.5" />
+                      <circle cx="8" cy="8.5" r="2.5" />
+                      <path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
+                    </svg>
                     <span>{t('misc.shoot_hd')}</span>
                   </button>
                   <button
                     onClick={() => setPhotoMode(false)}
-                    className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 hover:text-white hover:scale-105 transition-all duration-200"
+                    className="px-3 py-1.5 bg-white/80 text-gray-600 text-xs rounded-full shadow-sm border border-gray-200 hover:bg-white hover:text-gray-900 transition-all duration-200"
                     aria-label={t('view.photo_end')}
                   >
-                    {t('view.photo_end')} <span className="text-white/50 ml-1">P</span>
+                    {t('view.photo_end')} <span className="text-gray-400 ml-1">P</span>
                   </button>
                 </div>
               )}
               {isDragOver && (
-                <div className="absolute inset-0 bg-purple-500/20 backdrop-blur-[2px] border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none animate-[dropzonePulse_1.5s_ease-in-out_infinite]">
-                  <div className="bg-purple-600/90 text-white px-8 py-5 rounded-xl shadow-2xl text-center animate-[dropzoneBounce_0.3s_ease-out]">
+                <div className="absolute inset-0 bg-blue-500/20 backdrop-blur-[2px] border-4 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-50 pointer-events-none animate-[dropzonePulse_1.5s_ease-in-out_infinite]">
+                  <div className="bg-blue-600/90 text-white px-8 py-5 rounded-xl shadow-2xl text-center animate-[dropzoneBounce_0.3s_ease-out]">
                     <div className="text-4xl mb-2 animate-bounce">📦</div>
                     <div className="text-sm font-bold">{t('misc.drop_model')}</div>
-                    <div className="text-xs text-purple-200 mt-1.5 bg-purple-700/50 px-3 py-1 rounded-full inline-block">.glb / .gltf</div>
+                    <div className="text-xs text-blue-200 mt-1.5 bg-blue-700/50 px-3 py-1 rounded-full inline-block">.glb / .gltf</div>
                   </div>
                 </div>
               )}
@@ -971,14 +1003,13 @@ export default function EditorPage() {
         {!showAIPanel && (
           <button
             onClick={() => setShowAIPanel(true)}
-            className="fixed bottom-4 right-[304px] z-[100] flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-200"
+            className="fixed bottom-4 right-[304px] z-[100] flex items-center justify-center w-10 h-10 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200"
             aria-label="AIアシストを開く"
             title="AIアシスト"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
             </svg>
-            <span className="text-xs font-semibold">AI</span>
           </button>
         )}
 
