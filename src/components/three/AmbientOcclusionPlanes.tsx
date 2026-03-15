@@ -85,7 +85,10 @@ export default function AmbientOcclusionPlanes() {
             opacity={qualityLevel === 'high' ? 1.0 : 0.6}
             depthWrite={false}
             side={THREE.DoubleSide}
-            blending={THREE.MultiplyBlending}
+            blending={THREE.CustomBlending}
+            blendSrc={THREE.DstColorFactor}
+            blendDst={THREE.ZeroFactor}
+            blendEquation={THREE.AddEquation}
           />
         </mesh>
       ))}
@@ -97,7 +100,10 @@ export default function AmbientOcclusionPlanes() {
             transparent
             opacity={qualityLevel === 'high' ? 1.0 : 0.6}
             depthWrite={false}
-            blending={THREE.MultiplyBlending}
+            blending={THREE.CustomBlending}
+            blendSrc={THREE.DstColorFactor}
+            blendDst={THREE.ZeroFactor}
+            blendEquation={THREE.AddEquation}
           />
         </mesh>
       ))}
