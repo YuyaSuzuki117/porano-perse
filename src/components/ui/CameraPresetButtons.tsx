@@ -1,6 +1,6 @@
 'use client';
 
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { CameraBookmarkPanel } from './CameraBookmarkPanel';
 
@@ -32,18 +32,18 @@ interface CameraPresetButtonsProps {
 }
 
 export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
-  const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
-  const cameraPreset = useEditorStore((s) => s.cameraPreset);
+  const setCameraPreset = useCameraStore((s) => s.setCameraPreset);
+  const cameraPreset = useCameraStore((s) => s.cameraPreset);
   const activateDioramaMode = useUIStore(s => s.activateDioramaMode);
-  const walkthroughPlaying = useEditorStore((s) => s.walkthroughPlaying);
-  const setWalkthroughPlaying = useEditorStore((s) => s.setWalkthroughPlaying);
-  const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);
-  const setAutoWalkthrough = useEditorStore((s) => s.setAutoWalkthrough);
-  const walkthroughSpeed = useEditorStore((s) => s.walkthroughSpeed);
-  const setWalkthroughSpeed = useEditorStore((s) => s.setWalkthroughSpeed);
-  const walkthroughProgress = useEditorStore((s) => s.walkthroughProgress);
-  const isFirstPersonMode = useEditorStore((s) => s.isFirstPersonMode);
-  const setFirstPersonMode = useEditorStore((s) => s.setFirstPersonMode);
+  const walkthroughPlaying = useCameraStore((s) => s.walkthroughPlaying);
+  const setWalkthroughPlaying = useCameraStore((s) => s.setWalkthroughPlaying);
+  const isAutoWalkthrough = useCameraStore((s) => s.isAutoWalkthrough);
+  const setAutoWalkthrough = useCameraStore((s) => s.setAutoWalkthrough);
+  const walkthroughSpeed = useCameraStore((s) => s.walkthroughSpeed);
+  const setWalkthroughSpeed = useCameraStore((s) => s.setWalkthroughSpeed);
+  const walkthroughProgress = useCameraStore((s) => s.walkthroughProgress);
+  const isFirstPersonMode = useCameraStore((s) => s.isFirstPersonMode);
+  const setFirstPersonMode = useCameraStore((s) => s.setFirstPersonMode);
 
   const toggleAutoWalkthrough = () => {
     if (isAutoWalkthrough) {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 /**
  * 環境エフェクトパネル (Round 9)
@@ -11,26 +11,26 @@ import { useEditorStore } from '@/stores/useEditorStore';
  */
 export function EnvironmentEffectsPanel() {
   // --- ストアから環境エフェクト状態を取得 ---
-  const showProceduralSky = useEditorStore((s) => s.showProceduralSky);
-  const skyTimeOfDay = useEditorStore((s) => s.skyTimeOfDay);
-  const showAreaLights = useEditorStore((s) => s.showAreaLights);
-  const glassCondensation = useEditorStore((s) => s.glassCondensation);
-  const showCaustics = useEditorStore((s) => s.showCaustics);
-  const causticsIntensity = useEditorStore((s) => s.causticsIntensity);
-  const showSunSimulation = useEditorStore((s) => s.showSunSimulation);
-  const showAcoustics = useEditorStore((s) => s.showAcoustics);
-  const showWindowDoorFrames = useEditorStore((s) => s.showWindowDoorFrames);
+  const showProceduralSky = useCameraStore((s) => s.showProceduralSky);
+  const skyTimeOfDay = useCameraStore((s) => s.skyTimeOfDay);
+  const showAreaLights = useCameraStore((s) => s.showAreaLights);
+  const glassCondensation = useCameraStore((s) => s.glassCondensation);
+  const showCaustics = useCameraStore((s) => s.showCaustics);
+  const causticsIntensity = useCameraStore((s) => s.causticsIntensity);
+  const showSunSimulation = useCameraStore((s) => s.showSunSimulation);
+  const showAcoustics = useCameraStore((s) => s.showAcoustics);
+  const showWindowDoorFrames = useCameraStore((s) => s.showWindowDoorFrames);
 
   // --- ストアからセッター/トグルを取得 ---
-  const toggleProceduralSky = useEditorStore((s) => s.toggleProceduralSky);
-  const setSkyTimeOfDay = useEditorStore((s) => s.setSkyTimeOfDay);
-  const toggleAreaLights = useEditorStore((s) => s.toggleAreaLights);
-  const setGlassCondensation = useEditorStore((s) => s.setGlassCondensation);
-  const toggleCaustics = useEditorStore((s) => s.toggleCaustics);
-  const setCausticsIntensity = useEditorStore((s) => s.setCausticsIntensity);
-  const toggleSunSimulation = useEditorStore((s) => s.toggleSunSimulation);
-  const toggleAcoustics = useEditorStore((s) => s.toggleAcoustics);
-  const toggleWindowDoorFrames = useEditorStore((s) => s.toggleWindowDoorFrames);
+  const toggleProceduralSky = useCameraStore((s) => s.toggleProceduralSky);
+  const setSkyTimeOfDay = useCameraStore((s) => s.setSkyTimeOfDay);
+  const toggleAreaLights = useCameraStore((s) => s.toggleAreaLights);
+  const setGlassCondensation = useCameraStore((s) => s.setGlassCondensation);
+  const toggleCaustics = useCameraStore((s) => s.toggleCaustics);
+  const setCausticsIntensity = useCameraStore((s) => s.setCausticsIntensity);
+  const toggleSunSimulation = useCameraStore((s) => s.toggleSunSimulation);
+  const toggleAcoustics = useCameraStore((s) => s.toggleAcoustics);
+  const toggleWindowDoorFrames = useCameraStore((s) => s.toggleWindowDoorFrames);
 
   /** 結露モードの選択肢 */
   const condensationOptions: { value: 'off' | 'warm' | 'cold' | 'frost'; label: string }[] = [

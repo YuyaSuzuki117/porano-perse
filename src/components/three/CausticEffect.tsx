@@ -10,7 +10,7 @@ import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Opening, WallSegment } from '@/types/floor-plan';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { wallAngle } from '@/lib/geometry';
 
 // ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ export const CausticEffect = React.memo(function CausticEffect({
   intensity,
   enabled,
 }: CausticEffectProps) {
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
 
   // 低品質モードまたは無効時は描画しない
   if (!enabled || qualityLevel === 'low') return null;

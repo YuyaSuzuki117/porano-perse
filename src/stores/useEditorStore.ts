@@ -1,39 +1,21 @@
 import { create } from 'zustand';
-import { WallSegment, Opening, EditorTool, Point2D, RoomLabel } from '@/types/floor-plan';
+import { WallSegment, Opening, RoomLabel } from '@/types/floor-plan';
 import { useUIStore } from './useUIStore';
+import { useCameraStore } from './useCameraStore';
 import { FurnitureItem, FurnitureMaterial, StylePreset, Annotation } from '@/types/scene';
 import { WallFinishAssignment, RoomFinishAssignment, FittingSpec, EquipmentItem, RouteSegment } from '@/types/finishing';
 import { createRectRoom, createLShapeRoom, createUShapeRoom } from '@/lib/geometry';
 import { DEFAULT_TEMPLATE, getTemplateById } from '@/data/templates';
 import { getRoomTemplateById } from '@/data/room-templates';
-import { LightingPreset } from '@/data/lighting-presets';
 import { FurnitureSet } from '@/data/furniture-sets';
 import { invalidateTextureCache } from '@/lib/texture-cache';
 import { FURNITURE_CATALOG } from '@/data/furniture';
-import LZString from 'lz-string';
 
 const MAX_HISTORY = 50;
-const SHARE_URL_MAX_LENGTH = 8000;
 const DEBOUNCE_MS = 300;
 const LOCALSTORAGE_KEY = 'porano-perse-project';
-const PROJECTS_KEY = 'porano-perse-projects';
 
-/** デバイス性能に基づく描画品質の自動判定 */
-function detectQualityLevel(): 'high' | 'medium' | 'low' {
-  if (typeof navigator === 'undefined') return 'medium';
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  const isLowCore = navigator.hardwareConcurrency <= 4;
-  if (isMobile || isLowCore) return 'low';
-  return 'medium';
-}
-
-export interface SavedProject {
-  id: string;
-  name: string;
-  updatedAt: string;
-  thumbnail?: string;
-  data: string;
-}
+// SavedProject interface → useProjectStore に移動済み（re-export は上部で定義）
 
 interface HistorySnapshot {
   walls: WallSegment[];
@@ -67,13 +49,10 @@ export interface VersionedProjectFile {
   data: ProjectData;
 }
 
-export interface CameraBookmark {
-  id: string;
-  name: string;
-  position: [number, number, number];
-  target: [number, number, number];
-  thumbnail?: string; // base64 thumbnail
-}
+// CameraBookmark → useCameraStore に移動済み
+export type { CameraBookmark } from './useCameraStore';
+// SavedProject → useProjectStore に移動済み
+export type { SavedProject } from './useProjectStore';
 
 interface EditorState {
   // プロジェクト
@@ -93,53 +72,15 @@ interface EditorState {
   historyIndex: number;
 
   // エディタUI状態 → useUIStore に移動済み
-  lastAutoSaved: number | null;
-  cameraPreset: string | null;
-  walkthroughPlaying: boolean;
-  isAutoWalkthrough: boolean;
-  walkthroughSpeed: 'slow' | 'normal' | 'fast';
-  walkthroughProgress: number;
-  // showGrid, showDimensions, showFurniture, wallDisplayMode, ceilingVisible, sectionCutHeight,
-  // isDraggingFurniture → useUIStore に移動済み
-  dayNight: 'day' | 'night';
-  fogDistance: number;
-  lightBrightness: number;
-  lightWarmth: number;
-  // パフォーマンス設定
-  qualityLevel: 'high' | 'medium' | 'low';
-  setQualityLevel: (level: 'high' | 'medium' | 'low') => void;
-  snapToGrid3D: boolean;
-  gridSnapSize: number;
-  snapToWall: boolean;
-  // ウォークスルー（一人称）モード
-  isFirstPersonMode: boolean;
-  setFirstPersonMode: (v: boolean) => void;
-  activeLightingPreset: string | null;
+  // カメラ・ライティング・3D効果 → useCameraStore に移動済み
+  // スナップショット・保存・ウォーターマーク → useProjectStore に移動済み
 
-  // カメラブックマーク
-  cameraBookmarks: CameraBookmark[];
-  addCameraBookmark: (name: string, position: [number, number, number], target: [number, number, number], thumbnail?: string) => void;
-  deleteCameraBookmark: (id: string) => void;
-  renameCameraBookmark: (id: string, name: string) => void;
-  applyCameraBookmark: (id: string) => void;
-
-  // スタイル比較モード
-  styleCompareMode: boolean;
-  styleCompareLeft: string | null; // base64 screenshot
-  styleCompareRight: string | null;
-  styleCompareLeftName: string | null;
-  styleCompareRightName: string | null;
-  setStyleCompareMode: (v: boolean) => void;
-  setStyleCompareScreenshot: (side: 'left' | 'right', screenshot: string, styleName: string) => void;
-  clearStyleComparison: () => void;
-
-  // プロジェクト操作
+  // プロジェクト操作（EditorStoreに残す: 図面データの読み書き）
   setProjectName: (name: string) => void;
   exportProject: () => string;
   importProject: (json: string) => void;
   resetProject: () => void;
   restoreFromLocalStorage: () => boolean;
-  markAutoSaved: () => void;
 
   // 壁操作
   addWall: (wall: WallSegment) => void;
@@ -200,46 +141,19 @@ interface EditorState {
   distributeH: () => void;
   distributeV: () => void;
   duplicateSelectedFurniture: () => void;
-  setCameraPreset: (preset: string | null) => void;
-  setWalkthroughPlaying: (playing: boolean) => void;
-  setAutoWalkthrough: (active: boolean) => void;
-  setWalkthroughSpeed: (speed: 'slow' | 'normal' | 'fast') => void;
-  setWalkthroughProgress: (progress: number) => void;
-  // setShowGrid, setShowDimensions, setShowFurniture → useUIStore に移動済み
-  setDayNight: (mode: 'day' | 'night') => void;
-  setFogDistance: (v: number) => void;
-  setLightBrightness: (v: number) => void;
-  setLightWarmth: (v: number) => void;
-  setSnapToGrid3D: (v: boolean) => void;
-  setGridSnapSize: (v: number) => void;
-  setSnapToWall: (v: boolean) => void;
-  applyLightingPreset: (preset: LightingPreset) => void;
-
-  // フォトモード, ダークモード, 計測ツール, showFlowHeatmap, showLightingAnalysis,
-  // furnitureCollision → useUIStore に移動済み
-
-  // ルーム雰囲気プリセット
-  activeRoomAtmosphere: string | null;
-  applyRoomAtmosphere: (presetName: string) => void;
+  // setCameraPreset, setWalkthroughPlaying, setAutoWalkthrough, setWalkthroughSpeed,
+  // setWalkthroughProgress, setDayNight, setFogDistance, setLightBrightness, setLightWarmth,
+  // setSnapToGrid3D, setGridSnapSize, setSnapToWall, applyLightingPreset → useCameraStore に移動済み
+  // activeRoomAtmosphere, applyRoomAtmosphere → useCameraStore に移動済み
+  // enableWatermark, setEnableWatermark → useProjectStore に移動済み
+  // liveCameraPosition, liveCameraRotationY → useCameraStore に移動済み
 
   applyAutoLayout: (roomType: string) => void;
-
-  // ウォーターマーク設定
-  enableWatermark: boolean;
-  setEnableWatermark: (v: boolean) => void;
 
   // 家具ロック
   toggleLockFurniture: (id: string) => void;
   lockSelected: () => void;
   unlockSelected: () => void;
-
-  // カメラトラッキング（ミニマップ用）
-  liveCameraPosition: [number, number, number];
-  liveCameraRotationY: number;
-  setLiveCameraPosition: (pos: [number, number, number]) => void;
-  setLiveCameraRotationY: (rot: number) => void;
-
-  // ミニマップ表示 → useUIStore に移動済み
 
   // 部屋形状
   initLShapeRoom: (w: number, d: number) => void;
@@ -257,12 +171,7 @@ interface EditorState {
   ungroupSelected: () => void;
   moveGroup: (groupId: string, delta: [number, number, number]) => void;
 
-  // スナップショット（バージョン履歴）
-  snapshots: Array<{ id: string; name: string; timestamp: number; data: string }>;
-  saveSnapshot: (name?: string) => void;
-  loadSnapshot: (id: string) => void;
-  deleteSnapshot: (id: string) => void;
-  renameSnapshot: (id: string, name: string) => void;
+  // スナップショット → useProjectStore に移動済み
 
   // Undo/Redo
   undo: () => void;
@@ -278,39 +187,9 @@ interface EditorState {
   loadRoomTemplate: (templateId: string) => void;
   newProject: () => void;
 
-  // 複数プロジェクト管理
-  listSavedProjects: () => SavedProject[];
-  saveProjectToList: () => void;
-  loadProjectFromList: (id: string) => void;
-  deleteProjectFromList: (id: string) => void;
-  getShareUrl: () => { url: string; tooLong: boolean };
-  loadFromShareUrl: (encoded: string) => void;
-
-  // 人物シルエット
-  showHumanFigures: boolean;
-  toggleHumanFigures: () => void;
-
-  // 環境プリセット
-  environmentPreset: string;
-  setEnvironmentPreset: (preset: string) => void;
-
-  // モーションブラー
-  motionBlurEnabled: boolean;
-  toggleMotionBlur: () => void;
-
-  // ライトグロー
-  showLightGlow: boolean;
-  toggleLightGlow: () => void;
-
-  // 動線シミュレーション
-  showFlowSimulation: boolean;
-  toggleFlowSimulation: () => void;
-
-  // 参照画像
-  referenceImageUrl: string | null;
-  referenceImageOpacity: number;
-  setReferenceImage: (url: string | null) => void;
-  setReferenceImageOpacity: (opacity: number) => void;
+  // 複数プロジェクト管理 → useProjectStore に移動済み
+  // showHumanFigures, environmentPreset, motionBlurEnabled, showLightGlow,
+  // showFlowSimulation, referenceImageUrl/Opacity → useCameraStore に移動済み
 
   // 家具高さオフセット
   updateFurnitureHeight: (id: string, heightOffset: number) => void;
@@ -319,88 +198,7 @@ interface EditorState {
   updateFurnitureMaterialOverride: (id: string, overrides: FurnitureItem['materialOverride']) => void;
   resetFurnitureMaterialOverride: (id: string) => void;
 
-  // Round 7: 衝突ヒートマップ → useUIStore に移動済み
-
-  // Round 8: ゴッドレイ
-  showGodRays: boolean;
-  toggleGodRays: () => void;
-  godRayIntensity: number;
-  setGodRayIntensity: (v: number) => void;
-
-  // Round 8: ウェットフロア
-  wetFloorEnabled: boolean;
-  wetFloorWetness: number;
-  toggleWetFloor: () => void;
-  setWetFloorWetness: (v: number) => void;
-
-  // Round 8: レンズフレア
-  showLensFlare: boolean;
-  toggleLensFlare: () => void;
-
-  // Round 8: トーンマッピング
-  toneMappingPreset: string;
-  setToneMappingPreset: (preset: string) => void;
-
-  // Round 8: レンダリング品質プリセット
-  renderQualityPreset: string;
-  setRenderQualityPreset: (preset: string) => void;
-
-  // Round 9: プロシージャルスカイ
-  skyTimeOfDay: number;
-  showProceduralSky: boolean;
-  setSkyTimeOfDay: (v: number) => void;
-  toggleProceduralSky: () => void;
-
-  // Round 9: エリアライト
-  showAreaLights: boolean;
-  toggleAreaLights: () => void;
-
-  // Round 9: ガラス結露
-  glassCondensation: 'off' | 'warm' | 'cold' | 'frost';
-  setGlassCondensation: (v: 'off' | 'warm' | 'cold' | 'frost') => void;
-
-  // Round 9: コースティクス
-  showCaustics: boolean;
-  causticsIntensity: number;
-  toggleCaustics: () => void;
-  setCausticsIntensity: (v: number) => void;
-
-  // Round 9: 太陽シミュレーション
-  showSunSimulation: boolean;
-  toggleSunSimulation: () => void;
-
-  // Round 9: 音響可視化
-  showAcoustics: boolean;
-  toggleAcoustics: () => void;
-
-  // Round 9: ビフォーアフター
-  beforeAfterActive: boolean;
-  beforeAfterLeft: string | null;
-  beforeAfterRight: string | null;
-  beforeAfterLeftLabel: string;
-  beforeAfterRightLabel: string;
-  setBeforeAfter: (left: string, right: string, leftLabel: string, rightLabel: string) => void;
-  closeBeforeAfter: () => void;
-
-  // Round 9: 3Dフレーム表示
-  showWindowDoorFrames: boolean;
-  toggleWindowDoorFrames: () => void;
-
-  // Round 10: 避難経路
-  showEvacuation: boolean;
-  toggleEvacuation: () => void;
-
-  // Round 10: 電気配線
-  showElectrical: boolean;
-  toggleElectrical: () => void;
-
-  // Round 10: 空調可視化
-  showHVAC: boolean;
-  toggleHVAC: () => void;
-
-  // Round 10: 煙パーティクル
-  showSmoke: boolean;
-  toggleSmoke: () => void;
+  // Round 7-10: 3D効果 → useCameraStore に移動済み
 
   // 仕上げ材・設備・配線
   wallFinishAssignments: WallFinishAssignment[];
@@ -526,127 +324,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   // activeTool, selectedWallId, selectedFurnitureId, selectedFurnitureIds,
   // viewMode, isDrawingWall, wallDrawStart, zoom → useUIStore
-  lastAutoSaved: null,
-  cameraPreset: null,
-  walkthroughPlaying: false,
-  isAutoWalkthrough: false,
-  walkthroughSpeed: 'normal',
-  walkthroughProgress: 0,
-  // showGrid, showDimensions → useUIStore
-  dayNight: 'day',
-  fogDistance: 35,
-  lightBrightness: 1.0,
-  lightWarmth: 0.5,
-  snapToGrid3D: true,
-  gridSnapSize: 0.25,
-  snapToWall: true,
-  // showFurniture, wallDisplayMode, ceilingVisible, sectionCutHeight, isDraggingFurniture → useUIStore
+  // カメラ・ライティング・3D効果 → useCameraStore
+  // スナップショット・保存・ウォーターマーク → useProjectStore
   deletingFurnitureIds: [],
-  isFirstPersonMode: false,
-  activeLightingPreset: null,
-  qualityLevel: detectQualityLevel(),
-  // photoMode, photoModePrevState, darkMode, measurementActive, showFlowHeatmap,
-  // showLightingAnalysis, furnitureCollision → useUIStore
-  activeRoomAtmosphere: null,
-  enableWatermark: false,
-  liveCameraPosition: [0, 0, 0],
-  liveCameraRotationY: 0,
-  // showMinimap → useUIStore
-  showHumanFigures: false,
-  environmentPreset: 'indoor',
-  motionBlurEnabled: false,
-  showLightGlow: true,
-  showFlowSimulation: false,
-  referenceImageUrl: null,
-  referenceImageOpacity: 0.5,
-  // showCollisionHeatmap → useUIStore
-  showGodRays: false,
-  godRayIntensity: 0.6,
-  wetFloorEnabled: false,
-  wetFloorWetness: 0.5,
-  showLensFlare: false,
-  toneMappingPreset: 'aces',
-  renderQualityPreset: 'cinema',
-  skyTimeOfDay: 12,
-  showProceduralSky: false,
-  showAreaLights: true,
-  glassCondensation: 'off' as const,
-  showCaustics: false,
-  causticsIntensity: 0.5,
-  showSunSimulation: false,
-  showAcoustics: false,
-  beforeAfterActive: false,
-  beforeAfterLeft: null,
-  beforeAfterRight: null,
-  beforeAfterLeftLabel: '',
-  beforeAfterRightLabel: '',
-  showWindowDoorFrames: true,
-  showEvacuation: false,
-  showElectrical: false,
-  showHVAC: false,
-  showSmoke: false,
   clipboard: null,
-  cameraBookmarks: [],
-  snapshots: (() => {
-    try {
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('porano-perse-snapshots') : null;
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  })(),
-  styleCompareMode: false,
-  styleCompareLeft: null,
-  styleCompareRight: null,
-  styleCompareLeftName: null,
-  styleCompareRightName: null,
-
-  // カメラブックマーク
-  addCameraBookmark: (name, position, target, thumbnail) =>
-    set((s) => ({
-      cameraBookmarks: [
-        ...s.cameraBookmarks,
-        {
-          id: `cam_${Date.now()}`,
-          name,
-          position,
-          target,
-          thumbnail,
-        },
-      ],
-    })),
-  deleteCameraBookmark: (id) =>
-    set((s) => ({
-      cameraBookmarks: s.cameraBookmarks.filter((b) => b.id !== id),
-    })),
-  renameCameraBookmark: (id, name) =>
-    set((s) => ({
-      cameraBookmarks: s.cameraBookmarks.map((b) =>
-        b.id === id ? { ...b, name } : b
-      ),
-    })),
-  applyCameraBookmark: (id) => {
-    const bookmark = get().cameraBookmarks.find((b) => b.id === id);
-    if (bookmark) {
-      // Use a special preset key to signal the CameraController
-      set({ cameraPreset: `bookmark:${id}` });
-    }
-  },
-
-  // スタイル比較モード
-  setStyleCompareMode: (styleCompareMode) => set({ styleCompareMode }),
-  setStyleCompareScreenshot: (side, screenshot, styleName) => {
-    if (side === 'left') {
-      set({ styleCompareLeft: screenshot, styleCompareLeftName: styleName });
-    } else {
-      set({ styleCompareRight: screenshot, styleCompareRightName: styleName });
-    }
-  },
-  clearStyleComparison: () => set({
-    styleCompareMode: false,
-    styleCompareLeft: null,
-    styleCompareRight: null,
-    styleCompareLeftName: null,
-    styleCompareRightName: null,
-  }),
 
   // プロジェクト
   setProjectName: (projectName) => set({ projectName }),
@@ -654,6 +335,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   exportProject: () => {
     const s = get();
     const ui = useUIStore.getState();
+    const cam = useCameraStore.getState();
     const data: ProjectData = {
       projectName: s.projectName,
       walls: s.walls,
@@ -667,7 +349,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ceilingVisible: ui.ceilingVisible,
       showGrid: ui.showGrid,
       showDimensions: ui.showDimensions,
-      dayNight: s.dayNight,
+      dayNight: cam.dayNight,
     };
     const file: VersionedProjectFile = {
       version: 1,
@@ -705,10 +387,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         annotations: data.annotations || [],
         roomHeight: data.roomHeight ?? 2.7,
         style: data.style || 'modern',
-        dayNight: data.dayNight ?? 'day',
         history: [snapshot],
         historyIndex: 0,
       });
+      useCameraStore.getState().setDayNight(data.dayNight ?? 'day');
       useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
       useUIStore.getState().setWallDisplayMode(data.wallDisplayMode ?? 'section');
       useUIStore.getState().setCeilingVisible(data.ceilingVisible ?? false);
@@ -757,7 +439,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return false;
   },
 
-  markAutoSaved: () => set({ lastAutoSaved: Date.now() }),
+  // markAutoSaved → useProjectStore に移動済み
 
   // 壁
   addWall: (wall) =>
@@ -1207,30 +889,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const newIds = newFurniture.slice(-selIds.length).map((f) => f.id);
     useUIStore.getState()._setSelection({ selectedFurnitureIds: newIds, selectedFurnitureId: newIds[newIds.length - 1] });
   },
-  // setViewMode, startDrawingWall, finishDrawingWall, cancelDrawingWall, setZoom, zoomIn, zoomOut, resetZoom → useUIStore に移動済み
-  setCameraPreset: (cameraPreset) => set({ cameraPreset }),
-  setWalkthroughPlaying: (walkthroughPlaying) => set({ walkthroughPlaying, isAutoWalkthrough: false, walkthroughProgress: 0 }),
-  setAutoWalkthrough: (isAutoWalkthrough) => set((s) => ({
-    isAutoWalkthrough,
-    walkthroughPlaying: isAutoWalkthrough ? true : s.walkthroughPlaying,
-    walkthroughProgress: isAutoWalkthrough ? 0 : s.walkthroughProgress,
-    // Mutual exclusion with first-person mode
-    isFirstPersonMode: isAutoWalkthrough ? false : s.isFirstPersonMode,
-  })),
-  setWalkthroughSpeed: (walkthroughSpeed) => set({ walkthroughSpeed }),
-  setWalkthroughProgress: (walkthroughProgress) => set({ walkthroughProgress }),
-  // setShowGrid, setShowDimensions → useUIStore に移動済み
-  setDayNight: (dayNight) => set({ dayNight }),
-  setFogDistance: (fogDistance) => set({ fogDistance }),
-  setLightBrightness: (lightBrightness) => set({ lightBrightness: Math.max(0.2, Math.min(3, lightBrightness)), activeLightingPreset: null }),
-  setLightWarmth: (lightWarmth) => set({ lightWarmth: Math.max(0, Math.min(1, lightWarmth)), activeLightingPreset: null }),
-  setSnapToGrid3D: (snapToGrid3D) => set({ snapToGrid3D }),
-  setGridSnapSize: (gridSnapSize) => set({ gridSnapSize }),
-  setSnapToWall: (snapToWall) => set({ snapToWall }),
-  // setShowFurniture → useUIStore に移動済み
-  setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
-
-  // 衝突検出 → useUIStore に移動済み
+  // setCameraPreset ... setSnapToWall → useCameraStore に移動済み
+  // setEnableWatermark → useProjectStore に移動済み
 
   // 家具ロック
   toggleLockFurniture: (id) =>
@@ -1260,12 +920,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }));
   },
 
-  // カメラトラッキング（ミニマップ用）
-  setLiveCameraPosition: (liveCameraPosition) => set({ liveCameraPosition }),
-  setLiveCameraRotationY: (liveCameraRotationY) => set({ liveCameraRotationY }),
-
-  // setShowMinimap, toggleDarkMode, setMeasurementActive, toggleFlowHeatmap → useUIStore に移動済み
-  // toggleLightingAnalysis → useUIStore に移動済み
+  // setLiveCameraPosition, setLiveCameraRotationY → useCameraStore に移動済み
   applyAutoLayout: (roomType: string) => {
     const s = get();
     // 遅延インポートで循環参照を回避
@@ -1303,121 +958,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
-  // setPhotoMode → useUIStore に移動済み（qualityLevel復帰はEditorStoreに残す）
-  setPhotoMode: (v: boolean) => {
-    const ui = useUIStore.getState();
-    if (v) {
-      ui.setPhotoMode(true);
-      // qualityLevelはEditorStore管理なので、photoModePrevStateに保存済み
-    } else {
-      const prev = ui.photoModePrevState;
-      ui.setPhotoMode(false);
-      if (prev?.qualityLevel) {
-        set({ qualityLevel: prev.qualityLevel });
-      }
-    }
-  },
-
-  // ルーム雰囲気プリセット
-  applyRoomAtmosphere: (presetName) => set((s) => {
-    const ROOM_ATMOSPHERE_MAP: Record<string, {
-      style: StylePreset;
-      wallColor: string;
-      floorColor: string;
-      floorTextureType: string;
-      wallTextureType: string | null;
-      brightness: number;
-      warmth: number;
-      dayNight: 'day' | 'night';
-    }> = {
-      'natural': {
-        style: 'scandinavian',
-        wallColor: '#FFFFFF',
-        floorColor: '#C9A96E',
-        floorTextureType: 'scandinavian',
-        wallTextureType: null,
-        brightness: 1.0,
-        warmth: 0.55,
-        dayNight: 'day',
-      },
-      'modern': {
-        style: 'modern',
-        wallColor: '#E0E0E0',
-        floorColor: '#2A2A3A',
-        floorTextureType: 'modern',
-        wallTextureType: null,
-        brightness: 1.1,
-        warmth: 0.3,
-        dayNight: 'day',
-      },
-      'retro': {
-        style: 'retro',
-        wallColor: '#FFF5E1',
-        floorColor: '#8B6914',
-        floorTextureType: 'cafe',
-        wallTextureType: null,
-        brightness: 0.8,
-        warmth: 0.8,
-        dayNight: 'day',
-      },
-      'japanese': {
-        style: 'japanese',
-        wallColor: '#F0E6D0',
-        floorColor: '#B8A84C',
-        floorTextureType: 'japanese',
-        wallTextureType: null,
-        brightness: 0.75,
-        warmth: 0.65,
-        dayNight: 'day',
-      },
-      'industrial': {
-        style: 'industrial',
-        wallColor: '#A0522D',
-        floorColor: '#808080',
-        floorTextureType: 'industrial',
-        wallTextureType: null,
-        brightness: 0.9,
-        warmth: 0.35,
-        dayNight: 'day',
-      },
-    };
-    const preset = ROOM_ATMOSPHERE_MAP[presetName];
-    if (!preset) return {};
-    // テクスチャオーバーライドはUIStoreに委任
-    useUIStore.getState()._setSelection({});
-    const uiStore = useUIStore.getState();
-    uiStore.setWallColorOverride(preset.wallColor);
-    uiStore.setFloorColorOverride(preset.floorColor);
-    uiStore.setFloorTextureType(preset.floorTextureType);
-    uiStore.setWallTextureType(preset.wallTextureType);
-    return {
-      style: preset.style,
-      lightBrightness: preset.brightness,
-      lightWarmth: preset.warmth,
-      dayNight: preset.dayNight,
-      activeLightingPreset: null,
-      activeRoomAtmosphere: presetName,
-    };
-  }),
-  // setWallDisplayMode, setCeilingVisible, setSectionCutHeight → useUIStore に移動済み
-  activateDioramaMode: () => {
-    useUIStore.getState().activateDioramaMode();
-    set({ cameraPreset: 'diorama' });
-  },
-  // setIsDraggingFurniture → useUIStore に移動済み
-  setFirstPersonMode: (isFirstPersonMode) => set((s) => ({
-    isFirstPersonMode,
-    // 一人称モード開始時はウォークスルー再生を停止
-    walkthroughPlaying: isFirstPersonMode ? false : s.walkthroughPlaying,
-    isAutoWalkthrough: isFirstPersonMode ? false : s.isAutoWalkthrough,
-  })),
-  setQualityLevel: (qualityLevel) => set({ qualityLevel }),
-  applyLightingPreset: (preset) => set({
-    lightBrightness: Math.max(0.2, Math.min(3, preset.brightness)),
-    lightWarmth: Math.max(0, Math.min(1, preset.warmth)),
-    dayNight: preset.dayNight,
-    activeLightingPreset: preset.name,
-  }),
+  // setPhotoMode, applyRoomAtmosphere, activateDioramaMode, setFirstPersonMode,
+  // setQualityLevel, applyLightingPreset → useCameraStore に移動済み
 
   // 部屋形状
   initLShapeRoom: (width, depth) =>
@@ -1503,64 +1045,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `group-move-${groupId}`) };
     }),
 
-  // スナップショット（バージョン履歴）
-  saveSnapshot: (name) => {
-    const s = get();
-    const now = Date.now();
-    const autoName = name || `スナップショット ${new Date(now).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
-    const snapshotData = JSON.stringify({
-      walls: s.walls,
-      furniture: s.furniture,
-      openings: s.openings,
-      style: s.style,
-      roomHeight: s.roomHeight,
-    });
-    const newSnapshot = {
-      id: `snap_${now}_${Math.random().toString(36).slice(2, 8)}`,
-      name: autoName,
-      timestamp: now,
-      data: snapshotData,
-    };
-    const snapshots = [...s.snapshots, newSnapshot];
-    // 10件超過時は古いものを削除
-    while (snapshots.length > 10) snapshots.shift();
-    set({ snapshots });
-    try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
-  },
-  loadSnapshot: (id) => {
-    const s = get();
-    const snapshot = s.snapshots.find((snap) => snap.id === id);
-    if (!snapshot) return;
-    try {
-      const parsed = JSON.parse(snapshot.data);
-      // 現在の状態をundo履歴にプッシュしてから復元
-      const histUpdate = pushHistory(s, { walls: s.walls, openings: s.openings, furniture: s.furniture, roomHeight: s.roomHeight, style: s.style });
-      set({
-        walls: parsed.walls ?? s.walls,
-        furniture: parsed.furniture ?? s.furniture,
-        openings: parsed.openings ?? s.openings,
-        style: parsed.style ?? s.style,
-        roomHeight: parsed.roomHeight ?? s.roomHeight,
-        ...histUpdate,
-      });
-    } catch { /* invalid data */ }
-  },
-  deleteSnapshot: (id) => {
-    set((s) => {
-      const snapshots = s.snapshots.filter((snap) => snap.id !== id);
-      try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
-      return { snapshots };
-    });
-  },
-  renameSnapshot: (id, name) => {
-    set((s) => {
-      const snapshots = s.snapshots.map((snap) =>
-        snap.id === id ? { ...snap, name } : snap
-      );
-      try { localStorage.setItem('porano-perse-snapshots', JSON.stringify(snapshots)); } catch { /* ignore */ }
-      return { snapshots };
-    });
-  },
+  // saveSnapshot, loadSnapshot, deleteSnapshot, renameSnapshot → useProjectStore に移動済み
 
   selectAllFurniture: () => {
     const { furniture } = get();
@@ -1650,9 +1135,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       roomLabels: [],
       style: template.style,
       roomHeight: template.roomHeight,
-      cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
+    useCameraStore.getState().setCameraPreset('diorama');
     const ui = useUIStore.getState();
     ui._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
     ui.setWallDisplayMode('section');
@@ -1674,9 +1159,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       roomLabels: [],
       style: template.style,
       roomHeight: template.roomHeight,
-      cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
+    useCameraStore.getState().setCameraPreset('diorama');
     const ui = useUIStore.getState();
     ui._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
     ui.setWallDisplayMode('section');
@@ -1706,102 +1191,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
   },
 
-  // 複数プロジェクト管理
-  listSavedProjects: () => {
-    try {
-      const raw = localStorage.getItem(PROJECTS_KEY);
-      return raw ? (JSON.parse(raw) as SavedProject[]) : [];
-    } catch {
-      return [];
-    }
-  },
-
-  saveProjectToList: () => {
-    const state = get();
-    const projectData = state.exportProject();
-    try {
-      const projects: SavedProject[] = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
-      const existing = projects.findIndex((p) => p.name === state.projectName);
-      const entry: SavedProject = {
-        id: existing >= 0 ? projects[existing].id : `proj_${Date.now()}`,
-        name: state.projectName,
-        updatedAt: new Date().toISOString(),
-        data: projectData,
-      };
-      if (existing >= 0) {
-        projects[existing] = entry;
-      } else {
-        projects.unshift(entry);
-      }
-      localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-    } catch {
-      // localStorage unavailable or quota exceeded
-    }
-  },
-
-  loadProjectFromList: (id) => {
-    try {
-      const projects: SavedProject[] = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
-      const project = projects.find((p) => p.id === id);
-      if (project) {
-        get().importProject(project.data);
-      }
-    } catch {
-      // invalid data
-    }
-  },
-
-  deleteProjectFromList: (id) => {
-    try {
-      const projects: SavedProject[] = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
-      const filtered = projects.filter((p) => p.id !== id);
-      localStorage.setItem(PROJECTS_KEY, JSON.stringify(filtered));
-    } catch {
-      // localStorage unavailable
-    }
-  },
-
-  getShareUrl: () => {
-    const data = get().exportProject();
-    const compressed = LZString.compressToEncodedURIComponent(data);
-    const url = `${window.location.origin}${window.location.pathname}#project=${compressed}`;
-    return { url, tooLong: url.length > SHARE_URL_MAX_LENGTH };
-  },
-
-  loadFromShareUrl: (encoded) => {
-    try {
-      // LZString圧縮形式（新）
-      const json = LZString.decompressFromEncodedURIComponent(encoded);
-      if (json) {
-        get().importProject(json);
-        return;
-      }
-      // レガシーbtoa形式にフォールバック
-      const legacy = decodeURIComponent(escape(atob(encoded)));
-      get().importProject(legacy);
-    } catch (e) {
-      console.error('Failed to load shared project:', e);
-    }
-  },
-
-  // 人物シルエット
-  toggleHumanFigures: () => set((s) => ({ showHumanFigures: !s.showHumanFigures })),
-
-  // 環境プリセット
-  setEnvironmentPreset: (environmentPreset) => set({ environmentPreset }),
-
-  // モーションブラー
-  toggleMotionBlur: () => set((s) => ({ motionBlurEnabled: !s.motionBlurEnabled })),
-
-  // ライトグロー
-  toggleLightGlow: () => set((s) => ({ showLightGlow: !s.showLightGlow })),
-
-  // 動線シミュレーション
-  toggleFlowSimulation: () => set((s) => ({ showFlowSimulation: !s.showFlowSimulation })),
-
-  // 参照画像
-  setReferenceImage: (referenceImageUrl) => set({ referenceImageUrl }),
-  setReferenceImageOpacity: (referenceImageOpacity) => set({ referenceImageOpacity }),
+  // listSavedProjects ... loadFromShareUrl → useProjectStore に移動済み
+  // toggleHumanFigures ... setReferenceImageOpacity → useCameraStore に移動済み
 
   // 家具高さオフセット
   updateFurnitureHeight: (id, heightOffset) =>
@@ -1824,45 +1215,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         f.id === id ? { ...f, materialOverride: undefined } : f
       ),
     })),
-  // Round 7: 衝突ヒートマップ
-  // toggleCollisionHeatmap → useUIStore に移動済み
-  // Round 8
-  toggleGodRays: () => set((s) => ({ showGodRays: !s.showGodRays })),
-  setGodRayIntensity: (v) => set({ godRayIntensity: v }),
-  toggleWetFloor: () => set((s) => ({ wetFloorEnabled: !s.wetFloorEnabled })),
-  setWetFloorWetness: (v) => set({ wetFloorWetness: v }),
-  toggleLensFlare: () => set((s) => ({ showLensFlare: !s.showLensFlare })),
-  setToneMappingPreset: (preset) => set({ toneMappingPreset: preset }),
-  setRenderQualityPreset: (preset) => set({ renderQualityPreset: preset }),
-  // Round 9
-  setSkyTimeOfDay: (v) => set({ skyTimeOfDay: v }),
-  toggleProceduralSky: () => set((s) => ({ showProceduralSky: !s.showProceduralSky })),
-  toggleAreaLights: () => set((s) => ({ showAreaLights: !s.showAreaLights })),
-  setGlassCondensation: (v) => set({ glassCondensation: v }),
-  toggleCaustics: () => set((s) => ({ showCaustics: !s.showCaustics })),
-  setCausticsIntensity: (v) => set({ causticsIntensity: v }),
-  toggleSunSimulation: () => set((s) => ({ showSunSimulation: !s.showSunSimulation })),
-  toggleAcoustics: () => set((s) => ({ showAcoustics: !s.showAcoustics })),
-  setBeforeAfter: (left, right, leftLabel, rightLabel) => set({
-    beforeAfterActive: true,
-    beforeAfterLeft: left,
-    beforeAfterRight: right,
-    beforeAfterLeftLabel: leftLabel,
-    beforeAfterRightLabel: rightLabel,
-  }),
-  closeBeforeAfter: () => set({
-    beforeAfterActive: false,
-    beforeAfterLeft: null,
-    beforeAfterRight: null,
-    beforeAfterLeftLabel: '',
-    beforeAfterRightLabel: '',
-  }),
-  toggleWindowDoorFrames: () => set((s) => ({ showWindowDoorFrames: !s.showWindowDoorFrames })),
-  // Round 10
-  toggleEvacuation: () => set((s) => ({ showEvacuation: !s.showEvacuation })),
-  toggleElectrical: () => set((s) => ({ showElectrical: !s.showElectrical })),
-  toggleHVAC: () => set((s) => ({ showHVAC: !s.showHVAC })),
-  toggleSmoke: () => set((s) => ({ showSmoke: !s.showSmoke })),
+  // Round 7-10: 全3D効果 → useCameraStore に移動済み
 
   // ─── 仕上げ材・設備・配線 ───────────────────────
   wallFinishAssignments: [] as WallFinishAssignment[],

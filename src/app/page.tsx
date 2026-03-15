@@ -3,6 +3,8 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -120,7 +122,7 @@ export default function EditorPage() {
   const moveFurniture = useEditorStore((s) => s.moveFurniture);
   const restoreFromLocalStorage = useEditorStore((s) => s.restoreFromLocalStorage);
   const loadTemplate = useEditorStore((s) => s.loadTemplate);
-  const loadFromShareUrl = useEditorStore((s) => s.loadFromShareUrl);
+  const loadFromShareUrl = useProjectStore((s) => s.loadFromShareUrl);
   const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
   const setWallDisplayMode = useUIStore(s => s.setWallDisplayMode);
   const photoMode = useUIStore(s => s.photoMode);
@@ -130,9 +132,9 @@ export default function EditorPage() {
   const furniture = useEditorStore((s) => s.furniture);
   const showMinimap = useUIStore(s => s.showMinimap);
   const setShowMinimap = useUIStore(s => s.setShowMinimap);
-  const liveCameraPosition = useEditorStore((s) => s.liveCameraPosition);
-  const liveCameraRotationY = useEditorStore((s) => s.liveCameraRotationY);
-  const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
+  const liveCameraPosition = useCameraStore((s) => s.liveCameraPosition);
+  const liveCameraRotationY = useCameraStore((s) => s.liveCameraRotationY);
+  const setCameraPreset = useCameraStore((s) => s.setCameraPreset);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef2D = useRef<HTMLCanvasElement | null>(null);
 

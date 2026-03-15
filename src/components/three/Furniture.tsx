@@ -7,6 +7,7 @@ import { RoundedBox, Html } from '@react-three/drei';
 import { FurnitureItem, FurnitureMaterial, WoodType, FabricType, MetalFinish } from '@/types/scene';
 import { WallSegment } from '@/types/floor-plan';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import {
@@ -519,8 +520,8 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     let z = intersect.z - dragOffset.current.z;
 
     // グリッドスナップ
-    const currentSnapToGrid = useEditorStore.getState().snapToGrid3D;
-    const currentGridSize = useEditorStore.getState().gridSnapSize;
+    const currentSnapToGrid = useCameraStore.getState().snapToGrid3D;
+    const currentGridSize = useCameraStore.getState().gridSnapSize;
     if (currentSnapToGrid) {
       x = snapToGridValue(x, currentGridSize);
       z = snapToGridValue(z, currentGridSize);
@@ -530,7 +531,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     }
 
     // 壁スナップ
-    const currentSnapToWall = useEditorStore.getState().snapToWall;
+    const currentSnapToWall = useCameraStore.getState().snapToWall;
     const currentWalls = useEditorStore.getState().walls;
     if (currentSnapToWall) {
       const wallSnap = findNearestWallSnap(x, z, currentWalls, 0.3);
@@ -1770,7 +1771,7 @@ function Shelf({ scale, color, palette, pbr, selected, woodType, metalFinish, qu
 function PendantLight({ scale, color, palette, metalFinish, qualityLevel }: FurniturePartProps) {
   const [w, h] = scale;
   const style = useEditorStore((s) => s.style);
-  const dayNight = useEditorStore((s) => s.dayNight);
+  const dayNight = useCameraStore((s) => s.dayNight);
   const isNight = dayNight === 'night';
 
   // スタイル別SpotLight設定

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useEditorStore, CameraBookmark } from '@/stores/useEditorStore';
+import { useCameraStore, CameraBookmark } from '@/stores/useCameraStore';
 
 interface CameraBookmarkPanelProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -17,10 +17,10 @@ export function setCameraStateGetter(
 }
 
 export function CameraBookmarkPanel({ canvasRef }: CameraBookmarkPanelProps) {
-  const cameraBookmarks = useEditorStore((s) => s.cameraBookmarks);
-  const addCameraBookmark = useEditorStore((s) => s.addCameraBookmark);
-  const deleteCameraBookmark = useEditorStore((s) => s.deleteCameraBookmark);
-  const applyCameraBookmark = useEditorStore((s) => s.applyCameraBookmark);
+  const cameraBookmarks = useCameraStore((s) => s.cameraBookmarks);
+  const addCameraBookmark = useCameraStore((s) => s.addCameraBookmark);
+  const deleteCameraBookmark = useCameraStore((s) => s.deleteCameraBookmark);
+  const applyCameraBookmark = useCameraStore((s) => s.applyCameraBookmark);
   const [showInput, setShowInput] = useState(false);
   const [bookmarkName, setBookmarkName] = useState('');
 

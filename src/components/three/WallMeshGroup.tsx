@@ -8,6 +8,7 @@ import { StyleConfig } from '@/types/scene';
 import { wallLength, wallAngle } from '@/lib/geometry';
 import { DoorWindowMesh } from './DoorWindowMesh';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 
@@ -65,7 +66,7 @@ function useWallTexture(
   wall: WallSegment,
 ): WallTextureResult {
   // 品質レベルに応じた解像度を取得
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
   const res = getTextureResolution(qualityLevel);
 
   const map = useMemo(() => {
@@ -793,7 +794,7 @@ interface WallMeshGroupProps {
 }
 
 export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings, style }: WallMeshGroupProps) {
-  const dayNight = useEditorStore((s) => s.dayNight);
+  const dayNight = useCameraStore((s) => s.dayNight);
   const wallColorOverride = useUIStore(s => s.wallColorOverride);
   const wallTextureType = useUIStore(s => s.wallTextureType);
   const wallDisplayMode = useUIStore(s => s.wallDisplayMode);

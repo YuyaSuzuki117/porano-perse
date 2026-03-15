@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 interface WalkthroughPoint {
   position: [number, number, number];
@@ -205,21 +206,21 @@ const _presetTransition = {
 
 export function CameraController() {
   const { camera, gl } = useThree();
-  const cameraPreset = useEditorStore((s) => s.cameraPreset);
-  const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
-  const walkthroughPlaying = useEditorStore((s) => s.walkthroughPlaying);
-  const setWalkthroughPlaying = useEditorStore((s) => s.setWalkthroughPlaying);
-  const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);
-  const setAutoWalkthrough = useEditorStore((s) => s.setAutoWalkthrough);
-  const walkthroughSpeed = useEditorStore((s) => s.walkthroughSpeed);
-  const setWalkthroughProgress = useEditorStore((s) => s.setWalkthroughProgress);
-  const isFirstPersonMode = useEditorStore((s) => s.isFirstPersonMode);
-  const setFirstPersonMode = useEditorStore((s) => s.setFirstPersonMode);
+  const cameraPreset = useCameraStore((s) => s.cameraPreset);
+  const setCameraPreset = useCameraStore((s) => s.setCameraPreset);
+  const walkthroughPlaying = useCameraStore((s) => s.walkthroughPlaying);
+  const setWalkthroughPlaying = useCameraStore((s) => s.setWalkthroughPlaying);
+  const isAutoWalkthrough = useCameraStore((s) => s.isAutoWalkthrough);
+  const setAutoWalkthrough = useCameraStore((s) => s.setAutoWalkthrough);
+  const walkthroughSpeed = useCameraStore((s) => s.walkthroughSpeed);
+  const setWalkthroughProgress = useCameraStore((s) => s.setWalkthroughProgress);
+  const isFirstPersonMode = useCameraStore((s) => s.isFirstPersonMode);
+  const setFirstPersonMode = useCameraStore((s) => s.setFirstPersonMode);
   const walls = useEditorStore((s) => s.walls);
   const roomHeight = useEditorStore((s) => s.roomHeight);
   const furniture = useEditorStore((s) => s.furniture);
   const openings = useEditorStore((s) => s.openings);
-  const cameraBookmarks = useEditorStore((s) => s.cameraBookmarks);
+  const cameraBookmarks = useCameraStore((s) => s.cameraBookmarks);
 
   // Auto walkthrough state in refs
   const autoWalkthroughRef = useRef({

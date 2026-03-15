@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 const EYE_HEIGHT = 1.6;
 const MOVE_SPEED = 2.0; // m/s
@@ -17,8 +18,8 @@ const _movement = new THREE.Vector3();
 
 export function WalkthroughControls() {
   const { camera, gl } = useThree();
-  const isFirstPersonMode = useEditorStore((s) => s.isFirstPersonMode);
-  const setFirstPersonMode = useEditorStore((s) => s.setFirstPersonMode);
+  const isFirstPersonMode = useCameraStore((s) => s.isFirstPersonMode);
+  const setFirstPersonMode = useCameraStore((s) => s.setFirstPersonMode);
   const walls = useEditorStore((s) => s.walls);
 
   // Track keys and mouse state via refs (no setState in frame loop)

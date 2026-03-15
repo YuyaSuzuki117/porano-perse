@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState, type RefObject } from 'react';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { showToast } from '@/components/ui/Toast';
 
 function isMobile(): boolean {
@@ -57,7 +57,7 @@ async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
  * モバイルではWeb Share APIまたはダウンロードリンクで保存。
  */
 export function useScreenshot(canvasRef: RefObject<HTMLCanvasElement | null>) {
-  const enableWatermark = useEditorStore((s) => s.enableWatermark);
+  const enableWatermark = useProjectStore((s) => s.enableWatermark);
   const [isRendering, setIsRendering] = useState(false);
 
   /** ウォーターマークを描画 */

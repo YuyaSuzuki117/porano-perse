@@ -7,6 +7,7 @@ import { WallSegment } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
 import { computeFloorPolygon, wallLength, wallAngle } from '@/lib/geometry';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useCeilingTexture } from '@/hooks/useCeilingTexture';
 import { RecessedLight } from './RecessedLight';
@@ -134,9 +135,9 @@ function ceilingMeshPropsAreEqual(prev: CeilingMeshProps, next: CeilingMeshProps
 }
 
 export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, style }: CeilingMeshProps) {
-  const dayNight = useEditorStore((s) => s.dayNight);
+  const dayNight = useCameraStore((s) => s.dayNight);
   const ceilingVisible = useUIStore(s => s.ceilingVisible);
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
   const isNight = dayNight === 'night';
 
   // 天井マテリアルの参照（カメラ角度ベースのフェードに使用）

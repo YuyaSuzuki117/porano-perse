@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { WallSegment, Opening } from '@/types/floor-plan';
 import { wallAngle } from '@/lib/geometry';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 interface WindowLightBeamsProps {
   walls: WallSegment[];
@@ -23,7 +23,7 @@ function lightBeamPropsAreEqual(prev: WindowLightBeamsProps, next: WindowLightBe
 }
 
 export const WindowLightBeams = React.memo(function WindowLightBeams({ walls, openings, roomHeight, qualityLevel = 'high' }: WindowLightBeamsProps) {
-  const dayNight = useEditorStore((s) => s.dayNight);
+  const dayNight = useCameraStore((s) => s.dayNight);
   const isNight = dayNight === 'night';
 
   const windowOpenings = useMemo(() => {

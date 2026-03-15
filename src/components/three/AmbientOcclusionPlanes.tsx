@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 /** Creates a vertical gradient texture from dark to transparent */
 function createAOGradient(width: number, height: number): THREE.CanvasTexture {
@@ -40,7 +41,7 @@ function createFloorAOGradient(width: number, height: number): THREE.CanvasTextu
 export default function AmbientOcclusionPlanes() {
   const walls = useEditorStore(s => s.walls);
   const roomHeight = useEditorStore(s => s.roomHeight);
-  const qualityLevel = useEditorStore(s => s.qualityLevel);
+  const qualityLevel = useCameraStore(s => s.qualityLevel);
 
   const { roomWidth, roomDepth } = useMemo(() => {
     if (walls.length === 0) return { roomWidth: 6, roomDepth: 6 };

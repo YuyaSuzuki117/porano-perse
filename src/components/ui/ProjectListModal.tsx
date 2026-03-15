@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useEditorStore, SavedProject } from '@/stores/useEditorStore';
+import { useEditorStore } from '@/stores/useEditorStore';
+import { useProjectStore, SavedProject } from '@/stores/useProjectStore';
 
 interface ProjectListModalProps {
   isOpen: boolean;
@@ -9,10 +10,10 @@ interface ProjectListModalProps {
 }
 
 export function ProjectListModal({ isOpen, onClose }: ProjectListModalProps) {
-  const listSavedProjects = useEditorStore((s) => s.listSavedProjects);
-  const saveProjectToList = useEditorStore((s) => s.saveProjectToList);
-  const loadProjectFromList = useEditorStore((s) => s.loadProjectFromList);
-  const deleteProjectFromList = useEditorStore((s) => s.deleteProjectFromList);
+  const listSavedProjects = useProjectStore((s) => s.listSavedProjects);
+  const saveProjectToList = useProjectStore((s) => s.saveProjectToList);
+  const loadProjectFromList = useProjectStore((s) => s.loadProjectFromList);
+  const deleteProjectFromList = useProjectStore((s) => s.deleteProjectFromList);
   const projectName = useEditorStore((s) => s.projectName);
 
   const [projects, setProjects] = useState<SavedProject[]>([]);

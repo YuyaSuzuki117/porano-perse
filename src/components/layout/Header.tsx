@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { ExportPanel } from '@/components/ui/ExportPanel';
 import { KeyboardShortcuts } from '@/components/ui/KeyboardShortcuts';
@@ -32,8 +33,8 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
   const exportProject = useEditorStore((s) => s.exportProject);
   const importProject = useEditorStore((s) => s.importProject);
   const resetProject = useEditorStore((s) => s.resetProject);
-  const lastAutoSaved = useEditorStore((s) => s.lastAutoSaved);
-  const getShareUrl = useEditorStore((s) => s.getShareUrl);
+  const lastAutoSaved = useProjectStore((s) => s.lastAutoSaved);
+  const getShareUrl = useProjectStore((s) => s.getShareUrl);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(projectName);
@@ -44,8 +45,8 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
   const [qrUrl, setQrUrl] = useState('');
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
-  const enableWatermark = useEditorStore((s) => s.enableWatermark);
-  const setEnableWatermark = useEditorStore((s) => s.setEnableWatermark);
+  const enableWatermark = useProjectStore((s) => s.enableWatermark);
+  const setEnableWatermark = useProjectStore((s) => s.setEnableWatermark);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // モバイルメニューを画面外クリックで閉じる

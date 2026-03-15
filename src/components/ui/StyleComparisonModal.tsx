@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StylePreset } from '@/types/scene';
 
@@ -12,13 +13,13 @@ interface StyleComparisonModalProps {
 export function StyleComparisonModal({ canvasRef }: StyleComparisonModalProps) {
   const style = useEditorStore((s) => s.style);
   const setStyle = useEditorStore((s) => s.setStyle);
-  const styleCompareMode = useEditorStore((s) => s.styleCompareMode);
-  const styleCompareLeft = useEditorStore((s) => s.styleCompareLeft);
-  const styleCompareRight = useEditorStore((s) => s.styleCompareRight);
-  const styleCompareLeftName = useEditorStore((s) => s.styleCompareLeftName);
-  const styleCompareRightName = useEditorStore((s) => s.styleCompareRightName);
-  const setStyleCompareScreenshot = useEditorStore((s) => s.setStyleCompareScreenshot);
-  const clearStyleComparison = useEditorStore((s) => s.clearStyleComparison);
+  const styleCompareMode = useCameraStore((s) => s.styleCompareMode);
+  const styleCompareLeft = useCameraStore((s) => s.styleCompareLeft);
+  const styleCompareRight = useCameraStore((s) => s.styleCompareRight);
+  const styleCompareLeftName = useCameraStore((s) => s.styleCompareLeftName);
+  const styleCompareRightName = useCameraStore((s) => s.styleCompareRightName);
+  const setStyleCompareScreenshot = useCameraStore((s) => s.setStyleCompareScreenshot);
+  const clearStyleComparison = useCameraStore((s) => s.clearStyleComparison);
 
   const [capturing, setCapturing] = useState(false);
   const [selectedCompareStyle, setSelectedCompareStyle] = useState<StylePreset | null>(null);

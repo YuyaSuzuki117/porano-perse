@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { createTimelapseRecorder } from '@/lib/timelapse-recorder';
 import { renderStereo3D, StereoMode } from '@/lib/stereo-3d-export';
 import {
@@ -44,8 +45,8 @@ export function AdvancedExportPanel({ canvasRef }: AdvancedExportPanelProps) {
   const [isGeneratingViewer, setIsGeneratingViewer] = useState(false);
 
   // --- ストアからセッターを取得 ---
-  const setSkyTimeOfDay = useEditorStore((s) => s.setSkyTimeOfDay);
-  const setBeforeAfter = useEditorStore((s) => s.setBeforeAfter);
+  const setSkyTimeOfDay = useCameraStore((s) => s.setSkyTimeOfDay);
+  const setBeforeAfter = useCameraStore((s) => s.setBeforeAfter);
 
   /**
    * タイムラプス録画を開始する

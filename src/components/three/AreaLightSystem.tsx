@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Opening, WallSegment } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { wallLength, wallAngle } from '@/lib/geometry';
 
 interface AreaLightSystemProps {
@@ -54,7 +54,7 @@ export const AreaLightSystem = React.memo(function AreaLightSystem({
   style,
   qualityLevel,
 }: AreaLightSystemProps) {
-  const dayNight = useEditorStore((s) => s.dayNight);
+  const dayNight = useCameraStore((s) => s.dayNight);
   const isNight = dayNight === 'night';
 
   // 低品質モードではライト生成をスキップ

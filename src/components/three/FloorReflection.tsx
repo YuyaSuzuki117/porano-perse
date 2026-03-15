@@ -1,10 +1,11 @@
 'use client';
 import { useMemo } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 
 export default function FloorReflection() {
   const walls = useEditorStore(s => s.walls);
-  const qualityLevel = useEditorStore(s => s.qualityLevel);
+  const qualityLevel = useCameraStore(s => s.qualityLevel);
 
   const { w, d } = useMemo(() => {
     if (walls.length === 0) return { w: 6, d: 6 };

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useId } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FURNITURE_CATALOG } from '@/data/furniture';
@@ -87,10 +89,6 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     furniture,
     roomHeight,
     style,
-    dayNight,
-    fogDistance,
-    lightBrightness,
-    lightWarmth,
     setStyle,
     setRoomHeight,
     addFurniture,
@@ -110,6 +108,28 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     loadTemplate,
     loadRoomTemplate,
     newProject,
+    applyFurnitureSet,
+    roomLabels,
+    addRoomLabel,
+    updateRoomLabel,
+    deleteRoomLabel,
+    annotations,
+    addAnnotation,
+    updateAnnotation,
+    deleteAnnotation,
+    toggleLockFurniture,
+    applyAutoLayout,
+    updateFurnitureHeight,
+    updateFurnitureMaterialOverride,
+    resetFurnitureMaterialOverride,
+  } = useEditorStore();
+
+  // カメラ・ライティング・3D効果 → useCameraStore
+  const {
+    dayNight,
+    fogDistance,
+    lightBrightness,
+    lightWarmth,
     setDayNight,
     setFogDistance,
     setLightBrightness,
@@ -122,21 +142,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setSnapToWall,
     activeLightingPreset,
     applyLightingPreset,
-    applyFurnitureSet,
     qualityLevel,
     setQualityLevel,
-    roomLabels,
-    addRoomLabel,
-    updateRoomLabel,
-    deleteRoomLabel,
-    annotations,
-    addAnnotation,
-    updateAnnotation,
-    deleteAnnotation,
     activeRoomAtmosphere,
     applyRoomAtmosphere,
-    toggleLockFurniture,
-    applyAutoLayout,
     showHumanFigures,
     toggleHumanFigures,
     environmentPreset,
@@ -161,10 +170,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setToneMappingPreset,
     renderQualityPreset,
     setRenderQualityPreset,
-    updateFurnitureHeight,
-    updateFurnitureMaterialOverride,
-    resetFurnitureMaterialOverride,
-  } = useEditorStore();
+  } = useCameraStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
   const [furnitureTab, setFurnitureTab] = useState<'single' | 'sets'>('single');
@@ -729,7 +735,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           )}
         </div>
         <button
-          onClick={() => useEditorStore.getState().setStyleCompareMode(true)}
+          onClick={() => useCameraStore.getState().setStyleCompareMode(true)}
           className="mt-2 w-full px-3 py-1.5 rounded text-xs font-medium bg-gradient-to-r from-blue-50 to-orange-50 text-gray-700 hover:from-blue-100 hover:to-orange-100 border border-gray-200 transition-all"
         >
           A/B スタイル比較
@@ -2082,8 +2088,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* 参照画像 */}
       <Section title="参照画像" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <ReferenceImagePanel onChange={(state) => {
-          useEditorStore.getState().setReferenceImage(state.imageUrl);
-          useEditorStore.getState().setReferenceImageOpacity(state.opacity);
+          useCameraStore.getState().setReferenceImage(state.imageUrl);
+          useCameraStore.getState().setReferenceImageOpacity(state.opacity);
         }} />
       </Section>
 
@@ -2393,11 +2399,11 @@ function relativeTime(timestamp: number): string {
 
 /** スナップショットパネル: バージョン履歴のUI */
 function SnapshotPanel() {
-  const snapshots = useEditorStore((s) => s.snapshots);
-  const saveSnapshot = useEditorStore((s) => s.saveSnapshot);
-  const loadSnapshot = useEditorStore((s) => s.loadSnapshot);
-  const deleteSnapshot = useEditorStore((s) => s.deleteSnapshot);
-  const renameSnapshot = useEditorStore((s) => s.renameSnapshot);
+  const snapshots = useProjectStore((s) => s.snapshots);
+  const saveSnapshot = useProjectStore((s) => s.saveSnapshot);
+  const loadSnapshot = useProjectStore((s) => s.loadSnapshot);
+  const deleteSnapshot = useProjectStore((s) => s.deleteSnapshot);
+  const renameSnapshot = useProjectStore((s) => s.renameSnapshot);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');

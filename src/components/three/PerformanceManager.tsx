@@ -11,14 +11,14 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { updateLODs } from './InstancedFurniture';
 
 /** FPS移動平均のサンプル数 */
 const FPS_SAMPLE_COUNT = 30;
 
 export function PerformanceManager() {
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
   const frameCounter = useRef(0);
 
   // FPS移動平均トラッカー（ref管理、setState不使用）

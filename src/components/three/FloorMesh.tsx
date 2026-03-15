@@ -7,6 +7,7 @@ import { WallSegment } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
 import { computeFloorPolygon } from '@/lib/geometry';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 
@@ -31,7 +32,7 @@ function useFloorTexture(
   const effectiveTextureType = textureTypeOverride ?? style.name;
 
   // 品質レベルに応じた解像度を取得
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
   const res = getTextureResolution(qualityLevel);
 
   // floorSize を小数点1桁に丸め（微小な変化での再生成を防止）
@@ -282,7 +283,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
 
   // テクスチャタイプに基づく床マテリアルパラメータ
   const effectiveFloorType = floorTextureType ?? style.name;
-  const qualityLevel = useEditorStore((s) => s.qualityLevel);
+  const qualityLevel = useCameraStore((s) => s.qualityLevel);
 
   // high品質時: テクスチャの異方性フィルタリングを最大化（斜め視点でもシャープ）
   useMemo(() => {

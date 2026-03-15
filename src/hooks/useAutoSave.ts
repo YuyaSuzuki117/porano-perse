@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useEditorStore, LOCALSTORAGE_KEY } from '@/stores/useEditorStore';
+import { useCameraStore } from '@/stores/useCameraStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { useUIStore } from '@/stores/useUIStore';
 
 export function useAutoSave(debounceMs = 2000) {
@@ -26,7 +28,7 @@ export function useAutoSave(debounceMs = 2000) {
                 ceilingVisible: ui.ceilingVisible,
                 showGrid: ui.showGrid,
                 showDimensions: ui.showDimensions,
-                dayNight: state.dayNight,
+                dayNight: useCameraStore.getState().dayNight,
               };
               const file = {
                 version: 1,
@@ -35,7 +37,7 @@ export function useAutoSave(debounceMs = 2000) {
                 data,
               };
               localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(file));
-              state.markAutoSaved();
+              useProjectStore.getState().markAutoSaved();
             } catch {
               // localStorage full or unavailable
             }
