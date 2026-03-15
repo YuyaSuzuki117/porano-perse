@@ -22,6 +22,7 @@ import { MeasurementTool } from '@/components/three/MeasurementTool';
 import { MiniMap } from '@/components/ui/MiniMap';
 import { FurnitureContextMenu } from '@/components/ui/FurnitureContextMenu';
 import SeatCounter from '@/components/ui/SeatCounter';
+import AIAssistPanel from '@/components/ui/AIAssistPanel';
 import { SelectionOverlay } from '@/components/ui/SelectionOverlay';
 import { exportProposalPDF } from '@/lib/pdf-export';
 import { FURNITURE_CATALOG } from '@/data/furniture';
@@ -182,6 +183,7 @@ export default function EditorPage() {
   const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'settings'>('2d');
   const [fabOpen, setFabOpen] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // モバイル長押しコンテキストメニュー
   const [contextMenu, setContextMenu] = useState<{ furnitureId: string; position: { x: number; y: number } } | null>(null);
@@ -573,6 +575,18 @@ export default function EditorPage() {
               >
                 📷
               </button>
+              <button
+                onClick={() => {
+                  setFabOpen(false);
+                  setShowAIPanel(true);
+                }}
+                className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg border border-purple-400 flex items-center justify-center text-lg active:scale-90 transition-transform"
+                aria-label="AIアシスト"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </button>
             </>
           )}
           {/* メインFABボタン */}
@@ -624,6 +638,9 @@ export default function EditorPage() {
             setMobileTab(currentVM === '3d' ? '3d' : '2d');
           }}
         />
+
+        {/* AI Assist Panel */}
+        <AIAssistPanel isOpen={showAIPanel} onClose={() => setShowAIPanel(false)} />
 
         {/* モバイル長押しコンテキストメニュー */}
         {contextMenu && (
@@ -813,6 +830,24 @@ export default function EditorPage() {
 
         {/* 右パネル */}
         <EditorControlPanel />
+
+        {/* AI Assist toggle button (desktop) */}
+        {!showAIPanel && (
+          <button
+            onClick={() => setShowAIPanel(true)}
+            className="fixed bottom-4 right-[304px] z-[100] flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-200"
+            aria-label="AIアシストを開く"
+            title="AIアシスト"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+            <span className="text-xs font-semibold">AI</span>
+          </button>
+        )}
+
+        {/* AI Assist Panel (desktop) */}
+        <AIAssistPanel isOpen={showAIPanel} onClose={() => setShowAIPanel(false)} />
       </div>
       <KeyboardShortcutHelp />
     </div>

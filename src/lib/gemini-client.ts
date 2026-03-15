@@ -1,19 +1,18 @@
 /**
  * gemini-client.ts
  *
- * Gemini クライアント（Google AI Studio 無料枠専用）
- * - モデル: gemini-2.5-flash
- * - シングルトンパターンでクライアントを管理
- * - responseMimeType: 'application/json' でJSON出力を強制
- * - temperature デフォルト 0（オプションで変更可能）
+ * Gemini client (Google AI Studio free tier only)
+ * - Model: gemini-2.0-flash-lite (stable, free, fast)
+ * - Singleton pattern
+ * - responseMimeType: 'application/json' for structured output
+ * - 50s timeout to stay within Vercel's 60s limit
  */
 
 import { GoogleGenAI } from '@google/genai'
 
-// シングルトンインスタンス
+// Singleton
 let _client: GoogleGenAI | null = null
 
-/** クライアントを取得（未設定なら null） */
 function getClient(): GoogleGenAI | null {
   if (_client) return _client
 
@@ -24,15 +23,57 @@ function getClient(): GoogleGenAI | null {
   return _client
 }
 
-/** 使用モデル: gemini-2.5-flash（最新・無料枠対応） */
-const MODEL = 'gemini-2.5-flash'
+/** Primary model — gemini-2.0-flash-lite (free, stable, no thinking) */
+const MODEL_PRIMARY = 'gemini-2.0-flash-lite'
+/** Fallback model — gemini-2.0-flash */
+const MODEL_FALLBACK = 'gemini-2.0-flash'
 
-/** Gemini API が利用可能かチェック */
+/** Timeout for API calls (50s to stay under Vercel's 60s) */
+const API_TIMEOUT_MS = 50_000
+
 export function isGeminiAvailable(): boolean {
   return !!getClient()
 }
 
-/** テキストのみで生成 */
+/** Helper: wrap a promise with AbortSignal-based timeout */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Gemini API timeout (${ms}ms)`)), ms)
+    promise
+      .then((v) => { clearTimeout(timer); resolve(v) })
+      .catch((e) => { clearTimeout(timer); reject(e) })
+  })
+}
+
+/** Generate with automatic model fallback */
+async function callGenerate(
+  client: GoogleGenAI,
+  model: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contents: any,
+  config: Record<string, unknown>
+): Promise<string> {
+  try {
+    const response = await withTimeout(
+      client.models.generateContent({ model, contents, config }),
+      API_TIMEOUT_MS
+    )
+    return response.text ?? ''
+  } catch (err) {
+    // If primary model fails, try fallback
+    if (model === MODEL_PRIMARY) {
+      console.warn(`[GeminiClient] ${MODEL_PRIMARY} failed, falling back to ${MODEL_FALLBACK}:`, err)
+      const response = await withTimeout(
+        client.models.generateContent({ model: MODEL_FALLBACK, contents, config }),
+        API_TIMEOUT_MS
+      )
+      return response.text ?? ''
+    }
+    throw err
+  }
+}
+
+/** Text-only generation */
 export async function generateText(params: {
   systemPrompt: string
   userPrompt: string
@@ -40,25 +81,17 @@ export async function generateText(params: {
   temperature?: number
 }): Promise<string> {
   const client = getClient()
-  if (!client) throw new Error('Gemini client not available — GEMINI_API_KEY を設定してください')
+  if (!client) throw new Error('Gemini client not available — set GEMINI_API_KEY')
 
-  const response = await client.models.generateContent({
-    model: MODEL,
-    contents: params.userPrompt,
-    config: {
-      systemInstruction: params.systemPrompt,
-      maxOutputTokens: params.maxOutputTokens ?? 200,
-      temperature: params.temperature ?? 0,
-      topK: 1,
-      responseMimeType: 'application/json',
-      thinkingConfig: { thinkingBudget: 0 },
-    },
+  return callGenerate(client, MODEL_PRIMARY, params.userPrompt, {
+    systemInstruction: params.systemPrompt,
+    maxOutputTokens: params.maxOutputTokens ?? 200,
+    temperature: params.temperature ?? 0,
+    responseMimeType: 'application/json',
   })
-
-  return response.text ?? ''
 }
 
-/** 画像付きで生成 */
+/** Multimodal generation (image + text) */
 export async function generateWithImage(params: {
   systemPrompt: string
   userPrompt: string
@@ -68,11 +101,12 @@ export async function generateWithImage(params: {
   temperature?: number
 }): Promise<string> {
   const client = getClient()
-  if (!client) throw new Error('Gemini client not available — GEMINI_API_KEY を設定してください')
+  if (!client) throw new Error('Gemini client not available — set GEMINI_API_KEY')
 
-  const response = await client.models.generateContent({
-    model: MODEL,
-    contents: [
+  return callGenerate(
+    client,
+    MODEL_PRIMARY,
+    [
       {
         role: 'user',
         parts: [
@@ -81,17 +115,13 @@ export async function generateWithImage(params: {
         ],
       },
     ],
-    config: {
+    {
       systemInstruction: params.systemPrompt,
       maxOutputTokens: params.maxOutputTokens ?? 200,
       temperature: params.temperature ?? 0,
-      topK: 1,
       responseMimeType: 'application/json',
-      thinkingConfig: { thinkingBudget: 0 },
-    },
-  })
-
-  return response.text ?? ''
+    }
+  )
 }
 
 /**

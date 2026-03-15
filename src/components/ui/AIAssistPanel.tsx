@@ -2,6 +2,10 @@
 
 import { useState, useCallback, useRef, type DragEvent, type ChangeEvent } from 'react';
 import type { StyleAnalysis, LayoutSuggestion, BusinessType } from '@/types/ai';
+import type { StylePreset, FurnitureType, FurnitureItem } from '@/types/scene';
+import { useEditorStore } from '@/stores/useEditorStore';
+import { FURNITURE_CATALOG } from '@/data/furniture';
+import { showToast } from '@/components/ui/Toast';
 
 // ── 定数 ──────────────────────────────────────────
 
@@ -84,6 +88,76 @@ function parseAPIError(err: unknown): APIError {
     return { message: err.message, code: 'UNKNOWN' };
   }
   return { message: '不明なエラーが発生しました', code: 'UNKNOWN' };
+}
+
+// ── ストア連携ヘルパー ──────────────────────────────
+
+const STYLE_MAP: Record<string, StylePreset> = {
+  modern: 'modern',
+  japanese: 'japanese',
+  industrial: 'industrial',
+  scandinavian: 'scandinavian',
+  natural: 'scandinavian', // closest match
+  luxury: 'luxury',
+  retro: 'retro',
+  cafe: 'cafe',
+  minimal: 'minimal',
+};
+
+function applyStyleToStore(analysisStyle: string) {
+  const mapped = STYLE_MAP[analysisStyle];
+  if (!mapped) return;
+  const store = useEditorStore.getState();
+  store.setStyle(mapped);
+  showToast(`スタイル「${STYLE_LABELS[analysisStyle] ?? analysisStyle}」を適用しました`, 'success');
+}
+
+function resolveFurnitureType(aiType: string): FurnitureType {
+  const normalized = aiType.toLowerCase().replace(/[\s_-]+/g, '_');
+  const catalog = FURNITURE_CATALOG.find(
+    (c) => c.type === normalized || c.name.includes(aiType)
+  );
+  if (catalog) return catalog.type;
+  // Fallback mapping
+  const fallbacks: Record<string, FurnitureType> = {
+    table: 'table_square',
+    round_table: 'table_round',
+    chair: 'chair',
+    sofa: 'sofa',
+    counter: 'counter',
+    shelf: 'shelf',
+    stool: 'stool',
+    partition: 'partition',
+    desk: 'desk',
+    plant: 'plant',
+    light: 'pendant_light',
+    register: 'register',
+    reception: 'reception_desk',
+    bench: 'bench',
+  };
+  for (const [key, val] of Object.entries(fallbacks)) {
+    if (normalized.includes(key)) return val;
+  }
+  return 'table_square'; // ultimate fallback
+}
+
+function applyLayoutToStore(suggestion: LayoutSuggestion) {
+  const store = useEditorStore.getState();
+  const items: Omit<FurnitureItem, 'id'>[] = suggestion.furniture.map((f) => {
+    const furnitureType = resolveFurnitureType(f.type);
+    const catalog = FURNITURE_CATALOG.find((c) => c.type === furnitureType);
+    return {
+      type: furnitureType,
+      name: f.name,
+      position: [f.x, 0, f.z] as [number, number, number],
+      rotation: [0, f.rotation, 0] as [number, number, number],
+      scale: catalog?.defaultScale ?? [1, 1, 1],
+      color: catalog?.defaultColor,
+      modelUrl: catalog?.modelUrl,
+    };
+  });
+  store.addFurnitureSet(items);
+  showToast(`「${suggestion.layoutName}」(${items.length}点) を配置しました`, 'success');
 }
 
 // ── メインコンポーネント ───────────────────────────
@@ -373,7 +447,10 @@ function PhotoResult({ result }: { result: StyleAnalysis }) {
       </div>
 
       {/* 適用ボタン */}
-      <button className="w-full py-2 rounded-lg text-sm font-medium bg-green-600/80 hover:bg-green-600 text-white transition-colors">
+      <button
+        onClick={() => applyStyleToStore(result.style)}
+        className="w-full py-2 rounded-lg text-sm font-medium bg-green-600/80 hover:bg-green-600 text-white transition-colors"
+      >
         このスタイルを適用
       </button>
     </div>
@@ -568,7 +645,10 @@ function LayoutCard({ suggestion, index }: { suggestion: LayoutSuggestion; index
       )}
 
       {/* 適用ボタン */}
-      <button className="w-full py-1.5 rounded-md text-xs font-medium bg-green-600/80 hover:bg-green-600 text-white transition-colors">
+      <button
+        onClick={() => applyLayoutToStore(suggestion)}
+        className="w-full py-1.5 rounded-md text-xs font-medium bg-green-600/80 hover:bg-green-600 text-white transition-colors"
+      >
         この配置を適用
       </button>
     </div>
