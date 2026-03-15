@@ -1407,7 +1407,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // フォトモード
   setPhotoMode: (v) => set((s) => {
     if (v) {
-      // フォトモード開始: 3Dビューに強制切替 + UI非表示 + 高品質化
+      // フォトモード開始: 3Dビューに強制切替 + UI非表示
+      // 注意: qualityLevelは変更しない（highに切替るとモバイルでWebGLクラッシュ）
+      // 高解像度はスクリーンショット撮影時にuseScreenshotが一時的に上げる
       return {
         photoMode: true,
         viewMode: '3d' as const,
@@ -1418,8 +1420,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         },
         showGrid: false,
         showDimensions: false,
-        qualityLevel: 'high',
-        lightWarmth: Math.max(s.lightWarmth, 0.6), // 暖色寄りに
       };
     } else {
       // フォトモード終了: 元の設定に復帰
