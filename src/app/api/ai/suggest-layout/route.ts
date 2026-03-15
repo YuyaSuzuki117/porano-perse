@@ -25,13 +25,28 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { businessType, roomWidth, roomDepth, style, requirements } = body as {
+    const {
+      businessType,
+      roomWidth: rawRoomWidth,
+      roomDepth: rawRoomDepth,
+      width: rawWidth,
+      depth: rawDepth,
+      style,
+      requirements,
+      seatCount,
+    } = body as {
       businessType?: string
       roomWidth?: number
       roomDepth?: number
+      width?: number
+      depth?: number
       style?: string
       requirements?: string
+      seatCount?: number
     }
+    // フロントは width/depth で送る場合があるため両方対応
+    const roomWidth = rawRoomWidth ?? rawWidth
+    const roomDepth = rawRoomDepth ?? rawDepth
 
     // バリデーション: 必須パラメータ
     if (!businessType || roomWidth == null || roomDepth == null) {
@@ -77,6 +92,7 @@ export async function POST(request: NextRequest) {
       roomDepth,
       style,
       requirements,
+      seatCount,
     })
 
     if (!suggestions || suggestions.length === 0) {

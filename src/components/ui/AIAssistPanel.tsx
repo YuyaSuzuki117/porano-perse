@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef, type DragEvent, type ChangeEvent } from 'react';
 import type { StyleAnalysis, LayoutSuggestion, BusinessType } from '@/types/ai';
+import type { ScoredLayoutSuggestion } from '@/lib/ai-layout-suggester';
+import type { LayoutQualityScore } from '@/lib/layout-rules';
 import type { StylePreset, FurnitureType, FurnitureItem } from '@/types/scene';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { FURNITURE_CATALOG } from '@/data/furniture';
@@ -482,7 +484,7 @@ function LayoutSuggestionTab() {
   const [requirements, setRequirements] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<APIError | null>(null);
-  const [suggestions, setSuggestions] = useState<LayoutSuggestion[] | null>(null);
+  const [suggestions, setSuggestions] = useState<ScoredLayoutSuggestion[] | null>(null);
 
   const fetchSuggestions = async () => {
     setLoading(true);
@@ -503,7 +505,7 @@ function LayoutSuggestionTab() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `サーバーエラー (${res.status})`);
       }
-      const data: LayoutSuggestion[] = await res.json();
+      const data: ScoredLayoutSuggestion[] = await res.json();
       setSuggestions(data);
     } catch (err) {
       setError(parseAPIError(err));
@@ -615,8 +617,11 @@ function LayoutSuggestionTab() {
   );
 }
 
-function LayoutCard({ suggestion, index }: { suggestion: LayoutSuggestion; index: number }) {
+function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion; index: number }) {
   const patternLabels = ['パターン A', 'パターン B', 'パターン C'];
+  const [showDetails, setShowDetails] = useState(false);
+  const qs = suggestion.qualityScore;
+
   return (
     <div className="bg-gray-800/60 rounded-lg p-3 space-y-2.5">
       {/* ヘッダー */}
@@ -625,18 +630,71 @@ function LayoutCard({ suggestion, index }: { suggestion: LayoutSuggestion; index
           <span className="text-[10px] text-blue-400 font-medium">{patternLabels[index] ?? `パターン ${index + 1}`}</span>
           <h4 className="text-sm font-medium mt-0.5">{suggestion.layoutName}</h4>
         </div>
-        <span className="text-[11px] text-gray-400 bg-gray-700 px-2 py-0.5 rounded-full">
-          {suggestion.capacityEstimate}人
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-gray-400 bg-gray-700 px-2 py-0.5 rounded-full">
+            {suggestion.capacityEstimate}人
+          </span>
+          {qs && (
+            <span
+              className={
+                'text-[11px] font-bold px-2 py-0.5 rounded-full ' +
+                (qs.total >= 80
+                  ? 'bg-green-900/60 text-green-400'
+                  : qs.total >= 60
+                    ? 'bg-yellow-900/60 text-yellow-400'
+                    : 'bg-red-900/60 text-red-400')
+              }
+            >
+              {qs.total}点
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 説明 */}
       <p className="text-[11px] text-gray-400 leading-relaxed">{suggestion.description}</p>
 
-      {/* 動線スコア */}
+      {/* 品質スコア内訳 */}
+      {qs && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-500">品質スコア</span>
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-[9px] text-blue-400 hover:text-blue-300"
+            >
+              {showDetails ? '閉じる' : '詳細'}
+            </button>
+          </div>
+          <QualityScoreBar label="総合" score={qs.total} />
+          {showDetails && (
+            <div className="space-y-1 pl-1">
+              <QualityScoreBar label="通路幅" score={qs.passageScore} />
+              <QualityScoreBar label="動線" score={qs.flowScore} />
+              <QualityScoreBar label="効率" score={qs.efficiencyScore} />
+              <QualityScoreBar label="必須家具" score={qs.requiredFurnitureScore} />
+              <QualityScoreBar label="配置ルール" score={qs.placementRuleScore} />
+              {qs.details.length > 0 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {qs.details.slice(0, 5).map((d, di) => (
+                    <p key={di} className="text-[9px] text-amber-400/80 leading-tight">
+                      - {d}
+                    </p>
+                  ))}
+                  {qs.details.length > 5 && (
+                    <p className="text-[9px] text-gray-500">...他{qs.details.length - 5}件</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 動線スコア (AIからの自己申告値) */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-gray-500">動線スコア</span>
+          <span className="text-[10px] text-gray-500">AI動線スコア</span>
           <span className="text-[10px] text-gray-400">{suggestion.flowScore}/100</span>
         </div>
         <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
@@ -666,6 +724,29 @@ function LayoutCard({ suggestion, index }: { suggestion: LayoutSuggestion; index
       >
         この配置を適用
       </button>
+    </div>
+  );
+}
+
+/** スコアバーコンポーネント */
+function QualityScoreBar({ label, score }: { label: string; score: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[9px] text-gray-500 w-14 shrink-0">{label}</span>
+      <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className={
+            'h-full rounded-full transition-all duration-500 ' +
+            (score >= 80
+              ? 'bg-green-500'
+              : score >= 60
+                ? 'bg-yellow-500'
+                : 'bg-red-500')
+          }
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      <span className="text-[9px] text-gray-400 w-6 text-right">{score}</span>
     </div>
   );
 }
