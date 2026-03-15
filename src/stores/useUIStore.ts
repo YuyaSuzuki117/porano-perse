@@ -50,8 +50,10 @@ export interface UIState {
   furnitureCollision: boolean;
 
   // 壁・天井表示
-  wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
+  wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section' | 'wireframe';
+  wallOpacitySlider: number; // 0(完全表示) ~ 100(完全非表示)
   ceilingVisible: boolean;
+  ceilingOpacitySlider: number; // 0(完全表示) ~ 100(完全非表示)
   sectionCutHeight: number;
 
   // テクスチャオーバーライド
@@ -83,8 +85,10 @@ export interface UIState {
   setShowFurniture: (v: boolean) => void;
   setShowAnnotations: (show: boolean) => void;
 
-  setWallDisplayMode: (mode: 'solid' | 'transparent' | 'hidden' | 'section') => void;
+  setWallDisplayMode: (mode: 'solid' | 'transparent' | 'hidden' | 'section' | 'wireframe') => void;
+  setWallOpacitySlider: (value: number) => void;
   setCeilingVisible: (visible: boolean) => void;
+  setCeilingOpacitySlider: (value: number) => void;
   setSectionCutHeight: (height: number) => void;
   activateDioramaMode: () => void;
 
@@ -132,7 +136,9 @@ export const useUIStore = create<UIState>((set) => ({
   isDraggingFurniture: false,
   furnitureCollision: false,
   wallDisplayMode: 'section',
+  wallOpacitySlider: 0,
   ceilingVisible: false,
+  ceilingOpacitySlider: 0,
   sectionCutHeight: 1.8,
   wallColorOverride: null,
   floorColorOverride: null,
@@ -168,9 +174,11 @@ export const useUIStore = create<UIState>((set) => ({
   setShowAnnotations: (showAnnotations) => set({ showAnnotations }),
 
   setWallDisplayMode: (wallDisplayMode) => set({ wallDisplayMode }),
+  setWallOpacitySlider: (value) => set({ wallOpacitySlider: Math.max(0, Math.min(100, value)) }),
   setCeilingVisible: (ceilingVisible) => set({ ceilingVisible }),
-  setSectionCutHeight: (sectionCutHeight) => set({ sectionCutHeight: Math.max(0.5, Math.min(2.5, sectionCutHeight)) }),
-  activateDioramaMode: () => set({ wallDisplayMode: 'section', ceilingVisible: false, sectionCutHeight: 1.2 }),
+  setCeilingOpacitySlider: (value) => set({ ceilingOpacitySlider: Math.max(0, Math.min(100, value)) }),
+  setSectionCutHeight: (sectionCutHeight) => set({ sectionCutHeight: Math.max(0.5, Math.min(3.0, sectionCutHeight)) }),
+  activateDioramaMode: () => set({ wallDisplayMode: 'section', ceilingVisible: false, ceilingOpacitySlider: 100, sectionCutHeight: 1.2 }),
 
   setWallColorOverride: (color) => set({ wallColorOverride: color }),
   setFloorColorOverride: (color) => set({ floorColorOverride: color }),

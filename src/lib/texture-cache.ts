@@ -9,10 +9,34 @@ import * as THREE from 'three';
 
 /** キャッシュ本体 */
 const textureCache = new Map<string, THREE.CanvasTexture>();
+/** LRU用アクセス順序追跡 */
+const accessOrder: string[] = [];
+/** キャッシュ上限（テクスチャ数） — モバイルWebGL制限を考慮 */
+const MAX_CACHE_SIZE = 64;
+
+/** LRUキャッシュのアクセス記録を更新 */
+function touchCacheEntry(key: string): void {
+  const idx = accessOrder.indexOf(key);
+  if (idx >= 0) accessOrder.splice(idx, 1);
+  accessOrder.push(key);
+}
+
+/** LRU追放: 古いエントリを削除してメモリを解放 */
+function evictIfNeeded(): void {
+  while (textureCache.size >= MAX_CACHE_SIZE && accessOrder.length > 0) {
+    const oldest = accessOrder.shift()!;
+    const tex = textureCache.get(oldest);
+    if (tex) {
+      tex.dispose();
+      textureCache.delete(oldest);
+    }
+  }
+}
 
 /**
  * キャッシュからテクスチャを取得。未キャッシュなら generator で生成しキャッシュ。
  * 返却テクスチャは wrapS/wrapT = RepeatWrapping 設定済み。
+ * LRU追放機構により、上限(64)を超えたらアクセスが最も古いテクスチャを自動解放。
  *
  * 注意: repeat はテクスチャごとではなく壁の長さに応じて異なるため、
  * 呼び出し側で clone() してから repeat を設定すること。
@@ -22,13 +46,20 @@ export function getCachedTexture(
   generator: () => HTMLCanvasElement,
 ): THREE.CanvasTexture {
   const existing = textureCache.get(key);
-  if (existing) return existing;
+  if (existing) {
+    touchCacheEntry(key);
+    return existing;
+  }
+
+  // 上限到達時にLRU追放
+  evictIfNeeded();
 
   const canvas = generator();
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   textureCache.set(key, texture);
+  touchCacheEntry(key);
   return texture;
 }
 
@@ -41,12 +72,15 @@ export function invalidateTextureCache(keyPrefix?: string): void {
   if (!keyPrefix) {
     textureCache.forEach((t) => t.dispose());
     textureCache.clear();
+    accessOrder.length = 0;
     return;
   }
   for (const [key, tex] of textureCache) {
     if (key.startsWith(keyPrefix)) {
       tex.dispose();
       textureCache.delete(key);
+      const idx = accessOrder.indexOf(key);
+      if (idx >= 0) accessOrder.splice(idx, 1);
     }
   }
 }
@@ -79,7 +113,7 @@ export function getTextureResolution(
 ): TextureResolution {
   switch (qualityLevel) {
     case 'high':
-      return { wall: 4096, floor: 4096, normal: 4096, roughness: 4096, furniture: 4096, useNormalMap: true };
+      return { wall: 2048, floor: 2048, normal: 2048, roughness: 1024, furniture: 2048, useNormalMap: true };
     case 'medium':
       return { wall: 2048, floor: 2048, normal: 512, roughness: 512, furniture: 1024, useNormalMap: true };
     case 'low':

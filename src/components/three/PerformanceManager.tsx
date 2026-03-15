@@ -54,13 +54,13 @@ export function PerformanceManager() {
       }
     }
 
-    // LOD更新: low/mediumのみ、かつ適応型間引き
-    if (qualityLevel !== 'high') {
-      frameCounter.current++;
-      if (frameCounter.current >= lodIntervalRef.current) {
-        frameCounter.current = 0;
-        updateLODs(camera, 8);
-      }
+    // LOD更新: 全品質レベルで適応型間引き実行
+    frameCounter.current++;
+    if (frameCounter.current >= lodIntervalRef.current) {
+      frameCounter.current = 0;
+      // LOD距離閾値をFPSに応じて動的調整
+      const maxDist = avgFpsRef.current < 30 ? 6 : 8;
+      updateLODs(camera, maxDist);
     }
   });
 

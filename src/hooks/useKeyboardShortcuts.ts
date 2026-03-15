@@ -79,7 +79,7 @@ export function useKeyboardShortcuts() {
 
       // H キー: 壁表示モード切替 (solid → transparent → hidden → section → solid)
       if (e.key === 'h' || e.key === 'H') {
-        const modes: Array<'solid' | 'transparent' | 'hidden' | 'section'> = ['solid', 'transparent', 'hidden', 'section'];
+        const modes: Array<'solid' | 'transparent' | 'hidden' | 'section' | 'wireframe'> = ['solid', 'transparent', 'hidden', 'section', 'wireframe'];
         const currentIndex = modes.indexOf(wallDisplayMode);
         const nextIndex = (currentIndex + 1) % modes.length;
         setWallDisplayMode(modes[nextIndex]);

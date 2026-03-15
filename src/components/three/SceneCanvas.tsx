@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useCallback, useMemo, lazy, useState, useEffect } from 'react';
+import React, { Suspense, useRef, useCallback, useMemo, lazy, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, ContactShadows, Stats } from '@react-three/drei';
 import * as THREE from 'three';
@@ -19,6 +19,7 @@ import { WindowLightBeams } from './WindowLightBeams';
 import { FurnitureRug } from './FurnitureRug';
 import { AnnotationMarkers, AnnotationPlacement } from './AnnotationMarkers';
 import { PerformanceManager } from './PerformanceManager';
+import { OcclusionCullingProvider, useVisibleFurniture } from './OcclusionCullingProvider';
 import { Baseboards } from './Baseboards';
 import { Wainscoting } from './Wainscoting';
 import { CeilingBeams } from './CeilingBeams';
@@ -58,6 +59,56 @@ import { StyleConfig } from '@/types/scene';
 
 // ── 遅延ロード: PostProcessing (heavy, medium/high品質のみ使用) ──
 const LazyPostProcessing = lazy(() => import('./PostProcessingEffects'));
+
+/** オクルージョンカリング対応の家具リスト */
+import type { FurnitureItem } from '@/types/scene';
+
+interface OccludedFurnitureListProps {
+  furniture: FurnitureItem[];
+  selectedFurniture: string | null;
+  selectedFurnitureIds: string[];
+  deletingFurnitureIds: string[];
+  onSelectFurniture: (id: string | null) => void;
+  onToggleFurnitureSelection?: (id: string) => void;
+  onMoveFurniture: (id: string, position: [number, number, number]) => void;
+  qualityLevel: 'high' | 'medium' | 'low';
+}
+
+const OccludedFurnitureList = React.memo(function OccludedFurnitureList({
+  furniture,
+  selectedFurniture,
+  selectedFurnitureIds,
+  deletingFurnitureIds,
+  onSelectFurniture,
+  onToggleFurnitureSelection,
+  onMoveFurniture,
+  qualityLevel,
+}: OccludedFurnitureListProps) {
+  const visibleIds = useVisibleFurniture();
+
+  return (
+    <>
+      {furniture.map((item) => {
+        // 選択中の家具は常に表示、それ以外はオクルージョンカリングに従う
+        const isSelected = selectedFurniture === item.id || selectedFurnitureIds.includes(item.id);
+        if (!isSelected && !visibleIds.has(item.id)) return null;
+
+        return (
+          <Furniture
+            key={item.id}
+            item={item}
+            selected={isSelected}
+            isDeleting={deletingFurnitureIds.includes(item.id)}
+            onSelect={onSelectFurniture}
+            onToggleSelect={onToggleFurnitureSelection}
+            onMove={onMoveFurniture}
+            qualityLevel={qualityLevel}
+          />
+        );
+      })}
+    </>
+  );
+});
 
 interface SceneCanvasProps {
   selectedFurniture: string | null;
@@ -272,8 +323,8 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={[1, 2.5]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 8 } : {}) }}
+      dpr={qualityLevel === 'low' ? [1, 1.5] : [1, 2]}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 4 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -336,18 +387,20 @@ export function SceneCanvas({
 
         <WindowLightBeams walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
 
-        {showFurniture && furniture.map((item) => (
-          <Furniture
-            key={item.id}
-            item={item}
-            selected={selectedFurniture === item.id || selectedFurnitureIds.includes(item.id)}
-            isDeleting={deletingFurnitureIds.includes(item.id)}
-            onSelect={onSelectFurniture}
-            onToggleSelect={onToggleFurnitureSelection}
-            onMove={onMoveFurniture}
-            qualityLevel={qualityLevel}
-          />
-        ))}
+        {showFurniture && (
+          <OcclusionCullingProvider walls={walls} furniture={furniture} enabled={walls.length >= 3}>
+            <OccludedFurnitureList
+              furniture={furniture}
+              selectedFurniture={selectedFurniture}
+              selectedFurnitureIds={selectedFurnitureIds}
+              deletingFurnitureIds={deletingFurnitureIds}
+              onSelectFurniture={onSelectFurniture}
+              onToggleFurnitureSelection={onToggleFurnitureSelection}
+              onMoveFurniture={onMoveFurniture}
+              qualityLevel={qualityLevel}
+            />
+          </OcclusionCullingProvider>
+        )}
 
         {showFurniture && <FurnitureRug furniture={furniture} />}
 

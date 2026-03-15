@@ -137,6 +137,7 @@ function ceilingMeshPropsAreEqual(prev: CeilingMeshProps, next: CeilingMeshProps
 export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, style }: CeilingMeshProps) {
   const dayNight = useCameraStore((s) => s.dayNight);
   const ceilingVisible = useUIStore(s => s.ceilingVisible);
+  const ceilingOpacitySlider = useUIStore(s => s.ceilingOpacitySlider);
   const qualityLevel = useCameraStore((s) => s.qualityLevel);
   const isNight = dayNight === 'night';
 
@@ -149,6 +150,9 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
   useFrame(({ camera }) => {
     if (!ceilingMatRef.current) return;
 
+    // 天井スライダー: 0(完全表示)→maxOpacity=0.85, 100(完全非表示)→maxOpacity=0
+    const sliderMax = 0.85 * (1.0 - ceilingOpacitySlider / 100);
+
     // カメラ位置変化量チェック: 閾値以下なら計算スキップ
     const cp = camera.position;
     if (_ceilCamInitialized) {
@@ -157,7 +161,7 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
       const dz = cp.z - _ceilPrevCamPos.z;
       if (dx * dx + dy * dy + dz * dz < 0.0001) {
         // opacity lerp収束のみ処理
-        const baseOpacity = ceilingVisible ? 0.85 : 0.0;
+        const baseOpacity = ceilingVisible ? sliderMax : 0.0;
         const delta = baseOpacity - currentCeilingOpacityRef.current;
         if (Math.abs(delta) > 0.001) {
           currentCeilingOpacityRef.current += delta * 0.08;
@@ -176,11 +180,11 @@ export const CeilingMesh = React.memo(function CeilingMesh({ walls, roomHeight, 
     const elevationAngle = Math.asin(-_ceilCamDir.y) * (180 / Math.PI); // 度に変換
 
     // 基本の不透明度（ceilingVisible が false の場合は 0 を目標に）
-    let baseOpacity = ceilingVisible ? 0.85 : 0.0;
+    let baseOpacity = ceilingVisible ? sliderMax : 0.0;
 
     // カメラ仰角が高い（30度以上見下ろし）場合、天井をフェードアウト
     if (elevationAngle > 30) {
-      // 30度～50度の間で 0.85 → 0.05 に補間
+      // 30度～50度の間で sliderMax → 0.05 に補間
       const fadeT = Math.min(1, (elevationAngle - 30) / 20);
       // smoothstep的な補間
       const smooth = fadeT * fadeT * (3 - 2 * fadeT);

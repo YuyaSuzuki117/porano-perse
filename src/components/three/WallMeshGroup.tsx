@@ -798,6 +798,7 @@ export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings
   const wallColorOverride = useUIStore(s => s.wallColorOverride);
   const wallTextureType = useUIStore(s => s.wallTextureType);
   const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
+  const wallOpacitySlider = useUIStore(s => s.wallOpacitySlider);
   const sectionCutHeight = useUIStore(s => s.sectionCutHeight);
   const isNight = dayNight === 'night';
 
@@ -851,6 +852,7 @@ export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings
             wallColorOverride={wallColorOverride}
             wallTextureType={wallTextureType}
             wallDisplayMode={wallDisplayMode}
+            wallOpacitySlider={wallOpacitySlider}
             sectionClipPlane={isSectionCut ? sectionClipPlane : null}
             sectionCutHeight={sectionCutHeight}
           />
@@ -867,12 +869,13 @@ interface WallMeshProps {
   isNight: boolean;
   wallColorOverride: string | null;
   wallTextureType: string | null;
-  wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
+  wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section' | 'wireframe';
+  wallOpacitySlider: number;
   sectionClipPlane: THREE.Plane | null;
   sectionCutHeight: number;
 }
 
-function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, sectionClipPlane, sectionCutHeight }: WallMeshProps) {
+function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextureType, wallDisplayMode, wallOpacitySlider, sectionClipPlane, sectionCutHeight }: WallMeshProps) {
   const materialRef = useRef<THREE.MeshPhysicalMaterial>(null);
   const currentOpacityRef = useRef(1.0);
 
@@ -935,9 +938,16 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
   useFrame(({ camera }) => {
     if (!materialRef.current) return;
 
-    // 「transparent」モードでは固定不透明度0.3、「hidden」では非表示なのでスキップ
+    // 「transparent」モードではスライダー値で不透明度を制御
     if (wallDisplayMode === 'transparent') {
-      materialRef.current.opacity = 0.3;
+      // wallOpacitySlider: 0(完全表示)→opacity=1.0, 100(完全非表示)→opacity=0.0
+      const sliderOpacity = 1.0 - wallOpacitySlider / 100;
+      materialRef.current.opacity = Math.max(0.02, sliderOpacity);
+      return;
+    }
+    // 「wireframe」モードでは不透明度を極低に
+    if (wallDisplayMode === 'wireframe') {
+      materialRef.current.opacity = 0.0;
       return;
     }
 
@@ -1036,34 +1046,49 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
     return { len, edgeColor };
   }, [sectionClipPlane, wall, color]);
 
+  // wireframeモード用: ワイヤーフレームのみ表示
+  const isWireframe = wallDisplayMode === 'wireframe';
+  // transparentモード時のスライダー不透明度
+  const sliderOpacity = wallDisplayMode === 'transparent'
+    ? Math.max(0.02, 1.0 - wallOpacitySlider / 100)
+    : 1;
+  const isTransparentMode = wallDisplayMode === 'transparent' || isWireframe;
+
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh
         geometry={geometry}
-        castShadow
-        receiveShadow
+        castShadow={!isWireframe}
+        receiveShadow={!isWireframe}
       >
         <meshPhysicalMaterial
           ref={materialRef}
-          map={wallTexture}
-          normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(1.1, 1.1) : undefined}
-          roughnessMap={wallRoughnessMap}
+          map={isWireframe ? null : wallTexture}
+          normalMap={isWireframe ? undefined : (normalMap ?? undefined)}
+          normalScale={(!isWireframe && normalMap) ? new THREE.Vector2(1.1, 1.1) : undefined}
+          roughnessMap={isWireframe ? null : wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}
-          envMapIntensity={wallEnvMapIntensity}
-          clearcoat={wallClearcoat}
+          envMapIntensity={isWireframe ? 0 : wallEnvMapIntensity}
+          clearcoat={isWireframe ? 0 : wallClearcoat}
           clearcoatRoughness={wallClearcoatRoughness}
-          specularIntensity={0.5}
+          specularIntensity={isWireframe ? 0 : 0.5}
           specularColor={new THREE.Color('#ffffff')}
           transparent
-          opacity={wallDisplayMode === 'transparent' ? 0.3 : 1}
-          side={wallDisplayMode === 'transparent' ? THREE.DoubleSide : THREE.FrontSide}
-          depthWrite={wallDisplayMode !== 'transparent'}
+          opacity={isWireframe ? 0.0 : sliderOpacity}
+          side={isTransparentMode ? THREE.DoubleSide : THREE.FrontSide}
+          depthWrite={!isTransparentMode}
           clippingPlanes={sectionClipPlane ? [sectionClipPlane] : []}
           clipShadows={!!sectionClipPlane}
         />
       </mesh>
+      {/* X線モード: ワイヤーフレームエッジ表示 */}
+      {isWireframe && (
+        <lineSegments>
+          <edgesGeometry args={[geometry]} />
+          <lineBasicMaterial color="#4488ff" linewidth={1} transparent opacity={0.6} />
+        </lineSegments>
+      )}
 
       {/* セクションカット断面エッジ（切断線の可視化） */}
       {sectionEdge && (
