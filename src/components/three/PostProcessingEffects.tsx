@@ -43,7 +43,7 @@ interface PostProcessingEffectsProps {
   bloomIntensity: number;
   vignetteIntensity: number;
   photoMode?: boolean;
-  renderStyle?: 'realistic' | 'sketch' | 'watercolor';
+  renderStyle?: 'realistic' | 'sketch' | 'colored-pencil' | 'watercolor';
 }
 
 /** 色収差オフセット — high用 (ウルトラシネマティック・GC防止のためコンポーネント外定義) */
@@ -63,7 +63,7 @@ function PostProcessingEffects({
 }: PostProcessingEffectsProps) {
 
   // ── sketch / watercolor モード: 軽量シェーダーのみ ──
-  if (renderStyle === 'sketch' || renderStyle === 'watercolor') {
+  if (renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil') {
     return (
       <EffectComposer enableNormalPass={false}>
         <SketchEffect mode={renderStyle} />

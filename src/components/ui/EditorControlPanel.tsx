@@ -1199,6 +1199,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             <div className="flex gap-1" role="radiogroup" aria-label="レンダリングスタイル">
               {([
                 { style: 'sketch' as const, label: '線画', icon: '✏️' },
+                { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️' },
                 { style: 'watercolor' as const, label: '水彩', icon: '🎨' },
                 { style: 'realistic' as const, label: 'リアル', icon: '📷' },
               ]).map(({ style, label, icon }) => (
@@ -1207,7 +1208,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={renderStyle === style}
                   onClick={() => setRenderStyle(style)}
-                  className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium transition-all ${
+                  className={`flex-1 px-1.5 py-1.5 rounded text-[9px] font-medium transition-all ${
                     renderStyle === style
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -1217,9 +1218,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 </button>
               ))}
             </div>
-            {(renderStyle === 'sketch' || renderStyle === 'watercolor') && (
+            {(renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil') && (
               <p className="text-[9px] text-gray-500 mt-1">
-                建築スケッチ風 — 影・AO無効で高速描画
+                {renderStyle === 'colored-pencil' ? '色鉛筆スケッチ風 — 淡い色彩+手描きタッチ' : '建築スケッチ風 — 影・AO無効で高速描画'}
               </p>
             )}
           </div>

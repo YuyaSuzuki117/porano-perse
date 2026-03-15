@@ -1,14 +1,17 @@
 'use client';
 
 /**
- * SketchRenderer — 線画/鉛筆画スタイル ポストプロセッシングエフェクト
+ * SketchRenderer — 線画/鉛筆画/色鉛筆スタイル ポストプロセッシングエフェクト
  *
  * - 3種エッジ検出（深度Sobel + 法線推定 + 色差）で多段アウトライン
+ * - 内部エッジ強化（家具形状ディテール向上）
  * - 鉛筆筆圧シミュレーション（濃淡・ギザギザ・フェード）
  * - 5段階ハッチング（線なし/極細/通常/クロス/密クロス+点描）
  * - 紙テクスチャ（繊維パターン・粒状感・凹凸ムラ・経年変化）
  * - 距離ベースのディテール制御
  * - 水彩モード: にじみ・色ムラ・白抜き・重ね塗り透明感
+ * - 色鉛筆モード: 元色の淡い保持・色付きハッチング・筆圧ムラ
+ * - 照明表現: 明度ベースのハッチング密度変化・光源マーク
  * - セピアトーンのモノクロ出力
  */
 
@@ -25,17 +28,13 @@ uniform float paperNoiseIntensity;
 uniform vec3 paperColor;
 uniform vec3 inkColor;
 uniform float sepiaAmount;
-uniform int mode; // 0 = sketch, 1 = watercolor
+uniform int mode; // 0 = sketch, 1 = watercolor, 2 = colored-pencil
 uniform float time;
 
 // ─── ノイズ関数群 ───
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float hash3(vec3 p) {
-  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
 
 float noise2d(vec2 p) {
@@ -49,17 +48,11 @@ float noise2d(vec2 p) {
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
-// Perlin風 fBm（繊維パターン用）
-float fbm(vec2 p, int octaves) {
-  float val = 0.0;
-  float amp = 0.5;
-  float freq = 1.0;
-  for (int i = 0; i < 4; i++) {
-    if (i >= octaves) break;
-    val += amp * noise2d(p * freq);
-    freq *= 2.0;
-    amp *= 0.5;
-  }
+// Perlin風 fBm（繊維パターン用）— ループ展開済み
+float fbm3(vec2 p) {
+  float val = 0.5 * noise2d(p);
+  val += 0.25 * noise2d(p * 2.0);
+  val += 0.125 * noise2d(p * 4.0);
   return val;
 }
 
@@ -71,7 +64,6 @@ float getDepth(vec2 uv) {
 
 // 深度からリニア距離(0~1正規化)を推定
 float linearizeDepth(float d) {
-  // 非線形深度を簡易的にリニア化（near=0.1, far=100想定）
   float near = 0.1;
   float far = 100.0;
   return (2.0 * near) / (far + near - d * (far - near));
@@ -83,7 +75,7 @@ vec3 getColor(vec2 uv) {
   return texture2D(inputBuffer, uv).rgb;
 }
 
-// ─── エッジ検出: 3種合成 ───
+// ─── エッジ検出: 3種合成（強化版） ───
 
 // 1. 深度ベースSobel（シルエットエッジ）
 float sobelEdgeDepth(vec2 uv, vec2 ts) {
@@ -100,7 +92,7 @@ float sobelEdgeDepth(vec2 uv, vec2 ts) {
   return sqrt(gx*gx + gy*gy);
 }
 
-// 2. 法線推定エッジ（深度からscreen-space法線を再構築）
+// 2. 法線推定エッジ（深度からscreen-space法線を再構築 — 強化版）
 float normalEdge(vec2 uv, vec2 ts) {
   float dc = getDepth(uv);
   float dl = getDepth(uv - vec2(ts.x, 0.0));
@@ -109,107 +101,107 @@ float normalEdge(vec2 uv, vec2 ts) {
   float db = getDepth(uv + vec2(0.0, ts.y));
   // screen-space法線近似
   vec3 normalC = normalize(vec3(dl - dr, dt - db, 2.0 * ts.x));
-  // 隣接ピクセルの法線との差分
+  // 隣接ピクセルの法線との差分（4方向チェック）
   float dl2 = getDepth(uv - vec2(ts.x * 2.0, 0.0));
   float dr2 = getDepth(uv + vec2(ts.x * 2.0, 0.0));
   float dt2 = getDepth(uv - vec2(0.0, ts.y * 2.0));
   float db2 = getDepth(uv + vec2(0.0, ts.y * 2.0));
   vec3 normalR = normalize(vec3(dc - dr2, dt - db, 2.0 * ts.x));
   vec3 normalB = normalize(vec3(dl - dr, dc - db2, 2.0 * ts.x));
+  vec3 normalL = normalize(vec3(dl2 - dc, dt - db, 2.0 * ts.x));
+  vec3 normalT = normalize(vec3(dl - dr, dt2 - dc, 2.0 * ts.x));
   float dotR = 1.0 - abs(dot(normalC, normalR));
   float dotB = 1.0 - abs(dot(normalC, normalB));
-  return max(dotR, dotB);
+  float dotL = 1.0 - abs(dot(normalC, normalL));
+  float dotT = 1.0 - abs(dot(normalC, normalT));
+  return max(max(dotR, dotB), max(dotL, dotT));
 }
 
-// 3. 色差エッジ（マテリアル境界）
+// 3. 色差エッジ（マテリアル境界 — 感度強化+対角サンプル追加）
 float colorEdge(vec2 uv, vec2 ts) {
   vec3 cc = getColor(uv);
   vec3 cl = getColor(uv - vec2(ts.x, 0.0));
   vec3 cr = getColor(uv + vec2(ts.x, 0.0));
   vec3 ct = getColor(uv - vec2(0.0, ts.y));
   vec3 cb = getColor(uv + vec2(0.0, ts.y));
+  // 対角方向も追加（家具の曲線・角をより正確に検出）
+  vec3 ctl = getColor(uv + vec2(-ts.x, -ts.y));
+  vec3 cbr = getColor(uv + vec2(ts.x, ts.y));
   float diffH = length(cr - cl);
   float diffV = length(cb - ct);
-  return sqrt(diffH * diffH + diffV * diffV);
+  float diffD = length(cbr - ctl) * 0.707; // 対角は距離補正
+  return sqrt(diffH * diffH + diffV * diffV + diffD * diffD);
 }
 
 // ─── 鉛筆筆圧シミュレーション ───
 
 float pencilPressure(vec2 uv, float edgeStr) {
-  // ノイズによる濃淡変化
   float pressureNoise = noise2d(uv * 23.0 + time * 0.01) * 0.4 + 0.6;
-  // hand tremor（ギザギザ）
   float tremor = noise2d(uv * 80.0) * 0.15;
   return clamp(pressureNoise + tremor, 0.3, 1.0);
 }
 
 // エッジ方向のストローク感（始端・終端フェード）
-float strokeFade(vec2 uv, float edgeStr) {
+float strokeFade(vec2 uv) {
   float strokePos = fract(noise2d(uv * 15.0) * 5.0);
-  // 始端・終端のフェード
   float fade = smoothstep(0.0, 0.08, strokePos) * smoothstep(1.0, 0.92, strokePos);
   return mix(0.5, 1.0, fade);
 }
 
-// ─── 5段階ハッチングパターン ───
+// ─── 5段階ハッチングパターン（照明対応強化版） ───
 
 float hatchPattern5(vec2 uv, float darkness, float density, float randomness, float distFactor) {
   // 距離によるハッチング密度調整
   float adjDensity = density * mix(1.0, 0.5, distFactor);
 
   // 非常に明るい: 線なし
-  if (darkness < 0.10) return 0.0;
+  if (darkness < 0.08) return 0.0;
 
   float result = 0.0;
   float wobble = noise2d(uv * 3.0) * randomness;
 
-  // 段階1: 明るい → 極細の軽いストローク（0.10~0.25）
-  if (darkness >= 0.10) {
+  // 段階1: 明るい → 極細の軽いストローク（0.08~0.22）
+  if (darkness >= 0.08) {
     float line0 = abs(fract((uv.x + uv.y * 0.8 + wobble) * adjDensity * 0.7) - 0.5) * 2.0;
-    float str0 = smoothstep(0.75, 0.65, line0) * smoothstep(0.10, 0.20, darkness) * 0.35;
-    // 筆圧による線の太さ変化
+    float str0 = smoothstep(0.75, 0.60, line0) * smoothstep(0.08, 0.18, darkness) * 0.4;
     float pressVar = noise2d(uv * 40.0 + 5.0) * 0.3 + 0.7;
     result = max(result, str0 * pressVar);
   }
 
-  // 段階2: 中間 → 通常ハッチング（0.25~）
-  if (darkness > 0.25) {
+  // 段階2: 中間 → 通常ハッチング（0.22~）
+  if (darkness > 0.22) {
     float wobble1 = noise2d(uv * 4.0 + 3.0) * randomness;
     float line1 = abs(fract((uv.x + uv.y + wobble1) * adjDensity) - 0.5) * 2.0;
-    float str1 = smoothstep(0.65, 0.50, line1) * min((darkness - 0.15) * 1.5, 1.0);
+    float str1 = smoothstep(0.60, 0.45, line1) * min((darkness - 0.12) * 1.5, 1.0);
     float pressVar1 = noise2d(uv * 35.0 + 8.0) * 0.25 + 0.75;
     result = max(result, str1 * pressVar1);
   }
 
-  // 段階3: やや暗い → クロスハッチ（0.45~）
-  if (darkness > 0.45) {
+  // 段階3: やや暗い → クロスハッチ（0.40~）
+  if (darkness > 0.40) {
     float wobble2 = noise2d(uv * 5.0 + 10.0) * randomness;
     float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity) - 0.5) * 2.0;
-    float str2 = smoothstep(0.65, 0.50, line2) * (darkness - 0.30);
+    float str2 = smoothstep(0.60, 0.45, line2) * (darkness - 0.25);
     float pressVar2 = noise2d(uv * 30.0 + 12.0) * 0.2 + 0.8;
     result = max(result, str2 * pressVar2);
   }
 
-  // 段階4: 暗い → 密クロスハッチ（水平）（0.65~）
-  if (darkness > 0.65) {
+  // 段階4: 暗い → 密クロスハッチ（水平）（0.60~）
+  if (darkness > 0.60) {
     float wobble3 = noise2d(uv * 7.0 + 20.0) * randomness * 0.5;
     float line3 = abs(fract((uv.y + wobble3) * adjDensity * 1.3) - 0.5) * 2.0;
-    result = max(result, smoothstep(0.7, 0.55, line3) * (darkness - 0.45) * 0.7);
+    result = max(result, smoothstep(0.7, 0.55, line3) * (darkness - 0.40) * 0.7);
   }
 
-  // 段階5: 非常に暗い → 追加密クロスハッチ + スティップリング（点描）（0.80~）
-  if (darkness > 0.80) {
-    // 追加の斜め線
+  // 段階5: 非常に暗い → 追加密クロスハッチ + スティップリング（0.78~）
+  if (darkness > 0.78) {
     float wobble4 = noise2d(uv * 9.0 + 30.0) * randomness * 0.3;
     float line4 = abs(fract((uv.x * 0.7 + uv.y * 1.2 + wobble4) * adjDensity * 1.5) - 0.5) * 2.0;
-    result = max(result, smoothstep(0.65, 0.50, line4) * (darkness - 0.65) * 0.6);
-
+    result = max(result, smoothstep(0.65, 0.50, line4) * (darkness - 0.60) * 0.6);
     // スティップリング（点描）
     float stipple = hash(floor(uv * adjDensity * 8.0));
-    float stippleThreshold = mix(0.7, 0.3, (darkness - 0.80) * 5.0);
-    if (stipple > stippleThreshold) {
-      result = max(result, (darkness - 0.70) * 0.5);
-    }
+    float stippleThreshold = mix(0.7, 0.3, (darkness - 0.78) * 4.5);
+    result = max(result, step(stippleThreshold, stipple) * (darkness - 0.68) * 0.5);
   }
 
   return clamp(result, 0.0, 1.0);
@@ -222,8 +214,8 @@ vec3 paperTexture(vec2 uv, vec2 res) {
 
   // 繊維パターン: 方向性のあるfBmノイズ
   vec2 fiberUV = paperUV * 0.02;
-  fiberUV.x *= 1.5; // 横方向に引き伸ばし（繊維の方向性）
-  float fiber = fbm(fiberUV, 3) * 0.03;
+  fiberUV.x *= 1.5;
+  float fiber = fbm3(fiberUV) * 0.03;
 
   // 粒状感: 高周波ノイズ
   float grain = (hash(floor(paperUV * 0.8)) - 0.5) * 0.025;
@@ -231,10 +223,10 @@ vec3 paperTexture(vec2 uv, vec2 res) {
   // 紙の凹凸: 中周波ノイズ
   float bump = noise2d(paperUV * 0.05) * 0.02;
 
-  // 紙色のバリエーション: 中央と端で微妙に色が異なる（経年変化感）
+  // 経年変化感
   vec2 centeredUV = uv * 2.0 - 1.0;
   float edgeDist = length(centeredUV);
-  float aging = smoothstep(0.3, 1.2, edgeDist) * 0.04; // 端は少し暗く/黄色く
+  float aging = smoothstep(0.3, 1.2, edgeDist) * 0.04;
   vec3 agingTint = vec3(-0.01, -0.02, -0.04) * aging;
 
   vec3 paper = paperColor + vec3(fiber + grain + bump) * paperNoiseIntensity / 0.03 + agingTint;
@@ -244,7 +236,7 @@ vec3 paperTexture(vec2 uv, vec2 res) {
 // 紙の凹凸による鉛筆のムラ係数
 float paperBumpInfluence(vec2 uv, vec2 res) {
   float bumpVal = noise2d(uv * res * 0.05);
-  return 0.7 + bumpVal * 0.3; // 0.7~1.0の範囲でムラ
+  return 0.7 + bumpVal * 0.3;
 }
 
 // ─── セピアトーン変換 ───
@@ -259,6 +251,23 @@ vec3 toSepia(vec3 color, float amount) {
   return mix(color, sepia, amount);
 }
 
+// ─── HSV変換 ───
+
+vec3 rgb2hsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 // ─── メインシェーダー ───
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
@@ -266,9 +275,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
   // ── 深度の線形化と距離ファクター ──
   float linDepth = linearizeDepth(depth);
-  float distFactor = clamp(linDepth * 5.0, 0.0, 1.0); // 0=近い, 1=遠い
+  float distFactor = clamp(linDepth * 5.0, 0.0, 1.0);
 
-  // ── 3種エッジ検出 ──
+  // ── 3種エッジ検出（強化版） ──
 
   // 距離で線の太さを変化（近い→太い、遠い→細い）
   float lineScale = mix(1.5, 0.6, distFactor);
@@ -276,15 +285,16 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
   // 1. シルエットエッジ（深度差大）→太い線
   float silhouetteEdge = sobelEdgeDepth(uv, edgeTS * 1.5);
-  float silhouetteIntensity = smoothstep(edgeThreshold * 0.3, edgeThreshold * 1.5, silhouetteEdge);
+  // edgeThreshold を低く設定して内部エッジも検出（家具ディテール強化）
+  float silhouetteIntensity = smoothstep(edgeThreshold * 0.2, edgeThreshold * 1.2, silhouetteEdge);
 
-  // 2. クリースエッジ（法線差）→中程度の線
+  // 2. クリースエッジ（法線差）→中程度の線 — 感度強化
   float creaseEdge = normalEdge(uv, edgeTS);
-  float creaseIntensity = smoothstep(0.1, 0.5, creaseEdge) * 0.7;
+  float creaseIntensity = smoothstep(0.06, 0.35, creaseEdge) * 0.8;
 
-  // 3. マテリアルエッジ（色差）→細い線
+  // 3. マテリアルエッジ（色差）→細い線 — 感度強化
   float matEdge = colorEdge(uv, edgeTS * 0.8);
-  float matIntensity = smoothstep(0.15, 0.6, matEdge) * 0.5;
+  float matIntensity = smoothstep(0.08, 0.4, matEdge) * 0.6;
 
   // エッジ合成（最大値ベース、距離で減衰）
   float edgeFade = mix(1.0, 0.3, distFactor);
@@ -296,7 +306,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   // ── 鉛筆筆圧 ──
   vec2 pressUV = uv * resolution / 8.0;
   float pressure = pencilPressure(pressUV, edgeIntensity);
-  float sFade = strokeFade(pressUV, edgeIntensity);
+  float sFade = strokeFade(pressUV);
   float pencilMod = pressure * sFade;
 
   // エッジに筆圧を適用
@@ -307,12 +317,19 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   float luminance = dot(originalColor, vec3(0.299, 0.587, 0.114));
   float darkness = 1.0 - luminance;
 
-  // 背景（空/遠景）検出：ほぼ紙色のみ
+  // 背景（空/遠景）検出
   float bgMask = smoothstep(0.95, 1.0, linDepth);
+
+  // ── 照明表現: 明度ベースでハッチング密度を調整 ──
+  // 明るい部分（照明直下/窓際）= ハッチング薄く
+  // 暗い部分（影）= ハッチング密に
+  float lightInfluence = luminance; // 0=暗い, 1=明るい
+  float hatchDarkness = darkness * mix(1.3, 0.5, lightInfluence);
+  hatchDarkness = clamp(hatchDarkness, 0.0, 1.0);
 
   // ── 5段階ハッチング ──
   vec2 screenUV = uv * resolution / 4.0;
-  float hatch = hatchPattern5(screenUV, darkness, hatchDensity, hatchRandomness, distFactor);
+  float hatch = hatchPattern5(screenUV, hatchDarkness, hatchDensity, hatchRandomness, distFactor);
   // 紙の凹凸ムラをハッチングに適用
   hatch *= paperBumpInfluence(uv, resolution);
   // 筆圧をハッチングにも適用
@@ -331,25 +348,20 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // watercolor モード: 淡い水彩風の色付け
     // ════════════════════════════════════════
 
-    // 色のムラ: 場所によって濃淡が変わる
-    float colorVariation = fbm(uv * 8.0 + 1.5, 3) * 0.3;
-
-    // 白い余白: 明るい部分は完全に紙色（白抜き効果）
+    float colorVariation = fbm3(uv * 8.0 + 1.5) * 0.3;
     float whiteout = smoothstep(0.2, 0.6, luminance);
 
-    // ベース水彩色（透明感のある重ね塗り）
     float colorMix = 0.2 + luminance * 0.2 + colorVariation * 0.15;
-    colorMix *= (1.0 - whiteout * 0.7); // 明るい部分は紙色が見える
+    colorMix *= (1.0 - whiteout * 0.7);
     vec3 watercolor = mix(paper, originalColor * 0.85 + paper * 0.15, colorMix);
 
-    // エッジへのにじみ: 輪郭に沿って色がにじむ
+    // にじみ（5x5カーネル）
     vec3 blurred = vec3(0.0);
     float totalWeight = 0.0;
     for (float dx = -2.0; dx <= 2.0; dx += 1.0) {
       for (float dy = -2.0; dy <= 2.0; dy += 1.0) {
         float w = 1.0 / (1.0 + abs(dx) + abs(dy));
         vec2 sampleUV = uv + vec2(dx, dy) * texelSize * 2.0;
-        // にじみにノイズを加える
         sampleUV += (noise2d(sampleUV * 50.0) - 0.5) * texelSize * 1.5;
         blurred += texture2D(inputBuffer, sampleUV).rgb * w;
         totalWeight += w;
@@ -357,45 +369,92 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     }
     blurred /= totalWeight;
 
-    // エッジ付近でにじみを強くする
     float bleedAmount = edgeIntensity * 0.4 + 0.1;
-    // テクスチャの透明感: 下の色が透ける重ね塗り効果
     vec3 bleedColor = mix(blurred, paper, 0.3);
     watercolor = mix(watercolor, bleedColor, bleedAmount);
 
-    // 色ムラの追加レイヤー
     float muddiness = noise2d(uv * 12.0 + 3.0) * 0.08;
     watercolor += vec3(muddiness * 0.5, muddiness * 0.3, -muddiness * 0.2);
 
     // エッジを薄い鉛筆線で追加
     watercolor = mix(watercolor, inkColor * 0.5, edgeIntensity * 0.35);
-
-    // ハッチングは非常に薄く
     watercolor = mix(watercolor, inkColor * 0.4, hatch * 0.1);
 
     result = watercolor;
     result = toSepia(result, sepiaAmount * 0.3);
+
+  } else if (mode == 2) {
+    // ════════════════════════════════════════
+    // colored-pencil モード: 色鉛筆スケッチ
+    // ════════════════════════════════════════
+
+    // 元の色をHSVに変換して彩度を落とす（淡い色鉛筆感）
+    vec3 hsv = rgb2hsv(originalColor);
+    hsv.y *= 0.4; // 彩度30-50%に落とす
+    hsv.z = mix(hsv.z, 0.85, 0.3); // 明度を紙色に近づける
+    vec3 pallidColor = hsv2rgb(hsv);
+
+    // ベースは紙色と淡い元色のブレンド
+    float colorStrength = 0.35 + darkness * 0.25; // 暗い部分ほど色が強い
+    result = mix(paper, pallidColor, colorStrength);
+
+    // 色鉛筆の筆圧ムラ（塗りムラ表現）
+    float pressureMura = noise2d(uv * resolution * 0.012) * 0.4
+                       + noise2d(uv * resolution * 0.003 + 7.0) * 0.3;
+    pressureMura = pressureMura * 0.5 + 0.5; // 0.25~0.75 に正規化
+    result = mix(paper, result, clamp(pressureMura + 0.3, 0.0, 1.0));
+
+    // 色付きハッチング（元の色に合わせた線の色）
+    vec3 hatchColor = mix(inkColor, originalColor * 0.5, 0.6); // 元色寄りのハッチング
+    // 暗い部分は濃く、明るい部分は薄くハッチング
+    float coloredHatch = hatch * 0.65;
+    result = mix(result, hatchColor, coloredHatch);
+
+    // エッジ（輪郭線）— 色付き鉛筆線
+    vec3 edgeColor = mix(inkColor * 0.7, originalColor * 0.3, 0.4);
+    float silEdge = silhouetteIntensity * edgeFade * pencilMod;
+    result = mix(result, edgeColor, silEdge * 0.85);
+    float crEdge = creaseIntensity * edgeFade * pencilMod * 0.6;
+    result = mix(result, edgeColor * 1.1, crEdge * 0.50);
+    float mtEdge = matIntensity * edgeFade * pencilMod * 0.5;
+    result = mix(result, edgeColor * 1.15, mtEdge * 0.35);
+
+    // 背景は紙色
+    result = mix(result, paper, bgMask * 0.85);
+
+    // 色鉛筆は軽いセピアのみ
+    result = toSepia(result, sepiaAmount * 0.15);
+
   } else {
     // ════════════════════════════════════════
-    // sketch モード: モノクロ鉛筆画
+    // sketch モード: モノクロ鉛筆画（照明表現強化）
     // ════════════════════════════════════════
 
     // ベースは紙色
     result = paper;
 
-    // ハッチングで陰影（紙ムラ込み）
+    // ハッチングで陰影（照明表現込み）
     result = mix(result, inkColor, hatch * 0.7);
 
     // エッジ（輪郭線）— 種類別の太さ・濃さ
-    // シルエット: 最も濃い太い線
     float silEdge = silhouetteIntensity * edgeFade * pencilMod;
     result = mix(result, inkColor, silEdge * 0.90);
-    // クリース: 中程度
     float crEdge = creaseIntensity * edgeFade * pencilMod * 0.65;
     result = mix(result, inkColor * 1.1, crEdge * 0.55);
-    // マテリアル: 細く薄い
     float mtEdge = matIntensity * edgeFade * pencilMod * 0.5;
     result = mix(result, inkColor * 1.2, mtEdge * 0.35);
+
+    // 照明位置マーク: 非常に明るい部分に×印を描画
+    if (luminance > 0.92 && linDepth < 0.8) {
+      vec2 markUV = fract(uv * resolution / 20.0) - 0.5;
+      float cross1 = abs(markUV.x + markUV.y);
+      float cross2 = abs(markUV.x - markUV.y);
+      float crossMark = smoothstep(0.06, 0.02, min(cross1, cross2));
+      // まばらに配置（グリッドの一部だけ）
+      float gridCheck = step(0.85, hash(floor(uv * resolution / 20.0)));
+      crossMark *= gridCheck * 0.3;
+      result = mix(result, inkColor * 0.6, crossMark);
+    }
 
     // 背景はほぼ紙色
     result = mix(result, paper, bgMask * 0.85);
@@ -404,7 +463,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     result = toSepia(result, sepiaAmount);
   }
 
-  // 紙端のビネット（わずかな経年変化感）
+  // 紙端のビネット
   vec2 vignetteUV = uv * 2.0 - 1.0;
   float vignette = 1.0 - dot(vignetteUV, vignetteUV) * 0.18;
   result *= vignette;
@@ -416,8 +475,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 // ── カスタムEffect クラス ──
 class SketchEffectImpl extends Effect {
   constructor({
-    edgeThreshold = 0.02,
-    hatchDensity = 8.0,
+    edgeThreshold = 0.015,
+    hatchDensity = 10.0,
     hatchRandomness = 0.3,
     paperNoiseIntensity = 0.03,
     paperColor = new THREE.Color('#faf8f0'),
@@ -458,7 +517,7 @@ class SketchEffectImpl extends Effect {
 // ── React コンポーネント ──
 
 interface SketchEffectProps {
-  mode?: 'sketch' | 'watercolor';
+  mode?: 'sketch' | 'watercolor' | 'colored-pencil';
   edgeThreshold?: number;
   hatchDensity?: number;
   hatchRandomness?: number;
@@ -472,8 +531,8 @@ export const SketchEffect = forwardRef<SketchEffectImpl, SketchEffectProps>(
   function SketchEffect(
     {
       mode = 'sketch',
-      edgeThreshold = 0.02,
-      hatchDensity = 8.0,
+      edgeThreshold = 0.015,
+      hatchDensity = 10.0,
       hatchRandomness = 0.3,
       paperNoiseIntensity = 0.03,
       paperColor = '#faf8f0',
@@ -483,6 +542,7 @@ export const SketchEffect = forwardRef<SketchEffectImpl, SketchEffectProps>(
     ref,
   ) {
     const effect = useMemo(() => {
+      const modeInt = mode === 'watercolor' ? 1 : mode === 'colored-pencil' ? 2 : 0;
       return new SketchEffectImpl({
         edgeThreshold,
         hatchDensity,
@@ -491,7 +551,7 @@ export const SketchEffect = forwardRef<SketchEffectImpl, SketchEffectProps>(
         paperColor: new THREE.Color(paperColor),
         inkColor: new THREE.Color(inkColor),
         sepiaAmount,
-        mode: mode === 'watercolor' ? 1 : 0,
+        mode: modeInt,
         time: performance.now() * 0.001,
       });
     }, [mode, edgeThreshold, hatchDensity, hatchRandomness, paperNoiseIntensity, paperColor, inkColor, sepiaAmount]);

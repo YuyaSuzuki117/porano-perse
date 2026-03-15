@@ -152,7 +152,7 @@ export function SceneCanvas({
   const controlsRef = useRef(null);
 
   const isNight = dayNight === 'night';
-  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor';
+  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil';
 
   // スタイル別背景色
   const bgColor = useMemo(() => {

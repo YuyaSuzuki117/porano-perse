@@ -206,8 +206,8 @@ export interface CameraState {
   setPhotoMode: (v: boolean) => void;
 
   // レンダリングスタイル
-  renderStyle: 'realistic' | 'sketch' | 'watercolor';
-  setRenderStyle: (style: 'realistic' | 'sketch' | 'watercolor') => void;
+  renderStyle: 'realistic' | 'sketch' | 'colored-pencil' | 'watercolor';
+  setRenderStyle: (style: 'realistic' | 'sketch' | 'colored-pencil' | 'watercolor') => void;
 
   // ジオラマモード
   activateDioramaMode: () => void;
