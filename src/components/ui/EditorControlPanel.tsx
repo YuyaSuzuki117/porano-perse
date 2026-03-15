@@ -660,7 +660,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {/* ジオラマモードボタン */}
             <button
               onClick={activateDioramaMode}
-              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold hover:from-orange-600 hover:to-amber-600 transition-all"
+              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
             >
               ジオラマモード
             </button>
@@ -822,7 +822,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         </div>
         <button
           onClick={() => useCameraStore.getState().setStyleCompareMode(true)}
-          className="mt-2 w-full px-3 py-1.5 rounded text-xs font-medium bg-gradient-to-r from-blue-50 to-orange-50 text-gray-700 hover:from-blue-100 hover:to-orange-100 border border-gray-200 transition-all"
+          className="mt-2 w-full px-3 py-1.5 rounded text-xs font-medium bg-blue-50 text-gray-700 hover:bg-blue-100 border border-gray-200 transition-all"
         >
           A/B スタイル比較
         </button>
@@ -1130,11 +1130,11 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </p>
           <div className="grid grid-cols-1 gap-1.5">
             {([
-              { key: 'natural', label: 'ナチュラル', desc: '明るい木目・白壁・暖かい自然光', icon: '🌿', gradient: 'from-amber-50 to-green-50', border: 'border-green-200', activeBg: 'bg-green-50', activeText: 'text-green-800', activeBorder: 'border-green-400' },
-              { key: 'modern', label: 'モダン', desc: 'ダークフロア・グレー壁・クール白', icon: '🏙️', gradient: 'from-gray-50 to-blue-50', border: 'border-blue-200', activeBg: 'bg-blue-50', activeText: 'text-blue-800', activeBorder: 'border-blue-400' },
-              { key: 'retro', label: 'レトロ', desc: 'ヘリンボーン・クリーム壁・暖琥珀', icon: '🎵', gradient: 'from-amber-50 to-orange-50', border: 'border-amber-200', activeBg: 'bg-amber-50', activeText: 'text-amber-800', activeBorder: 'border-amber-400' },
-              { key: 'japanese', label: '和風', desc: '畳・土壁・柔らかな暖光', icon: '🏯', gradient: 'from-yellow-50 to-green-50', border: 'border-yellow-200', activeBg: 'bg-yellow-50', activeText: 'text-yellow-800', activeBorder: 'border-yellow-400' },
-              { key: 'industrial', label: 'インダストリアル', desc: 'コンクリート・レンガ壁・クールスポット', icon: '🏭', gradient: 'from-gray-100 to-orange-50', border: 'border-gray-300', activeBg: 'bg-gray-100', activeText: 'text-gray-800', activeBorder: 'border-gray-500' },
+              { key: 'natural', label: 'ナチュラル', desc: '明るい木目・白壁・暖かい自然光', icon: '🌿', bg: 'bg-gray-50', border: 'border-gray-200', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-400' },
+              { key: 'modern', label: 'モダン', desc: 'ダークフロア・グレー壁・クール白', icon: '🏙️', bg: 'bg-gray-50', border: 'border-gray-200', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-400' },
+              { key: 'retro', label: 'レトロ', desc: 'ヘリンボーン・クリーム壁・暖琥珀', icon: '🎵', bg: 'bg-gray-50', border: 'border-gray-200', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-400' },
+              { key: 'japanese', label: '和風', desc: '畳・土壁・柔らかな暖光', icon: '🏯', bg: 'bg-gray-50', border: 'border-gray-200', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-400' },
+              { key: 'industrial', label: 'インダストリアル', desc: 'コンクリート・レンガ壁・クールスポット', icon: '🏭', bg: 'bg-gray-50', border: 'border-gray-200', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-400' },
             ] as const).map((preset) => {
               const isActive = activeRoomAtmosphere === preset.key;
               return (
@@ -1144,7 +1144,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
                     isActive
                       ? `${preset.activeBg} ${preset.activeText} ${preset.activeBorder} ring-1 ring-opacity-50 shadow-sm`
-                      : `bg-gradient-to-r ${preset.gradient} ${preset.border} hover:shadow-sm`
+                      : `${preset.bg} ${preset.border} hover:shadow-sm`
                   }`}
                 >
                   <span className="text-lg flex-shrink-0">{preset.icon}</span>
@@ -1209,7 +1209,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   onClick={() => setRenderStyle(style)}
                   className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium transition-all ${
                     renderStyle === style
-                      ? 'bg-amber-600 text-white shadow-sm'
+                      ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
                   }`}
                 >
@@ -1218,7 +1218,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               ))}
             </div>
             {(renderStyle === 'sketch' || renderStyle === 'watercolor') && (
-              <p className="text-[9px] text-amber-600 mt-1">
+              <p className="text-[9px] text-gray-500 mt-1">
                 建築スケッチ風 — 影・AO無効で高速描画
               </p>
             )}
@@ -1245,7 +1245,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       className="inline-block w-2 h-2 rounded-full border border-gray-300/50"
                       style={{ backgroundColor: preset.colorHint }}
                     />
-                    <span className="text-[8px] text-gray-400">{(preset.brightness * 100).toFixed(0)}%</span>
+                    <span className="text-[8px] text-gray-400 tabular-nums">{(preset.brightness * 100).toFixed(0)}%</span>
                   </div>
                 </button>
               ))}
@@ -1263,7 +1263,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   title={atm.description}
                   className={`px-2 py-1 rounded text-[9px] font-medium text-left transition-all border ${
                     activeLightingPreset === atm.name
-                      ? 'bg-amber-50 text-amber-800 border-amber-300 ring-1 ring-amber-200'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200'
                       : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
                   }`}
                 >
@@ -1316,8 +1316,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium transition-all duration-300 ${
                     dayNight === mode
                       ? mode === 'day'
-                        ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-white shadow-inner'
-                        : 'bg-gradient-to-r from-indigo-700 to-indigo-900 text-white shadow-inner'
+                        ? 'bg-blue-600 text-white shadow-inner'
+                        : 'bg-gray-800 text-white shadow-inner'
                       : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                   }`}
                 >
@@ -1417,7 +1417,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* 家具セット一括配置 */}
       <Section title={t('panel.furniture_set')} collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <div className="space-y-1.5">
-          <p className="text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1 border border-amber-200">
+          <p className="text-[10px] text-gray-600 bg-gray-50 rounded px-2 py-1 border border-gray-200">
             現在の家具はすべてクリアされ、選択したセットに置き換わります
           </p>
           {STORE_FURNITURE_SETS.map((s) => {
@@ -1510,7 +1510,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         {/* 3Dモデルインポートボタン */}
         <button
           onClick={() => setShowModelImport(true)}
-          className="w-full mb-2 px-2 py-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-md text-xs font-medium text-purple-700 flex items-center justify-center gap-1.5 transition-colors"
+          className="w-full mb-2 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md text-xs font-medium text-blue-600 flex items-center justify-center gap-1.5 transition-colors"
         >
           <span>📦</span>
           モデルをインポート (.glb/.gltf)
@@ -1518,13 +1518,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
         {/* カスタムモデルカタログ */}
         {customModels.length > 0 && (
-          <div className="mb-2 p-2 bg-purple-50/50 border border-purple-100 rounded-md">
-            <div className="text-[10px] font-medium text-purple-600 mb-1">カスタムモデル ({customModels.length})</div>
+          <div className="mb-2 p-2 bg-blue-50/50 border border-blue-100 rounded-md">
+            <div className="text-[10px] font-medium text-blue-600 mb-1">カスタムモデル ({customModels.length})</div>
             <div className="space-y-0.5">
               {customModels.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center gap-1 px-1.5 py-1 rounded text-[10px] hover:bg-purple-100 text-purple-700 group"
+                  className="flex items-center gap-1 px-1.5 py-1 rounded text-[10px] hover:bg-blue-100 text-blue-600 group"
                 >
                   <button
                     onClick={() => handleAddCustomToScene(m)}
@@ -1610,13 +1610,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                         }
                       }}
                       className={`flex items-center gap-1 px-2 py-1.5 rounded hover:bg-blue-50 border text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
-                        isCustom ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'
+                        isCustom ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
                       } ${
                         isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
                       }`}
                     >
                       <span className={isMobile ? 'text-2xl' : 'text-base'}>{item.icon}</span>
-                      <span className={`truncate ${isMobile ? 'text-[11px] font-medium' : 'text-[10px]'} ${isCustom ? 'text-purple-700' : 'text-gray-700'}`}>{item.name}</span>
+                      <span className={`truncate ${isMobile ? 'text-[11px] font-medium' : 'text-[10px]'} ${isCustom ? 'text-blue-600' : 'text-gray-700'}`}>{item.name}</span>
                     </button>
                   );
                 })}
@@ -1648,7 +1648,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>長さ</span>
-              <span className="font-mono">{wallLength(selectedWall).toFixed(2)}m</span>
+              <span className="font-mono tabular-nums">{wallLength(selectedWall).toFixed(2)}m</span>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">厚さ (m)</label>
@@ -1755,7 +1755,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {/* 位置 */}
             <div>
               <label className="block text-xs text-gray-500 mb-1">位置</label>
-              <div className="flex gap-2 text-[10px] font-mono text-gray-400">
+              <div className="flex gap-2 text-[10px] font-mono tabular-nums text-gray-400">
                 <span>X: {selectedFurnitureItem.position[0].toFixed(2)}m</span>
                 <span>Z: {selectedFurnitureItem.position[2].toFixed(2)}m</span>
               </div>
@@ -1826,7 +1826,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 onClick={() => toggleLockFurniture(selectedFurnitureItem.id)}
                 className={`w-full px-2 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
                   selectedFurnitureItem.locked
-                    ? 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100'
+                    ? 'bg-blue-50 text-blue-600 border border-blue-300 hover:bg-blue-100'
                     : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                 }`}
               >
@@ -2102,7 +2102,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onClick={toggleFlowHeatmap}
               className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
                 showFlowHeatmap
-                  ? 'bg-orange-500 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -2120,7 +2120,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </button>
           </div>
           {showFlowHeatmap && (
-            <p className="text-[10px] text-orange-600 bg-orange-50 rounded px-2 py-1">入口→カウンター→座席の動線を可視化中。赤=高頻度、青=低頻度</p>
+            <p className="text-[10px] text-gray-600 bg-gray-50 rounded px-2 py-1 border border-gray-200">入口→カウンター→座席の動線を可視化中。赤=高頻度、青=低頻度</p>
           )}
           {showLightingAnalysis && (
             <p className="text-[10px] text-yellow-700 bg-yellow-50 rounded px-2 py-1">窓・照明からの近似ルクス値を表示中。赤=明るい、青=暗い</p>
@@ -2276,7 +2276,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     onChange={(e) => updateFurnitureHeight(selFurn.id, parseFloat(e.target.value))}
                     className="flex-1"
                   />
-                  <span className="text-xs text-gray-600 w-10 text-right">
+                  <span className="text-xs text-gray-600 w-10 text-right tabular-nums">
                     {(selFurn.heightOffset ?? (isWallMount ? 2.0 : 0)).toFixed(1)}m
                   </span>
                 </div>
@@ -2408,8 +2408,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
       {/* Stats */}
       <div className={`${isMobile ? '' : 'mt-auto'} p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-400`}>
-        <div>壁: {walls.length} | 什器: {furniture.length}</div>
-        <div className="mt-1 text-gray-500 font-medium">
+        <div className="tabular-nums">壁: {walls.length} | 什器: {furniture.length}</div>
+        <div className="mt-1 text-gray-500 font-medium tabular-nums">
           面積: {computeFloorArea(walls).toFixed(1)}m² ({(computeFloorArea(walls) / 3.306).toFixed(1)}坪)
         </div>
       </div>

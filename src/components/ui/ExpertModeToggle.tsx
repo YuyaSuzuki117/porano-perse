@@ -86,7 +86,7 @@ export const ExpertModeToggle: React.FC = () => {
         flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
         transition-all duration-200 shadow-sm border
         ${isExpert
-          ? 'bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100'
+          ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
           : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
         }
       `}

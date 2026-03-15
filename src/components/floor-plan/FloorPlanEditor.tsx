@@ -26,7 +26,7 @@ export default function FloorPlanEditor({ canvasRef2D }: FloorPlanEditorProps = 
       case 'door': return 'bg-green-500';
       case 'window': return 'bg-cyan-500';
       case 'delete': return 'bg-red-500';
-      case 'measure': return 'bg-amber-500';
+      case 'measure': return 'bg-blue-500';
       case 'select': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }

@@ -415,7 +415,7 @@ export default function ModelImportPanel({ onImport, onClose }: ModelImportPanel
                       onClick={() => setCategory(cat.value)}
                       className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors ${
                         category === cat.value
-                          ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                          ? 'bg-blue-50 text-blue-600 border border-blue-300'
                           : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
                       }`}
                     >
@@ -464,7 +464,7 @@ export default function ModelImportPanel({ onImport, onClose }: ModelImportPanel
               <button
                 onClick={handleImport}
                 disabled={loading || !name.trim()}
-                className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

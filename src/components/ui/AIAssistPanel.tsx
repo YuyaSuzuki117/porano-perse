@@ -677,7 +677,7 @@ function LayoutCard({ suggestion, index }: { suggestion: ScoredLayoutSuggestion;
               {qs.details.length > 0 && (
                 <div className="mt-1.5 space-y-0.5">
                   {qs.details.slice(0, 5).map((d, di) => (
-                    <p key={di} className="text-[9px] text-amber-600 leading-tight">
+                    <p key={di} className="text-[9px] text-gray-500 leading-tight">
                       - {d}
                     </p>
                   ))}

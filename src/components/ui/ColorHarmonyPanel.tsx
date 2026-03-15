@@ -101,7 +101,7 @@ export function ColorHarmonyPanel({
               {color.slice(1, 7)}
             </span>
             {copiedColor === color && (
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-green-400 whitespace-nowrap">
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-blue-600 whitespace-nowrap">
                 コピー済
               </span>
             )}

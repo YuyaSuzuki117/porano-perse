@@ -251,7 +251,7 @@ function CostRow({ item, isOverridden, onPriceChange, onPriceReset }: CostRowPro
           <button
             className={`text-right cursor-pointer hover:underline ${
               isOverridden
-                ? 'text-orange-600 dark:text-orange-400 font-medium'
+                ? 'text-blue-600 dark:text-blue-400 font-medium'
                 : 'text-gray-600 dark:text-gray-400'
             }`}
             onClick={() => setEditing(true)}

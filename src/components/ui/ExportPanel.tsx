@@ -781,7 +781,7 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
                   <button
                     onClick={handleBatchExport}
                     disabled={!!batchProgress}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-60 disabled:cursor-wait"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm disabled:opacity-60 disabled:cursor-wait"
                   >
                     {batchProgress ? (
                       <>
@@ -914,8 +914,8 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
                     onClick={handleExportJSON}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-all"
                   >
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth={1.5} className="w-5 h-5">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={1.5} className="w-5 h-5">
                         <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
@@ -944,8 +944,8 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
                     onClick={handleCopySpec}
                     className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-all"
                   >
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={1.5} className="w-5 h-5">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={1.5} className="w-5 h-5">
                         <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>

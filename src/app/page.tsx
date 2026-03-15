@@ -249,7 +249,7 @@ export default function EditorPage() {
   // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'settings'>('2d');
+  const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'furniture' | 'settings'>('2d');
   const [fabOpen, setFabOpen] = useState(false);
 
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -461,7 +461,7 @@ export default function EditorPage() {
   }, []);
 
   // Sync mobileTab with viewMode
-  const handleMobileTab = (tab: '2d' | '3d' | 'settings') => {
+  const handleMobileTab = (tab: '2d' | '3d' | 'furniture' | 'settings') => {
     setMobileTab(tab);
     if (tab === '2d') {
       setViewMode('2d');
@@ -469,6 +469,8 @@ export default function EditorPage() {
     } else if (tab === '3d') {
       setViewMode('3d');
       setShowMobilePanel(false);
+    } else if (tab === 'furniture') {
+      setShowMobilePanel(true);
     } else {
       setShowMobilePanel(true);
     }
@@ -686,13 +688,13 @@ export default function EditorPage() {
                   onClick={() => {
                     setFabOpen(false);
                     setShowMobilePanel(true);
-                    setMobileTab('settings');
+                    setMobileTab('furniture');
                   }}
                   className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center active:scale-90 transition-transform"
                   aria-label={t('tool.furniture')}
                 >
                   <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12H3l9-9 9 9h-2M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                    <path d="M4 18V8l4-4h8l4 4v10M2 18h20M6 18v3M18 18v3" />
                   </svg>
                 </button>
               </div>
@@ -792,6 +794,7 @@ export default function EditorPage() {
           {([
             { key: '2d' as const, label: locale === 'ja' ? '図面' : 'Plan', iconPath: 'M3 3h7v7H3zM14 3l4 7H10zM3 14h7v4H3zM14 14h4v4h-4z' },
             { key: '3d' as const, label: '3D', iconPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+            { key: 'furniture' as const, label: locale === 'ja' ? '家具' : 'Furniture', iconPath: 'M4 18V8l4-4h8l4 4v10M2 18h20M6 18v3M18 18v3' },
             { key: 'settings' as const, label: locale === 'ja' ? '設定' : 'Settings', iconPath: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z' },
           ]).map(({ key, label, iconPath }) => (
             <button

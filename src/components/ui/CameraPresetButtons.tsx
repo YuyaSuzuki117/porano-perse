@@ -232,7 +232,7 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-[9px]">
+            <span className="text-gray-500 text-[9px] tabular-nums">
               {Math.round(walkthroughProgress * 100)}%
             </span>
             <button

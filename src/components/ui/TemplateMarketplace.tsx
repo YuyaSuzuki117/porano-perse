@@ -224,7 +224,7 @@ export function TemplateMarketplace({ isOpen, onClose }: TemplateMarketplaceProp
                       className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
                     >
                       {/* サムネイル */}
-                      <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl">
+                      <div className="h-32 bg-gray-100 flex items-center justify-center text-4xl">
                         {t.thumbnail || getCategoryEmoji(t.category)}
                       </div>
 

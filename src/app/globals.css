@@ -227,7 +227,7 @@ input[type="range"]:active {
 }
 
 /* ボタン（ホバー・アクティブ） */
-.dark button:not([class*="bg-blue"]):not([class*="bg-gradient"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="bg-green"]) {
+.dark button:not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-gray-8"]) {
   color: var(--text-primary);
 }
 .dark .hover\:bg-gray-100:hover {

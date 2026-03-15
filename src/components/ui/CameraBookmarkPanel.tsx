@@ -68,7 +68,7 @@ export function CameraBookmarkPanel({ canvasRef }: CameraBookmarkPanelProps) {
         >
           <button
             onClick={() => handleApply(bookmark)}
-            className="flex-1 flex items-center gap-1.5 px-2 py-1.5 min-h-[32px] bg-purple-700/50 backdrop-blur-sm text-white text-[10px] rounded hover:bg-purple-700/70 transition-colors overflow-hidden"
+            className="flex-1 flex items-center gap-1.5 px-2 py-1.5 min-h-[32px] bg-blue-600/50 backdrop-blur-sm text-white text-[10px] rounded hover:bg-blue-600/70 transition-colors overflow-hidden"
             title={`${bookmark.name} に移動`}
           >
             {bookmark.thumbnail && (
@@ -103,12 +103,12 @@ export function CameraBookmarkPanel({ canvasRef }: CameraBookmarkPanelProps) {
               if (e.key === 'Escape') setShowInput(false);
             }}
             placeholder="アングル名..."
-            className="flex-1 px-2 py-1 bg-black/60 text-white text-[10px] rounded border border-white/20 focus:outline-none focus:border-purple-400 placeholder-white/40"
+            className="flex-1 px-2 py-1 bg-black/60 text-white text-[10px] rounded border border-white/20 focus:outline-none focus:border-blue-400 placeholder-white/40"
             autoFocus
           />
           <button
             onClick={handleSaveBookmark}
-            className="px-2 py-1 bg-purple-600/70 text-white text-[10px] rounded hover:bg-purple-600/90 transition-colors"
+            className="px-2 py-1 bg-blue-600/70 text-white text-[10px] rounded hover:bg-blue-600/90 transition-colors"
           >
             保存
           </button>
@@ -122,7 +122,7 @@ export function CameraBookmarkPanel({ canvasRef }: CameraBookmarkPanelProps) {
       ) : (
         <button
           onClick={() => setShowInput(true)}
-          className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] md:min-h-0 md:py-1 md:px-2 bg-purple-600/50 backdrop-blur-sm text-white text-xs md:text-[10px] rounded active:bg-purple-600/80 hover:bg-purple-600/70 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] md:min-h-0 md:py-1 md:px-2 bg-blue-600/50 backdrop-blur-sm text-white text-xs md:text-[10px] rounded active:bg-blue-600/80 hover:bg-blue-600/70 transition-colors"
           title="現在のアングルを保存"
         >
           <span>+</span>

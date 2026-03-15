@@ -357,7 +357,7 @@ export function VersionHistoryPanel({ onClose }: VersionHistoryPanelProps) {
                             </div>
                           );
                           return (
-                            <div className="text-[11px] text-amber-600 mt-1">
+                            <div className="text-[11px] text-gray-500 mt-1">
                               現在との差分: {summary}
                             </div>
                           );

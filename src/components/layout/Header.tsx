@@ -350,7 +350,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
               <line x1="3" y1="8" x2="13" y2="8" />
             </svg>
           </button>
-          <span className="text-[10px] text-gray-500 font-mono w-10 text-center">
+          <span className="text-[10px] text-gray-500 font-mono tabular-nums w-10 text-center">
             {Math.round(zoom * 100)}%
           </span>
           <button

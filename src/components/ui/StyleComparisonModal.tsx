@@ -164,7 +164,7 @@ export function StyleComparisonModal({ canvasRef }: StyleComparisonModalProps) {
                 {/* Right: B案 (comparison) */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded">B</span>
+                    <span className="bg-gray-600 text-white text-xs font-bold px-2 py-0.5 rounded">B</span>
                     <span className="text-sm font-medium text-gray-700">{styleCompareRightName}</span>
                   </div>
                   <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm">
@@ -189,7 +189,7 @@ export function StyleComparisonModal({ canvasRef }: StyleComparisonModalProps) {
                 </button>
                 <button
                   onClick={handleApplyRight}
-                  className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors font-medium"
+                  className="px-4 py-2 text-sm rounded-lg bg-white text-blue-600 border border-blue-300 hover:bg-blue-50 transition-colors font-medium"
                 >
                   B案 ({styleCompareRightName}) を適用
                 </button>

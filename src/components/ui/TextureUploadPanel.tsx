@@ -239,7 +239,7 @@ export function TextureUploadPanel() {
 
       {/* 適用状態インジケータ */}
       {hasApplied && (
-        <p className="text-[10px] text-green-400">
+        <p className="text-[10px] text-blue-600">
           {target === 'wall' ? '壁' : '床'}テクスチャ適用中
         </p>
       )}
