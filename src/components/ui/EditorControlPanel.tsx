@@ -464,17 +464,27 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           }}
           className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
             photoMode
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600'
-              : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border border-gray-200 hover:from-amber-50 hover:to-orange-50 hover:text-amber-700 hover:border-amber-300'
+              ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
           }`}
           aria-label={photoMode ? 'フォトモードを終了' : 'フォトモードを開始'}
           aria-pressed={photoMode}
         >
-          <span className="text-base" aria-hidden="true">{photoMode ? '🔙' : '📷'}</span>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4" aria-hidden="true">
+            {photoMode ? (
+              <path d="M12 4L4 12M4 4l8 8" strokeLinecap="round" />
+            ) : (
+              <>
+                <rect x="2" y="4" width="12" height="9" rx="1.5" />
+                <circle cx="8" cy="8.5" r="2.5" />
+                <path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
+              </>
+            )}
+          </svg>
           {photoMode ? 'フォトモード終了' : 'フォトモード'}
         </button>
         {photoMode && (
-          <p className="text-[9px] text-amber-600 mt-1 text-center">
+          <p className="text-[9px] text-blue-500 mt-1 text-center">
             UI非表示・高品質・暖色照明で撮影に最適化
           </p>
         )}
