@@ -2,12 +2,13 @@
 
 import { useEditorStore } from '@/stores/useEditorStore';
 
+import { useUIStore } from '@/stores/useUIStore';
 /**
  * 家具整列ツールバー
  * 2つ以上の家具が選択されている場合にフローティング表示
  */
 export function AlignmentToolbar() {
-  const selectedFurnitureIds = useEditorStore((s) => s.selectedFurnitureIds);
+  const selectedFurnitureIds = useUIStore(s => s.selectedFurnitureIds);
   const alignLeft = useEditorStore((s) => s.alignLeft);
   const alignRight = useEditorStore((s) => s.alignRight);
   const alignTop = useEditorStore((s) => s.alignTop);

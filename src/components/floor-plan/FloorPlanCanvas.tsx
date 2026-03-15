@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { Point2D, WallSegment, Opening } from '@/types/floor-plan';
 import { FurnitureItem } from '@/types/scene';
 import { STYLE_PRESETS } from '@/data/styles';
@@ -126,18 +127,18 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
   const walls = useEditorStore((s) => s.walls);
   const openings = useEditorStore((s) => s.openings);
   const furniture = useEditorStore((s) => s.furniture);
-  const activeTool = useEditorStore((s) => s.activeTool);
-  const selectedWallId = useEditorStore((s) => s.selectedWallId);
-  const selectedFurnitureId = useEditorStore((s) => s.selectedFurnitureId);
-  const isDrawingWall = useEditorStore((s) => s.isDrawingWall);
-  const wallDrawStart = useEditorStore((s) => s.wallDrawStart);
+  const activeTool = useUIStore(s => s.activeTool);
+  const selectedWallId = useUIStore(s => s.selectedWallId);
+  const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
+  const isDrawingWall = useUIStore(s => s.isDrawingWall);
+  const wallDrawStart = useUIStore(s => s.wallDrawStart);
   const style = useEditorStore((s) => s.style);
   const addWall = useEditorStore((s) => s.addWall);
   const deleteWall = useEditorStore((s) => s.deleteWall);
-  const setSelectedWall = useEditorStore((s) => s.setSelectedWall);
+  const setSelectedWall = useUIStore(s => s.setSelectedWall);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
-  const startDrawingWall = useEditorStore((s) => s.startDrawingWall);
-  const finishDrawingWall = useEditorStore((s) => s.finishDrawingWall);
+  const startDrawingWall = useUIStore(s => s.startDrawingWall);
+  const finishDrawingWall = useUIStore(s => s.finishDrawingWall);
   const addOpening = useEditorStore((s) => s.addOpening);
   const updateOpening = useEditorStore((s) => s.updateOpening);
   const deleteOpening = useEditorStore((s) => s.deleteOpening);
@@ -2511,7 +2512,7 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isDrawingWall) {
-          useEditorStore.getState().finishDrawingWall();
+          useUIStore.getState().finishDrawingWall();
         }
         // クイックピッカーを閉じる
         if (quickPickerPos) {

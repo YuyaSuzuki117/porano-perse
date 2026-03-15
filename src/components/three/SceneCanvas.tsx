@@ -51,6 +51,7 @@ import { SmokeParticles } from './SmokeParticles';
 import FloorReflection from './FloorReflection';
 import AmbientOcclusionPlanes from './AmbientOcclusionPlanes';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import { StyleConfig } from '@/types/scene';
 
@@ -84,25 +85,25 @@ export function SceneCanvas({
   const furniture = useEditorStore((s) => s.furniture);
   const styleName = useEditorStore((s) => s.style);
   const roomHeight = useEditorStore((s) => s.roomHeight);
-  const showGrid = useEditorStore((s) => s.showGrid);
-  const showDimensions = useEditorStore((s) => s.showDimensions);
-  const showFurniture = useEditorStore((s) => s.showFurniture);
+  const showGrid = useUIStore(s => s.showGrid);
+  const showDimensions = useUIStore(s => s.showDimensions);
+  const showFurniture = useUIStore(s => s.showFurniture);
   const dayNight = useEditorStore((s) => s.dayNight);
   const fogDistance = useEditorStore((s) => s.fogDistance);
   const lightBrightness = useEditorStore((s) => s.lightBrightness);
   const lightWarmth = useEditorStore((s) => s.lightWarmth);
   const qualityLevel = useEditorStore((s) => s.qualityLevel);
-  const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
-  const isDraggingFurniture = useEditorStore((s) => s.isDraggingFurniture);
+  const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
+  const isDraggingFurniture = useUIStore(s => s.isDraggingFurniture);
   const isFirstPersonMode = useEditorStore((s) => s.isFirstPersonMode);
   const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);
   const annotations = useEditorStore((s) => s.annotations);
-  const showAnnotations = useEditorStore((s) => s.showAnnotations);
-  const activeTool = useEditorStore((s) => s.activeTool);
-  const showFlowHeatmap = useEditorStore((s) => s.showFlowHeatmap);
-  const showLightingAnalysis = useEditorStore((s) => s.showLightingAnalysis);
+  const showAnnotations = useUIStore(s => s.showAnnotations);
+  const activeTool = useUIStore(s => s.activeTool);
+  const showFlowHeatmap = useUIStore(s => s.showFlowHeatmap);
+  const showLightingAnalysis = useUIStore(s => s.showLightingAnalysis);
   const deletingFurnitureIds = useEditorStore((s) => s.deletingFurnitureIds);
-  const photoMode = useEditorStore((s) => s.photoMode);
+  const photoMode = useUIStore(s => s.photoMode);
   const showHumanFigures = useEditorStore((s) => s.showHumanFigures);
   const environmentPreset = useEditorStore((s) => s.environmentPreset);
   const motionBlurEnabled = useEditorStore((s) => s.motionBlurEnabled);
@@ -110,7 +111,7 @@ export function SceneCanvas({
   const showFlowSimulation = useEditorStore((s) => s.showFlowSimulation);
   const referenceImageUrl = useEditorStore((s) => s.referenceImageUrl);
   const referenceImageOpacity = useEditorStore((s) => s.referenceImageOpacity);
-  const showCollisionHeatmap = useEditorStore((s) => s.showCollisionHeatmap);
+  const showCollisionHeatmap = useUIStore(s => s.showCollisionHeatmap);
   const showGodRays = useEditorStore((s) => s.showGodRays);
   const godRayIntensity = useEditorStore((s) => s.godRayIntensity);
   const wetFloorEnabled = useEditorStore((s) => s.wetFloorEnabled);
@@ -133,7 +134,7 @@ export function SceneCanvas({
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
   const addAnnotation = useEditorStore((s) => s.addAnnotation);
-  const setActiveTool = useEditorStore((s) => s.setActiveTool);
+  const setActiveTool = useUIStore(s => s.setActiveTool);
 
   // エキスパートモード: 高度なエフェクトはエキスパートのみ表示
   const [isExpert, setIsExpert] = useState(false);

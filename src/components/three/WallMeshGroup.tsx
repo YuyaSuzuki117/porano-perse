@@ -8,6 +8,7 @@ import { StyleConfig } from '@/types/scene';
 import { wallLength, wallAngle } from '@/lib/geometry';
 import { DoorWindowMesh } from './DoorWindowMesh';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 
 /* ─── カメラ角度ベースの壁透過ユーティリティ ─────────────────── */
@@ -793,10 +794,10 @@ interface WallMeshGroupProps {
 
 export const WallMeshGroup = React.memo(function WallMeshGroup({ walls, openings, style }: WallMeshGroupProps) {
   const dayNight = useEditorStore((s) => s.dayNight);
-  const wallColorOverride = useEditorStore((s) => s.wallColorOverride);
-  const wallTextureType = useEditorStore((s) => s.wallTextureType);
-  const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
-  const sectionCutHeight = useEditorStore((s) => s.sectionCutHeight);
+  const wallColorOverride = useUIStore(s => s.wallColorOverride);
+  const wallTextureType = useUIStore(s => s.wallTextureType);
+  const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
+  const sectionCutHeight = useUIStore(s => s.sectionCutHeight);
   const isNight = dayNight === 'night';
 
   // hidden モードでは壁を一切レンダリングしない

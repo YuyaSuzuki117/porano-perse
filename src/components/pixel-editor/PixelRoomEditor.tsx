@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { FURNITURE_CATALOG } from '@/data/furniture';
 import { FurnitureType, FurnitureItem } from '@/types/scene';
 import {
@@ -141,7 +142,7 @@ export default function PixelRoomEditor() {
   const walls = useEditorStore((s) => s.walls);
   const furniture = useEditorStore((s) => s.furniture);
   const openings = useEditorStore((s) => s.openings);
-  const selectedFurnitureId = useEditorStore((s) => s.selectedFurnitureId);
+  const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
   const moveFurniture = useEditorStore((s) => s.moveFurniture);
   const rotateFurniture = useEditorStore((s) => s.rotateFurniture);

@@ -4,14 +4,15 @@ import FloorPlanCanvas from './FloorPlanCanvas';
 import FloorPlanToolbar from './FloorPlanToolbar';
 import { useEditorStore } from '@/stores/useEditorStore';
 
+import { useUIStore } from '@/stores/useUIStore';
 interface FloorPlanEditorProps {
   /** External ref to access the 2D canvas (for PDF export) */
   canvasRef2D?: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export default function FloorPlanEditor({ canvasRef2D }: FloorPlanEditorProps = {}) {
-  const activeTool = useEditorStore((s) => s.activeTool);
-  const selectedWallId = useEditorStore((s) => s.selectedWallId);
+  const activeTool = useUIStore(s => s.activeTool);
+  const selectedWallId = useUIStore(s => s.selectedWallId);
   const walls = useEditorStore((s) => s.walls);
 
   const selectedWall = selectedWallId

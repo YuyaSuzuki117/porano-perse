@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useEditorStore, LOCALSTORAGE_KEY } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 
 export function useAutoSave(debounceMs = 2000) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -13,6 +14,7 @@ export function useAutoSave(debounceMs = 2000) {
         timerRef.current = setTimeout(() => {
           const doSave = () => {
             try {
+              const ui = useUIStore.getState();
               const data = {
                 projectName: state.projectName,
                 walls: state.walls,
@@ -20,10 +22,10 @@ export function useAutoSave(debounceMs = 2000) {
                 furniture: state.furniture,
                 roomHeight: state.roomHeight,
                 style: state.style,
-                wallDisplayMode: state.wallDisplayMode,
-                ceilingVisible: state.ceilingVisible,
-                showGrid: state.showGrid,
-                showDimensions: state.showDimensions,
+                wallDisplayMode: ui.wallDisplayMode,
+                ceilingVisible: ui.ceilingVisible,
+                showGrid: ui.showGrid,
+                showDimensions: ui.showDimensions,
                 dayNight: state.dayNight,
               };
               const file = {

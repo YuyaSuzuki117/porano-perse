@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { EditorTool } from '@/types/floor-plan';
 import { useEffect, useState, type ReactNode } from 'react';
 
@@ -142,8 +143,8 @@ function Tooltip({ text, visible }: { text: string; visible: boolean }) {
 }
 
 export default function FloorPlanToolbar() {
-  const activeTool = useEditorStore((s) => s.activeTool);
-  const setActiveTool = useEditorStore((s) => s.setActiveTool);
+  const activeTool = useUIStore(s => s.activeTool);
+  const setActiveTool = useUIStore(s => s.setActiveTool);
   const [hoveredTool, setHoveredTool] = useState<string | null>(null);
 
   // キーボードショートカット

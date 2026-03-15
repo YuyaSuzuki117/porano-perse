@@ -7,6 +7,7 @@ import { RoundedBox, Html } from '@react-three/drei';
 import { FurnitureItem, FurnitureMaterial, WoodType, FabricType, MetalFinish } from '@/types/scene';
 import { WallSegment } from '@/types/floor-plan';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { STYLE_PRESETS } from '@/data/styles';
 import {
   useScaledGLTF,
@@ -447,7 +448,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
   const startDrag = useCallback((e: ThreeEvent<PointerEvent>) => {
     isDraggingRef.current = true;
     setIsDragging(true);
-    useEditorStore.getState().setIsDraggingFurniture(true);
+    useUIStore.getState().setIsDraggingFurniture(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
 
     const intersect = new THREE.Vector3();
@@ -583,7 +584,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     snappedToGridRef.current = false;
     setSnappedToWall(false);
     setSnappedToGrid(false);
-    useEditorStore.getState().setIsDraggingFurniture(false);
+    useUIStore.getState().setIsDraggingFurniture(false);
 
     // 半透明を元に戻す
     restoreDragTransparency();
@@ -598,7 +599,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     e.stopPropagation();
     isRotatingRef.current = true;
     setIsRotating(true);
-    useEditorStore.getState().setIsDraggingFurniture(true);
+    useUIStore.getState().setIsDraggingFurniture(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
 
     // 家具のワールド位置からポインターまでの角度を初期角度として記録
@@ -638,7 +639,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     if (!isRotatingRef.current || !groupRef.current) return;
     isRotatingRef.current = false;
     setIsRotating(false);
-    useEditorStore.getState().setIsDraggingFurniture(false);
+    useUIStore.getState().setIsDraggingFurniture(false);
 
     // 確定値をストアに反映
     const finalRotationY = groupRef.current.rotation.y;

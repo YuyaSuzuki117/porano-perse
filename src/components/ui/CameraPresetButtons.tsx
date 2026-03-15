@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { CameraBookmarkPanel } from './CameraBookmarkPanel';
 
 const PRESETS = [
@@ -33,7 +34,7 @@ interface CameraPresetButtonsProps {
 export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
   const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
   const cameraPreset = useEditorStore((s) => s.cameraPreset);
-  const activateDioramaMode = useEditorStore((s) => s.activateDioramaMode);
+  const activateDioramaMode = useUIStore(s => s.activateDioramaMode);
   const walkthroughPlaying = useEditorStore((s) => s.walkthroughPlaying);
   const setWalkthroughPlaying = useEditorStore((s) => s.setWalkthroughPlaying);
   const isAutoWalkthrough = useEditorStore((s) => s.isAutoWalkthrough);

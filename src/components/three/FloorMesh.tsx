@@ -7,6 +7,7 @@ import { WallSegment } from '@/types/floor-plan';
 import { StyleConfig } from '@/types/scene';
 import { computeFloorPolygon } from '@/lib/geometry';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
 
 // ---------------------------------------------------------------------------
@@ -250,8 +251,8 @@ function floorMeshPropsAreEqual(prev: FloorMeshProps, next: FloorMeshProps): boo
 }
 
 export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMeshProps) {
-  const floorColorOverride = useEditorStore((s) => s.floorColorOverride);
-  const floorTextureType = useEditorStore((s) => s.floorTextureType);
+  const floorColorOverride = useUIStore(s => s.floorColorOverride);
+  const floorTextureType = useUIStore(s => s.floorTextureType);
 
   const floorGeometry = useMemo(() => {
     const polygon = computeFloorPolygon(walls);

@@ -3,6 +3,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useScreenshot } from '@/hooks/useScreenshot';
@@ -110,25 +111,25 @@ function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
 }
 
 export default function EditorPage() {
-  const viewMode = useEditorStore((s) => s.viewMode);
-  const setViewMode = useEditorStore((s) => s.setViewMode);
-  const selectedFurnitureId = useEditorStore((s) => s.selectedFurnitureId);
-  const selectedFurnitureIds = useEditorStore((s) => s.selectedFurnitureIds);
+  const viewMode = useUIStore(s => s.viewMode);
+  const setViewMode = useUIStore(s => s.setViewMode);
+  const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
+  const selectedFurnitureIds = useUIStore(s => s.selectedFurnitureIds);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
   const toggleFurnitureSelection = useEditorStore((s) => s.toggleFurnitureSelection);
   const moveFurniture = useEditorStore((s) => s.moveFurniture);
   const restoreFromLocalStorage = useEditorStore((s) => s.restoreFromLocalStorage);
   const loadTemplate = useEditorStore((s) => s.loadTemplate);
   const loadFromShareUrl = useEditorStore((s) => s.loadFromShareUrl);
-  const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
-  const setWallDisplayMode = useEditorStore((s) => s.setWallDisplayMode);
-  const photoMode = useEditorStore((s) => s.photoMode);
-  const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
-  const measurementActive = useEditorStore((s) => s.measurementActive);
+  const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
+  const setWallDisplayMode = useUIStore(s => s.setWallDisplayMode);
+  const photoMode = useUIStore(s => s.photoMode);
+  const setPhotoMode = useUIStore(s => s.setPhotoMode);
+  const measurementActive = useUIStore(s => s.measurementActive);
   const walls = useEditorStore((s) => s.walls);
   const furniture = useEditorStore((s) => s.furniture);
-  const showMinimap = useEditorStore((s) => s.showMinimap);
-  const setShowMinimap = useEditorStore((s) => s.setShowMinimap);
+  const showMinimap = useUIStore(s => s.showMinimap);
+  const setShowMinimap = useUIStore(s => s.setShowMinimap);
   const liveCameraPosition = useEditorStore((s) => s.liveCameraPosition);
   const liveCameraRotationY = useEditorStore((s) => s.liveCameraRotationY);
   const setCameraPreset = useEditorStore((s) => s.setCameraPreset);
@@ -213,7 +214,7 @@ export default function EditorPage() {
   }, []);
 
   // ダークモード: htmlタグにクラスを切り替え
-  const darkMode = useEditorStore((s) => s.darkMode);
+  const darkMode = useUIStore(s => s.darkMode);
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -300,8 +301,8 @@ export default function EditorPage() {
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const ratio = dist / lastPinchDistRef.current;
-      const currentZoom = useEditorStore.getState().zoom;
-      useEditorStore.getState().setZoom(currentZoom * ratio);
+      const currentZoom = useUIStore.getState().zoom;
+      useUIStore.getState().setZoom(currentZoom * ratio);
       lastPinchDistRef.current = dist;
     }
   }, []);
@@ -634,7 +635,7 @@ export default function EditorPage() {
             setShowMobilePanel(false);
             // photoMode中はZustandのviewModeが'3d'に変わっているが、
             // クロージャ内のviewModeはレンダー時の値なので直接チェック
-            const currentVM = useEditorStore.getState().viewMode;
+            const currentVM = useUIStore.getState().viewMode;
             setMobileTab(currentVM === '3d' ? '3d' : '2d');
           }}
         />

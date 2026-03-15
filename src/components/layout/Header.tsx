@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useUIStore } from '@/stores/useUIStore';
 import { ExportPanel } from '@/components/ui/ExportPanel';
 import { KeyboardShortcuts } from '@/components/ui/KeyboardShortcuts';
 import { ProjectListModal } from '@/components/ui/ProjectListModal';
@@ -20,10 +21,10 @@ interface HeaderProps {
 export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, canvasRef }: HeaderProps) {
   const projectName = useEditorStore((s) => s.projectName);
   const setProjectName = useEditorStore((s) => s.setProjectName);
-  const zoom = useEditorStore((s) => s.zoom);
-  const zoomIn = useEditorStore((s) => s.zoomIn);
-  const zoomOut = useEditorStore((s) => s.zoomOut);
-  const resetZoom = useEditorStore((s) => s.resetZoom);
+  const zoom = useUIStore(s => s.zoom);
+  const zoomIn = useUIStore(s => s.zoomIn);
+  const zoomOut = useUIStore(s => s.zoomOut);
+  const resetZoom = useUIStore(s => s.resetZoom);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const canUndo = useEditorStore((s) => s.canUndo);

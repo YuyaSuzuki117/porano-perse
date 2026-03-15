@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { WallSegment, Opening, EditorTool, Point2D, RoomLabel } from '@/types/floor-plan';
+import { useUIStore } from './useUIStore';
 import { FurnitureItem, FurnitureMaterial, StylePreset, Annotation } from '@/types/scene';
 import { WallFinishAssignment, RoomFinishAssignment, FittingSpec, EquipmentItem, RouteSegment } from '@/types/finishing';
 import { createRectRoom, createLShapeRoom, createUShapeRoom } from '@/lib/geometry';
@@ -91,24 +92,15 @@ interface EditorState {
   history: HistorySnapshot[];
   historyIndex: number;
 
-  // エディタUI状態
-  activeTool: EditorTool;
-  selectedWallId: string | null;
-  selectedFurnitureId: string | null;
-  /** 複数選択された家具ID群（Shift+クリックで追加） */
-  selectedFurnitureIds: string[];
-  viewMode: '2d' | '3d' | 'split';
-  isDrawingWall: boolean;
-  wallDrawStart: Point2D | null;
-  zoom: number;
+  // エディタUI状態 → useUIStore に移動済み
   lastAutoSaved: number | null;
   cameraPreset: string | null;
   walkthroughPlaying: boolean;
   isAutoWalkthrough: boolean;
   walkthroughSpeed: 'slow' | 'normal' | 'fast';
   walkthroughProgress: number;
-  showGrid: boolean;
-  showDimensions: boolean;
+  // showGrid, showDimensions, showFurniture, wallDisplayMode, ceilingVisible, sectionCutHeight,
+  // isDraggingFurniture → useUIStore に移動済み
   dayNight: 'day' | 'night';
   fogDistance: number;
   lightBrightness: number;
@@ -119,18 +111,6 @@ interface EditorState {
   snapToGrid3D: boolean;
   gridSnapSize: number;
   snapToWall: boolean;
-  showFurniture: boolean;
-  // 壁・天井の表示制御
-  wallDisplayMode: 'solid' | 'transparent' | 'hidden' | 'section';
-  ceilingVisible: boolean;
-  sectionCutHeight: number;
-  setWallDisplayMode: (mode: 'solid' | 'transparent' | 'hidden' | 'section') => void;
-  setCeilingVisible: (visible: boolean) => void;
-  setSectionCutHeight: (height: number) => void;
-  activateDioramaMode: () => void;
-  // 家具ドラッグ中フラグ（OrbitControls無効化用）
-  isDraggingFurniture: boolean;
-  setIsDraggingFurniture: (v: boolean) => void;
   // ウォークスルー（一人称）モード
   isFirstPersonMode: boolean;
   setFirstPersonMode: (v: boolean) => void;
@@ -181,8 +161,7 @@ interface EditorState {
   addAnnotation: (text: string, position: [number, number, number]) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
   deleteAnnotation: (id: string) => void;
-  showAnnotations: boolean;
-  setShowAnnotations: (show: boolean) => void;
+  // showAnnotations → useUIStore に移動済み
 
   // 削除アニメーション用
   deletingFurnitureIds: string[];
@@ -201,62 +180,32 @@ interface EditorState {
   addFurnitureSet: (items: Omit<FurnitureItem, 'id'>[]) => void;
   applyFurnitureSet: (furnitureSet: FurnitureSet) => void;
 
-  // カスタムテクスチャオーバーライド
-  wallColorOverride: string | null;
-  floorColorOverride: string | null;
-  wallTextureType: string | null;
-  floorTextureType: string | null;
-  setWallColorOverride: (color: string | null) => void;
-  setFloorColorOverride: (color: string | null) => void;
-  setWallTextureType: (type: string | null) => void;
-  setFloorTextureType: (type: string | null) => void;
-  resetTextureOverrides: () => void;
+  // カスタムテクスチャオーバーライド → useUIStore に移動済み
 
   // スタイル・設定
   setStyle: (style: StylePreset) => void;
   setRoomHeight: (height: number) => void;
 
-  // UI操作
-  setActiveTool: (tool: EditorTool) => void;
-  setSelectedWall: (id: string | null) => void;
+  // UI操作 — 選択/ツール/ビュー/ズーム/壁描画 → useUIStore に移動済み
+  // ただし以下のデータ操作系アクションはEditorStoreに残る
   setSelectedFurniture: (id: string | null) => void;
-  /** Shift+クリック: 複数選択にトグル追加/削除 */
   toggleFurnitureSelection: (id: string) => void;
-  /** 複数選択をクリア */
   clearMultiSelection: () => void;
-  /** 整列: 左揃え */
   alignLeft: () => void;
-  /** 整列: 右揃え */
   alignRight: () => void;
-  /** 整列: 上揃え（Z最小） */
   alignTop: () => void;
-  /** 整列: 下揃え（Z最大） */
   alignBottom: () => void;
-  /** 整列: 水平中央 */
   alignCenterH: () => void;
-  /** 整列: 垂直中央 */
   alignCenterV: () => void;
-  /** 整列: 等間隔分布（X軸） */
   distributeH: () => void;
-  /** 整列: 等間隔分布（Z軸） */
   distributeV: () => void;
-  /** 選択中の全家具を複製 */
   duplicateSelectedFurniture: () => void;
-  setViewMode: (mode: '2d' | '3d' | 'split') => void;
-  startDrawingWall: (start: Point2D) => void;
-  finishDrawingWall: () => void;
-  cancelDrawingWall: () => void;
-  setZoom: (zoom: number) => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  resetZoom: () => void;
   setCameraPreset: (preset: string | null) => void;
   setWalkthroughPlaying: (playing: boolean) => void;
   setAutoWalkthrough: (active: boolean) => void;
   setWalkthroughSpeed: (speed: 'slow' | 'normal' | 'fast') => void;
   setWalkthroughProgress: (progress: number) => void;
-  setShowGrid: (show: boolean) => void;
-  setShowDimensions: (show: boolean) => void;
+  // setShowGrid, setShowDimensions, setShowFurniture → useUIStore に移動済み
   setDayNight: (mode: 'day' | 'night') => void;
   setFogDistance: (v: number) => void;
   setLightBrightness: (v: number) => void;
@@ -264,41 +213,20 @@ interface EditorState {
   setSnapToGrid3D: (v: boolean) => void;
   setGridSnapSize: (v: number) => void;
   setSnapToWall: (v: boolean) => void;
-  setShowFurniture: (v: boolean) => void;
   applyLightingPreset: (preset: LightingPreset) => void;
 
-  // フォトモード
-  photoMode: boolean;
-  setPhotoMode: (v: boolean) => void;
-  /** フォトモード直前の表示設定を保存（復帰用） */
-  photoModePrevState: { showGrid: boolean; showDimensions: boolean; qualityLevel: 'high' | 'medium' | 'low' } | null;
+  // フォトモード, ダークモード, 計測ツール, showFlowHeatmap, showLightingAnalysis,
+  // furnitureCollision → useUIStore に移動済み
 
   // ルーム雰囲気プリセット
   activeRoomAtmosphere: string | null;
   applyRoomAtmosphere: (presetName: string) => void;
 
-  // ダークモード
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-
-  // 計測ツール
-  measurementActive: boolean;
-  setMeasurementActive: (active: boolean) => void;
-
-  // 分析ツール
-  showFlowHeatmap: boolean;
-  showLightingAnalysis: boolean;
-  toggleFlowHeatmap: () => void;
-  toggleLightingAnalysis: () => void;
   applyAutoLayout: (roomType: string) => void;
 
   // ウォーターマーク設定
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
-
-  // 衝突検出
-  furnitureCollision: boolean;
-  setFurnitureCollision: (colliding: boolean) => void;
 
   // 家具ロック
   toggleLockFurniture: (id: string) => void;
@@ -311,9 +239,7 @@ interface EditorState {
   setLiveCameraPosition: (pos: [number, number, number]) => void;
   setLiveCameraRotationY: (rot: number) => void;
 
-  // ミニマップ表示
-  showMinimap: boolean;
-  setShowMinimap: (v: boolean) => void;
+  // ミニマップ表示 → useUIStore に移動済み
 
   // 部屋形状
   initLShapeRoom: (w: number, d: number) => void;
@@ -393,9 +319,7 @@ interface EditorState {
   updateFurnitureMaterialOverride: (id: string, overrides: FurnitureItem['materialOverride']) => void;
   resetFurnitureMaterialOverride: (id: string) => void;
 
-  // Round 7: 衝突ヒートマップ
-  showCollisionHeatmap: boolean;
-  toggleCollisionHeatmap: () => void;
+  // Round 7: 衝突ヒートマップ → useUIStore に移動済み
 
   // Round 8: ゴッドレイ
   showGodRays: boolean;
@@ -594,35 +518,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   furniture: DEFAULT_TEMPLATE.furniture,
   roomLabels: [],
   annotations: [],
-  showAnnotations: true,
   roomHeight: DEFAULT_TEMPLATE.roomHeight,
   style: DEFAULT_TEMPLATE.style,
-
-  // カスタムテクスチャオーバーライド初期値
-  wallColorOverride: null,
-  floorColorOverride: null,
-  wallTextureType: null,
-  floorTextureType: null,
 
   history: [takeSnapshot({ walls: DEFAULT_TEMPLATE.walls, openings: DEFAULT_TEMPLATE.openings, furniture: DEFAULT_TEMPLATE.furniture, roomHeight: DEFAULT_TEMPLATE.roomHeight, style: DEFAULT_TEMPLATE.style })],
   historyIndex: 0,
 
-  activeTool: 'select',
-  selectedWallId: null,
-  selectedFurnitureId: null,
-  selectedFurnitureIds: [],
-  viewMode: 'split',
-  isDrawingWall: false,
-  wallDrawStart: null,
-  zoom: 1,
+  // activeTool, selectedWallId, selectedFurnitureId, selectedFurnitureIds,
+  // viewMode, isDrawingWall, wallDrawStart, zoom → useUIStore
   lastAutoSaved: null,
   cameraPreset: null,
   walkthroughPlaying: false,
   isAutoWalkthrough: false,
   walkthroughSpeed: 'normal',
   walkthroughProgress: 0,
-  showGrid: true,
-  showDimensions: true,
+  // showGrid, showDimensions → useUIStore
   dayNight: 'day',
   fogDistance: 35,
   lightBrightness: 1.0,
@@ -630,27 +540,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   snapToGrid3D: true,
   gridSnapSize: 0.25,
   snapToWall: true,
-  showFurniture: true,
-  wallDisplayMode: 'section',
-  ceilingVisible: false,
-  sectionCutHeight: 1.8,
+  // showFurniture, wallDisplayMode, ceilingVisible, sectionCutHeight, isDraggingFurniture → useUIStore
   deletingFurnitureIds: [],
-  isDraggingFurniture: false,
   isFirstPersonMode: false,
   activeLightingPreset: null,
   qualityLevel: detectQualityLevel(),
-  photoMode: false,
-  photoModePrevState: null,
+  // photoMode, photoModePrevState, darkMode, measurementActive, showFlowHeatmap,
+  // showLightingAnalysis, furnitureCollision → useUIStore
   activeRoomAtmosphere: null,
-  darkMode: false,
-  measurementActive: false,
-  showFlowHeatmap: false,
-  showLightingAnalysis: false,
   enableWatermark: false,
-  furnitureCollision: false,
   liveCameraPosition: [0, 0, 0],
   liveCameraRotationY: 0,
-  showMinimap: true,
+  // showMinimap → useUIStore
   showHumanFigures: false,
   environmentPreset: 'indoor',
   motionBlurEnabled: false,
@@ -658,7 +559,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showFlowSimulation: false,
   referenceImageUrl: null,
   referenceImageOpacity: 0.5,
-  showCollisionHeatmap: false,
+  // showCollisionHeatmap → useUIStore
   showGodRays: false,
   godRayIntensity: 0.6,
   wetFloorEnabled: false,
@@ -752,6 +653,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   exportProject: () => {
     const s = get();
+    const ui = useUIStore.getState();
     const data: ProjectData = {
       projectName: s.projectName,
       walls: s.walls,
@@ -761,10 +663,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       annotations: s.annotations,
       roomHeight: s.roomHeight,
       style: s.style,
-      wallDisplayMode: s.wallDisplayMode,
-      ceilingVisible: s.ceilingVisible,
-      showGrid: s.showGrid,
-      showDimensions: s.showDimensions,
+      wallDisplayMode: ui.wallDisplayMode,
+      ceilingVisible: ui.ceilingVisible,
+      showGrid: ui.showGrid,
+      showDimensions: ui.showDimensions,
       dayNight: s.dayNight,
     };
     const file: VersionedProjectFile = {
@@ -803,17 +705,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         annotations: data.annotations || [],
         roomHeight: data.roomHeight ?? 2.7,
         style: data.style || 'modern',
-        wallDisplayMode: data.wallDisplayMode ?? 'section',
-        ceilingVisible: data.ceilingVisible ?? false,
-        showGrid: data.showGrid ?? true,
-        showDimensions: data.showDimensions ?? true,
         dayNight: data.dayNight ?? 'day',
-        selectedWallId: null,
-        selectedFurnitureId: null,
-        selectedFurnitureIds: [],
         history: [snapshot],
         historyIndex: 0,
       });
+      useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
+      useUIStore.getState().setWallDisplayMode(data.wallDisplayMode ?? 'section');
+      useUIStore.getState().setCeilingVisible(data.ceilingVisible ?? false);
+      useUIStore.getState().setShowGrid(data.showGrid ?? true);
+      useUIStore.getState().setShowDimensions(data.showDimensions ?? true);
     } catch {
       if (typeof window !== 'undefined') {
         alert('プロジェクトファイルの読み込みに失敗しました。JSONファイルの形式を確認してください。');
@@ -833,12 +733,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       annotations: [],
       roomHeight: DEFAULT_TEMPLATE.roomHeight,
       style: DEFAULT_TEMPLATE.style,
-      selectedWallId: null,
-      selectedFurnitureId: null,
-      selectedFurnitureIds: [],
       history: [snapshot],
       historyIndex: 0,
     });
+    useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
   },
 
   restoreFromLocalStorage: () => {
@@ -846,7 +744,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       // ダークモード復元
       const dm = localStorage.getItem('porano-perse-dark-mode');
       if (dm === '1') {
-        set({ darkMode: true });
+        useUIStore.getState().toggleDarkMode();
       }
       const saved = localStorage.getItem(LOCALSTORAGE_KEY);
       if (saved) {
@@ -872,15 +770,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const walls = s.walls.map((w) => (w.id === id ? { ...w, ...updates } : w));
       return { walls, ...pushHistory(s, { walls, openings: s.openings, furniture: s.furniture }, `wall-move-${id}`) };
     }),
-  deleteWall: (id) =>
+  deleteWall: (id) => {
     set((s) => {
       const walls = s.walls.filter((w) => w.id !== id);
       const openings = s.openings.filter((o) => o.wallId !== id);
       return {
         walls, openings, ...pushHistory(s, { walls, openings, furniture: s.furniture }),
-        selectedWallId: s.selectedWallId === id ? null : s.selectedWallId,
       };
-    }),
+    });
+    const uiState = useUIStore.getState();
+    if (uiState.selectedWallId === id) {
+      uiState._setSelection({ selectedWallId: null });
+    }
+  },
   setWalls: (walls) =>
     set((s) => {
       return { walls, ...pushHistory(s, { walls, openings: s.openings, furniture: s.furniture }) };
@@ -940,14 +842,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((s) => ({
       annotations: s.annotations.filter((a) => a.id !== id),
     })),
-  setShowAnnotations: (showAnnotations) => set({ showAnnotations }),
+  // setShowAnnotations → useUIStore に移動済み
 
   // 家具
-  addFurniture: (item) =>
+  addFurniture: (item) => {
     set((s) => {
       const furniture = [...s.furniture, item];
-      return { furniture, selectedFurnitureId: item.id, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
-    }),
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
+    });
+    useUIStore.getState()._setSelection({ selectedFurnitureId: item.id, selectedFurnitureIds: [item.id] });
+  },
   updateFurniture: (id, updates) =>
     set((s) => {
       const furniture = s.furniture.map((f) => (f.id === id ? { ...f, ...updates } : f));
@@ -979,19 +883,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           : [...s.deletingFurnitureIds, id],
       };
     }),
-  completeDeleteFurniture: (id) =>
+  completeDeleteFurniture: (id) => {
     set((s) => {
       const furniture = s.furniture.filter((f) => f.id !== id);
-      const selectedFurnitureIds = s.selectedFurnitureIds.filter((fid) => fid !== id);
       const deletingFurnitureIds = s.deletingFurnitureIds.filter((fid) => fid !== id);
       return {
         furniture,
         deletingFurnitureIds,
         ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }),
-        selectedFurnitureId: s.selectedFurnitureId === id ? null : s.selectedFurnitureId,
-        selectedFurnitureIds,
       };
-    }),
+    });
+    const ui = useUIStore.getState();
+    const newSelectedIds = ui.selectedFurnitureIds.filter((fid) => fid !== id);
+    ui._setSelection({
+      selectedFurnitureId: ui.selectedFurnitureId === id ? null : ui.selectedFurnitureId,
+      selectedFurnitureIds: newSelectedIds,
+    });
+  },
   moveFurniture: (id, position) =>
     set((s) => {
       // ロック中の家具は移動不可
@@ -1021,13 +929,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           }
           return f;
         });
-        return { furniture, furnitureCollision: colliding, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-group-${target.groupId}`) };
+        useUIStore.getState().setFurnitureCollision(colliding);
+        return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-group-${target.groupId}`) };
       }
 
       // 衝突検出
       const colliding = checkFurnitureCollision(s.furniture, id, position);
       const furniture = s.furniture.map((f) => (f.id === id ? { ...f, position } : f));
-      return { furniture, furnitureCollision: colliding, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-${id}`) };
+      useUIStore.getState().setFurnitureCollision(colliding);
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }, `furniture-move-${id}`) };
     }),
   rotateFurniture: (id, rotationY) =>
     set((s) => {
@@ -1082,7 +992,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
     }),
 
-  duplicateFurniture: (id) =>
+  duplicateFurniture: (id) => {
     set((s) => {
       const orig = s.furniture.find((f) => f.id === id);
       if (!orig) return s;
@@ -1092,8 +1002,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         position: [orig.position[0] + 0.5, orig.position[1], orig.position[2] + 0.5],
       };
       const furniture = [...s.furniture, newItem];
-      return { furniture, selectedFurnitureId: newItem.id, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
-    }),
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
+    });
+    const lastItem = get().furniture[get().furniture.length - 1];
+    if (lastItem) useUIStore.getState()._setSelection({ selectedFurnitureId: lastItem.id, selectedFurnitureIds: [lastItem.id] });
+  },
   addFurnitureSet: (items) =>
     set((s) => {
       const newItems = items.map((item, i) => ({
@@ -1105,7 +1018,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }),
 
   // 家具セット一括配置（既存家具をクリアして配置）
-  applyFurnitureSet: (furnitureSet: FurnitureSet) =>
+  applyFurnitureSet: (furnitureSet: FurnitureSet) => {
     set((s) => {
       const newFurniture: FurnitureItem[] = furnitureSet.items.map((item, i) => ({
         id: `${item.type}_${Date.now()}_${i}`,
@@ -1118,37 +1031,33 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }));
       return {
         furniture: newFurniture,
-        selectedFurnitureId: null,
-        selectedFurnitureIds: [],
         ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture: newFurniture }),
       };
-    }),
+    });
+    useUIStore.getState()._setSelection({ selectedFurnitureId: null, selectedFurnitureIds: [] });
+  },
 
-  // カスタムテクスチャオーバーライド（変更時に該当キャッシュを無効化）
-  setWallColorOverride: (color) => {
+  // カスタムテクスチャオーバーライド → useUIStore に移動済み
+  // invalidateTextureCache は useUIStore からは呼べないため、ここでラッパーを提供
+  setWallColorOverride: (color: string | null) => {
     invalidateTextureCache('wall-');
-    set({ wallColorOverride: color });
+    useUIStore.getState().setWallColorOverride(color);
   },
-  setFloorColorOverride: (color) => {
+  setFloorColorOverride: (color: string | null) => {
     invalidateTextureCache('floor-');
-    set({ floorColorOverride: color });
+    useUIStore.getState().setFloorColorOverride(color);
   },
-  setWallTextureType: (type) => {
+  setWallTextureType: (type: string | null) => {
     invalidateTextureCache('wall-');
-    set({ wallTextureType: type });
+    useUIStore.getState().setWallTextureType(type);
   },
-  setFloorTextureType: (type) => {
+  setFloorTextureType: (type: string | null) => {
     invalidateTextureCache('floor-');
-    set({ floorTextureType: type });
+    useUIStore.getState().setFloorTextureType(type);
   },
   resetTextureOverrides: () => {
     invalidateTextureCache();
-    set({
-      wallColorOverride: null,
-      floorColorOverride: null,
-      wallTextureType: null,
-      floorTextureType: null,
-    });
+    useUIStore.getState().resetTextureOverrides();
   },
 
   // スタイル変更時はテクスチャキャッシュを全て無効化
@@ -1165,13 +1074,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return { roomHeight, walls, ...pushHistory(s, { walls, openings: s.openings, furniture: s.furniture, roomHeight }, 'room-height') };
     }),
 
-  // UI
-  setActiveTool: (activeTool) =>
-    set({ activeTool, isDrawingWall: false, wallDrawStart: null }),
-  setSelectedWall: (selectedWallId) => set({ selectedWallId }),
+  // UI — setActiveTool, setSelectedWall → useUIStore に移動済み
+  // setSelectedFurniture はグループ選択ロジックがfurnitureデータに依存するためここに残る
   setSelectedFurniture: (selectedFurnitureId) => {
+    const ui = useUIStore.getState();
     if (!selectedFurnitureId) {
-      set({ selectedFurnitureId: null, selectedFurnitureIds: [] });
+      ui._setSelection({ selectedFurnitureId: null, selectedFurnitureIds: [] });
       return;
     }
     // グループ選択: 同一groupIdの全家具を選択
@@ -1179,74 +1087,84 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const target = furniture.find((f) => f.id === selectedFurnitureId);
     if (target?.groupId) {
       const groupIds = furniture.filter((f) => f.groupId === target.groupId).map((f) => f.id);
-      set({ selectedFurnitureId, selectedFurnitureIds: groupIds });
+      ui._setSelection({ selectedFurnitureId, selectedFurnitureIds: groupIds });
     } else {
-      set({ selectedFurnitureId, selectedFurnitureIds: [selectedFurnitureId] });
+      ui._setSelection({ selectedFurnitureId, selectedFurnitureIds: [selectedFurnitureId] });
     }
   },
-  toggleFurnitureSelection: (id) => set((s) => {
-    const ids = s.selectedFurnitureIds.includes(id)
-      ? s.selectedFurnitureIds.filter((fid) => fid !== id)
-      : [...s.selectedFurnitureIds, id];
-    return { selectedFurnitureIds: ids, selectedFurnitureId: ids.length > 0 ? ids[ids.length - 1] : null };
-  }),
-  clearMultiSelection: () => set({ selectedFurnitureIds: [], selectedFurnitureId: null }),
+  toggleFurnitureSelection: (id) => {
+    const ui = useUIStore.getState();
+    const ids = ui.selectedFurnitureIds.includes(id)
+      ? ui.selectedFurnitureIds.filter((fid) => fid !== id)
+      : [...ui.selectedFurnitureIds, id];
+    ui._setSelection({ selectedFurnitureIds: ids, selectedFurnitureId: ids.length > 0 ? ids[ids.length - 1] : null });
+  },
+  clearMultiSelection: () => {
+    useUIStore.getState()._setSelection({ selectedFurnitureIds: [], selectedFurnitureId: null });
+  },
   alignLeft: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const minX = Math.min(...items.map((f) => f.position[0]));
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [minX, f.position[1], f.position[2]] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [minX, f.position[1], f.position[2]] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   alignRight: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const maxX = Math.max(...items.map((f) => f.position[0]));
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [maxX, f.position[1], f.position[2]] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [maxX, f.position[1], f.position[2]] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   alignTop: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const minZ = Math.min(...items.map((f) => f.position[2]));
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], minZ] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], minZ] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   alignBottom: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const maxZ = Math.max(...items.map((f) => f.position[2]));
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], maxZ] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], maxZ] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   alignCenterH: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const avgX = items.reduce((sum, f) => sum + f.position[0], 0) / items.length;
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [avgX, f.position[1], f.position[2]] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [avgX, f.position[1], f.position[2]] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   alignCenterV: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 2) return s;
     const avgZ = items.reduce((sum, f) => sum + f.position[2], 0) / items.length;
     const furniture = s.furniture.map((f) =>
-      s.selectedFurnitureIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], avgZ] as [number, number, number] } : f
+      selIds.includes(f.id) ? { ...f, position: [f.position[0], f.position[1], avgZ] as [number, number, number] } : f
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   distributeH: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 3) return s;
     const sorted = [...items].sort((a, b) => a.position[0] - b.position[0]);
     const minX = sorted[0].position[0];
@@ -1259,7 +1177,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
   distributeV: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    const items = s.furniture.filter((f) => selIds.includes(f.id));
     if (items.length < 3) return s;
     const sorted = [...items].sort((a, b) => a.position[2] - b.position[2]);
     const minZ = sorted[0].position[2];
@@ -1271,29 +1190,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     );
     return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
   }),
-  duplicateSelectedFurniture: () => set((s) => {
-    const items = s.furniture.filter((f) => s.selectedFurnitureIds.includes(f.id));
-    if (items.length === 0) return s;
-    const newItems = items.map((orig, i) => ({
-      ...structuredClone(orig),
-      id: `${orig.type}_${Date.now()}_${i}`,
-      position: [orig.position[0] + 0.5, orig.position[1], orig.position[2] + 0.5] as [number, number, number],
-    }));
-    const furniture = [...s.furniture, ...newItems];
-    const newIds = newItems.map((f) => f.id);
-    return { furniture, selectedFurnitureIds: newIds, selectedFurnitureId: newIds[newIds.length - 1], ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
-  }),
-  setViewMode: (viewMode) => set({ viewMode }),
-  startDrawingWall: (start) =>
-    set({ isDrawingWall: true, wallDrawStart: start }),
-  finishDrawingWall: () =>
-    set({ isDrawingWall: false, wallDrawStart: null }),
-  cancelDrawingWall: () =>
-    set({ isDrawingWall: false, wallDrawStart: null }),
-  setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(5, zoom)) }),
-  zoomIn: () => set((s) => ({ zoom: Math.min(5, s.zoom * 1.2) })),
-  zoomOut: () => set((s) => ({ zoom: Math.max(0.1, s.zoom / 1.2) })),
-  resetZoom: () => set({ zoom: 1 }),
+  duplicateSelectedFurniture: () => {
+    const selIds = useUIStore.getState().selectedFurnitureIds;
+    set((s) => {
+      const items = s.furniture.filter((f) => selIds.includes(f.id));
+      if (items.length === 0) return s;
+      const newItems = items.map((orig, i) => ({
+        ...structuredClone(orig),
+        id: `${orig.type}_${Date.now()}_${i}`,
+        position: [orig.position[0] + 0.5, orig.position[1], orig.position[2] + 0.5] as [number, number, number],
+      }));
+      const furniture = [...s.furniture, ...newItems];
+      return { furniture, ...pushHistory(s, { walls: s.walls, openings: s.openings, furniture }) };
+    });
+    const newFurniture = get().furniture;
+    const newIds = newFurniture.slice(-selIds.length).map((f) => f.id);
+    useUIStore.getState()._setSelection({ selectedFurnitureIds: newIds, selectedFurnitureId: newIds[newIds.length - 1] });
+  },
+  // setViewMode, startDrawingWall, finishDrawingWall, cancelDrawingWall, setZoom, zoomIn, zoomOut, resetZoom → useUIStore に移動済み
   setCameraPreset: (cameraPreset) => set({ cameraPreset }),
   setWalkthroughPlaying: (walkthroughPlaying) => set({ walkthroughPlaying, isAutoWalkthrough: false, walkthroughProgress: 0 }),
   setAutoWalkthrough: (isAutoWalkthrough) => set((s) => ({
@@ -1305,8 +1219,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   })),
   setWalkthroughSpeed: (walkthroughSpeed) => set({ walkthroughSpeed }),
   setWalkthroughProgress: (walkthroughProgress) => set({ walkthroughProgress }),
-  setShowGrid: (showGrid) => set({ showGrid }),
-  setShowDimensions: (showDimensions) => set({ showDimensions }),
+  // setShowGrid, setShowDimensions → useUIStore に移動済み
   setDayNight: (dayNight) => set({ dayNight }),
   setFogDistance: (fogDistance) => set({ fogDistance }),
   setLightBrightness: (lightBrightness) => set({ lightBrightness: Math.max(0.2, Math.min(3, lightBrightness)), activeLightingPreset: null }),
@@ -1314,11 +1227,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setSnapToGrid3D: (snapToGrid3D) => set({ snapToGrid3D }),
   setGridSnapSize: (gridSnapSize) => set({ gridSnapSize }),
   setSnapToWall: (snapToWall) => set({ snapToWall }),
-  setShowFurniture: (showFurniture) => set({ showFurniture }),
+  // setShowFurniture → useUIStore に移動済み
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
 
-  // 衝突検出
-  setFurnitureCollision: (furnitureCollision) => set({ furnitureCollision }),
+  // 衝突検出 → useUIStore に移動済み
 
   // 家具ロック
   toggleLockFurniture: (id) =>
@@ -1327,46 +1239,33 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         f.id === id ? { ...f, locked: !f.locked } : f
       ),
     })),
-  lockSelected: () =>
+  lockSelected: () => {
+    const ui = useUIStore.getState();
     set((s) => ({
       furniture: s.furniture.map((f) =>
-        s.selectedFurnitureIds.includes(f.id) || f.id === s.selectedFurnitureId
+        ui.selectedFurnitureIds.includes(f.id) || f.id === ui.selectedFurnitureId
           ? { ...f, locked: true }
           : f
       ),
-    })),
-  unlockSelected: () =>
+    }));
+  },
+  unlockSelected: () => {
+    const ui = useUIStore.getState();
     set((s) => ({
       furniture: s.furniture.map((f) =>
-        s.selectedFurnitureIds.includes(f.id) || f.id === s.selectedFurnitureId
+        ui.selectedFurnitureIds.includes(f.id) || f.id === ui.selectedFurnitureId
           ? { ...f, locked: false }
           : f
       ),
-    })),
+    }));
+  },
 
   // カメラトラッキング（ミニマップ用）
   setLiveCameraPosition: (liveCameraPosition) => set({ liveCameraPosition }),
   setLiveCameraRotationY: (liveCameraRotationY) => set({ liveCameraRotationY }),
 
-  // ミニマップ表示
-  setShowMinimap: (showMinimap) => set({ showMinimap }),
-
-  // ダークモード: localStorage永続化付き
-  toggleDarkMode: () =>
-    set((s) => {
-      const next = !s.darkMode;
-      try {
-        localStorage.setItem('porano-perse-dark-mode', next ? '1' : '0');
-      } catch { /* noop */ }
-      return { darkMode: next };
-    }),
-
-  // 計測ツール
-  setMeasurementActive: (measurementActive) => set({ measurementActive }),
-
-  // 分析ツール
-  toggleFlowHeatmap: () => set((s) => ({ showFlowHeatmap: !s.showFlowHeatmap })),
-  toggleLightingAnalysis: () => set((s) => ({ showLightingAnalysis: !s.showLightingAnalysis })),
+  // setShowMinimap, toggleDarkMode, setMeasurementActive, toggleFlowHeatmap → useUIStore に移動済み
+  // toggleLightingAnalysis → useUIStore に移動済み
   applyAutoLayout: (roomType: string) => {
     const s = get();
     // 遅延インポートで循環参照を回避
@@ -1404,35 +1303,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
-  // フォトモード
-  setPhotoMode: (v) => set((s) => {
+  // setPhotoMode → useUIStore に移動済み（qualityLevel復帰はEditorStoreに残す）
+  setPhotoMode: (v: boolean) => {
+    const ui = useUIStore.getState();
     if (v) {
-      // フォトモード開始: 3Dビューに強制切替 + UI非表示
-      // 注意: qualityLevelは変更しない（highに切替るとモバイルでWebGLクラッシュ）
-      // 高解像度はスクリーンショット撮影時にuseScreenshotが一時的に上げる
-      return {
-        photoMode: true,
-        viewMode: '3d' as const,
-        photoModePrevState: {
-          showGrid: s.showGrid,
-          showDimensions: s.showDimensions,
-          qualityLevel: s.qualityLevel,
-        },
-        showGrid: false,
-        showDimensions: false,
-      };
+      ui.setPhotoMode(true);
+      // qualityLevelはEditorStore管理なので、photoModePrevStateに保存済み
     } else {
-      // フォトモード終了: 元の設定に復帰
-      const prev = s.photoModePrevState;
-      return {
-        photoMode: false,
-        photoModePrevState: null,
-        showGrid: prev?.showGrid ?? s.showGrid,
-        showDimensions: prev?.showDimensions ?? s.showDimensions,
-        qualityLevel: prev?.qualityLevel ?? s.qualityLevel,
-      };
+      const prev = ui.photoModePrevState;
+      ui.setPhotoMode(false);
+      if (prev?.qualityLevel) {
+        set({ qualityLevel: prev.qualityLevel });
+      }
     }
-  }),
+  },
 
   // ルーム雰囲気プリセット
   applyRoomAtmosphere: (presetName) => set((s) => {
@@ -1499,12 +1383,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     };
     const preset = ROOM_ATMOSPHERE_MAP[presetName];
     if (!preset) return {};
+    // テクスチャオーバーライドはUIStoreに委任
+    useUIStore.getState()._setSelection({});
+    const uiStore = useUIStore.getState();
+    uiStore.setWallColorOverride(preset.wallColor);
+    uiStore.setFloorColorOverride(preset.floorColor);
+    uiStore.setFloorTextureType(preset.floorTextureType);
+    uiStore.setWallTextureType(preset.wallTextureType);
     return {
       style: preset.style,
-      wallColorOverride: preset.wallColor,
-      floorColorOverride: preset.floorColor,
-      floorTextureType: preset.floorTextureType,
-      wallTextureType: preset.wallTextureType,
       lightBrightness: preset.brightness,
       lightWarmth: preset.warmth,
       dayNight: preset.dayNight,
@@ -1512,11 +1399,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeRoomAtmosphere: presetName,
     };
   }),
-  setWallDisplayMode: (wallDisplayMode) => set({ wallDisplayMode }),
-  setCeilingVisible: (ceilingVisible) => set({ ceilingVisible }),
-  setSectionCutHeight: (sectionCutHeight) => set({ sectionCutHeight: Math.max(0.5, Math.min(2.5, sectionCutHeight)) }),
-  activateDioramaMode: () => set({ wallDisplayMode: 'section', ceilingVisible: false, sectionCutHeight: 1.2, cameraPreset: 'diorama' }),
-  setIsDraggingFurniture: (isDraggingFurniture) => set({ isDraggingFurniture }),
+  // setWallDisplayMode, setCeilingVisible, setSectionCutHeight → useUIStore に移動済み
+  activateDioramaMode: () => {
+    useUIStore.getState().activateDioramaMode();
+    set({ cameraPreset: 'diorama' });
+  },
+  // setIsDraggingFurniture → useUIStore に移動済み
   setFirstPersonMode: (isFirstPersonMode) => set((s) => ({
     isFirstPersonMode,
     // 一人称モード開始時はウォークスルー再生を停止
@@ -1551,7 +1439,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   // クリップボード
   copyFurniture: () => {
-    const { selectedFurnitureId, furniture } = get();
+    const selectedFurnitureId = useUIStore.getState().selectedFurnitureId;
+    const { furniture } = get();
     if (!selectedFurnitureId) return;
     const item = furniture.find((f) => f.id === selectedFurnitureId);
     if (item) {
@@ -1584,10 +1473,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }),
   ungroupSelected: () =>
     set((s) => {
-      const selectedIds = s.selectedFurnitureIds.length > 0
-        ? s.selectedFurnitureIds
-        : s.selectedFurnitureId
-          ? [s.selectedFurnitureId]
+      const ui = useUIStore.getState();
+      const selectedIds = ui.selectedFurnitureIds.length > 0
+        ? ui.selectedFurnitureIds
+        : ui.selectedFurnitureId
+          ? [ui.selectedFurnitureId]
           : [];
       if (selectedIds.length === 0) return s;
       const furniture = s.furniture.map((f) =>
@@ -1675,34 +1565,34 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectAllFurniture: () => {
     const { furniture } = get();
     if (furniture.length > 0) {
-      set({
+      useUIStore.getState()._setSelection({
         selectedFurnitureId: furniture[furniture.length - 1].id,
         selectedFurnitureIds: furniture.map((f) => f.id),
       });
     }
   },
   deleteSelected: () => {
-    const { selectedFurnitureId, selectedFurnitureIds, selectedWallId } = get();
+    const ui = useUIStore.getState();
+    const { selectedFurnitureId, selectedFurnitureIds, selectedWallId } = ui;
     // 複数選択時はまとめて削除（アニメーション付き）
     if (selectedFurnitureIds.length > 1) {
       for (const fid of selectedFurnitureIds) {
         get().markFurnitureForDeletion(fid);
       }
-      set({ selectedFurnitureId: null, selectedFurnitureIds: [] });
+      ui._setSelection({ selectedFurnitureId: null, selectedFurnitureIds: [] });
     } else if (selectedFurnitureId) {
       get().deleteFurniture(selectedFurnitureId);
-      set({ selectedFurnitureId: null, selectedFurnitureIds: [] });
+      ui._setSelection({ selectedFurnitureId: null, selectedFurnitureIds: [] });
     } else if (selectedWallId) {
       get().deleteWall(selectedWallId);
-      set({ selectedWallId: null });
+      ui._setSelection({ selectedWallId: null });
     }
   },
 
   // Undo/Redo
-  undo: () =>
+  undo: () => {
     set((s) => {
       if (s.historyIndex <= 0) return s;
-      // デバウンスタイマーをクリア（undo後の変更が前の操作と統合されないように）
       _lastSnapshotKey = '';
       const newIndex = s.historyIndex - 1;
       const snapshot = structuredClone(s.history[newIndex]);
@@ -1714,12 +1604,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         roomHeight: snapshot.roomHeight,
         style: snapshot.style,
         historyIndex: newIndex,
-        selectedWallId: null,
-        selectedFurnitureId: null,
-        selectedFurnitureIds: [],
       };
-    }),
-  redo: () =>
+    });
+    useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
+  },
+  redo: () => {
     set((s) => {
       if (s.historyIndex >= s.history.length - 1) return s;
       _lastSnapshotKey = '';
@@ -1733,11 +1622,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         roomHeight: snapshot.roomHeight,
         style: snapshot.style,
         historyIndex: newIndex,
-        selectedWallId: null,
-        selectedFurnitureId: null,
-        selectedFurnitureIds: [],
       };
-    }),
+    });
+    useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
+  },
   canUndo: () => get().historyIndex > 0,
   canRedo: () => get().historyIndex < get().history.length - 1,
 
@@ -1762,16 +1650,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       roomLabels: [],
       style: template.style,
       roomHeight: template.roomHeight,
-      selectedWallId: null,
-      selectedFurnitureId: null,
-      selectedFurnitureIds: [],
-      // ジオラマモードをデフォルトに
-      wallDisplayMode: 'section' as const,
-      ceilingVisible: false,
-      sectionCutHeight: 1.2,
       cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
+    const ui = useUIStore.getState();
+    ui._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
+    ui.setWallDisplayMode('section');
+    ui.setCeilingVisible(false);
+    ui.setSectionCutHeight(1.2);
   },
 
   // 部屋テンプレートプリセット読み込み
@@ -1788,16 +1674,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       roomLabels: [],
       style: template.style,
       roomHeight: template.roomHeight,
-      selectedWallId: null,
-      selectedFurnitureId: null,
-      selectedFurnitureIds: [],
-      // ジオラマモードをデフォルトに
-      wallDisplayMode: 'section' as const,
-      ceilingVisible: false,
-      sectionCutHeight: 1.2,
       cameraPreset: 'diorama',
       ...pushHistory(s, { walls: template.walls, openings: template.openings, furniture: template.furniture, roomLabels: [], roomHeight: template.roomHeight, style: template.style }),
     }));
+    const ui = useUIStore.getState();
+    ui._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
+    ui.setWallDisplayMode('section');
+    ui.setCeilingVisible(false);
+    ui.setSectionCutHeight(1.2);
   },
 
   // 新規プロジェクト（全クリア）
@@ -1816,12 +1700,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       annotations: [],
       roomHeight: 2.7,
       style: 'modern',
-      selectedWallId: null,
-      selectedFurnitureId: null,
-      selectedFurnitureIds: [],
       history: [snapshot],
       historyIndex: 0,
     });
+    useUIStore.getState()._setSelection({ selectedWallId: null, selectedFurnitureId: null, selectedFurnitureIds: [] });
   },
 
   // 複数プロジェクト管理
@@ -1943,7 +1825,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ),
     })),
   // Round 7: 衝突ヒートマップ
-  toggleCollisionHeatmap: () => set((s) => ({ showCollisionHeatmap: !s.showCollisionHeatmap })),
+  // toggleCollisionHeatmap → useUIStore に移動済み
   // Round 8
   toggleGodRays: () => set((s) => ({ showGodRays: !s.showGodRays })),
   setGodRayIntensity: (v) => set({ godRayIntensity: v }),

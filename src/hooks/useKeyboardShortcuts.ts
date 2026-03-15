@@ -3,14 +3,15 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 
+import { useUIStore } from '@/stores/useUIStore';
 /**
  * キーボードショートカットを一括管理するカスタムフック。
  * Ctrl+Z (undo), Ctrl+Shift+Z/Y (redo), Ctrl+C/V/D/A,
  * Delete, H (壁), C (天井), G (グリッド), D (寸法), F (什器), P (フォト) 等。
  */
 export function useKeyboardShortcuts() {
-  const selectedFurnitureId = useEditorStore((s) => s.selectedFurnitureId);
-  const selectedFurnitureIds = useEditorStore((s) => s.selectedFurnitureIds);
+  const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
+  const selectedFurnitureIds = useUIStore(s => s.selectedFurnitureIds);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
   const duplicateSelectedFurniture = useEditorStore((s) => s.duplicateSelectedFurniture);
   const selectAllFurniture = useEditorStore((s) => s.selectAllFurniture);
@@ -20,18 +21,18 @@ export function useKeyboardShortcuts() {
   const pasteFurniture = useEditorStore((s) => s.pasteFurniture);
   const deleteSelected = useEditorStore((s) => s.deleteSelected);
   const duplicateFurniture = useEditorStore((s) => s.duplicateFurniture);
-  const wallDisplayMode = useEditorStore((s) => s.wallDisplayMode);
-  const setWallDisplayMode = useEditorStore((s) => s.setWallDisplayMode);
-  const ceilingVisible = useEditorStore((s) => s.ceilingVisible);
-  const setCeilingVisible = useEditorStore((s) => s.setCeilingVisible);
-  const showGrid = useEditorStore((s) => s.showGrid);
-  const setShowGrid = useEditorStore((s) => s.setShowGrid);
-  const showDimensions = useEditorStore((s) => s.showDimensions);
-  const setShowDimensions = useEditorStore((s) => s.setShowDimensions);
-  const showFurniture = useEditorStore((s) => s.showFurniture);
-  const setShowFurniture = useEditorStore((s) => s.setShowFurniture);
-  const photoMode = useEditorStore((s) => s.photoMode);
-  const setPhotoMode = useEditorStore((s) => s.setPhotoMode);
+  const wallDisplayMode = useUIStore(s => s.wallDisplayMode);
+  const setWallDisplayMode = useUIStore(s => s.setWallDisplayMode);
+  const ceilingVisible = useUIStore(s => s.ceilingVisible);
+  const setCeilingVisible = useUIStore(s => s.setCeilingVisible);
+  const showGrid = useUIStore(s => s.showGrid);
+  const setShowGrid = useUIStore(s => s.setShowGrid);
+  const showDimensions = useUIStore(s => s.showDimensions);
+  const setShowDimensions = useUIStore(s => s.setShowDimensions);
+  const showFurniture = useUIStore(s => s.showFurniture);
+  const setShowFurniture = useUIStore(s => s.setShowFurniture);
+  const photoMode = useUIStore(s => s.photoMode);
+  const setPhotoMode = useUIStore(s => s.setPhotoMode);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
