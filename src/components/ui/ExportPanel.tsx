@@ -6,6 +6,9 @@ import { computeFloorArea } from '@/lib/geometry';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FurnitureItem } from '@/types/scene';
 import { useVideoExport } from '@/hooks/useVideoExport';
+import { ERPIntegrationPanel } from '@/components/ui/ERPIntegrationPanel';
+
+const ERP_ENABLED = process.env.NEXT_PUBLIC_ERP_INTEGRATION_ENABLED === 'true';
 
 /** 提案書の顧客情報 */
 interface ProposalInfo {
@@ -256,7 +259,7 @@ function buildProposalHTML(
 
 export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: ExportPanelProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'proposal' | 'image' | 'data'>('proposal');
+  const [activeTab, setActiveTab] = useState<'proposal' | 'image' | 'data' | 'erp'>('proposal');
   const [previewHtml, setPreviewHtml] = useState('');
 
   // 提案書情報
@@ -449,6 +452,7 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: Export
     { key: 'proposal', label: '提案書', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
     { key: 'image', label: '画像出力', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { key: 'data', label: 'データ', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4' },
+    ...(ERP_ENABLED ? [{ key: 'erp' as const, label: 'ERP連携', icon: 'M13 10V3L4 14h7v7l9-11h-7z' }] : []),
   ];
 
   return (
@@ -780,6 +784,13 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: Export
                     </div>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* ERP連携タブ */}
+            {activeTab === 'erp' && ERP_ENABLED && (
+              <div className="p-5">
+                <ERPIntegrationPanel onClose={() => setIsModalOpen(false)} />
               </div>
             )}
           </div>
