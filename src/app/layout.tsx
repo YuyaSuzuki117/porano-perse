@@ -16,11 +16,25 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Porano Perse - 3D店舗パースツール",
-  description: "店舗内装の3Dパースをブラウザで作成。図面エディタ + リアルタイム3Dプレビュー。",
+  description: "店舗内装の3Dパースをブラウザで作成。2D図面エディタで間取りを描き、リアルタイム3Dプレビューで完成イメージを確認。飲食店・美容室・オフィスなど多業種対応。",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://porano-perse.vercel.app"),
+  openGraph: {
+    title: "Porano Perse - 3D店舗パースツール",
+    description: "店舗内装の3Dパースをブラウザで作成。図面エディタ + リアルタイム3Dプレビュー。",
+    url: "https://porano-perse.vercel.app",
+    siteName: "Porano Perse",
+    type: "website",
+    locale: "ja_JP",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Porano Perse - 3D店舗パースツール",
+    description: "店舗内装の3Dパースをブラウザで作成。図面エディタ + リアルタイム3Dプレビュー。",
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Porano Perse",
   },
   other: {

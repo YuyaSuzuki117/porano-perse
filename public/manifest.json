@@ -1,14 +1,31 @@
 {
   "name": "Porano Perse - 3D店舗パースツール",
   "short_name": "Porano Perse",
-  "description": "店舗レイアウトの3Dパース作成ツール",
+  "description": "店舗レイアウトの3Dパース作成ツール。図面エディタとリアルタイム3Dプレビューでインテリアを可視化。",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#111827",
   "theme_color": "#2563EB",
   "orientation": "any",
+  "categories": ["business", "design", "productivity"],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "新規プロジェクト",
+      "short_name": "新規",
+      "description": "新しい店舗パースを作成",
+      "url": "/?new=1",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "最近のプロジェクト",
+      "short_name": "最近",
+      "description": "保存済みプロジェクトを開く",
+      "url": "/?recent=1",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
