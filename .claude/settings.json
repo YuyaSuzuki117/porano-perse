@@ -10,6 +10,16 @@
             "timeout": 30000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(tsx?|jsx?)$'; then cd C:/Users/LENOVO/.gemini/porano-perse && npx eslint \"$FILE\" --no-warn-ignored 2>&1 | head -20; fi",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   }
