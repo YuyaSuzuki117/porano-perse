@@ -35,14 +35,14 @@ function computeWallNormal2D(wall: WallSegment): [number, number] {
 
 /**
  * カメラ方向と壁法線のドット積からターゲット不透明度を計算する。
- * dot > 0.3: カメラに向いている壁 → 透過 (0.15)
+ * dot > 0.3: カメラに向いている壁 → 透過 (0.05)
  * dot < -0.3: カメラから離れている壁 → 不透明 (1.0)
  * 中間: 滑らかに補間
  */
 function computeWallTargetOpacity(dot: number): number {
-  // dot を [-0.3, 0.3] の範囲で [1.0, 0.15] にマッピング
+  // dot を [-0.3, 0.3] の範囲で [1.0, 0.05] にマッピング
   const t = Math.max(0, Math.min(1, (dot + 0.3) / 0.6));
-  return 1.0 - t * 0.85; // 1.0 → 0.15
+  return 1.0 - t * 0.95; // 1.0 → 0.05
 }
 
 /* ─── useWallTexture フック ─────────────────────────────────────
