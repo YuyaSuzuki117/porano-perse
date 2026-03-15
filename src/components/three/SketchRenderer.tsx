@@ -434,11 +434,12 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   float sFade = strokeFade(pressUV);
   float pencilMod = pressure * sFade;
 
-  // ── 元画像の明度取得（NPR用に輝度補正） ──
+  // ── 元画像の明度取得 ──
   vec3 originalColor = inputColor.rgb;
-  // シャドウマップ無効時のシーンが暗くなる問題を補正（1.8倍ブースト）
-  vec3 boostedColor = min(originalColor * 1.8, vec3(1.0));
-  float luminance = dot(boostedColor, vec3(0.299, 0.587, 0.114));
+  // 色出力用の明るさ補正版（水彩・色鉛筆の色が暗くなるのを防ぐ）
+  vec3 boostedColor = min(originalColor * 1.6, vec3(1.0));
+  // ハッチング/暗さ計算は元の色を使う（ブーストするとエフェクトが消える）
+  float luminance = dot(originalColor, vec3(0.299, 0.587, 0.114));
   float darkness = 1.0 - luminance;
 
   // 背景検出（遠距離フラグ）
@@ -802,10 +803,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // グロー（シルエット線の放射状フォールオフ）
     result += glowColor * (lineGlow + radialGlow) * bpEdge * 0.3;
 
-    // sRGBエンコード補正
-    // 逆ガンマを強化してトーンマッピングの明るさリフトを打ち消す
-    // ToneMappingの影響を完全に打ち消すため強い逆ガンマ
-    result = pow(result, vec3(3.5));
+    // sRGB+ToneMapping補正: 出力パイプラインが暗色を持ち上げるため、
+    // 目標の暗紺色に到達するには極めて低い値を出力する必要がある。
+    // 背景部分はほぼゼロに、線のみ明るく残す。
+    result = pow(max(result, vec3(0.0)), vec3(4.0));
     outputColor = vec4(result, inputColor.a);
     return;
 
@@ -834,7 +835,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // ── ハッチングで陰影 ──
     // ハッチング強度を抑えて明るく
-    float hatchStrength = hatch * 0.7;
+    float hatchStrength = hatch * 0.85;
     result = mix(result, inkColor, hatchStrength);
 
     // ── 建築補助線（薄い水平/垂直のコンストラクションライン） ──
