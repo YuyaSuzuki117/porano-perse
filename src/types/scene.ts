@@ -139,6 +139,33 @@ export type FurnitureType =
   | 'bed'             // ベッド
   | 'bar_stool'       // バースツール
   | 'hanger_rack'     // ハンガーラック
+  | 'booth_sofa'      // ブースソファ
+  | 'bar_chair'       // バーチェア
+  | 'wine_rack'       // ワインラック
+  | 'dish_cabinet'    // 食器棚
+  | 'coffee_machine'  // コーヒーマシン
+  | 'office_desk'     // オフィスデスク
+  | 'office_chair'    // オフィスチェア
+  | 'file_cabinet'    // ファイルキャビネット
+  | 'whiteboard'      // ホワイトボード
+  | 'printer_stand'   // プリンター台
+  | 'treatment_bed'   // 施術ベッド
+  | 'shampoo_station' // シャンプー台
+  | 'mirror_station'  // ミラー台
+  | 'waiting_sofa'    // 待合ソファ
+  | 'display_shelf'   // ディスプレイ棚
+  | 'glass_showcase'  // ガラスショーケース
+  | 'mannequin'       // マネキン
+  | 'fitting_room'    // 試着室
+  | 'vending_machine' // 自動販売機
+  | 'atm'             // ATM
+  | 'coat_hanger'     // コートハンガー
+  | 'fire_extinguisher' // 消火器
+  | 'aed'             // AED
+  | 'plant_large'     // 観葉植物（大）
+  | 'plant_small'     // 観葉植物（小）
+  | 'digital_signage' // デジタルサイネージ
+  | 'indirect_light'  // 間接照明
   | 'custom';         // カスタム3Dモデル
 
 export interface FurnitureCatalogItem {

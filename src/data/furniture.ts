@@ -334,4 +334,36 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   { type: 'bed', name: 'ベッド', icon: '🛏️', defaultScale: [1.4, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const, modelUrl: '/models/bed.glb' },
   { type: 'bar_stool', name: 'バースツール', icon: '🍺', defaultScale: [0.35, 0.95, 0.35], defaultColor: '#333333', defaultMaterial: 'metal' as const, modelUrl: '/models/bar_stool.glb' },
   { type: 'hanger_rack', name: 'ハンガーラック', icon: '👔', defaultScale: [1.0, 1.7, 0.5], defaultColor: '#444444', defaultMaterial: 'metal' as const, modelUrl: '/models/hanger_rack.glb' },
+  // --- 飲食店向け ---
+  { type: 'booth_sofa', name: 'ブースソファ', icon: '🛋️', defaultScale: [1.6, 1.2, 0.7], defaultColor: '#8B4513', defaultMaterial: 'fabric' as const, modelUrl: '/models/booth_sofa.glb' },
+  { type: 'bar_chair', name: 'バーチェア', icon: '🪑', defaultScale: [0.45, 1.1, 0.45], defaultColor: '#2F2F2F', defaultMaterial: 'metal' as const, modelUrl: '/models/bar_chair.glb' },
+  { type: 'wine_rack', name: 'ワインラック', icon: '🍷', defaultScale: [0.8, 1.5, 0.35], defaultColor: '#5C3317', defaultMaterial: 'wood' as const, modelUrl: '/models/wine_rack.glb' },
+  { type: 'dish_cabinet', name: '食器棚', icon: '🍽️', defaultScale: [0.9, 1.8, 0.45], defaultColor: '#DEB887', defaultMaterial: 'wood' as const, modelUrl: '/models/dish_cabinet.glb' },
+  { type: 'coffee_machine', name: 'コーヒーマシン', icon: '☕', defaultScale: [0.35, 0.45, 0.4], defaultColor: '#2C2C2C', defaultMaterial: 'metal' as const, modelUrl: '/models/coffee_machine.glb' },
+  // --- オフィス向け ---
+  { type: 'office_desk', name: 'オフィスデスク', icon: '🖥️', defaultScale: [1.4, 0.75, 0.7], defaultColor: '#A0896C', defaultMaterial: 'wood' as const, modelUrl: '/models/office_desk.glb' },
+  { type: 'office_chair', name: 'オフィスチェア', icon: '💺', defaultScale: [0.6, 1.1, 0.6], defaultColor: '#1A1A1A', defaultMaterial: 'fabric' as const, modelUrl: '/models/office_chair.glb' },
+  { type: 'file_cabinet', name: 'ファイルキャビネット', icon: '🗄️', defaultScale: [0.45, 1.3, 0.6], defaultColor: '#808080', defaultMaterial: 'metal' as const, modelUrl: '/models/file_cabinet.glb' },
+  { type: 'whiteboard', name: 'ホワイトボード', icon: '📝', defaultScale: [1.2, 0.9, 0.05], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/whiteboard.glb' },
+  { type: 'printer_stand', name: 'プリンター台', icon: '🖨️', defaultScale: [0.6, 0.7, 0.5], defaultColor: '#D3D3D3', defaultMaterial: 'metal' as const, modelUrl: '/models/printer_stand.glb' },
+  // --- 美容・医療向け ---
+  { type: 'treatment_bed', name: '施術ベッド', icon: '🛏️', defaultScale: [0.7, 0.65, 1.9], defaultColor: '#FFFFFF', defaultMaterial: 'fabric' as const, modelUrl: '/models/treatment_bed.glb' },
+  { type: 'shampoo_station', name: 'シャンプー台', icon: '🚿', defaultScale: [0.6, 1.0, 1.0], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/shampoo_station.glb' },
+  { type: 'mirror_station', name: 'ミラー台', icon: '🪞', defaultScale: [0.8, 1.8, 0.5], defaultColor: '#C0C0C0', defaultMaterial: 'glass' as const, modelUrl: '/models/mirror_station.glb' },
+  { type: 'waiting_sofa', name: '待合ソファ', icon: '🛋️', defaultScale: [1.8, 0.8, 0.7], defaultColor: '#4A6741', defaultMaterial: 'fabric' as const, modelUrl: '/models/waiting_sofa.glb' },
+  // --- 小売向け ---
+  { type: 'display_shelf', name: 'ディスプレイ棚', icon: '🗃️', defaultScale: [1.2, 1.8, 0.45], defaultColor: '#F5F5F5', defaultMaterial: 'wood' as const, modelUrl: '/models/display_shelf.glb' },
+  { type: 'glass_showcase', name: 'ガラスショーケース', icon: '💎', defaultScale: [1.0, 1.0, 0.5], defaultColor: '#E8F0FE', defaultMaterial: 'glass' as const, modelUrl: '/models/glass_showcase.glb' },
+  { type: 'mannequin', name: 'マネキン', icon: '🧍', defaultScale: [0.45, 1.7, 0.3], defaultColor: '#F5E6D3', defaultMaterial: 'plastic' as const, modelUrl: '/models/mannequin.glb' },
+  { type: 'fitting_room', name: '試着室', icon: '👗', defaultScale: [1.2, 2.2, 1.2], defaultColor: '#D2B48C', defaultMaterial: 'fabric' as const, modelUrl: '/models/fitting_room.glb' },
+  // --- 共通設備 ---
+  { type: 'vending_machine', name: '自動販売機', icon: '🥤', defaultScale: [0.7, 1.8, 0.7], defaultColor: '#FFFFFF', defaultMaterial: 'metal' as const, modelUrl: '/models/vending_machine.glb' },
+  { type: 'atm', name: 'ATM', icon: '🏧', defaultScale: [0.5, 1.5, 0.6], defaultColor: '#2E5090', defaultMaterial: 'metal' as const, modelUrl: '/models/atm.glb' },
+  { type: 'coat_hanger', name: 'コートハンガー', icon: '🧥', defaultScale: [0.5, 1.7, 0.5], defaultColor: '#8B6914', defaultMaterial: 'wood' as const, modelUrl: '/models/coat_hanger.glb' },
+  { type: 'fire_extinguisher', name: '消火器', icon: '🧯', defaultScale: [0.15, 0.5, 0.15], defaultColor: '#CC0000', defaultMaterial: 'metal' as const, modelUrl: '/models/fire_extinguisher.glb' },
+  { type: 'aed', name: 'AED', icon: '💚', defaultScale: [0.3, 0.35, 0.15], defaultColor: '#FF6600', defaultMaterial: 'plastic' as const, modelUrl: '/models/aed.glb' },
+  { type: 'plant_large', name: '観葉植物（大）', icon: '🌴', defaultScale: [0.6, 1.8, 0.6], defaultColor: '#228B22', defaultMaterial: 'plastic' as const, modelUrl: '/models/plant_large.glb' },
+  { type: 'plant_small', name: '観葉植物（小）', icon: '🌱', defaultScale: [0.2, 0.3, 0.2], defaultColor: '#228B22', defaultMaterial: 'plastic' as const, modelUrl: '/models/plant_small.glb' },
+  { type: 'digital_signage', name: 'デジタルサイネージ', icon: '📺', defaultScale: [0.7, 1.2, 0.08], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/digital_signage.glb' },
+  { type: 'indirect_light', name: '間接照明', icon: '💡', defaultScale: [0.8, 0.3, 0.15], defaultColor: '#FFD700', defaultMaterial: 'metal' as const, modelUrl: '/models/indirect_light.glb' },
 ];

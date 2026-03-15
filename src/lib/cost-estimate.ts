@@ -92,6 +92,38 @@ export const FURNITURE_PRICES: Record<FurnitureType, FurniturePriceInfo> = {
   bed: { minPrice: 30000, maxPrice: 200000, averagePrice: 80000, nameJa: 'ベッド' },
   bar_stool: { minPrice: 8000, maxPrice: 30000, averagePrice: 15000, nameJa: 'バースツール' },
   hanger_rack: { minPrice: 10000, maxPrice: 40000, averagePrice: 20000, nameJa: 'ハンガーラック' },
+  // 飲食店向け
+  booth_sofa: { minPrice: 60000, maxPrice: 250000, averagePrice: 130000, nameJa: 'ブースソファ' },
+  bar_chair: { minPrice: 10000, maxPrice: 40000, averagePrice: 20000, nameJa: 'バーチェア' },
+  wine_rack: { minPrice: 15000, maxPrice: 80000, averagePrice: 40000, nameJa: 'ワインラック' },
+  dish_cabinet: { minPrice: 30000, maxPrice: 150000, averagePrice: 70000, nameJa: '食器棚' },
+  coffee_machine: { minPrice: 50000, maxPrice: 500000, averagePrice: 200000, nameJa: 'コーヒーマシン' },
+  // オフィス向け
+  office_desk: { minPrice: 20000, maxPrice: 100000, averagePrice: 50000, nameJa: 'オフィスデスク' },
+  office_chair: { minPrice: 15000, maxPrice: 80000, averagePrice: 35000, nameJa: 'オフィスチェア' },
+  file_cabinet: { minPrice: 15000, maxPrice: 60000, averagePrice: 30000, nameJa: 'ファイルキャビネット' },
+  whiteboard: { minPrice: 5000, maxPrice: 30000, averagePrice: 15000, nameJa: 'ホワイトボード' },
+  printer_stand: { minPrice: 8000, maxPrice: 25000, averagePrice: 15000, nameJa: 'プリンター台' },
+  // 美容・医療向け
+  treatment_bed: { minPrice: 30000, maxPrice: 150000, averagePrice: 70000, nameJa: '施術ベッド' },
+  shampoo_station: { minPrice: 80000, maxPrice: 300000, averagePrice: 150000, nameJa: 'シャンプー台' },
+  mirror_station: { minPrice: 30000, maxPrice: 120000, averagePrice: 60000, nameJa: 'ミラー台' },
+  waiting_sofa: { minPrice: 50000, maxPrice: 200000, averagePrice: 100000, nameJa: '待合ソファ' },
+  // 小売向け
+  display_shelf: { minPrice: 15000, maxPrice: 80000, averagePrice: 40000, nameJa: 'ディスプレイ棚' },
+  glass_showcase: { minPrice: 40000, maxPrice: 200000, averagePrice: 100000, nameJa: 'ガラスショーケース' },
+  mannequin: { minPrice: 10000, maxPrice: 50000, averagePrice: 25000, nameJa: 'マネキン' },
+  fitting_room: { minPrice: 50000, maxPrice: 200000, averagePrice: 100000, nameJa: '試着室' },
+  // 共通設備
+  vending_machine: { minPrice: 100000, maxPrice: 500000, averagePrice: 250000, nameJa: '自動販売機' },
+  atm: { minPrice: 200000, maxPrice: 800000, averagePrice: 400000, nameJa: 'ATM' },
+  coat_hanger: { minPrice: 5000, maxPrice: 20000, averagePrice: 10000, nameJa: 'コートハンガー' },
+  fire_extinguisher: { minPrice: 5000, maxPrice: 15000, averagePrice: 8000, nameJa: '消火器' },
+  aed: { minPrice: 200000, maxPrice: 400000, averagePrice: 280000, nameJa: 'AED' },
+  plant_large: { minPrice: 8000, maxPrice: 30000, averagePrice: 15000, nameJa: '観葉植物（大）' },
+  plant_small: { minPrice: 1000, maxPrice: 5000, averagePrice: 2500, nameJa: '観葉植物（小）' },
+  digital_signage: { minPrice: 80000, maxPrice: 400000, averagePrice: 200000, nameJa: 'デジタルサイネージ' },
+  indirect_light: { minPrice: 10000, maxPrice: 50000, averagePrice: 25000, nameJa: '間接照明' },
 };
 
 // --- 消費税率 ---
