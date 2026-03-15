@@ -528,10 +528,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // blueprint モード: 紺背景・白シアン線・グリッド・寸法線風
     // ════════════════════════════════════════════════════════
 
-    // ── 背景: 深い紺色（シーン内容に依存しない固定色） ──
-    vec3 bgTop = vec3(0.03, 0.06, 0.14);    // 非常に暗い紺
-    vec3 bgBot = vec3(0.06, 0.10, 0.22);    // やや明るい紺
-    // 全面を紺色で塗る（元画像を完全に無視）
+    // ── 背景: 非常に暗い紺色（元画像を完全に無視して紺色で上書き） ──
+    vec3 bgTop = vec3(0.02, 0.04, 0.10);    // ほぼ黒に近い紺
+    vec3 bgBot = vec3(0.04, 0.08, 0.18);    // 暗い紺
     vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.7 + 0.15);
     float bgNoise = noise2d(uv * resolution * 0.03) * 0.015;
     bgColor += vec3(bgNoise * 0.2, bgNoise * 0.3, bgNoise * 0.5);
@@ -581,7 +580,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // 線の合成
     float bpEdge = max(max(bpSilIntensity, bpCreaseIntensity), bpDetailIntensity) * bpEdgeFade;
-    bpEdge *= (1.0 - bgMask); // 背景では線を消す
+    // 背景では線を薄くするが完全には消さない（設計図は全面紺）
+    bpEdge *= mix(1.0, 0.3, bgMask);
 
     // ── 線の太さで明るさを変える（太い線=より明るい） ──
     float lineGlow = bpSilIntensity * 0.3; // シルエットに微光彩
@@ -614,8 +614,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // グロー
     result += glowColor * lineGlow * bpEdge * 0.25;
 
-    // 背景（遠景）も紺色のまま維持
-    result = mix(result, bgColor, bgMask * 0.5);
+    // 背景も紺色を維持（bgMaskで薄まらないように）
     // ビネットなし（設計図は均一）
     outputColor = vec4(result, inputColor.a);
     return;
