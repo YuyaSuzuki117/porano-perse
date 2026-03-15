@@ -65,8 +65,8 @@ float getDepth(vec2 uv) {
 }
 
 float linearizeDepth(float d) {
-  float near = 0.1;
-  float far = 100.0;
+  float near = 0.01;
+  float far = 200.0;
   return (2.0 * near) / (far + near - d * (far - near));
 }
 
@@ -176,7 +176,7 @@ float hatchPattern5(vec2 uv, float darkness, float density, float randomness, fl
   if (darkness > 0.20) {
     float wobble1 = noise2d(uv * 4.0 + 3.0) * randomness;
     float line1 = abs(fract((uv.x + uv.y + wobble1) * adjDensity) - 0.5) * 2.0;
-    float str1 = smoothstep(0.50, 0.25, line1) * smoothstep(0.20, 0.35, darkness) * 0.7;
+    float str1 = smoothstep(0.50, 0.25, line1) * smoothstep(0.20, 0.35, darkness) * 0.85;
     float pressVar1 = noise2d(uv * 35.0 + 8.0) * 0.2 + 0.8;
     result = max(result, str1 * pressVar1);
   }
@@ -185,7 +185,7 @@ float hatchPattern5(vec2 uv, float darkness, float density, float randomness, fl
   if (darkness > 0.40) {
     float wobble2 = noise2d(uv * 5.0 + 10.0) * randomness;
     float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity) - 0.5) * 2.0;
-    float str2 = smoothstep(0.50, 0.28, line2) * smoothstep(0.40, 0.55, darkness) * 0.75;
+    float str2 = smoothstep(0.50, 0.28, line2) * smoothstep(0.40, 0.55, darkness) * 0.85;
     float pressVar2 = noise2d(uv * 30.0 + 12.0) * 0.15 + 0.85;
     result = max(result, str2 * pressVar2);
   }
@@ -222,7 +222,7 @@ float coloredPencilStroke(vec2 uv, float density, float darkness) {
   float rotV = uv.x * sin(angle) + uv.y * cos(angle);
 
   float wobble = noise2d(vec2(rotU, rotV) * 5.0) * 0.15;
-  float stroke = abs(fract((rotV + wobble) * density * 0.8) - 0.5) * 2.0;
+  float stroke = abs(fract((rotV + wobble) * density * 0.5) - 0.5) * 2.0;
 
   // ストロークの筆圧ムラ
   float pressure = noise2d(vec2(rotU * 3.0, rotV * 0.5) + 7.0) * 0.4 + 0.6;
@@ -306,7 +306,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   float aerialFade = mix(1.0, 0.15, smoothstep(0.0, 0.8, distFactor));
 
   // ── 3種エッジ検出 ──
-  float lineScale = mix(2.5, 0.8, distFactor);
+  float lineScale = mix(3.0, 0.8, distFactor);
   vec2 edgeTS = texelSize * lineScale;
 
   // 手描き揺らぎ（sketch/colored-pencil用）
@@ -382,7 +382,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     for (float dx = -3.0; dx <= 3.0; dx += 1.0) {
       for (float dy = -3.0; dy <= 3.0; dy += 1.0) {
         float w = 1.0 / (1.0 + abs(dx) + abs(dy));
-        vec2 offset = vec2(dx, dy) * texelSize * 3.0;
+        vec2 offset = vec2(dx, dy) * texelSize * 4.5;
         // 不規則なオフセットで水の流れ感
         float nOff = noise2d(uv * 30.0 + vec2(dx, dy) * 7.0);
         offset += (nOff - 0.5) * texelSize * 4.0;
@@ -397,19 +397,19 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float colorVariation2 = noise2d(uv * 25.0 + 5.0) * 0.15;
 
     // ── 白抜き（ハイライトは紙の白） ──
-    float whiteout = smoothstep(0.35, 0.75, luminance);
-    whiteout = pow(whiteout, 1.5); // より強いハイライト白抜き
+    float whiteout = smoothstep(0.5, 0.85, luminance);
+    whiteout = pow(whiteout, 1.0); // 白抜きを弱める
 
     // ── ベースカラー（透明感のある淡い色） ──
     vec3 waterBase = blurred * 0.7 + originalColor * 0.3;
     // 彩度を少し上げつつ透明感
     vec3 hsv = rgb2hsv(waterBase);
-    hsv.y *= 0.8; // 水彩の淡い彩度
-    hsv.z = mix(hsv.z, 1.0, 0.3); // 明度を上げて透明感
+    hsv.y *= 1.0; // 彩度を維持
+    hsv.z = mix(hsv.z, 0.95, 0.15); // 明度上げを控えめに
     waterBase = hsv2rgb(hsv);
 
     // 色の溜まり（暗い部分でpigment pooling）
-    float pooling = smoothstep(0.4, 0.8, darkness) * 0.4;
+    float pooling = smoothstep(0.4, 0.8, darkness) * 0.55;
     vec3 poolColor = originalColor * 0.5; // 濃い色が溜まる
     waterBase = mix(waterBase, poolColor, pooling);
 
@@ -417,7 +417,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     waterBase += vec3(colorVariation * 0.3, colorVariation2 * 0.2, -colorVariation * 0.1);
 
     // 紙色とのブレンド（透明感）
-    float colorMix = 0.35 + darkness * 0.35 + colorVariation * 0.1;
+    float colorMix = 0.55 + darkness * 0.35 + colorVariation * 0.1;
     colorMix *= (1.0 - whiteout * 0.85); // 白抜き部分は紙色
     vec3 watercolor = mix(paper, waterBase, colorMix);
 
@@ -435,7 +435,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     watercolor = mix(watercolor, neighborColor * 0.6 + paper * 0.4, 0.08);
 
     // ── 輪郭は極薄（水彩は線がほぼない） ──
-    watercolor = mix(watercolor, inkColor * 0.4 + watercolor * 0.6, edgeIntensity * 0.12);
+    watercolor = mix(watercolor, inkColor * 0.4 + watercolor * 0.6, edgeIntensity * 0.06);
 
     // 方向性シャドウは弱め
     watercolor = mix(watercolor, inkColor * 0.5, directionalShadow * 0.15);
@@ -445,7 +445,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     result = watercolor;
     // 水彩はセピアほぼなし
-    result = toSepia(result, sepiaAmount * 0.1);
+    result = toSepia(result, 0.0);
 
   } else if (mode == 2) {
     // ════════════════════════════════════════════════════════
@@ -454,7 +454,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // ── 鮮やかな色（彩度75%） ──
     vec3 hsvC = rgb2hsv(originalColor);
-    hsvC.y *= 0.75; // 彩度をしっかり残す
+    hsvC.y *= 0.85; // 彩度をさらに上げる
     hsvC.z = mix(hsvC.z, 0.80, 0.2); // 明度を少し紙に近づける
     vec3 vividColor = hsv2rgb(hsvC);
 
@@ -466,15 +466,15 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float grainMask = paperGrainMask(uv, resolution);
     // ざらつきで色が一部抜ける
     float grainFade = smoothstep(0.25, 0.55, grainMask);
-    result = mix(paper, result, grainFade * 0.9 + 0.1);
+    result = mix(paper, result, grainFade * 0.3 + 0.7);
 
     // ── 方向性ストロークパターン ──
     vec2 strokeUV = uv * resolution / 4.0;
     float strokePattern = coloredPencilStroke(strokeUV, hatchDensity, darkness);
 
     // ストロークを色で塗る（暗い部分ほど強い）
-    vec3 strokeColor = vividColor * 0.7;
-    result = mix(result, strokeColor, strokePattern * 0.5 * darkness);
+    vec3 strokeColor = vividColor * 0.8;
+    result = mix(result, strokeColor, strokePattern * 0.7 * max(darkness, 0.2));
 
     // ── 重ね塗り感（暗い部分はさらに濃く） ──
     if (darkness > 0.4) {
@@ -500,7 +500,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float pressureMura = noise2d(uv * resolution * 0.010) * 0.35
                        + noise2d(uv * resolution * 0.003 + 7.0) * 0.25;
     pressureMura = pressureMura * 0.5 + 0.5;
-    result = mix(paper, result, clamp(pressureMura + 0.35, 0.0, 1.0));
+    result = mix(paper, result, clamp(pressureMura + 0.55, 0.0, 1.0));
 
     // ── 輪郭線（柔らかい暗色、黒ではない） ──
     vec3 edgeColor = originalColor * 0.25 + vec3(0.1, 0.08, 0.06); // 暗い色味
@@ -564,7 +564,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float bpEdgeFade = mix(1.0, 0.4, distFactor);
 
     // シルエットエッジ（太い 4px相当）
-    float bpSilhouette = sobelEdgeDepth(uv, edgeTS * 3.0);
+    float bpSilhouette = sobelEdgeDepth(uv, edgeTS * 4.0);
     float bpSilIntensity = smoothstep(edgeThreshold * 0.06, edgeThreshold * 0.4, bpSilhouette);
 
     // クリースエッジ（中太 2px相当）
@@ -606,9 +606,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // 寸法線
     result = mix(result, lineColor * 0.7, dimLine);
     // エッジ線
-    result = mix(result, lineColor, bpEdge * 0.9);
+    result = mix(result, lineColor, bpEdge * 0.95);
     // グロー
-    result += glowColor * lineGlow * bpEdge * 0.15;
+    result += glowColor * lineGlow * bpEdge * 0.25;
 
     // 背景は紺色のまま（bgMask処理なし）
     // ビネットなし（設計図は均一）
@@ -627,7 +627,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     result = paper;
 
     // ── ハッチングで陰影（コントラスト強め） ──
-    float hatchStrength = hatch * 0.9;
+    float hatchStrength = hatch * 0.95;
     result = mix(result, inkColor, hatchStrength);
 
     // ── エッジ（太くはっきり、コントラスト強） ──
@@ -663,13 +663,13 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 // ── カスタムEffect クラス ──
 class SketchEffectImpl extends Effect {
   constructor({
-    edgeThreshold = 0.008,
+    edgeThreshold = 0.005,
     hatchDensity = 14.0,
     hatchRandomness = 0.3,
-    paperNoiseIntensity = 0.03,
+    paperNoiseIntensity = 0.05,
     paperColor = new THREE.Color('#f5f0e8'),
     inkColor = new THREE.Color('#1a1a1a'),
-    sepiaAmount = 0.4,
+    sepiaAmount = 0.5,
     mode = 0,
     time = 0,
   }: {
@@ -718,13 +718,13 @@ export const SketchEffect = forwardRef<SketchEffectImpl, SketchEffectProps>(
   function SketchEffect(
     {
       mode = 'sketch',
-      edgeThreshold = 0.008,
+      edgeThreshold = 0.005,
       hatchDensity = 14.0,
       hatchRandomness = 0.3,
-      paperNoiseIntensity = 0.03,
+      paperNoiseIntensity = 0.05,
       paperColor = '#f5f0e8',
       inkColor = '#1a1a1a',
-      sepiaAmount = 0.4,
+      sepiaAmount = 0.5,
     },
     ref,
   ) {
