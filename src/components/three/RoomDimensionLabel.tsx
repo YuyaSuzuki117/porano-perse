@@ -10,6 +10,7 @@ interface RoomDimensionLabelProps {
   walls: WallSegment[];
   openings?: Opening[];
   roomLabels?: RoomLabel[];
+  roomHeight?: number;
 }
 
 /** ラベルの共通スタイル */
@@ -72,7 +73,7 @@ interface OpeningDimInfo {
   widthLineEnd: [number, number, number];
 }
 
-export function RoomDimensionLabel({ walls, openings = [], roomLabels = [] }: RoomDimensionLabelProps) {
+export function RoomDimensionLabel({ walls, openings = [], roomLabels = [], roomHeight = 2.4 }: RoomDimensionLabelProps) {
   const info = useMemo(() => {
     if (walls.length === 0) return null;
     const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
@@ -96,7 +97,7 @@ export function RoomDimensionLabel({ walls, openings = [], roomLabels = [] }: Ro
     };
   }, [walls]);
 
-  // 各壁の個別寸法
+  // 各壁の個別寸法（壁の上に表示）
   const wallDimensions = useMemo(() => {
     return walls.map((wall) => {
       const dx = wall.end.x - wall.start.x;
@@ -104,19 +105,17 @@ export function RoomDimensionLabel({ walls, openings = [], roomLabels = [] }: Ro
       const length = Math.sqrt(dx * dx + dy * dy);
       const midX = (wall.start.x + wall.end.x) / 2;
       const midZ = (wall.start.y + wall.end.y) / 2;
-      // 法線方向にオフセット（ラベルが壁と重ならないように）
-      const angle = Math.atan2(dy, dx);
-      const offsetX = -Math.sin(angle) * 0.3;
-      const offsetZ = Math.cos(angle) * 0.3;
+      // 壁の上面（roomHeight）にラベルを配置
+      const wallTopY = roomHeight + 0.1;
       return {
         id: wall.id,
         length,
-        labelPos: [midX + offsetX, 0.02, midZ + offsetZ] as [number, number, number],
-        start: [wall.start.x, 0.02, wall.start.y] as [number, number, number],
-        end: [wall.end.x, 0.02, wall.end.y] as [number, number, number],
+        labelPos: [midX, wallTopY, midZ] as [number, number, number],
+        start: [wall.start.x, wallTopY, wall.start.y] as [number, number, number],
+        end: [wall.end.x, wallTopY, wall.end.y] as [number, number, number],
       };
     });
-  }, [walls]);
+  }, [walls, roomHeight]);
 
   // 各開口部の寸法情報を計算
   const openingDimensions = useMemo(() => {

@@ -24,13 +24,13 @@ export default function FloorReflection() {
       <planeGeometry args={[w, d]} />
       <meshPhysicalMaterial
         transparent
-        opacity={qualityLevel === 'high' ? 0.12 : 0.06}
+        opacity={qualityLevel === 'high' ? 0.15 : 0.08}
         color="#ffffff"
-        metalness={0.15}
-        roughness={0.02}
+        metalness={0.2}
+        roughness={0.015}
         clearcoat={1.0}
-        clearcoatRoughness={0.05}
-        envMapIntensity={qualityLevel === 'high' ? 4.0 : 2.5}
+        clearcoatRoughness={0.04}
+        envMapIntensity={qualityLevel === 'high' ? 4.5 : 3.0}
         depthWrite={false}
       />
     </mesh>

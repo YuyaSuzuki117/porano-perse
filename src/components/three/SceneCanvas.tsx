@@ -2,7 +2,7 @@
 
 import React, { Suspense, useRef, useCallback, useMemo, lazy, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid, ContactShadows, Stats } from '@react-three/drei';
+import { OrbitControls, Environment, Grid, ContactShadows, Stats, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { WallMeshGroup } from './WallMeshGroup';
 import { FloorMesh } from './FloorMesh';
@@ -205,23 +205,24 @@ export function SceneCanvas({
   const isNight = dayNight === 'night';
   const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil';
 
-  // スタイル別背景色
-  const bgColor = useMemo(() => {
-    // スケッチモード: 紙色
+  // スタイル別背景色（上部 / 下部のグラデーション用ペア）
+  const { bgColor, bgGradient } = useMemo(() => {
+    // スケッチモード: 紙色（グラデーション無し）
     if (isSketchStyle) {
-      return '#faf8f0';
+      return { bgColor: '#faf8f0', bgGradient: null as null };
     }
     if (!isNight) {
-      // 昼はスタイルによらず薄い背景
-      return '#f0f0f0';
+      // 昼: 上が明るく、下がやや暗い → 空間の奥行き感
+      return { bgColor: '#ebebeb', bgGradient: { top: '#f5f5f5', bottom: '#e0e0e0' } };
     }
-    const nightBgMap: Record<string, string> = {
-      luxury: '#1a1520',
-      japanese: '#1a1a18',
-      medical: '#161820',
-      industrial: '#181818',
+    const nightBgMap: Record<string, { bg: string; top: string; bottom: string }> = {
+      luxury: { bg: '#1a1520', top: '#201a28', bottom: '#120e18' },
+      japanese: { bg: '#1a1a18', top: '#201f1c', bottom: '#121210' },
+      medical: { bg: '#161820', top: '#1c1e28', bottom: '#0e1018' },
+      industrial: { bg: '#181818', top: '#1e1e1e', bottom: '#101010' },
     };
-    return nightBgMap[styleName] || '#1a1a2e';
+    const n = nightBgMap[styleName] || { bg: '#1a1a2e', top: '#202038', bottom: '#121224' };
+    return { bgColor: n.bg, bgGradient: { top: n.top, bottom: n.bottom } };
   }, [isNight, isSketchStyle, styleName]);
 
   const envPreset = isNight ? 'night' : 'apartment';
@@ -334,7 +335,7 @@ export function SceneCanvas({
       performance={{ min: 0.5, max: 1 }}
       onCreated={handleCanvasCreated}
       onPointerMissed={handlePointerMissed}
-      style={{ background: bgColor }}
+      style={{ background: bgGradient ? `linear-gradient(to bottom, ${bgGradient.top}, ${bgGradient.bottom})` : bgColor }}
     >
       <Suspense fallback={null}>
         {/* lowモード・スケッチモードではfog無効 */}
@@ -358,7 +359,7 @@ export function SceneCanvas({
           <WallNiches walls={walls} openings={openings} roomHeight={roomHeight} style={styleConfig} />
         )}
         <FloorMesh walls={walls} style={styleConfig} />
-        <FloorReflection />
+        {!isSketchStyle && <FloorReflection />}
         <CeilingMesh walls={walls} roomHeight={roomHeight} style={styleConfig} />
 
         {/* 擬似AO: コーナーダークニング */}
@@ -383,7 +384,7 @@ export function SceneCanvas({
           </>
         )}
 
-        {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} />}
+        {showDimensions && <RoomDimensionLabel walls={walls} openings={openings} roomLabels={roomLabels} roomHeight={roomHeight} />}
 
         <WindowLightBeams walls={walls} openings={openings} roomHeight={roomHeight} qualityLevel={qualityLevel} />
 
@@ -630,43 +631,72 @@ export function SceneCanvas({
             switch (styleName) {
               case 'luxury':
               case 'japanese':
-                // 非常に薄いグリッド（ほぼ見えない）
                 return {
                   cellColor: isNight ? '#333333' : '#e8e8e8',
-                  sectionColor: isNight ? '#444444' : '#dddddd',
+                  sectionColor: isNight ? '#444444' : '#cccccc',
                 };
               case 'industrial':
-                // 少し目立つグリッド（コンクリート目地風）
                 return {
                   cellColor: isNight ? '#555555' : '#aaaaaa',
-                  sectionColor: isNight ? '#777777' : '#888888',
+                  sectionColor: isNight ? '#777777' : '#808080',
                 };
               case 'medical':
-                // 薄い青系グリッド
                 return {
                   cellColor: isNight ? '#334455' : '#c8d8e8',
-                  sectionColor: isNight ? '#556677' : '#a0b8d0',
+                  sectionColor: isNight ? '#556677' : '#90a8c0',
                 };
               default:
                 return {
                   cellColor: isNight ? '#444444' : '#d8d8d8',
-                  sectionColor: isNight ? '#666666' : '#b0b0b0',
+                  sectionColor: isNight ? '#666666' : '#a0a0a0',
                 };
             }
           })();
 
+          // 座標ラベル: グリッド端に1m刻みで座標表示
+          const halfW = gridSize.w / 2;
+          const halfD = gridSize.d / 2;
+          const coordLabelsX: { pos: [number, number, number]; text: string }[] = [];
+          const coordLabelsZ: { pos: [number, number, number]; text: string }[] = [];
+          for (let x = Math.ceil(-halfW); x <= Math.floor(halfW); x++) {
+            coordLabelsX.push({ pos: [x, 0.01, halfD + 0.25], text: `${x.toFixed(0)}` });
+          }
+          for (let z = Math.ceil(-halfD); z <= Math.floor(halfD); z++) {
+            coordLabelsZ.push({ pos: [-halfW - 0.25, 0.01, z], text: `${z.toFixed(0)}` });
+          }
+
           return (
-            <Grid
-              position={[0, 0.001, 0]}
-              args={[gridSize.w, gridSize.d]}
-              cellSize={0.5}
-              cellColor={gridPreset.cellColor}
-              sectionSize={1}
-              sectionColor={gridPreset.sectionColor}
-              fadeDistance={maxDim * 1.5}
-              fadeStrength={2}
-              infiniteGrid={false}
-            />
+            <>
+              <Grid
+                position={[0, 0.001, 0]}
+                args={[gridSize.w, gridSize.d]}
+                cellSize={0.5}
+                cellColor={gridPreset.cellColor}
+                cellThickness={0.6}
+                sectionSize={1}
+                sectionColor={gridPreset.sectionColor}
+                sectionThickness={1.4}
+                fadeDistance={maxDim * 1.5}
+                fadeStrength={2}
+                infiniteGrid={false}
+              />
+              {/* X軸座標ラベル (手前端) */}
+              {coordLabelsX.map((cl) => (
+                <Html key={`cx-${cl.text}`} position={cl.pos} center style={{ pointerEvents: 'none' }}>
+                  <div style={{ fontSize: '8px', color: isNight ? '#888' : '#999', fontFamily: 'monospace', fontWeight: 500 }}>
+                    {cl.text}
+                  </div>
+                </Html>
+              ))}
+              {/* Z軸座標ラベル (左端) */}
+              {coordLabelsZ.map((cl) => (
+                <Html key={`cz-${cl.text}`} position={cl.pos} center style={{ pointerEvents: 'none' }}>
+                  <div style={{ fontSize: '8px', color: isNight ? '#888' : '#999', fontFamily: 'monospace', fontWeight: 500 }}>
+                    {cl.text}
+                  </div>
+                </Html>
+              ))}
+            </>
           );
         })()}
 

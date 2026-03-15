@@ -277,10 +277,14 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   float linDepth = linearizeDepth(depth);
   float distFactor = clamp(linDepth * 5.0, 0.0, 1.0);
 
+  // ── 空気遠近法: 遠い物ほど線が薄く（強化版） ──
+  // distFactor 0=近い, 1=遠い → aerialFade 1.0→0.15 で遠景を大幅に薄く
+  float aerialFade = mix(1.0, 0.15, smoothstep(0.0, 0.8, distFactor));
+
   // ── 3種エッジ検出（強化版） ──
 
   // 距離で線の太さを変化（近い→太い、遠い→細い）
-  float lineScale = mix(1.5, 0.6, distFactor);
+  float lineScale = mix(1.5, 0.5, distFactor);
   vec2 edgeTS = texelSize * lineScale;
 
   // 1. シルエットエッジ（深度差大）→太い線
@@ -296,8 +300,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   float matEdge = colorEdge(uv, edgeTS * 0.8);
   float matIntensity = smoothstep(0.08, 0.4, matEdge) * 0.6;
 
-  // エッジ合成（最大値ベース、距離で減衰）
-  float edgeFade = mix(1.0, 0.3, distFactor);
+  // エッジ合成（最大値ベース、距離+空気遠近で減衰）
+  float edgeFade = mix(1.0, 0.2, distFactor) * aerialFade;
   float edgeIntensity = clamp(
     max(max(silhouetteIntensity, creaseIntensity), matIntensity) * edgeFade,
     0.0, 1.0
@@ -334,11 +338,20 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
   hatch *= paperBumpInfluence(uv, resolution);
   // 筆圧をハッチングにも適用
   hatch *= mix(0.8, 1.0, pencilMod);
+  // 空気遠近法: 遠くのハッチングも薄く
+  hatch *= aerialFade;
   // 背景ではハッチングを消す
   hatch *= (1.0 - bgMask);
 
   // ── 紙テクスチャ ──
   vec3 paper = paperTexture(uv, resolution);
+
+  // ── 方向性シャドウ: 右下45度の一貫した影で立体感を強調 ──
+  // エッジの右下方向にわずかなオフセットサンプルを取り、影を加算
+  vec2 shadowOffset = texelSize * vec2(1.5, 1.5); // 右下45度
+  float shadowDepth = getDepth(uv + shadowOffset);
+  float shadowEdge = abs(linearizeDepth(depth) - linearizeDepth(shadowDepth));
+  float directionalShadow = smoothstep(0.001, 0.02, shadowEdge) * 0.25 * aerialFade * (1.0 - bgMask);
 
   // ── 合成 ──
   vec3 result;
@@ -379,6 +392,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // エッジを薄い鉛筆線で追加
     watercolor = mix(watercolor, inkColor * 0.5, edgeIntensity * 0.35);
     watercolor = mix(watercolor, inkColor * 0.4, hatch * 0.1);
+    // 方向性シャドウ
+    watercolor = mix(watercolor, inkColor * 0.6, directionalShadow * 0.3);
 
     result = watercolor;
     result = toSepia(result, sepiaAmount * 0.3);
@@ -419,6 +434,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float mtEdge = matIntensity * edgeFade * pencilMod * 0.5;
     result = mix(result, edgeColor * 1.15, mtEdge * 0.35);
 
+    // 方向性シャドウ
+    result = mix(result, edgeColor * 0.6, directionalShadow * 0.35);
+
     // 背景は紙色
     result = mix(result, paper, bgMask * 0.85);
 
@@ -443,6 +461,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     result = mix(result, inkColor * 1.1, crEdge * 0.55);
     float mtEdge = matIntensity * edgeFade * pencilMod * 0.5;
     result = mix(result, inkColor * 1.2, mtEdge * 0.35);
+
+    // 方向性シャドウ（右下45度）で立体感強調
+    result = mix(result, inkColor * 0.8, directionalShadow * 0.5);
 
     // 照明位置マーク: 非常に明るい部分に×印を描画
     if (luminance > 0.92 && linDepth < 0.8) {
