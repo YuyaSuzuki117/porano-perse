@@ -149,14 +149,18 @@ function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
 
 /** Controls hint that shows only on first visit for 3 seconds, then fades out */
 function ControlsHint() {
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return !sessionStorage.getItem('controls-hint-shown');
-  });
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // クライアントサイドでのみ sessionStorage を参照（SSR hydration mismatch 防止）
+    if (!sessionStorage.getItem('controls-hint-shown')) {
+      setVisible(true);
+      sessionStorage.setItem('controls-hint-shown', '1');
+    }
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
-    sessionStorage.setItem('controls-hint-shown', '1');
     const timer = setTimeout(() => setVisible(false), 3000);
     return () => clearTimeout(timer);
   }, [visible]);

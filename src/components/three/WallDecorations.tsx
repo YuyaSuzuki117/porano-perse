@@ -133,7 +133,6 @@ export const WallDecorations = React.memo(function WallDecorations({ walls, open
       {placements.map((p, i) => {
         const decorType = decorTypes[i];
         const baseProps = {
-          key: `deco-${i}`,
           position: p.position,
           rotationY: p.rotationY,
           roomHeight,
@@ -142,11 +141,11 @@ export const WallDecorations = React.memo(function WallDecorations({ walls, open
 
         switch (decorType) {
           case 'painting':
-            return <PaintingFrame {...baseProps} />;
+            return <PaintingFrame key={`deco-${i}`} {...baseProps} />;
           case 'menuboard':
-            return <MenuBoard {...baseProps} />;
+            return <MenuBoard key={`deco-${i}`} {...baseProps} />;
           case 'clock':
-            return <WallClock {...baseProps} />;
+            return <WallClock key={`deco-${i}`} {...baseProps} />;
           case 'pipe':
           case 'exposed_pipe':
             return (
@@ -159,17 +158,17 @@ export const WallDecorations = React.memo(function WallDecorations({ walls, open
               />
             );
           case 'sconce':
-            return <WallSconce {...baseProps} />;
+            return <WallSconce key={`deco-${i}`} {...baseProps} />;
           case 'framed_art':
-            return <FramedArt {...baseProps} />;
+            return <FramedArt key={`deco-${i}`} {...baseProps} />;
           case 'wall_shelf':
-            return <WallShelf {...baseProps} />;
+            return <WallShelf key={`deco-${i}`} {...baseProps} />;
           case 'signage':
-            return <Signage {...baseProps} />;
+            return <Signage key={`deco-${i}`} {...baseProps} />;
           case 'wall_mirror':
-            return <WallMirror {...baseProps} />;
+            return <WallMirror key={`deco-${i}`} {...baseProps} />;
           default:
-            return <WallClock {...baseProps} />;
+            return <WallClock key={`deco-${i}`} {...baseProps} />;
         }
       })}
     </group>

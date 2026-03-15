@@ -129,30 +129,28 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
     );
   }
 
-  // ── mediumモード: ambient + キーライト(shadow) + フィルライト + リムライト + hemisphere ──
+  // ── mediumモード: ambient + directional(shadow) + hemisphere = ライト3個 ──
   if (qualityLevel === 'medium') {
     return (
       <>
-        <ambientLight intensity={style.ambientIntensity * b * 0.9} color={ambientColor} />
+        <ambientLight intensity={style.ambientIntensity * b * 1.1} color={ambientColor} />
         <hemisphereLight
           color={lerpColor('#C0D8F0', '#E8D8C0', effectiveWarmth)}
           groundColor={styleLighting.groundWarmth}
-          intensity={0.55 * b}
+          intensity={0.6 * b}
         />
-
-        {/* キーライト — ドラマチックな方向性を持つメイン照明 */}
         <directionalLight
           position={[
-            roomBounds.cx + roomBounds.w * 0.7,
-            roomHeight * 2.8,
-            roomBounds.cz + roomBounds.d * 0.3,
+            roomBounds.cx + roomBounds.w * 0.6,
+            roomHeight * 2.5,
+            roomBounds.cz + roomBounds.d * 0.4,
           ]}
-          intensity={1.4 * b}
+          intensity={1.2 * b}
           color={lightColor}
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-bias={-0.0002}
-          shadow-radius={5}
+          shadow-radius={4}
           shadow-blurSamples={16}
           shadow-normalBias={0.03}
           shadow-camera-near={0.1}
@@ -162,46 +160,23 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           shadow-camera-top={roomBounds.maxDim * 0.8}
           shadow-camera-bottom={-roomBounds.maxDim * 0.8}
         />
-
-        {/* フィルライト — シャドウを柔らかくする補助光 */}
-        <directionalLight
-          position={[
-            roomBounds.cx - roomBounds.w * 0.5,
-            roomHeight * 1.8,
-            roomBounds.cz - roomBounds.d * 0.3,
-          ]}
-          intensity={0.35 * b}
-          color={fillColor}
-        />
-
-        {/* リムライト — オブジェクト輪郭を背面から強調 */}
-        <directionalLight
-          position={[
-            roomBounds.cx - roomBounds.w * 0.4,
-            roomHeight * 2.2,
-            roomBounds.cz - roomBounds.d * 0.6,
-          ]}
-          intensity={styleLighting.rimIntensity * 0.6 * b}
-          color={lerpColor('#E0E8FF', styleLighting.color, 0.3)}
-        />
-
         {/* コンタクトシャドウ風グラウンドプレーン */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roomBounds.cx, 0.001, roomBounds.cz]} receiveShadow>
           <planeGeometry args={[roomBounds.w + 2, roomBounds.d + 2]} />
-          <shadowMaterial transparent opacity={0.35} />
+          <shadowMaterial transparent opacity={0.3} />
         </mesh>
       </>
     );
   }
 
   // ── highモード: フルライティング + シネマティック強化 ──
-  // フォトリアリスティック多灯ライティング（3ポイントライティング構成）
+  // フォトリアリスティック多灯ライティング
   return (
     <>
-      <ambientLight intensity={style.ambientIntensity * b * 0.72} color={ambientColor} />
+      <ambientLight intensity={style.ambientIntensity * b * 0.81} color={ambientColor} />
 
       {/* 天井暗部補填用トップダウンアンビエント */}
-      <ambientLight intensity={0.08} color="#FFFFFF" />
+      <ambientLight intensity={0.1} color="#FFFFFF" />
 
       {/* 暖色フィルHemisphere（下方からの柔らかい暖色光 — 床バウンスシミュレーション） */}
       <hemisphereLight
@@ -227,11 +202,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={0.675 * b}
       />
 
-      {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 (スタイル別色温度反映) */}
+      {/* 自然光アンビエントフィル — 空色+地面色の柔らかい補助光 */}
       <hemisphereLight
-        color={lerpColor('#87CEEB', styleLighting.color, 0.2)}
-        groundColor={lerpColor('#4A3520', styleLighting.groundWarmth, 0.3)}
-        intensity={0.22}
+        color="#87CEEB"
+        groundColor="#4A3520"
+        intensity={0.2}
       />
 
       {/* バウンスライト（床からの間接光シミュレーション） */}
@@ -268,30 +243,29 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         />
       )}
 
-      {/* リムライト強化 — 背面上方からの深い分離光（強い逆光で輪郭を浮き立たせる） */}
+      {/* リムライト強化 — 背面上方からの深い分離光 */}
       <directionalLight
         position={[
-          roomBounds.cx - roomBounds.w * 0.8,
-          roomHeight * 2.2,
-          roomBounds.cz - roomBounds.d * 0.7,
+          roomBounds.cx - roomBounds.w * 0.7,
+          roomHeight * 2.0,
+          roomBounds.cz - roomBounds.d * 0.6,
         ]}
-        intensity={styleLighting.rimIntensity * 1.3 * b}
+        intensity={styleLighting.rimIntensity * b}
         color={lerpColor('#E8E0F0', styleLighting.color, 0.3)}
       />
 
-      {/* キーライト — 強い方向性でドラマチックな陰影を演出 */}
       <directionalLight
         position={[
-          roomBounds.cx + roomBounds.w * 0.75,
-          roomHeight * 3.0,
-          roomBounds.cz + roomBounds.d * 0.3,
+          roomBounds.cx + roomBounds.w * 0.6,
+          roomHeight * 2.5,
+          roomBounds.cz + roomBounds.d * 0.4,
         ]}
-        intensity={1.7 * b}
+        intensity={1.5 * b}
         color={lightColor}
         castShadow
         shadow-mapSize={[4096, 4096]}
         shadow-bias={-0.0001}
-        shadow-radius={6}
+        shadow-radius={5}
         shadow-blurSamples={32}
         shadow-normalBias={0.02}
         shadow-camera-near={0.05}
@@ -390,19 +364,19 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         />
       ))}
 
-      {/* フィルライト — シャドウを柔らかく和らげる補助光 (キーライトの反対側) */}
+      {/* フィルライト（反対側からの柔らかな補助光） */}
       <directionalLight
         position={[
-          roomBounds.cx - roomBounds.w * 0.65,
-          roomHeight * 1.8,
-          roomBounds.cz - roomBounds.d * 0.45,
+          roomBounds.cx - roomBounds.w * 0.6,
+          roomHeight * 2.0,
+          roomBounds.cz - roomBounds.d * 0.4,
         ]}
-        intensity={0.45 * b}
+        intensity={1.2 * 0.3 * b}
         color={fillColor}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0002}
-        shadow-radius={6}
+        shadow-radius={5}
         shadow-blurSamples={16}
         shadow-normalBias={0.03}
         shadow-camera-near={0.1}
@@ -430,15 +404,15 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lerpColor(fillColor, styleLighting.color, 0.4)}
       />
 
-      {/* シネマティック背面リムライト — 家具の輪郭分離用 (影なし・クール寄り) */}
+      {/* シネマティック背面リムライト — 家具の輪郭分離用 (影なし) */}
       <directionalLight
         position={[
-          roomBounds.cx - roomBounds.w * 0.6,
-          roomHeight * 2.4,
-          roomBounds.cz - roomBounds.d * 0.8,
+          roomBounds.cx - roomBounds.w * 0.5,
+          roomHeight * 2.2,
+          roomBounds.cz - roomBounds.d * 0.7,
         ]}
-        intensity={0.45}
-        color="#E0E8FF"
+        intensity={0.3}
+        color="#E8F0FF"
       />
 
       {/* 暖色フィルライト（既存フィルの対角） */}

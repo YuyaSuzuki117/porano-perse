@@ -278,29 +278,23 @@ export function SceneCanvas({
   // 品質レベル連動トーンマッピング・シャドウマップ設定
   const handleCanvasCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    // 暖色スタイルは若干露出を上げて明るく温かみのある印象に
     const warmBoost = isWarmStyle ? 0.10 : 0.02;
     gl.toneMappingExposure = isNight
       ? 0.80 + lightBrightness / 450
       : 1.25 + lightBrightness / 250 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.localClippingEnabled = true;
-    // sketch/watercolorモード: シャドウ無効（軽量レンダリング）
     if (isSketchStyle) {
       gl.shadowMap.enabled = false;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    }
-    // lowモード: シャドウ完全無効 + ピクセル比1.0制限
-    else if (qualityLevel === 'low') {
+    } else if (qualityLevel === 'low') {
       gl.shadowMap.enabled = false;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-    } else if (!isSketchStyle) {
+    } else {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
-      // high品質: 物理ベースライト減衰（リアルな光の落ち方）
       if (qualityLevel === 'high') {
-        // Three.js r155+: renderer.useLegacyLights は非推奨だが光減衰に影響
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (gl as any).useLegacyLights = false;
       }
