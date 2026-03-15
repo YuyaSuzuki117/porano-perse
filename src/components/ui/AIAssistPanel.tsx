@@ -8,6 +8,7 @@ import type { StylePreset, FurnitureType, FurnitureItem } from '@/types/scene';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { FURNITURE_CATALOG } from '@/data/furniture';
 import { showToast } from '@/components/ui/Toast';
+import PromptStudioPanel from '@/components/ui/PromptStudioPanel';
 
 // ── 定数 ──────────────────────────────────────────
 
@@ -75,9 +76,10 @@ const PERSE_STYLE_OPTIONS = [
   { value: 'minimal', label: 'ミニマル' },
   { value: 'warm', label: '暖かみのある' },
   { value: 'cool', label: 'クールモダン' },
+  { value: 'blueprint', label: '設計図風' },
 ];
 
-type TabId = 'photo' | 'layout' | 'generate';
+type TabId = 'photo' | 'layout' | 'generate' | 'prompt-studio';
 
 interface AIAssistPanelProps {
   isOpen: boolean;
@@ -188,6 +190,7 @@ export default function AIAssistPanel({ isOpen, onClose }: AIAssistPanelProps) {
     { id: 'photo', label: '写真分析' },
     { id: 'layout', label: 'レイアウト' },
     { id: 'generate', label: 'AI生成' },
+    { id: 'prompt-studio', label: 'プロンプト' },
   ];
 
   return (
@@ -248,6 +251,7 @@ export default function AIAssistPanel({ isOpen, onClose }: AIAssistPanelProps) {
           {activeTab === 'photo' && <PhotoAnalysisTab />}
           {activeTab === 'layout' && <LayoutSuggestionTab />}
           {activeTab === 'generate' && <ImageGenerationTab />}
+          {activeTab === 'prompt-studio' && <PromptStudioPanel />}
         </div>
       </div>
     </>
@@ -761,6 +765,8 @@ function capture3DCanvasBase64(): { base64: string; mimeType: string } | null {
 
   for (const c of canvases) {
     // R3Fキャンバスは通常WebGLコンテキストを持つ
+    // 注意: getContext() は既に取得済みのコンテキストを返す（新規作成しない）
+    // WebGL2 → WebGL の順で確認
     const gl = c.getContext('webgl2') || c.getContext('webgl');
     if (gl) {
       targetCanvas = c;
@@ -768,14 +774,32 @@ function capture3DCanvasBase64(): { base64: string; mimeType: string } | null {
     }
   }
 
+  // WebGLコンテキスト取得で見つからない場合のフォールバック:
+  // data-engine属性やサイズからR3Fキャンバスを推定
+  if (!targetCanvas) {
+    for (const c of canvases) {
+      // R3Fは通常最も大きなキャンバスを使う
+      if (c.width > 100 && c.height > 100) {
+        targetCanvas = c;
+        break;
+      }
+    }
+  }
+
   if (!targetCanvas) return null;
 
   try {
+    // toDataURL は preserveDrawingBuffer: true でないと空画像になる場合がある
     const dataUrl = targetCanvas.toDataURL('image/png');
     const base64 = dataUrl.split(',')[1];
-    if (!base64) return null;
+    if (!base64 || base64.length < 1000) {
+      // 空画像（極小base64）の場合は失敗とみなす
+      console.warn('[capture3DCanvas] Canvas returned empty or tiny image — preserveDrawingBuffer may be false');
+      return null;
+    }
     return { base64, mimeType: 'image/png' };
-  } catch {
+  } catch (e) {
+    console.warn('[capture3DCanvas] toDataURL failed:', e);
     return null;
   }
 }
@@ -801,7 +825,10 @@ function ImageGenerationTab() {
     const captured = capture3DCanvasBase64();
     if (!captured) {
       setError({
-        message: '3Dビューのキャプチャに失敗しました。3Dビューが表示されていることを確認してください。',
+        message: '3Dビューのキャプチャに失敗しました。以下を確認してください:\n' +
+          '- 3Dビューが画面に表示されていること\n' +
+          '- 家具や壁が配置されていること\n' +
+          '- ブラウザがWebGLをサポートしていること',
         code: 'CAPTURE_FAILED',
       });
       setLoading(false);
@@ -904,22 +931,33 @@ function ImageGenerationTab() {
 
       {/* ローディング中の進捗表示 */}
       {loading && (
-        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+        <div className="bg-blue-50 rounded-lg p-3 space-y-2 border border-blue-100">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-            <p className="text-xs text-gray-400">AIが画像を生成しています...</p>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <p className="text-xs text-blue-600 font-medium">AIが画像を生成しています...</p>
           </div>
-          <p className="text-[10px] text-gray-500">
-            gemini-2.0-flash-exp で処理中（20〜50秒かかる場合があります）
-          </p>
+          <div className="space-y-1">
+            <p className="text-[10px] text-blue-400">
+              Gemini Image Generation で処理中
+            </p>
+            <p className="text-[10px] text-blue-400">
+              通常20〜50秒かかります。このままお待ちください。
+            </p>
+          </div>
+          {/* 進捗バーアニメーション */}
+          <div className="h-1 bg-blue-100 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full animate-[progress_50s_linear]"
+              style={{ animation: 'progress 50s linear forwards' }} />
+          </div>
+          <style>{`@keyframes progress { from { width: 0% } to { width: 95% } }`}</style>
           {screenshotPreview && (
             <div>
-              <p className="text-[10px] text-gray-500 mb-1">入力画像:</p>
+              <p className="text-[10px] text-blue-400 mb-1">入力画像:</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={screenshotPreview}
                 alt="キャプチャされた3Dビュー"
-                className="w-full rounded-md border border-gray-200 opacity-60"
+                className="w-full rounded-md border border-blue-200 opacity-70"
               />
             </div>
           )}
@@ -998,10 +1036,20 @@ function ErrorBanner({ error }: { error: APIError }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
         </svg>
         <div>
-          <p className="text-xs text-red-600">{error.message}</p>
+          <p className="text-xs text-red-600 whitespace-pre-line">{error.message}</p>
           {error.code === 'API_KEY_MISSING' && (
             <p className="text-[10px] text-red-400 mt-1">
               .env.local に GEMINI_API_KEY を追加してください
+            </p>
+          )}
+          {error.code === 'RATE_LIMIT' && (
+            <p className="text-[10px] text-red-400 mt-1">
+              Google AI Studio 無料枠の制限です。1〜2分後に再試行してください。
+            </p>
+          )}
+          {error.code === 'CAPTURE_FAILED' && (
+            <p className="text-[10px] text-red-400 mt-1">
+              3Dビュータブに切り替えてから再試行してください。
             </p>
           )}
         </div>

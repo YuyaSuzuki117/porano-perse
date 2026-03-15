@@ -124,15 +124,15 @@ export async function generateWithImage(params: {
   )
 }
 
-/** Image generation model — gemini-2.0-flash-exp (free, supports image output) */
+/** Image generation model — gemini-2.0-flash-exp (free, supports IMAGE output) */
 const MODEL_IMAGE_GEN = 'gemini-2.0-flash-exp'
 
-/** Timeout for image generation (longer — 55s) */
+/** Timeout for image generation (55s — stays under Vercel's 60s limit) */
 const IMAGE_GEN_TIMEOUT_MS = 55_000
 
 /**
  * Generate a photorealistic perse image from a 3D screenshot.
- * Uses gemini-2.0-flash-exp with responseModalities: ['TEXT', 'IMAGE']
+ * Uses gemini-2.0-flash-exp with responseModalities: ['IMAGE', 'TEXT']
  */
 export async function generatePerseImage(params: {
   screenshotBase64: string
@@ -145,21 +145,24 @@ export async function generatePerseImage(params: {
 
   const styleLabel = params.style || 'フォトリアル'
   const additionalInstructions = params.additionalPrompt
-    ? `\n追加指示: ${params.additionalPrompt}`
+    ? `\n\n追加の要望: ${params.additionalPrompt}`
     : ''
 
-  const prompt = `あなたはプロの建築パースアーティストです。
-入力された3D店舗レイアウトのスクリーンショットを基に、${styleLabel}スタイルの完成パースイメージを生成してください。
+  const prompt = `あなたはプロの建築パース・インテリアビジュアライゼーションアーティストです。
 
-要件:
-- 入力画像の間取り・家具配置を忠実に反映
-- リアルな照明・影・反射を追加
-- 壁・床・天井に適切な素材テクスチャを適用
-- 観葉植物・小物等の装飾を自然に追加
-- 人物は含めない
-- 商業施設の完成予想図として使えるクオリティ${additionalInstructions}
+【タスク】
+添付された3D店舗レイアウトのスクリーンショットを元に、「${styleLabel}」スタイルの完成パースイメージを1枚生成してください。
 
-この画像を高品質な完成パースイメージに変換してください。`
+【必須要件】
+1. 間取り・壁の位置・家具の配置は入力画像に忠実に再現すること
+2. リアルな照明（自然光+間接照明）、影、床・壁面の反射を加えること
+3. 壁・床・天井に素材感のあるテクスチャ（木目、タイル、漆喰等）を適用すること
+4. 空間を引き立てる観葉植物・小物・アート等を自然に追加すること
+5. 人物は描かないこと
+6. 商業施設の完成予想図（クライアント提出用）に使えるクオリティであること
+7. アスペクト比は入力画像と同じにすること${additionalInstructions}
+
+この3Dレイアウト画像を、上記要件を満たした高品質な完成パースイメージに変換してください。画像を生成してください。`
 
   try {
     const response = await withTimeout(
@@ -175,7 +178,7 @@ export async function generatePerseImage(params: {
           },
         ],
         config: {
-          responseModalities: ['TEXT', 'IMAGE'],
+          responseModalities: ['IMAGE', 'TEXT'],
           temperature: 0.8,
         },
       }),
@@ -201,17 +204,37 @@ export async function generatePerseImage(params: {
     }
 
     if (!imageBase64) {
-      // Fallback: try text property
       const text = response.text ?? ''
       if (text) description = text
-      throw new Error('画像の生成に失敗しました。モデルがテキストのみを返しました。')
+      throw new Error(
+        '画像の生成に失敗しました。AIモデルがテキストのみを返しました。\n' +
+        '3Dビューに家具や壁が配置されていることを確認してから再試行してください。'
+      )
     }
 
     return { imageBase64, imageMimeType, description }
   } catch (err) {
+    // 既知のユーザー向けエラーはそのままスロー
     if (err instanceof Error && err.message.includes('画像の生成に失敗')) {
       throw err
     }
+
+    // レート制限エラー
+    if (err instanceof Error && (err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED') || err.message.includes('rate'))) {
+      throw new Error(
+        'APIのリクエスト制限に達しました。Google AI Studio無料枠の制限です。\n' +
+        '1〜2分待ってから再試行してください。'
+      )
+    }
+
+    // タイムアウトエラー
+    if (err instanceof Error && err.message.includes('timeout')) {
+      throw new Error(
+        '画像生成がタイムアウトしました（55秒）。\n' +
+        'サーバーが混雑している可能性があります。しばらく待ってから再試行してください。'
+      )
+    }
+
     console.error('[GeminiClient] Image generation failed:', err)
     throw new Error(`パースイメージの生成に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`)
   }

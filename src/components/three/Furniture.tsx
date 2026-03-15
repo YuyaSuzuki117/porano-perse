@@ -103,15 +103,15 @@ interface FurniturePBR {
   metalness: number;
 }
 
-/** 素材別PBRプリセット — リアルな建材に近い値（高品質チューニング済み） */
+/** 素材別PBRプリセット — リアルな建材に近い値（シネマティック品質チューニング） */
 const MATERIAL_PBR: Record<FurnitureMaterial, FurniturePBR> = {
-  wood:    { roughness: 0.48, metalness: 0.04 },  // ワックスがけされた木（clearcoat+20%, envMap+15%で運用）
-  metal:   { roughness: 0.054, metalness: 0.9 },  // ブラッシュドメタル（roughness-10%で鏡面感向上）
-  fabric:  { roughness: 0.82, metalness: 0.0  },  // ファブリック（sheen+15%, sheenRoughness-10%で質感向上）
-  leather: { roughness: 0.32, metalness: 0.06 },  // なめし革（clearcoat+20%で光沢感向上）
-  glass:   { roughness: 0.01, metalness: 0.04 },  // クリアガラス（envMap+20%, dispersion:0.4で虹彩効果）
-  plastic: { roughness: 0.3,  metalness: 0.0  },  // ツヤのあるプラスチック
-  stone:   { roughness: 0.82, metalness: 0.03 },  // 天然石
+  wood:    { roughness: 0.42, metalness: 0.04 },  // ワックスがけされた木（少しツヤを加えて高級感）
+  metal:   { roughness: 0.03, metalness: 0.92 },  // ブラッシュドメタル（より鏡面に近く高級感）
+  fabric:  { roughness: 0.80, metalness: 0.0  },  // ファブリック（sheen効果をより目立たせる）
+  leather: { roughness: 0.30, metalness: 0.06 },  // なめし革（clearcoat+20%で光沢感向上）
+  glass:   { roughness: 0.005, metalness: 0.04 },  // クリアガラス（より透明感・envMap強化で映り込み）
+  plastic: { roughness: 0.28, metalness: 0.0  },  // ツヤのあるプラスチック（若干光沢向上）
+  stone:   { roughness: 0.78, metalness: 0.03 },  // 天然石（少し磨き感）
 };
 
 // Re-export cleanupFurnitureCaches for external consumers

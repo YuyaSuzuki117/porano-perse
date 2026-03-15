@@ -32,6 +32,7 @@ const STYLE_LABELS: Record<string, string> = {
   natural: 'ナチュラル',
   warm: '暖かみのある',
   cool: 'クールモダン',
+  blueprint: '設計図風',
 }
 
 export async function POST(request: NextRequest) {
@@ -79,7 +80,20 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error('[generate-perse-image] Error:', err)
     const message = err instanceof Error ? err.message : 'パースイメージの生成に失敗しました'
-    const status = message.includes('timeout') ? 504 : 500
-    return NextResponse.json({ error: message }, { status })
+
+    // エラー種別に応じた適切なHTTPステータスコード
+    let status = 500
+    if (message.includes('timeout') || message.includes('タイムアウト')) {
+      status = 504
+    } else if (message.includes('リクエスト制限') || message.includes('429') || message.includes('rate')) {
+      status = 429
+    } else if (message.includes('テキストのみ') || message.includes('3Dビュー')) {
+      status = 422 // Unprocessable Entity — 入力画像の問題
+    }
+
+    return NextResponse.json({
+      error: message,
+      retryable: status === 429 || status === 504,
+    }, { status })
   }
 }

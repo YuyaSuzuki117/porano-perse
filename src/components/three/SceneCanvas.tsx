@@ -203,13 +203,14 @@ export function SceneCanvas({
   const controlsRef = useRef(null);
 
   const isNight = dayNight === 'night';
-  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil';
+  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil' || renderStyle === 'blueprint';
 
   // スタイル別背景色（上部 / 下部のグラデーション用ペア）
   const { bgColor, bgGradient } = useMemo(() => {
-    // スケッチモード: 紙色（グラデーション無し）
+    // スケッチモード: 紙色 / blueprintは紺色（グラデーション無し）
     if (isSketchStyle) {
-      return { bgColor: '#faf8f0', bgGradient: null as null };
+      const bg = renderStyle === 'blueprint' ? '#0a1630' : '#faf8f0';
+      return { bgColor: bg, bgGradient: null as null };
     }
     if (!isNight) {
       // 昼: 上が明るく、下がやや暗い → 空間の奥行き感
@@ -223,7 +224,7 @@ export function SceneCanvas({
     };
     const n = nightBgMap[styleName] || { bg: '#1a1a2e', top: '#202038', bottom: '#121224' };
     return { bgColor: n.bg, bgGradient: { top: n.top, bottom: n.bottom } };
-  }, [isNight, isSketchStyle, styleName]);
+  }, [isNight, isSketchStyle, renderStyle, styleName]);
 
   const envPreset = isNight ? 'night' : 'apartment';
   const effectiveBrightness = isNight ? lightBrightness * 0.4 : lightBrightness;

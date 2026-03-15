@@ -554,27 +554,32 @@ export default function EditorPage() {
                   <div className="blueprint-label bg-black/60 text-white px-2.5 py-1.5 rounded-sm pointer-events-none flex-shrink-0">
                     {t('view.3d')}
                   </div>
-                  <div className="flex bg-white/80 rounded-sm border border-gray-200" role="radiogroup" aria-label="レンダリングスタイル">
+                  <div className="flex bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
                     {([
-                      { style: 'sketch' as const, label: '鉛筆' },
-                      { style: 'colored-pencil' as const, label: '色鉛筆' },
-                      { style: 'watercolor' as const, label: '水彩' },
-                      { style: 'realistic' as const, label: 'リアル' },
-                    ]).map(({ style, label }) => (
-                      <button
-                        key={style}
-                        role="radio"
-                        aria-checked={renderStyle === style}
-                        onClick={() => setRenderStyle(style)}
-                        className={`px-2.5 py-2 text-xs font-medium rounded-sm min-h-[44px] min-w-[44px] active:scale-95 ${
-                          renderStyle === style
-                            ? 'text-blue-600 bg-gray-50'
-                            : 'text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                      { style: 'sketch' as const, label: '鉛筆', icon: '✏️' },
+                      { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️' },
+                      { style: 'watercolor' as const, label: '水彩', icon: '🎨' },
+                      { style: 'blueprint' as const, label: '設計図', icon: '📐' },
+                      { style: 'realistic' as const, label: 'リアル', icon: '📷' },
+                    ]).map(({ style, label, icon }) => {
+                      const isActive = renderStyle === style;
+                      return (
+                        <button
+                          key={style}
+                          role="radio"
+                          aria-checked={isActive}
+                          onClick={() => setRenderStyle(style)}
+                          className={`flex flex-col items-center gap-0.5 px-2.5 py-2 text-xs font-medium rounded-md min-h-[48px] min-w-[48px] active:scale-95 transition-all ${
+                            isActive
+                              ? 'text-blue-700 bg-blue-50 border border-blue-300 shadow-inner'
+                              : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-base leading-none">{icon}</span>
+                          <span className="text-[10px] leading-tight">{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -957,27 +962,32 @@ export default function EditorPage() {
                   3D プレビュー
                 </div>
                 {!photoMode && (
-                  <div className="flex bg-white/80 rounded-sm border border-gray-200" role="radiogroup" aria-label="レンダリングスタイル">
+                  <div className="flex bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
                     {([
-                      { style: 'sketch' as const, label: '鉛筆' },
-                      { style: 'colored-pencil' as const, label: '色鉛筆' },
-                      { style: 'watercolor' as const, label: '水彩' },
-                      { style: 'realistic' as const, label: 'リアル' },
-                    ]).map(({ style, label }) => (
-                      <button
-                        key={style}
-                        role="radio"
-                        aria-checked={renderStyle === style}
-                        onClick={() => setRenderStyle(style)}
-                        className={`px-2 py-1 text-xs font-medium rounded-sm active:scale-95 ${
-                          renderStyle === style
-                            ? 'text-blue-600 bg-gray-50'
-                            : 'text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                      { style: 'sketch' as const, label: '鉛筆', icon: '✏️' },
+                      { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️' },
+                      { style: 'watercolor' as const, label: '水彩', icon: '🎨' },
+                      { style: 'blueprint' as const, label: '設計図', icon: '📐' },
+                      { style: 'realistic' as const, label: 'リアル', icon: '📷' },
+                    ]).map(({ style, label, icon }) => {
+                      const isActive = renderStyle === style;
+                      return (
+                        <button
+                          key={style}
+                          role="radio"
+                          aria-checked={isActive}
+                          onClick={() => setRenderStyle(style)}
+                          className={`flex flex-col items-center gap-0.5 px-2 py-1.5 text-xs font-medium rounded-md active:scale-95 transition-all min-h-[44px] ${
+                            isActive
+                              ? 'text-blue-700 bg-blue-50 border border-blue-300 shadow-inner'
+                              : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-sm leading-none">{icon}</span>
+                          <span className="text-[10px] leading-tight">{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

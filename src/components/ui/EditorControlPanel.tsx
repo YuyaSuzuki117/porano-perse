@@ -1258,35 +1258,41 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </div>
           {/* レンダリングスタイル */}
           <div>
-            <div className="text-[10px] text-gray-500 mb-1 font-medium">レンダリングスタイル</div>
-            <div className="flex gap-1" role="radiogroup" aria-label="レンダリングスタイル">
+            <div className="text-[10px] text-gray-500 mb-1.5 font-medium">レンダリングスタイル</div>
+            <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="レンダリングスタイル">
               {([
-                { style: 'sketch' as const, label: '線画', icon: '✏️' },
-                { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️' },
-                { style: 'watercolor' as const, label: '水彩', icon: '🎨' },
-                { style: 'realistic' as const, label: 'リアル', icon: '📷' },
-              ]).map(({ style, label, icon }) => (
-                <button
-                  key={style}
-                  role="radio"
-                  aria-checked={renderStyle === style}
-                  onClick={() => setRenderStyle(style)}
-                  className={`flex-1 px-1.5 py-1.5 rounded text-[9px] font-medium active:scale-95 ${
-                    renderStyle === style
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
-                  }`}
-                >
-                  <span className="mr-0.5">{icon}</span>{label}
-                </button>
-              ))}
+                { style: 'sketch' as const, label: '線画', icon: '✏️', desc: '建築スケッチ風の手描きタッチ' },
+                { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️', desc: '淡い色彩の温かみある表現' },
+                { style: 'watercolor' as const, label: '水彩', icon: '🎨', desc: 'にじみと透明感のある水彩画' },
+                { style: 'blueprint' as const, label: '設計図', icon: '📐', desc: '紺背景+白線の技術図面風' },
+                { style: 'realistic' as const, label: 'リアル', icon: '📷', desc: 'フォトリアルな3Dレンダリング' },
+              ]).map(({ style, label, icon, desc }) => {
+                const isActive = renderStyle === style;
+                return (
+                  <button
+                    key={style}
+                    role="radio"
+                    aria-checked={isActive}
+                    onClick={() => setRenderStyle(style)}
+                    className={`relative flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-md text-[9px] font-medium active:scale-95 transition-all min-h-[48px] ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-800 border-2 border-blue-400 ring-1 ring-blue-200 shadow-sm'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute top-0.5 right-0.5 text-blue-500">
+                        <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      </span>
+                    )}
+                    <span className="text-lg leading-none">{icon}</span>
+                    <span className="leading-tight font-semibold">{label}</span>
+                    <span className={`text-[8px] leading-tight ${isActive ? 'text-blue-600/70' : 'text-gray-400'}`}>{desc}</span>
+                  </button>
+                );
+              })}
             </div>
-            {(renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil') && (
-              <p className="text-[9px] text-gray-500 mt-1">
-                {renderStyle === 'colored-pencil' ? '色鉛筆スケッチ風 — 淡い色彩+手描きタッチ' : '建築スケッチ風 — 影・AO無効で高速描画'}
-              </p>
-            )}
-            <p className="text-[9px] text-gray-400 mt-1">※ 3Dビュー上部でも切替可能</p>
+            <p className="text-[9px] text-gray-400 mt-1.5">※ 3Dビュー上部でも切替可能</p>
           </div>
           {/* 照明プリセット — カード形式 */}
           <div>
