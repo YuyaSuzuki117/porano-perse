@@ -201,6 +201,8 @@ export default function EditorPage() {
   const liveCameraPosition = useCameraStore((s) => s.liveCameraPosition);
   const liveCameraRotationY = useCameraStore((s) => s.liveCameraRotationY);
   const setCameraPreset = useCameraStore((s) => s.setCameraPreset);
+  const renderStyle = useCameraStore((s) => s.renderStyle);
+  const setRenderStyle = useCameraStore((s) => s.setRenderStyle);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasRef2D = useRef<HTMLCanvasElement | null>(null);
 
@@ -548,8 +550,32 @@ export default function EditorPage() {
               </ErrorBoundary>
               <EmptyStateOverlay isMobile />
               {!photoMode && !fullscreen3D && (
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none">
-                  {t('view.3d')}
+                <div className="absolute top-2 left-2 right-2 flex items-center gap-2 z-10">
+                  <div className="bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none flex-shrink-0">
+                    {t('view.3d')}
+                  </div>
+                  <div className="flex bg-white/80 backdrop-blur-sm rounded-lg shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
+                    {([
+                      { style: 'sketch' as const, label: '鉛筆' },
+                      { style: 'colored-pencil' as const, label: '色鉛筆' },
+                      { style: 'watercolor' as const, label: '水彩' },
+                      { style: 'realistic' as const, label: 'リアル' },
+                    ]).map(({ style, label }) => (
+                      <button
+                        key={style}
+                        role="radio"
+                        aria-checked={renderStyle === style}
+                        onClick={() => setRenderStyle(style)}
+                        className={`px-2.5 py-2 text-xs font-medium transition-colors rounded-lg min-h-[44px] min-w-[44px] ${
+                          renderStyle === style
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}
@@ -926,9 +952,35 @@ export default function EditorPage() {
                 />
               </ErrorBoundary>
               <EmptyStateOverlay isMobile={false} />
-              {/* 3Dラベル */}
-              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-[10px] text-white font-semibold tracking-wider uppercase px-2 py-1 rounded-md pointer-events-none">
-                3D プレビュー
+              {/* 3Dラベル + レンダリングスタイル切替 */}
+              <div className="absolute top-2 left-2 flex items-center gap-2 z-10">
+                <div className="bg-black/60 backdrop-blur-sm text-[10px] text-white font-semibold tracking-wider uppercase px-2 py-1 rounded-md pointer-events-none">
+                  3D プレビュー
+                </div>
+                {!photoMode && (
+                  <div className="flex bg-white/80 backdrop-blur-sm rounded-lg shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
+                    {([
+                      { style: 'sketch' as const, label: '鉛筆' },
+                      { style: 'colored-pencil' as const, label: '色鉛筆' },
+                      { style: 'watercolor' as const, label: '水彩' },
+                      { style: 'realistic' as const, label: 'リアル' },
+                    ]).map(({ style, label }) => (
+                      <button
+                        key={style}
+                        role="radio"
+                        aria-checked={renderStyle === style}
+                        onClick={() => setRenderStyle(style)}
+                        className={`px-2 py-1 text-xs font-medium transition-colors rounded-lg ${
+                          renderStyle === style
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* カメラプリセット */}
               {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}

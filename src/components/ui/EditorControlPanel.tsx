@@ -1283,6 +1283,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 {renderStyle === 'colored-pencil' ? '色鉛筆スケッチ風 — 淡い色彩+手描きタッチ' : '建築スケッチ風 — 影・AO無効で高速描画'}
               </p>
             )}
+            <p className="text-[9px] text-gray-400 mt-1">※ 3Dビュー上部でも切替可能</p>
           </div>
           {/* 照明プリセット — カード形式 */}
           <div>
