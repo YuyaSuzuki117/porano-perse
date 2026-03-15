@@ -58,6 +58,8 @@ function createSmallCafeTemplate(): RoomTemplate {
     { id: rid('light'), type: 'pendant_light', name: 'ペンダントライト', position: [0, h - 0.3, 0], rotation: [0, 0, 0], scale: [0.28, 0.35, 0.28] },
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [1.6, 0, 2.0], rotation: [0, 0, 0], scale: [0.4, 1.0, 0.4] },
+    // エアコン（左壁、室内向き）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-1.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -116,6 +118,9 @@ function createHairSalonTemplate(): RoomTemplate {
     { id: rid('sofa'), type: 'sofa', name: '待合ソファ', position: [-1.5, 0, 2.0], rotation: [0, 0, 0], scale: [1.2, 0.65, 0.6] },
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [-2.0, 0, 2.5], rotation: [0, 0, 0], scale: [0.4, 1.0, 0.4] },
+    // エアコン（左壁+奥壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-2.4, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -2.9], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -168,6 +173,9 @@ function createConvenienceStoreTemplate(): RoomTemplate {
     // 冷蔵庫2台（奥壁沿い）
     { id: rid('fridge'), type: 'fridge', name: '冷蔵庫', position: [-1.5, 0, -3.5], rotation: [0, 0, 0], scale: [1.2, 1.9, 0.7] },
     { id: rid('fridge'), type: 'fridge', name: '冷蔵庫', position: [0.5, 0, -3.5], rotation: [0, 0, 0], scale: [1.2, 1.9, 0.7] },
+    // エアコン（左壁+右壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-2.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [2.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -211,15 +219,15 @@ function createOfficeTemplate(): RoomTemplate {
         rotation: [0, 0, 0] as [number, number, number],
         scale: [1.1, 0.73, 0.6] as [number, number, number] },
     ]),
-    // 椅子6脚
+    // 椅子6脚（デスクに向かって座る）
     ...[0, 1, 2].flatMap(row => [
       { id: rid('chair'), type: 'chair' as const, name: '椅子',
         position: [-1.2, 0, -2.0 + row * 1.8] as [number, number, number],
-        rotation: [0, Math.PI, 0] as [number, number, number],
+        rotation: [0, 0, 0] as [number, number, number],
         scale: [0.45, 0.85, 0.45] as [number, number, number] },
       { id: rid('chair'), type: 'chair' as const, name: '椅子',
         position: [1.2, 0, -2.0 + row * 1.8] as [number, number, number],
-        rotation: [0, Math.PI, 0] as [number, number, number],
+        rotation: [0, 0, 0] as [number, number, number],
         scale: [0.45, 0.85, 0.45] as [number, number, number] },
     ]),
     // 本棚（左壁沿い）
@@ -235,6 +243,9 @@ function createOfficeTemplate(): RoomTemplate {
     { id: rid('chair'), type: 'chair', name: '会議椅子', position: [0.5, 0, 3.4], rotation: [0, Math.PI, 0], scale: [0.42, 0.82, 0.42] },
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [2.5, 0, 3.5], rotation: [0, 0, 0], scale: [0.4, 1.0, 0.4] },
+    // エアコン（左壁+右壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-2.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [2.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -307,6 +318,10 @@ function createRestaurantTemplate(): RoomTemplate {
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [3.5, 0, 4.2], rotation: [0, 0, 0], scale: [0.5, 1.2, 0.5] },
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [-3.5, 0, 4.2], rotation: [0, 0, 0], scale: [0.5, 1.2, 0.5] },
+    // エアコン（左壁×2+奥壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-3.9, 2.2, -2.0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-3.9, 2.2, 2.0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -4.9], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -354,6 +369,9 @@ function createBarTemplate(): RoomTemplate {
     { id: rid('light'), type: 'pendant_light', name: 'ペンダントライト', position: [-0.5, h - 0.3, 1.5], rotation: [0, 0, 0], scale: [0.25, 0.35, 0.25] },
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [1.5, 0, 3.5], rotation: [0, 0, 0], scale: [0.35, 0.9, 0.35] },
+    // エアコン（奥壁+右壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.9], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [1.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -406,6 +424,9 @@ function createClinicTemplate(): RoomTemplate {
     { id: rid('shelf'), type: 'shelf', name: '医療棚', position: [2.5, 0, -2.8], rotation: [0, 0, 0], scale: [1.0, 1.5, 0.35] },
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [-2.5, 0, 3.0], rotation: [0, 0, 0], scale: [0.4, 0.9, 0.4] },
+    // エアコン（奥壁+入口壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-1.5, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [1.5, 2.2, 3.4], rotation: [0, Math.PI, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -437,10 +458,10 @@ function createApparelShopTemplate(): RoomTemplate {
 
   // 壁: x=-2.5..2.5, y=-3.5..3.5
   const furniture: FurnitureItem[] = [
-    // ディスプレイケース3台（中央通路沿い）
+    // ディスプレイケース3台（中央通路沿い — 左列）
     { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [-0.8, 0, -1.5], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
-    { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [-0.8, 0, 0.5], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
-    { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [-0.8, 0, 2.0], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
+    { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [0.0, 0, 0.5], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
+    { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [0.8, 0, 2.0], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
     // ディスプレイケース4台目
     { id: rid('display'), type: 'display_case', name: 'ディスプレイケース', position: [0.8, 0, 0.5], rotation: [0, 0, 0], scale: [1.0, 1.0, 0.5] },
     // ハンガーラック3本（壁沿い）
@@ -462,6 +483,9 @@ function createApparelShopTemplate(): RoomTemplate {
     })),
     // 観葉植物
     { id: rid('plant'), type: 'plant', name: '観葉植物', position: [2.0, 0, 3.0], rotation: [0, 0, 0], scale: [0.4, 1.1, 0.4] },
+    // エアコン（奥壁+左壁）
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: rid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-2.4, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {

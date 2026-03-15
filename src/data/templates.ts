@@ -229,6 +229,9 @@ function createCafeTemplate(): StoreTemplate {
       rotation: [0, Math.PI / 2, 0],
       scale: [1.2, 1.8, 0.4],
     },
+    // エアコン（左壁+右壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-3.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [3.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -399,6 +402,10 @@ function createIzakayaTemplate(): StoreTemplate {
       rotation: [0, 0, 0] as [number, number, number],
       scale: [0.3, 0.4, 0.3] as [number, number, number],
     })),
+    // エアコン（左壁+右壁+奥壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-4.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [4.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -517,6 +524,8 @@ function createBarTemplate(): StoreTemplate {
       rotation: [0, 0, 0],
       scale: [0.3, 0.4, 0.3],
     },
+    // エアコン（右壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [2.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -635,6 +644,9 @@ function createSalonTemplate(): StoreTemplate {
       rotation: [0, 0, 0],
       scale: [0.5, 1.2, 0.5],
     },
+    // エアコン（奥壁+入口壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -2.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-2.0, 2.2, 2.4], rotation: [0, Math.PI, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -780,6 +792,10 @@ function createRetailTemplate(): StoreTemplate {
       rotation: [0, 0, 0],
       scale: [0.5, 1.2, 0.5],
     },
+    // エアコン（左壁+右壁+奥壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-4.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [4.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.9], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return {
@@ -838,6 +854,10 @@ function createOfficeTemplate(): StoreTemplate {
     // 植物
     { id: uid('plant'), type: 'plant', name: '観葉植物', position: [4.5, 0, 2.8], rotation: [0, 0, 0], scale: [0.5, 1.2, 0.5] },
     { id: uid('plant'), type: 'plant', name: '観葉植物', position: [-4.5, 0, 2.8], rotation: [0, 0, 0], scale: [0.5, 1.0, 0.5] },
+    // エアコン（左壁+右壁+奥壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-4.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [4.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return { id: 'office', name: 'オフィス', description: 'デスク4台+会議室+受付の標準レイアウト', style: 'modern', roomWidth, roomDepth, roomHeight, walls, openings, furniture, thumbnail: '🏢' };
@@ -876,6 +896,10 @@ function createClinicTemplate(): StoreTemplate {
     { id: uid('shelf'), type: 'shelf', name: '医療棚', position: [0.7, 0, -3.0], rotation: [0, 0, 0], scale: [1.0, 1.5, 0.35] },
     // 植物
     { id: uid('plant'), type: 'plant', name: '観葉植物', position: [-3.8, 0, 2.8], rotation: [0, 0, 0], scale: [0.5, 1.0, 0.5] },
+    // エアコン（左壁+奥壁+右壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-4.4, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [4.4, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return { id: 'clinic', name: 'クリニック', description: '受付+待合+診察室2部屋の医院レイアウト', style: 'minimal', roomWidth, roomDepth, roomHeight, walls, openings, furniture, thumbnail: '🏥' };
@@ -917,6 +941,9 @@ function createRamenTemplate(): StoreTemplate {
     { id: uid('table'), type: 'table_square', name: '小テーブル', position: [2.5, 0, 1.5], rotation: [0, 0, 0], scale: [0.6, 0.7, 0.6] },
     { id: uid('chair'), type: 'chair', name: '椅子', position: [2.5, 0, 1.0], rotation: [0, 0, 0], scale: [0.4, 0.8, 0.4] },
     { id: uid('chair'), type: 'chair', name: '椅子', position: [2.5, 0, 2.0], rotation: [0, Math.PI, 0], scale: [0.4, 0.8, 0.4] },
+    // エアコン（奥壁+右壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -2.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [3.4, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return { id: 'ramen', name: 'ラーメン店', description: 'L字カウンター8席+小テーブルのコンパクト店舗', style: 'japanese', roomWidth, roomDepth, roomHeight, walls, openings, furniture, thumbnail: '🍜' };
@@ -969,6 +996,9 @@ function createBeautySalonTemplate(): StoreTemplate {
     { id: uid('plant'), type: 'plant', name: '観葉植物', position: [-3.8, 0, 2.2], rotation: [0, 0, 0], scale: [0.4, 1.0, 0.4] },
     // コートラック
     { id: uid('rack'), type: 'coat_rack', name: 'コートラック', position: [1.5, 0, 2.5], rotation: [0, 0, 0], scale: [0.4, 1.7, 0.4] },
+    // エアコン（左壁+右壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-4.4, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [4.4, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return { id: 'beauty_salon', name: '美容室', description: '施術3席+シャンプー+待合のヘアサロン', style: 'scandinavian', roomWidth, roomDepth, roomHeight, walls, openings, furniture, thumbnail: '💇' };
@@ -1017,9 +1047,10 @@ function createFitnessTemplate(): StoreTemplate {
       rotation: [0, 0, 0] as [number, number, number],
       scale: [1.8, 0.1, 0.6] as [number, number, number],
     })),
-    // エアコン
-    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-5.0, 0, 0], rotation: [0, Math.PI / 2, 0], scale: [1.0, 0.3, 0.25] },
-    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [5.0, 0, 0], rotation: [0, -Math.PI / 2, 0], scale: [1.0, 0.3, 0.25] },
+    // エアコン（左壁+右壁+奥壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-5.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [5.9, 2.2, 0], rotation: [0, -Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.9], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
     // TVモニター
     { id: uid('tv'), type: 'tv_monitor', name: 'TVモニター', position: [0, 0, 3.2], rotation: [0, Math.PI, 0], scale: [1.5, 0.85, 0.08] },
     // 植物
@@ -1080,6 +1111,9 @@ function createBoutiqueTemplate(): StoreTemplate {
       rotation: [0, 0, 0] as [number, number, number],
       scale: [0.25, 0.35, 0.25] as [number, number, number],
     })),
+    // エアコン（奥壁+左壁）
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [0, 2.2, -3.4], rotation: [0, 0, 0], scale: [0.9, 0.3, 0.25] },
+    { id: uid('ac'), type: 'air_conditioner', name: 'エアコン', position: [-3.9, 2.2, 0], rotation: [0, Math.PI / 2, 0], scale: [0.9, 0.3, 0.25] },
   ];
 
   return { id: 'boutique', name: 'ブティック', description: 'アパレル陳列+試着+レジのファッション店舗', style: 'luxury', roomWidth, roomDepth, roomHeight, walls, openings, furniture, thumbnail: '👗' };
