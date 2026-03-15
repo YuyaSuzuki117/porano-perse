@@ -187,6 +187,7 @@ export default function EditorPage() {
   const [fabOpen, setFabOpen] = useState(false);
   const [showPixelEditor, setShowPixelEditor] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [fullscreen3D, setFullscreen3D] = useState(false);
 
   // モバイル長押しコンテキストメニュー
   const [contextMenu, setContextMenu] = useState<{ furnitureId: string; position: { x: number; y: number } } | null>(null);
@@ -398,7 +399,9 @@ export default function EditorPage() {
         <QuickTipsContainer />
         <ToastContainer />
         <StyleComparisonModal canvasRef={canvasRef} />
-        <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+        {!fullscreen3D && (
+          <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+        )}
         <MeasurementTool active={measurementActive} canvasRef={canvasRef} />
 
         {/* Rendering overlay */}
@@ -444,7 +447,7 @@ export default function EditorPage() {
                 />
               </ErrorBoundary>
               <EmptyStateOverlay isMobile />
-              {!photoMode && (
+              {!photoMode && !fullscreen3D && (
                 <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none">
                   3D プレビュー
                 </div>
@@ -461,8 +464,46 @@ export default function EditorPage() {
                 />
               )}
               {/* 座席数カウンター */}
-              {!photoMode && <SeatCounter furniture={furniture} />}
-              {!photoMode && (
+              {!photoMode && !fullscreen3D && <SeatCounter furniture={furniture} />}
+              {/* フルスクリーン3Dモード UI */}
+              {fullscreen3D && !photoMode && (
+                <div className="absolute top-3 left-3 right-3 z-40 flex items-center justify-between">
+                  <button
+                    onClick={() => setFullscreen3D(false)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-full active:scale-90 transition-transform min-h-[44px]"
+                    aria-label="フルスクリーン終了"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
+                    </svg>
+                    <span>戻る</span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => takeScreenshot(1)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-full active:scale-90 transition-transform min-h-[44px]"
+                      aria-label="スクリーンショット"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => { setPhotoMode(true); }}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
+                      aria-label="フォトモード"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span>HD撮影</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!photoMode && !fullscreen3D && (
                 <div className="absolute bottom-14 left-2 right-2 flex items-center justify-between">
                   <div className="bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
                     <span>ドラッグ: 回転</span>
@@ -471,10 +512,13 @@ export default function EditorPage() {
                   </div>
                   <button
                     onClick={() => { setPhotoMode(true); setMobileTab('3d'); }}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
                     aria-label="フォトモードで撮影"
                   >
-                    <span>📷</span>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
                     <span>撮影</span>
                   </button>
                 </div>
@@ -491,28 +535,34 @@ export default function EditorPage() {
             </div>
           )}
 
-          {/* フォトモード: モバイル撮影UI — 3Dビュー条件やErrorBoundaryの外に配置 */}
+          {/* フォトモード: モバイル撮影UI -- 3Dビュー条件やErrorBoundaryの外に配置 */}
           {photoMode && (
             <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2 z-50">
               <button
                 onClick={() => takeHiResScreenshot()}
-                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform"
+                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform min-h-[48px]"
                 aria-label="高解像度で撮影"
               >
-                <span className="text-lg">📷</span>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
                 <span>撮影 (HD)</span>
               </button>
               <button
                 onClick={() => takeScreenshot(1)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm min-h-[44px]"
                 aria-label="通常撮影"
               >
-                <span>📸</span>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
                 <span>通常撮影</span>
               </button>
               <button
-                onClick={() => setPhotoMode(false)}
-                className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform"
+                onClick={() => { setPhotoMode(false); setFullscreen3D(false); }}
+                className="px-3 py-2 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform min-h-[44px]"
                 aria-label="フォトモードを終了"
               >
                 フォトモード終了
@@ -521,8 +571,8 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* Floating Action Button — モバイルクイックアクション（セーフエリア対応）フォトモード中は非表示 */}
-        <div className={`absolute bottom-[calc(var(--safe-bottom)+76px)] right-3 z-30 flex flex-col-reverse items-center gap-2 ${photoMode ? 'hidden' : ''}`}>
+        {/* Floating Action Button -- モバイルクイックアクション（セーフエリア対応）フォトモード/フルスクリーン中は非表示 */}
+        <div className={`absolute bottom-[calc(var(--safe-bottom)+76px)] right-3 z-30 flex flex-col-reverse items-center gap-2.5 ${photoMode || fullscreen3D ? 'hidden' : ''}`}>
           {/* FABメニュー項目（展開時のみ表示） */}
           {fabOpen && (
             <>
@@ -531,100 +581,137 @@ export default function EditorPage() {
                 className="fixed inset-0 z-[-1]"
                 onClick={() => setFabOpen(false)}
               />
-              <button
-                onClick={() => {
-                  setFabOpen(false);
-                  setShowMobilePanel(true);
-                  setMobileTab('settings');
-                }}
-                className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                aria-label="什器カタログを開く"
-              >
-                🪑
-              </button>
-              <button
-                onClick={() => {
-                  setFabOpen(false);
-                  setWallDisplayMode(
-                    wallDisplayMode === 'solid' ? 'transparent' :
-                    wallDisplayMode === 'transparent' ? 'hidden' :
-                    wallDisplayMode === 'hidden' ? 'section' : 'solid'
-                  );
-                }}
-                className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                aria-label="壁表示切替"
-              >
-                🧱
-              </button>
-              <button
-                onClick={() => {
-                  setFabOpen(false);
-                  takeScreenshot(1);
-                }}
-                className="w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                aria-label="スクリーンショットを撮る"
-              >
-                📸
-              </button>
-              <button
-                onClick={() => {
-                  setFabOpen(false);
-                  setPhotoMode(true);
-                  setMobileTab('3d');
-                  setViewMode('3d');
-                }}
-                className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                aria-label="フォトモードで撮影"
-              >
-                📷
-              </button>
-              <button
-                onClick={() => {
-                  setFabOpen(false);
-                  setShowAIPanel(true);
-                }}
-                className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg border border-purple-400 flex items-center justify-center text-lg active:scale-90 transition-transform"
-                aria-label="AIアシスト"
-              >
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-              </button>
+              {/* 什器カタログ */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">什器</span>
+                <button
+                  onClick={() => {
+                    setFabOpen(false);
+                    setShowMobilePanel(true);
+                    setMobileTab('settings');
+                  }}
+                  className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label="什器カタログを開く"
+                >
+                  <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12H3l9-9 9 9h-2M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                </button>
+              </div>
+              {/* 壁表示切替 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">壁</span>
+                <button
+                  onClick={() => {
+                    setFabOpen(false);
+                    setWallDisplayMode(
+                      wallDisplayMode === 'solid' ? 'transparent' :
+                      wallDisplayMode === 'transparent' ? 'hidden' :
+                      wallDisplayMode === 'hidden' ? 'section' : 'solid'
+                    );
+                  }}
+                  className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label="壁表示切替"
+                >
+                  <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 12h18M12 3v18" />
+                  </svg>
+                </button>
+              </div>
+              {/* フォトモード */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">撮影</span>
+                <button
+                  onClick={() => {
+                    setFabOpen(false);
+                    setPhotoMode(true);
+                    setMobileTab('3d');
+                    setViewMode('3d');
+                  }}
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label="フォトモードで撮影"
+                >
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                </button>
+              </div>
+              {/* AIアシスト */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">AI</span>
+                <button
+                  onClick={() => {
+                    setFabOpen(false);
+                    setShowAIPanel(true);
+                  }}
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg border border-purple-400 flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label="AIアシスト"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                </button>
+              </div>
+              {/* フルスクリーン3D */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">全画面</span>
+                <button
+                  onClick={() => {
+                    setFabOpen(false);
+                    setViewMode('3d');
+                    setMobileTab('3d');
+                    setFullscreen3D(true);
+                  }}
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg border border-blue-400 flex items-center justify-center active:scale-90 transition-transform"
+                  aria-label="フルスクリーン3Dモード"
+                >
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
+                  </svg>
+                </button>
+              </div>
             </>
           )}
           {/* メインFABボタン */}
           <button
             onClick={() => setFabOpen(!fabOpen)}
-            className={`w-14 h-14 rounded-full bg-blue-600 shadow-xl flex items-center justify-center text-white text-2xl font-light active:scale-90 transition-all duration-200 ${
-              fabOpen ? 'rotate-45 bg-gray-600' : ''
+            className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white active:scale-90 transition-all duration-200 ${
+              fabOpen ? 'rotate-45 bg-gray-600' : 'bg-blue-600'
             }`}
             aria-label="クイックアクション"
             aria-expanded={fabOpen}
           >
-            +
+            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
           </button>
         </div>
 
-        {/* Bottom tab bar — セーフエリア対応 + タッチフィードバック（フォトモード中は非表示） */}
-        <div className={`flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe ${photoMode ? 'hidden' : ''}`} role="tablist" aria-label="エディタビュー切替">
+        {/* Bottom tab bar -- セーフエリア対応 + SVGアイコン + タッチフィードバック（フォトモード/フルスクリーン中は非表示） */}
+        <div className={`flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe ${photoMode || fullscreen3D ? 'hidden' : ''}`} role="tablist" aria-label="エディタビュー切替">
           {([
-            { key: '2d' as const, label: '図面', icon: '📐' },
-            { key: '3d' as const, label: '3D', icon: '🏠' },
-            { key: 'settings' as const, label: '設定', icon: '⚙️' },
-          ]).map(({ key, label, icon }) => (
+            { key: '2d' as const, label: '図面', iconPath: 'M3 3h7v7H3zM14 3l4 7H10zM3 14h7v4H3zM14 14h4v4h-4z' },
+            { key: '3d' as const, label: '3D', iconPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+            { key: 'settings' as const, label: '設定', iconPath: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z' },
+          ]).map(({ key, label, iconPath }) => (
             <button
               key={key}
               role="tab"
               aria-selected={mobileTab === key}
               onClick={() => { handleMobileTab(key); setFabOpen(false); }}
-              className={`flex-1 flex flex-col items-center justify-center min-h-[56px] py-2 text-xs font-medium transition-all active:scale-95 active:bg-gray-100 ${
+              className={`flex-1 flex flex-col items-center justify-center min-h-[56px] py-2 text-xs font-medium transition-all active:scale-95 active:bg-gray-50 ${
                 mobileTab === key
                   ? 'text-blue-600'
                   : 'text-gray-400'
               }`}
             >
-              <span className="text-xl mb-0.5">{icon}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 mb-0.5">
+                <path d={iconPath} />
+              </svg>
               <span className="text-[11px]">{label}</span>
+              {mobileTab === key && <div className="w-5 h-0.5 bg-blue-600 rounded-full mt-0.5" />}
             </button>
           ))}
         </div>

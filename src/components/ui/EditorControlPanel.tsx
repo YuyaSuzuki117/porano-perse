@@ -1440,14 +1440,16 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 isMobile ? 'min-h-[44px]' : ''
               }`}
             />
-            <div className="flex flex-wrap gap-1 mb-2" role="radiogroup" aria-label="什器カテゴリ">
+            <div className={`flex flex-wrap gap-1 mb-2 ${isMobile ? 'overflow-x-auto pb-1 flex-nowrap -mx-1 px-1' : ''}`} role="radiogroup" aria-label="什器カテゴリ">
               {CATEGORY_LIST.map((cat) => (
                 <button
                   key={cat.key}
                   role="radio"
                   aria-checked={furnitureCategory === cat.key}
                   onClick={() => setFurnitureCategory(cat.key)}
-                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                  className={`rounded font-medium transition-colors whitespace-nowrap ${
+                    isMobile ? 'px-3 py-1.5 text-xs min-h-[36px]' : 'px-2 py-1 text-[10px]'
+                  } ${
                     furnitureCategory === cat.key
                       ? 'bg-blue-100 text-blue-700 border border-blue-300'
                       : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
@@ -1471,11 +1473,11 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     aria-label={item.name}
                     onClick={() => handleAddFurniture(item.type)}
                     className={`flex items-center gap-1 px-2 py-1.5 bg-gray-50 rounded hover:bg-blue-50 border border-gray-200 text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
-                      isMobile ? 'flex-col gap-0.5 py-2 text-center min-h-[44px]' : ''
+                      isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
                     }`}
                   >
-                    <span className={isMobile ? 'text-xl' : 'text-base'}>{item.icon}</span>
-                    <span className="text-gray-700 truncate text-[10px]">{item.name}</span>
+                    <span className={isMobile ? 'text-2xl' : 'text-base'}>{item.icon}</span>
+                    <span className={`text-gray-700 truncate ${isMobile ? 'text-[11px] font-medium' : 'text-[10px]'}`}>{item.name}</span>
                   </button>
                 ))}
               </div>
