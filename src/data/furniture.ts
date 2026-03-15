@@ -34,6 +34,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '⭕',
     defaultScale: [0.8, 0.75, 0.8],
     defaultColor: '#A0522D',
+    modelUrl: '/models/table_round.glb',
     defaultMaterial: 'wood',
   },
   {
@@ -78,6 +79,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '💡',
     defaultScale: [0.3, 0.4, 0.3],
     defaultColor: '#FFD700',
+    modelUrl: '/models/pendant_light.glb',
     defaultMaterial: 'metal',
   },
   {
@@ -95,6 +97,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🧱',
     defaultScale: [1.5, 2.0, 0.1],
     defaultColor: '#D2B48C',
+    modelUrl: '/models/partition.glb',
   },
   {
     type: 'register',
@@ -102,6 +105,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🖥️',
     defaultScale: [0.6, 1.0, 0.5],
     defaultColor: '#333333',
+    modelUrl: '/models/register.glb',
     defaultMaterial: 'plastic',
   },
   {
@@ -110,6 +114,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🚰',
     defaultScale: [1.2, 0.9, 0.6],
     defaultColor: '#C0C0C0',
+    modelUrl: '/models/sink.glb',
     defaultMaterial: 'metal',
   },
   {
@@ -118,6 +123,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🧊',
     defaultScale: [0.7, 1.8, 0.7],
     defaultColor: '#E8E8E8',
+    modelUrl: '/models/fridge.glb',
     defaultMaterial: 'metal',
   },
   {
@@ -126,6 +132,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🗄️',
     defaultScale: [1.5, 1.2, 0.6],
     defaultColor: '#B8D4E3',
+    modelUrl: '/models/display_case.glb',
     defaultMaterial: 'glass',
   },
   {
@@ -143,6 +150,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🪞',
     defaultScale: [1.0, 1.5, 0.05],
     defaultColor: '#C0C0C0',
+    modelUrl: '/models/mirror.glb',
     defaultMaterial: 'glass',
   },
   {
@@ -151,6 +159,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🏢',
     defaultScale: [2.0, 1.1, 0.8],
     defaultColor: '#F5F0E8',
+    modelUrl: '/models/reception_desk.glb',
   },
   {
     type: 'tv_monitor',
@@ -158,6 +167,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '📺',
     defaultScale: [1.2, 0.7, 0.08],
     defaultColor: '#1A1A1A',
+    modelUrl: '/models/tv_monitor.glb',
   },
   {
     type: 'washing_machine',
@@ -165,6 +175,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🫧',
     defaultScale: [0.6, 0.85, 0.6],
     defaultColor: '#F0F0F0',
+    modelUrl: '/models/washing_machine.glb',
   },
   {
     type: 'coat_rack',
@@ -172,6 +183,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🧥',
     defaultScale: [0.5, 1.7, 0.5],
     defaultColor: '#333333',
+    modelUrl: '/models/coat_rack.glb',
   },
   {
     type: 'air_conditioner',
@@ -179,6 +191,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '❄️',
     defaultScale: [0.9, 0.3, 0.25],
     defaultColor: '#F8F8F8',
+    modelUrl: '/models/air_conditioner.glb',
   },
   {
     type: 'desk',
@@ -203,6 +216,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🏝️',
     defaultScale: [1.8, 0.9, 0.8],
     defaultColor: '#F0EBE0',
+    modelUrl: '/models/kitchen_island.glb',
   },
   {
     type: 'bar_table',
@@ -210,6 +224,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🍸',
     defaultScale: [0.6, 1.1, 0.6],
     defaultColor: '#333333',
+    modelUrl: '/models/bar_table.glb',
   },
   {
     type: 'wardrobe',
@@ -217,6 +232,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🚪',
     defaultScale: [1.2, 2.0, 0.6],
     defaultColor: '#DEB887',
+    modelUrl: '/models/wardrobe.glb',
   },
   {
     type: 'shoe_rack',
@@ -224,6 +240,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '👟',
     defaultScale: [0.8, 1.0, 0.35],
     defaultColor: '#8B6914',
+    modelUrl: '/models/shoe_rack.glb',
     defaultMaterial: 'wood',
   },
   {
@@ -232,6 +249,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '☂️',
     defaultScale: [0.25, 0.6, 0.25],
     defaultColor: '#555555',
+    modelUrl: '/models/umbrella_stand.glb',
     defaultMaterial: 'metal',
   },
   {
@@ -240,6 +258,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '💰',
     defaultScale: [0.4, 0.3, 0.4],
     defaultColor: '#333333',
+    modelUrl: '/models/cash_register.glb',
     defaultMaterial: 'plastic',
   },
   {
@@ -248,6 +267,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '📋',
     defaultScale: [0.6, 1.2, 0.05],
     defaultColor: '#2C2C2C',
+    modelUrl: '/models/menu_board.glb',
     defaultMaterial: 'wood',
   },
   {
@@ -256,6 +276,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🌸',
     defaultScale: [0.3, 0.5, 0.3],
     defaultColor: '#B5651D',
+    modelUrl: '/models/flower_pot.glb',
     defaultMaterial: 'stone',
   },
   {
@@ -264,6 +285,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🌀',
     defaultScale: [1.2, 0.15, 1.2],
     defaultColor: '#F5F5F5',
+    modelUrl: '/models/ceiling_fan.glb',
     defaultMaterial: 'metal',
   },
   {
@@ -272,6 +294,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🟫',
     defaultScale: [2.0, 0.01, 1.5],
     defaultColor: '#8B4513',
+    modelUrl: '/models/rug.glb',
     defaultMaterial: 'fabric',
   },
   {
@@ -280,6 +303,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🪟',
     defaultScale: [1.5, 2.2, 0.08],
     defaultColor: '#DCDCDC',
+    modelUrl: '/models/curtain.glb',
     defaultMaterial: 'fabric',
   },
   {
@@ -288,6 +312,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🕐',
     defaultScale: [0.3, 0.3, 0.05],
     defaultColor: '#F5F5F5',
+    modelUrl: '/models/clock.glb',
     defaultMaterial: 'plastic',
   },
   {
@@ -296,16 +321,17 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     icon: '🗑️',
     defaultScale: [0.3, 0.45, 0.3],
     defaultColor: '#666666',
+    modelUrl: '/models/trash_can.glb',
     defaultMaterial: 'metal',
   },
   // --- Round 9 追加家具 (重複除外9点) ---
-  { type: 'refrigerator', name: '冷蔵庫(大型)', icon: '🧊', defaultScale: [0.6, 1.7, 0.65], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const },
-  { type: 'washbasin', name: '洗面台', icon: '🚰', defaultScale: [0.6, 0.85, 0.5], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const },
-  { type: 'toilet', name: 'トイレ', icon: '🚽', defaultScale: [0.4, 0.45, 0.65], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const },
-  { type: 'stairs', name: '階段', icon: '🪜', defaultScale: [1.0, 2.7, 3.0], defaultColor: '#A0522D', defaultMaterial: 'wood' as const },
-  { type: 'register_counter', name: 'レジカウンター', icon: '💰', defaultScale: [1.2, 1.0, 0.6], defaultColor: '#5C4033', defaultMaterial: 'wood' as const },
-  { type: 'showcase', name: 'ショーケース', icon: '🔲', defaultScale: [1.2, 1.3, 0.5], defaultColor: '#E8E8E8', defaultMaterial: 'glass' as const },
-  { type: 'bed', name: 'ベッド', icon: '🛏️', defaultScale: [1.4, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const },
-  { type: 'bar_stool', name: 'バースツール', icon: '🍺', defaultScale: [0.35, 0.95, 0.35], defaultColor: '#333333', defaultMaterial: 'metal' as const },
-  { type: 'hanger_rack', name: 'ハンガーラック', icon: '👔', defaultScale: [1.0, 1.7, 0.5], defaultColor: '#444444', defaultMaterial: 'metal' as const },
+  { type: 'refrigerator', name: '冷蔵庫(大型)', icon: '🧊', defaultScale: [0.6, 1.7, 0.65], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/refrigerator.glb' },
+  { type: 'washbasin', name: '洗面台', icon: '🚰', defaultScale: [0.6, 0.85, 0.5], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const, modelUrl: '/models/washbasin.glb' },
+  { type: 'toilet', name: 'トイレ', icon: '🚽', defaultScale: [0.4, 0.45, 0.65], defaultColor: '#FFFFFF', defaultMaterial: 'stone' as const, modelUrl: '/models/toilet.glb' },
+  { type: 'stairs', name: '階段', icon: '🪜', defaultScale: [1.0, 2.7, 3.0], defaultColor: '#A0522D', defaultMaterial: 'wood' as const, modelUrl: '/models/stairs.glb' },
+  { type: 'register_counter', name: 'レジカウンター', icon: '💰', defaultScale: [1.2, 1.0, 0.6], defaultColor: '#5C4033', defaultMaterial: 'wood' as const, modelUrl: '/models/register_counter.glb' },
+  { type: 'showcase', name: 'ショーケース', icon: '🔲', defaultScale: [1.2, 1.3, 0.5], defaultColor: '#E8E8E8', defaultMaterial: 'glass' as const, modelUrl: '/models/showcase.glb' },
+  { type: 'bed', name: 'ベッド', icon: '🛏️', defaultScale: [1.4, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const, modelUrl: '/models/bed.glb' },
+  { type: 'bar_stool', name: 'バースツール', icon: '🍺', defaultScale: [0.35, 0.95, 0.35], defaultColor: '#333333', defaultMaterial: 'metal' as const, modelUrl: '/models/bar_stool.glb' },
+  { type: 'hanger_rack', name: 'ハンガーラック', icon: '👔', defaultScale: [1.0, 1.7, 0.5], defaultColor: '#444444', defaultMaterial: 'metal' as const, modelUrl: '/models/hanger_rack.glb' },
 ];
