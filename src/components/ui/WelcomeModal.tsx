@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { STORE_TEMPLATES } from '@/data/templates';
+import { useTranslation } from '@/lib/i18n';
 
 // ウェルカムモーダルに表示する代表テンプレート
 const FEATURED_TEMPLATES = [
@@ -21,6 +22,7 @@ export function WelcomeModal({
   onStartEmpty,
   onOpenTemplates,
 }: WelcomeModalProps) {
+  const { t } = useTranslation();
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -77,10 +79,10 @@ export function WelcomeModal({
         {/* タイトル */}
         <div className="text-center mb-6">
           <h2 id="welcome-modal-title" className="text-2xl font-bold text-gray-800 mb-2">
-            {'\uD83C\uDFE0'} Porano Perse へようこそ
+            {'\uD83C\uDFE0'} {t('welcome.title')}
           </h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            3Dで店舗のパースを簡単に作成できる<br />ツールです。
+          <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-line">
+            {t('welcome.subtitle')}
           </p>
         </div>
 
@@ -94,7 +96,7 @@ export function WelcomeModal({
             >
               <span className="text-3xl">{ft.emoji}</span>
               <span className="text-xs font-medium text-gray-700">{ft.label}</span>
-              <span className="text-[10px] text-gray-400">テンプレ</span>
+              <span className="text-[10px] text-gray-400">{t('welcome.template_label')}</span>
             </button>
           ))}
         </div>
@@ -105,14 +107,14 @@ export function WelcomeModal({
             onClick={handleAllTemplatesClick}
             className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
           >
-            すべてのテンプレートを見る ({STORE_TEMPLATES.length}種類)
+            {t('welcome.all_templates')} ({STORE_TEMPLATES.length}{t('welcome.template_suffix')})
           </button>
         </div>
 
         {/* 区切り線 */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400">または</span>
+          <span className="text-xs text-gray-400">{t('welcome.or')}</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
@@ -121,26 +123,26 @@ export function WelcomeModal({
           onClick={handleEmptyClick}
           className="w-full py-2.5 px-4 rounded-lg border-2 border-dashed border-gray-300 text-gray-600 text-sm font-medium hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 mb-5"
         >
-          空の部屋から始める
+          {t('welcome.empty_room')}
         </button>
 
         {/* ヒントセクション */}
         <div className="bg-blue-50 rounded-lg p-4 mb-5">
           <p className="text-xs font-semibold text-blue-700 mb-2">
-            {'\uD83D\uDCA1'} ヒント:
+            {'\uD83D\uDCA1'} {t('welcome.hint_title')}
           </p>
           <ul className="text-xs text-blue-600 space-y-1.5">
             <li className="flex items-start gap-1.5">
               <span className="text-blue-400 mt-0.5">{'・'}</span>
-              左側で間取りを描画、右側で3D確認
+              {t('welcome.hint_1')}
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-blue-400 mt-0.5">{'・'}</span>
-              Ctrl+Z で操作を戻せます
+              {t('welcome.hint_2')}
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-blue-400 mt-0.5">{'・'}</span>
-              右パネルでスタイル・什器を変更
+              {t('welcome.hint_3')}
             </li>
           </ul>
         </div>
@@ -151,7 +153,7 @@ export function WelcomeModal({
             onClick={handleStartClick}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm hover:shadow-md"
           >
-            始める
+            {t('welcome.start')}
           </button>
         </div>
 
@@ -163,7 +165,7 @@ export function WelcomeModal({
             onChange={(e) => setDontShowAgain(e.target.checked)}
             className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
-          <span className="text-xs text-gray-400">次回から表示しない</span>
+          <span className="text-xs text-gray-400">{t('welcome.dont_show')}</span>
         </label>
       </div>
 

@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ToastContainer, showToast } from '@/components/ui/Toast';
 import { isTutorialDone } from '@/components/ui/OnboardingTutorial';
 import { QuickTipsContainer } from '@/components/ui/QuickTips';
+import { useTranslation } from '@/lib/i18n';
 
 // --- Dynamic imports: 重いUIコンポーネントをコード分割 ---
 const EditorControlPanel = dynamic(
@@ -116,7 +117,7 @@ const SceneCanvas = dynamic(
             <span className="text-base font-semibold text-blue-400">Perse</span>
           </div>
           <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-gray-500 text-xs">3Dエンジンを読み込み中...</p>
+          <p className="text-gray-500 text-xs">Loading 3D engine...</p>
         </div>
       </div>
     ),
@@ -125,19 +126,20 @@ const SceneCanvas = dynamic(
 
 function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
   const walls = useEditorStore((s) => s.walls);
+  const { t } = useTranslation();
   if (walls.length > 0) return null;
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
       <div className="text-center px-6 py-8 bg-black/40 backdrop-blur-sm rounded-2xl max-xs">
         <div className="text-white/80 text-sm font-medium mb-2">
-          {isMobile ? '図面タブから壁を描画して開始' : '左パネルの図面エディタで壁を描画して開始'}
+          {t('misc.create_wall_hint')}
         </div>
         {!isMobile && (
           <div className="flex items-center justify-center gap-1 text-white/50 text-xs">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4">
               <path d="M12 4L6 10l6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>2D図面で壁を作成すると3Dに反映されます</span>
+            <span>{t('misc.create_wall_hint')}</span>
           </div>
         )}
       </div>
@@ -146,6 +148,7 @@ function EmptyStateOverlay({ isMobile }: { isMobile: boolean }) {
 }
 
 export default function EditorPage() {
+  const { t, locale } = useTranslation();
   const viewMode = useUIStore(s => s.viewMode);
   const setViewMode = useUIStore(s => s.setViewMode);
   const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
@@ -473,7 +476,7 @@ export default function EditorPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-xl px-8 py-6 shadow-2xl flex flex-col items-center gap-3">
               <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full" />
-              <span className="text-sm font-medium text-gray-700" aria-live="polite">レンダリング中...</span>
+              <span className="text-sm font-medium text-gray-700" aria-live="polite">{t('misc.rendering')}</span>
             </div>
           </div>
         )}
@@ -487,7 +490,7 @@ export default function EditorPage() {
             >
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs text-gray-500 font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md border border-gray-200 pointer-events-none">
-                2D 図面
+                {t('view.2d')}
               </div>
             </div>
           )}
@@ -514,7 +517,7 @@ export default function EditorPage() {
               <EmptyStateOverlay isMobile />
               {!photoMode && !fullscreen3D && (
                 <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none">
-                  3D プレビュー
+                  {t('view.3d')}
                 </div>
               )}
               {!photoMode && <CameraPresetButtons canvasRef={canvasRef} />}
@@ -536,18 +539,18 @@ export default function EditorPage() {
                   <button
                     onClick={() => setFullscreen3D(false)}
                     className="flex items-center gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-full active:scale-90 transition-transform min-h-[44px]"
-                    aria-label="フルスクリーン終了"
+                    aria-label={t('misc.fullscreen_end')}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" />
                     </svg>
-                    <span>戻る</span>
+                    <span>{t('misc.back')}</span>
                   </button>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => takeScreenshot(1)}
                       className="flex items-center gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-full active:scale-90 transition-transform min-h-[44px]"
-                      aria-label="スクリーンショット"
+                      aria-label={t('header.screenshot')}
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                         <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
@@ -557,13 +560,13 @@ export default function EditorPage() {
                     <button
                       onClick={() => { setPhotoMode(true); }}
                       className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
-                      aria-label="フォトモード"
+                      aria-label={t('view.photo')}
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                         <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                         <circle cx="12" cy="13" r="4" />
                       </svg>
-                      <span>HD撮影</span>
+                      <span>{t('misc.shoot_hd')}</span>
                     </button>
                   </div>
                 </div>
@@ -571,20 +574,20 @@ export default function EditorPage() {
               {!photoMode && !fullscreen3D && (
                 <div className="absolute bottom-14 left-2 right-2 flex items-center justify-between">
                   <div className="bg-black/50 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-2" aria-live="polite">
-                    <span>ドラッグ: 回転</span>
+                    <span>{t('misc.drag_rotate')}</span>
                     <span className="text-white/40">|</span>
-                    <span>ピンチ: ズーム</span>
+                    <span>{t('misc.pinch_zoom')}</span>
                   </div>
                   <button
                     onClick={() => { setPhotoMode(true); setMobileTab('3d'); }}
                     className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg active:scale-90 transition-transform min-h-[44px]"
-                    aria-label="フォトモードで撮影"
+                    aria-label={t('view.photo')}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                       <circle cx="12" cy="13" r="4" />
                     </svg>
-                    <span>撮影</span>
+                    <span>{t('misc.shoot')}</span>
                   </button>
                 </div>
               )}
@@ -592,7 +595,7 @@ export default function EditorPage() {
                 <div className="absolute inset-0 bg-purple-500/20 border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
                   <div className="bg-purple-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
                     <div className="text-3xl mb-2">📦</div>
-                    <div className="text-sm font-medium">3Dモデルをドロップして読込</div>
+                    <div className="text-sm font-medium">{t('misc.drop_model')}</div>
                     <div className="text-xs text-purple-200 mt-1">.glb / .gltf</div>
                   </div>
                 </div>
@@ -606,31 +609,31 @@ export default function EditorPage() {
               <button
                 onClick={() => takeHiResScreenshot()}
                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg active:scale-95 transition-transform min-h-[48px]"
-                aria-label="高解像度で撮影"
+                aria-label={t('misc.shoot_hd')}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                   <circle cx="12" cy="13" r="4" />
                 </svg>
-                <span>撮影 (HD)</span>
+                <span>{t('misc.shoot_hd')}</span>
               </button>
               <button
                 onClick={() => takeScreenshot(1)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/90 text-gray-700 font-medium rounded-full shadow-lg active:scale-95 transition-transform text-sm min-h-[44px]"
-                aria-label="通常撮影"
+                aria-label={t('misc.normal_shoot')}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
                   <circle cx="12" cy="13" r="4" />
                 </svg>
-                <span>通常撮影</span>
+                <span>{t('misc.normal_shoot')}</span>
               </button>
               <button
                 onClick={() => { setPhotoMode(false); setFullscreen3D(false); }}
                 className="px-3 py-2 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm active:scale-95 transition-transform min-h-[44px]"
-                aria-label="フォトモードを終了"
+                aria-label={t('view.photo_end')}
               >
-                フォトモード終了
+                {t('view.photo_end')}
               </button>
             </div>
           )}
@@ -648,7 +651,7 @@ export default function EditorPage() {
               />
               {/* 什器カタログ */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">什器</span>
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{t('misc.furniture_catalog')}</span>
                 <button
                   onClick={() => {
                     setFabOpen(false);
@@ -656,7 +659,7 @@ export default function EditorPage() {
                     setMobileTab('settings');
                   }}
                   className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center active:scale-90 transition-transform"
-                  aria-label="什器カタログを開く"
+                  aria-label={t('tool.furniture')}
                 >
                   <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12H3l9-9 9 9h-2M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
@@ -665,7 +668,7 @@ export default function EditorPage() {
               </div>
               {/* 壁表示切替 */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">壁</span>
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{t('tool.wall')}</span>
                 <button
                   onClick={() => {
                     setFabOpen(false);
@@ -676,7 +679,7 @@ export default function EditorPage() {
                     );
                   }}
                   className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center active:scale-90 transition-transform"
-                  aria-label="壁表示切替"
+                  aria-label={t('panel.wall_display')}
                 >
                   <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -686,7 +689,7 @@ export default function EditorPage() {
               </div>
               {/* フォトモード */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">撮影</span>
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{t('misc.shoot')}</span>
                 <button
                   onClick={() => {
                     setFabOpen(false);
@@ -695,7 +698,7 @@ export default function EditorPage() {
                     setViewMode('3d');
                   }}
                   className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg border border-orange-300 flex items-center justify-center active:scale-90 transition-transform"
-                  aria-label="フォトモードで撮影"
+                  aria-label={t('view.photo')}
                 >
                   <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
@@ -721,7 +724,7 @@ export default function EditorPage() {
               </div>
               {/* フルスクリーン3D */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">全画面</span>
+                <span className="text-[11px] text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">{locale === 'ja' ? '全画面' : 'Full'}</span>
                 <button
                   onClick={() => {
                     setFabOpen(false);
@@ -757,9 +760,9 @@ export default function EditorPage() {
         {/* Bottom tab bar -- セーフエリア対応 + SVGアイコン + タッチフィードバック（フォトモード/フルスクリーン中は非表示） */}
         <div className={`flex-shrink-0 bg-white border-t border-gray-200 flex pb-safe ${photoMode || fullscreen3D ? 'hidden' : ''}`} role="tablist" aria-label="エディタビュー切替">
           {([
-            { key: '2d' as const, label: '図面', iconPath: 'M3 3h7v7H3zM14 3l4 7H10zM3 14h7v4H3zM14 14h4v4h-4z' },
+            { key: '2d' as const, label: locale === 'ja' ? '図面' : 'Plan', iconPath: 'M3 3h7v7H3zM14 3l4 7H10zM3 14h7v4H3zM14 14h4v4h-4z' },
             { key: '3d' as const, label: '3D', iconPath: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
-            { key: 'settings' as const, label: '設定', iconPath: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z' },
+            { key: 'settings' as const, label: locale === 'ja' ? '設定' : 'Settings', iconPath: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z' },
           ]).map(({ key, label, iconPath }) => (
             <button
               key={key}
@@ -934,17 +937,17 @@ export default function EditorPage() {
                   <button
                     onClick={() => takeHiResScreenshot()}
                     className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:from-amber-600 hover:to-orange-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
-                    aria-label="4K高解像度で撮影"
+                    aria-label={t('misc.shoot_hd')}
                   >
                     <span className="text-lg group-hover:animate-pulse">📷</span>
-                    <span>撮影 (4K)</span>
+                    <span>{t('misc.shoot_hd')}</span>
                   </button>
                   <button
                     onClick={() => setPhotoMode(false)}
                     className="px-3 py-1.5 bg-black/50 text-white/80 text-xs rounded-full backdrop-blur-sm hover:bg-black/70 hover:text-white hover:scale-105 transition-all duration-200"
-                    aria-label="フォトモードを終了"
+                    aria-label={t('view.photo_end')}
                   >
-                    フォトモード終了 <span className="text-white/50 ml-1">P</span>
+                    {t('view.photo_end')} <span className="text-white/50 ml-1">P</span>
                   </button>
                 </div>
               )}
@@ -952,7 +955,7 @@ export default function EditorPage() {
                 <div className="absolute inset-0 bg-purple-500/20 backdrop-blur-[2px] border-4 border-dashed border-purple-400 rounded-lg flex items-center justify-center z-50 pointer-events-none animate-[dropzonePulse_1.5s_ease-in-out_infinite]">
                   <div className="bg-purple-600/90 text-white px-8 py-5 rounded-xl shadow-2xl text-center animate-[dropzoneBounce_0.3s_ease-out]">
                     <div className="text-4xl mb-2 animate-bounce">📦</div>
-                    <div className="text-sm font-bold">3Dモデルをドロップして読込</div>
+                    <div className="text-sm font-bold">{t('misc.drop_model')}</div>
                     <div className="text-xs text-purple-200 mt-1.5 bg-purple-700/50 px-3 py-1 rounded-full inline-block">.glb / .gltf</div>
                   </div>
                 </div>
