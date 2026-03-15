@@ -11,7 +11,8 @@ import { FURNITURE_SETS, STORE_FURNITURE_SETS } from '@/data/furniture-sets';
 import { STORE_TEMPLATES } from '@/data/templates';
 import { ROOM_TEMPLATES } from '@/data/room-templates';
 import { LIGHTING_PRESETS, ATMOSPHERE_PRESETS } from '@/data/lighting-presets';
-import { FurnitureMaterial, StylePreset } from '@/types/scene';
+import { FurnitureMaterial, StylePreset, FurnitureType } from '@/types/scene';
+import { getMountType, getDefaultHeight } from '@/hooks/useFurnitureHeight';
 import { wallLength, computeFloorArea } from '@/lib/geometry';
 import { resetTutorial } from '@/components/ui/OnboardingTutorial';
 import { resetQuickTips } from '@/components/ui/QuickTips';
@@ -60,8 +61,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setShowDimensions,
     wallDisplayMode,
     setWallDisplayMode,
+    wallOpacitySlider,
+    setWallOpacitySlider,
     ceilingVisible,
     setCeilingVisible,
+    ceilingOpacitySlider,
+    setCeilingOpacitySlider,
     sectionCutHeight,
     setSectionCutHeight,
     activateDioramaMode,
@@ -285,16 +290,18 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
   const handleAddFurniture = (type: string) => {
     const catalog = FURNITURE_CATALOG.find((c) => c.type === type);
     if (!catalog) return;
+    const defaultY = getDefaultHeight(catalog.type as FurnitureType);
     addFurniture({
       id: `${type}_${Date.now()}`,
       type: catalog.type,
       name: catalog.name,
-      position: [0, 0, 0],
+      position: [0, defaultY, 0],
       rotation: [0, 0, 0],
       scale: [...catalog.defaultScale],
       color: catalog.defaultColor,
       material: catalog.defaultMaterial,
       modelUrl: catalog.modelUrl,
+      heightOffset: defaultY > 0 ? defaultY : undefined,
     });
   };
 
@@ -615,6 +622,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 { mode: 'transparent' as const, label: t('wall_mode.transparent') },
                 { mode: 'hidden' as const, label: t('wall_mode.hidden') },
                 { mode: 'section' as const, label: t('wall_mode.section') },
+                { mode: 'wireframe' as const, label: 'X線' },
               ]).map(({ mode, label }) => (
                 <button
                   key={mode}
@@ -631,6 +639,32 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 </button>
               ))}
             </div>
+            {/* 壁透過度スライダー（transparentモード時） */}
+            {wallDisplayMode === 'transparent' && (
+              <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-medium text-purple-700">
+                    壁の透過度
+                  </label>
+                  <span className="text-[11px] font-bold text-purple-600 bg-white px-1.5 py-0.5 rounded border border-purple-200 tabular-nums">
+                    {wallOpacitySlider}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={wallOpacitySlider}
+                  onChange={(e) => setWallOpacitySlider(parseInt(e.target.value))}
+                  className="w-full h-2 accent-purple-600 cursor-pointer"
+                />
+                <div className="flex justify-between text-[8px] text-purple-400 mt-0.5">
+                  <span>不透明</span>
+                  <span>透明</span>
+                </div>
+              </div>
+            )}
             {/* 断面カット高さスライダー */}
             {wallDisplayMode === 'section' && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
@@ -645,7 +679,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 <input
                   type="range"
                   min={0.5}
-                  max={2.5}
+                  max={3.0}
                   step={0.1}
                   value={sectionCutHeight}
                   onChange={(e) => setSectionCutHeight(parseFloat(e.target.value))}
@@ -653,7 +687,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 />
                 <div className="flex justify-between text-[8px] text-blue-400 mt-0.5">
                   <span>0.5m</span>
-                  <span>2.5m</span>
+                  <span>3.0m</span>
                 </div>
               </div>
             )}
@@ -694,6 +728,32 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 非表示
               </button>
             </div>
+            {/* 天井透過度スライダー（天井表示時） */}
+            {ceilingVisible && (
+              <div className="mt-2 p-2 bg-teal-50 border border-teal-200 rounded-lg">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-medium text-teal-700">
+                    天井の透過度
+                  </label>
+                  <span className="text-[11px] font-bold text-teal-600 bg-white px-1.5 py-0.5 rounded border border-teal-200 tabular-nums">
+                    {ceilingOpacitySlider}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={ceilingOpacitySlider}
+                  onChange={(e) => setCeilingOpacitySlider(parseInt(e.target.value))}
+                  className="w-full h-2 accent-teal-600 cursor-pointer"
+                />
+                <div className="flex justify-between text-[8px] text-teal-400 mt-0.5">
+                  <span>不透明</span>
+                  <span>透明</span>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-[10px] text-gray-400 mb-1">矩形</label>
@@ -2254,31 +2314,35 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {selectedFurnitureId && (() => {
         const selFurn = furniture.find(f => f.id === selectedFurnitureId);
         if (!selFurn) return null;
-        const wallMountTypes = ['air_conditioner', 'tv_monitor', 'clock', 'menu_board', 'ceiling_fan'];
-        const isWallMount = wallMountTypes.includes(selFurn.type);
+        const mountType = getMountType(selFurn.type as FurnitureType);
+        const isWallMount = mountType === 'wall' || mountType === 'ceiling';
+        const defaultH = getDefaultHeight(selFurn.type as FurnitureType);
+        const heightMin = mountType === 'wall' ? 0.5 : 0;
+        const heightMax = mountType === 'ceiling' ? 2.7 : mountType === 'wall' ? 2.5 : 2.7;
         return (
           <Section title="家具詳細" collapsible defaultOpen mobileCollapsible={isMobile}>
             <div className="space-y-3">
               <div className="text-xs text-gray-500 bg-gray-50 rounded px-2 py-1.5">
                 {selFurn.name} ({selFurn.type})
+                {isWallMount && <span className="ml-1 text-blue-500">{mountType === 'wall' ? '[壁掛け]' : '[天井]'}</span>}
               </div>
               {/* 高さ調整 */}
               <div>
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">
-                  高さ (Y) {isWallMount ? '※壁掛け' : ''}
+                  高さ (Y) {isWallMount ? `※${mountType === 'wall' ? '壁掛け' : '天井設置'}` : ''}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
-                    min="0"
-                    max="2.7"
-                    step="0.1"
-                    value={selFurn.heightOffset ?? (isWallMount ? 2.0 : 0)}
+                    min={heightMin}
+                    max={heightMax}
+                    step="0.05"
+                    value={selFurn.heightOffset ?? defaultH}
                     onChange={(e) => updateFurnitureHeight(selFurn.id, parseFloat(e.target.value))}
                     className="flex-1"
                   />
                   <span className="text-xs text-gray-600 w-10 text-right tabular-nums">
-                    {(selFurn.heightOffset ?? (isWallMount ? 2.0 : 0)).toFixed(1)}m
+                    {(selFurn.heightOffset ?? defaultH).toFixed(2)}m
                   </span>
                 </div>
               </div>

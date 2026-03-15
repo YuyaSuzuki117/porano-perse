@@ -35,7 +35,7 @@ export interface ProjectData {
   annotations?: Annotation[];
   roomHeight: number;
   style: StylePreset;
-  wallDisplayMode?: 'solid' | 'transparent' | 'hidden' | 'section';
+  wallDisplayMode?: 'solid' | 'transparent' | 'hidden' | 'section' | 'wireframe';
   ceilingVisible?: boolean;
   showGrid?: boolean;
   showDimensions?: boolean;
@@ -1194,11 +1194,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // listSavedProjects ... loadFromShareUrl → useProjectStore に移動済み
   // toggleHumanFigures ... setReferenceImageOpacity → useCameraStore に移動済み
 
-  // 家具高さオフセット
+  // 家具高さオフセット（heightOffset + position.yを同期）
   updateFurnitureHeight: (id, heightOffset) =>
     set((s) => ({
       furniture: s.furniture.map((f) =>
-        f.id === id ? { ...f, heightOffset } : f
+        f.id === id ? {
+          ...f,
+          heightOffset,
+          position: [f.position[0], heightOffset, f.position[2]] as [number, number, number],
+        } : f
       ),
     })),
 

@@ -180,6 +180,7 @@ function furniturePropsAreEqual(
   if (prev.item.color !== next.item.color) return false;
   if (prev.item.material !== next.item.material) return false;
   if (prev.item.modelUrl !== next.item.modelUrl) return false;
+  if (prev.item.heightOffset !== next.item.heightOffset) return false;
   // コールバックの参照比較（useCallbackで安定化されている前提）
   if (prev.onSelect !== next.onSelect) return false;
   if (prev.onToggleSelect !== next.onToggleSelect) return false;
@@ -257,6 +258,25 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
   const longPressReadyRef = useRef(false);
   const pendingPointerEventRef = useRef<ThreeEvent<PointerEvent> | null>(null);
   const isTouchDeviceRef = useRef(false);
+
+  // 軸ロック: 'x' = X軸のみ移動, 'z' = Z軸のみ移動, null = 制限なし
+  const axisLockRef = useRef<'x' | 'z' | null>(null);
+  // ドラッグ開始時の位置（軸ロック用）
+  const dragStartPosRef = useRef({ x: 0, z: 0 });
+
+  // キーボードによる軸ロック切替（ドラッグ中のみ有効）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isDraggingRef.current) return;
+      if (e.key === 'x' || e.key === 'X') {
+        axisLockRef.current = axisLockRef.current === 'x' ? null : 'x';
+      } else if (e.key === 'z' || e.key === 'Z') {
+        axisLockRef.current = axisLockRef.current === 'z' ? null : 'z';
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // パルスアニメーション用ref（選択時に発動）
   const pulseRef = useRef<THREE.Mesh>(null);
@@ -450,6 +470,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
   const startDrag = useCallback((e: ThreeEvent<PointerEvent>) => {
     isDraggingRef.current = true;
     setIsDragging(true);
+    axisLockRef.current = null; // 軸ロックリセット
     useUIStore.getState().setIsDraggingFurniture(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
 
@@ -459,6 +480,7 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
 
     // 初期ドラッグ位置を記録
     dragPosRef.current = { x: item.position[0], z: item.position[2] };
+    dragStartPosRef.current = { x: item.position[0], z: item.position[2] };
     // lerp目標を初期位置に設定
     dragTargetRef.current.set(item.position[0], item.position[1], item.position[2]);
 
@@ -520,10 +542,18 @@ export const Furniture = React.memo(function Furniture({ item, selected, isDelet
     let x = intersect.x - dragOffset.current.x;
     let z = intersect.z - dragOffset.current.z;
 
-    // グリッドスナップ
+    // 軸ロック適用: Xキーで水平のみ、Zキーで奥行のみ
+    if (axisLockRef.current === 'x') {
+      z = dragStartPosRef.current.z;
+    } else if (axisLockRef.current === 'z') {
+      x = dragStartPosRef.current.x;
+    }
+
+    // グリッドスナップ（Shiftキーで自由移動）
+    const shiftHeld = e.nativeEvent.shiftKey;
     const currentSnapToGrid = useCameraStore.getState().snapToGrid3D;
     const currentGridSize = useCameraStore.getState().gridSnapSize;
-    if (currentSnapToGrid) {
+    if (currentSnapToGrid && !shiftHeld) {
       x = snapToGridValue(x, currentGridSize);
       z = snapToGridValue(z, currentGridSize);
       snappedToGridRef.current = true;

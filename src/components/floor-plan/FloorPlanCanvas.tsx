@@ -4,9 +4,10 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { Point2D, WallSegment, Opening } from '@/types/floor-plan';
-import { FurnitureItem } from '@/types/scene';
+import { FurnitureItem, FurnitureType } from '@/types/scene';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FURNITURE_CATALOG } from '@/data/furniture';
+import { getDefaultHeight } from '@/hooks/useFurnitureHeight';
 import {
   snapToGrid,
   snapToEndpoints,
@@ -45,7 +46,7 @@ const SNAP_INDICATOR_COLOR = '#EF4444';
 const PREVIEW_WALL_COLOR = 'rgba(59,130,246,0.5)';
 const ORIGIN_MARKER_SIZE = 12; // 原点十字マーカーのサイズ(px)
 const MEASURE_COLOR = '#F59E0B'; // 計測線アンバー色
-const FURNITURE_SNAP_GRID = 0.05; // 家具ドラッグ用の細かいグリッド(m)
+const FURNITURE_SNAP_GRID = 0.1; // 家具ドラッグ用のグリッド(m) — 10cm刻み
 const WALL_SNAP_DISTANCE = 0.2; // 家具→壁スナップ距離(m)
 const WALL_SNAP_HIGHLIGHT_COLOR = 'rgba(59, 130, 246, 0.7)'; // 壁スナップ時の青ハイライト
 
@@ -2297,12 +2298,12 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
         }
       }
 
-      // 家具ドラッグ中: マウス位置に追従（細かいグリッド+壁スナップ付き）
+      // 家具ドラッグ中: マウス位置に追従（グリッド+壁スナップ付き、Shiftで自由移動）
       if (draggingFurnitureId && dragFurnitureOffset.current) {
         const rawPt = screenToWorld(sp.x, sp.y);
-        const snappedPt = snapToGrid(rawPt, FURNITURE_SNAP_GRID);
-        let newX = snappedPt.x - dragFurnitureOffset.current.dx;
-        let newZ = snappedPt.y - dragFurnitureOffset.current.dz;
+        const usePt = e.shiftKey ? rawPt : snapToGrid(rawPt, FURNITURE_SNAP_GRID);
+        let newX = usePt.x - dragFurnitureOffset.current.dx;
+        let newZ = usePt.y - dragFurnitureOffset.current.dz;
         const item = furniture.find(f => f.id === draggingFurnitureId);
         if (item) {
           // 壁スナップ: 家具の辺が壁に近い場合にスナップ
@@ -2574,16 +2575,18 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     const catalogItem = FURNITURE_CATALOG.find(c => c.type === furnitureType);
     if (!catalogItem) return;
 
+    const defaultY = getDefaultHeight(catalogItem.type as FurnitureType);
     const newItem: FurnitureItem = {
       id: `${catalogItem.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       type: catalogItem.type,
       name: catalogItem.name,
-      position: [worldPt.x, catalogItem.defaultScale[1] / 2, worldPt.y],
+      position: [worldPt.x, defaultY, worldPt.y],
       rotation: [0, 0, 0],
       scale: [...catalogItem.defaultScale] as [number, number, number],
       color: catalogItem.defaultColor,
       material: catalogItem.defaultMaterial,
       modelUrl: catalogItem.modelUrl,
+      heightOffset: defaultY > 0 ? defaultY : undefined,
     };
     addFurniture(newItem);
     setSelectedFurniture(newItem.id);
@@ -2591,15 +2594,17 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
 
   // クイック家具ピッカーのアイテム追加ハンドラ
   const handleQuickAddFurniture = useCallback((catalogItem: typeof FURNITURE_CATALOG[0], worldPos: Point2D) => {
+    const defaultY = getDefaultHeight(catalogItem.type as FurnitureType);
     const newItem: FurnitureItem = {
       id: `${catalogItem.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       type: catalogItem.type,
       name: catalogItem.name,
-      position: [worldPos.x, catalogItem.defaultScale[1] / 2, worldPos.y],
+      position: [worldPos.x, defaultY, worldPos.y],
       rotation: [0, 0, 0],
       scale: [...catalogItem.defaultScale] as [number, number, number],
       color: catalogItem.defaultColor,
       material: catalogItem.defaultMaterial,
+      heightOffset: defaultY > 0 ? defaultY : undefined,
     };
     addFurniture(newItem);
     setQuickPickerPos(null);

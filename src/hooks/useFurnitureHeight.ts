@@ -1,25 +1,20 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { FurnitureType } from '@/types/scene';
+import { FurnitureType, FurnitureMountType } from '@/types/scene';
+import { FURNITURE_CATALOG } from '@/data/furniture';
 
 /**
  * 家具のY軸（高さ）位置を管理するカスタムフック。
- * 壁掛けアイテムはデフォルト2.0m、床置きアイテムは0mから開始。
+ * 壁掛けアイテムはデフォルト2.0m、天井アイテムは天井高-0.1m、床置きアイテムは0mから開始。
  * 天井高のレンジ内でオフセットを調整可能。
  */
 
-/** 壁掛けアイテムの家具タイプ一覧 */
-const WALL_MOUNTED_TYPES: ReadonlySet<FurnitureType> = new Set([
-  'air_conditioner',  // エアコン
-  'tv_monitor',       // TVモニター
-  'clock',            // 時計（壁掛け）
-  'menu_board',       // メニューボード
-  'ceiling_fan',      // シーリングファン
-]);
-
 /** 壁掛けアイテムのデフォルト高さ (m) */
 const WALL_MOUNT_DEFAULT_HEIGHT = 2.0;
+
+/** 天井アイテムのデフォルト高さ (m) — 天井高から引く値 */
+const CEILING_MOUNT_OFFSET = 0.1;
 
 /** 床置きアイテムのデフォルト高さ (m) */
 const FLOOR_DEFAULT_HEIGHT = 0;
@@ -27,14 +22,24 @@ const FLOOR_DEFAULT_HEIGHT = 0;
 /** デフォルト天井高 (m) */
 const DEFAULT_CEILING_HEIGHT = 2.7;
 
-/** 壁掛けアイテムかどうかを判定 */
+/** 家具タイプから設置タイプを取得 */
+export function getMountType(type: FurnitureType): FurnitureMountType {
+  const catalog = FURNITURE_CATALOG.find((c) => c.type === type);
+  return catalog?.mountType ?? 'floor';
+}
+
+/** 壁掛け/天井アイテムかどうかを判定 */
 export function isWallMounted(type: FurnitureType): boolean {
-  return WALL_MOUNTED_TYPES.has(type);
+  const mt = getMountType(type);
+  return mt === 'wall' || mt === 'ceiling';
 }
 
 /** 家具タイプに応じたデフォルト高さを取得 */
-export function getDefaultHeight(type: FurnitureType): number {
-  return isWallMounted(type) ? WALL_MOUNT_DEFAULT_HEIGHT : FLOOR_DEFAULT_HEIGHT;
+export function getDefaultHeight(type: FurnitureType, ceilingHeight: number = DEFAULT_CEILING_HEIGHT): number {
+  const mt = getMountType(type);
+  if (mt === 'wall') return WALL_MOUNT_DEFAULT_HEIGHT;
+  if (mt === 'ceiling') return ceilingHeight - CEILING_MOUNT_OFFSET;
+  return FLOOR_DEFAULT_HEIGHT;
 }
 
 export interface UseFurnitureHeightReturn {

@@ -229,7 +229,7 @@ export const useCameraStore = create<CameraState>((set, get) => ({
   activeLightingPreset: null,
   qualityLevel: detectQualityLevel(),
   snapToGrid3D: true,
-  gridSnapSize: 0.25,
+  gridSnapSize: 0.1,
   snapToWall: true,
   liveCameraPosition: [0, 0, 0],
   liveCameraRotationY: 0,

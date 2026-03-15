@@ -200,6 +200,8 @@ export type FurnitureType =
   | 'guide_board'     // 案内板
   | 'custom';         // カスタム3Dモデル
 
+export type FurnitureMountType = 'floor' | 'wall' | 'ceiling';
+
 export interface FurnitureCatalogItem {
   type: FurnitureType;
   name: string;
@@ -209,6 +211,8 @@ export interface FurnitureCatalogItem {
   defaultMaterial?: FurnitureMaterial;
   /** glTF/GLBモデルのURL（ここにURLを指定すれば自動でモデル描画に切り替わる） */
   modelUrl?: string;
+  /** 設置タイプ: floor=床置き(デフォルト), wall=壁掛け, ceiling=天井設置 */
+  mountType?: FurnitureMountType;
 }
 
 export interface SceneState {

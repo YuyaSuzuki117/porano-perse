@@ -81,6 +81,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#FFD700',
     modelUrl: '/models/pendant_light.glb',
     defaultMaterial: 'metal',
+    mountType: 'ceiling',
   },
   {
     type: 'plant',
@@ -152,6 +153,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#C0C0C0',
     modelUrl: '/models/mirror.glb',
     defaultMaterial: 'glass',
+    mountType: 'wall',
   },
   {
     type: 'reception_desk',
@@ -168,6 +170,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [1.2, 0.7, 0.08],
     defaultColor: '#1A1A1A',
     modelUrl: '/models/tv_monitor.glb',
+    mountType: 'wall',
   },
   {
     type: 'washing_machine',
@@ -192,6 +195,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultScale: [0.9, 0.3, 0.25],
     defaultColor: '#F8F8F8',
     modelUrl: '/models/air_conditioner.glb',
+    mountType: 'wall',
   },
   {
     type: 'desk',
@@ -269,6 +273,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#2C2C2C',
     modelUrl: '/models/menu_board.glb',
     defaultMaterial: 'wood',
+    mountType: 'wall',
   },
   {
     type: 'flower_pot',
@@ -287,6 +292,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#F5F5F5',
     modelUrl: '/models/ceiling_fan.glb',
     defaultMaterial: 'metal',
+    mountType: 'ceiling',
   },
   {
     type: 'rug',
@@ -314,6 +320,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
     defaultColor: '#F5F5F5',
     modelUrl: '/models/clock.glb',
     defaultMaterial: 'plastic',
+    mountType: 'wall',
   },
   {
     type: 'trash_can',
@@ -344,7 +351,7 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   { type: 'office_desk', name: 'オフィスデスク', icon: '🖥️', defaultScale: [1.4, 0.75, 0.7], defaultColor: '#A0896C', defaultMaterial: 'wood' as const, modelUrl: '/models/office_desk.glb' },
   { type: 'office_chair', name: 'オフィスチェア', icon: '💺', defaultScale: [0.6, 1.1, 0.6], defaultColor: '#1A1A1A', defaultMaterial: 'fabric' as const, modelUrl: '/models/office_chair.glb' },
   { type: 'file_cabinet', name: 'ファイルキャビネット', icon: '🗄️', defaultScale: [0.45, 1.3, 0.6], defaultColor: '#808080', defaultMaterial: 'metal' as const, modelUrl: '/models/file_cabinet.glb' },
-  { type: 'whiteboard', name: 'ホワイトボード', icon: '📝', defaultScale: [1.2, 0.9, 0.05], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/whiteboard.glb' },
+  { type: 'whiteboard', name: 'ホワイトボード', icon: '📝', defaultScale: [1.2, 0.9, 0.05], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/whiteboard.glb', mountType: 'wall' as const },
   { type: 'printer_stand', name: 'プリンター台', icon: '🖨️', defaultScale: [0.6, 0.7, 0.5], defaultColor: '#D3D3D3', defaultMaterial: 'metal' as const, modelUrl: '/models/printer_stand.glb' },
   // --- 美容・医療向け ---
   { type: 'treatment_bed', name: '施術ベッド', icon: '🛏️', defaultScale: [0.7, 0.65, 1.9], defaultColor: '#FFFFFF', defaultMaterial: 'fabric' as const, modelUrl: '/models/treatment_bed.glb' },
@@ -361,11 +368,11 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   { type: 'atm', name: 'ATM', icon: '🏧', defaultScale: [0.5, 1.5, 0.6], defaultColor: '#2E5090', defaultMaterial: 'metal' as const, modelUrl: '/models/atm.glb' },
   { type: 'coat_hanger', name: 'コートハンガー', icon: '🧥', defaultScale: [0.5, 1.7, 0.5], defaultColor: '#8B6914', defaultMaterial: 'wood' as const, modelUrl: '/models/coat_hanger.glb' },
   { type: 'fire_extinguisher', name: '消火器', icon: '🧯', defaultScale: [0.15, 0.5, 0.15], defaultColor: '#CC0000', defaultMaterial: 'metal' as const, modelUrl: '/models/fire_extinguisher.glb' },
-  { type: 'aed', name: 'AED', icon: '💚', defaultScale: [0.3, 0.35, 0.15], defaultColor: '#FF6600', defaultMaterial: 'plastic' as const, modelUrl: '/models/aed.glb' },
+  { type: 'aed', name: 'AED', icon: '💚', defaultScale: [0.3, 0.35, 0.15], defaultColor: '#FF6600', defaultMaterial: 'plastic' as const, modelUrl: '/models/aed.glb', mountType: 'wall' as const },
   { type: 'plant_large', name: '観葉植物（大）', icon: '🌴', defaultScale: [0.6, 1.8, 0.6], defaultColor: '#228B22', defaultMaterial: 'plastic' as const, modelUrl: '/models/plant_large.glb' },
   { type: 'plant_small', name: '観葉植物（小）', icon: '🌱', defaultScale: [0.2, 0.3, 0.2], defaultColor: '#228B22', defaultMaterial: 'plastic' as const, modelUrl: '/models/plant_small.glb' },
-  { type: 'digital_signage', name: 'デジタルサイネージ', icon: '📺', defaultScale: [0.7, 1.2, 0.08], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/digital_signage.glb' },
-  { type: 'indirect_light', name: '間接照明', icon: '💡', defaultScale: [0.8, 0.3, 0.15], defaultColor: '#FFD700', defaultMaterial: 'metal' as const, modelUrl: '/models/indirect_light.glb' },
+  { type: 'digital_signage', name: 'デジタルサイネージ', icon: '📺', defaultScale: [0.7, 1.2, 0.08], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/digital_signage.glb', mountType: 'wall' as const },
+  { type: 'indirect_light', name: '間接照明', icon: '💡', defaultScale: [0.8, 0.3, 0.15], defaultColor: '#FFD700', defaultMaterial: 'metal' as const, modelUrl: '/models/indirect_light.glb', mountType: 'wall' as const },
   // --- 飲食店 ---
   { type: 'pizza_oven', name: 'ピザ窯', icon: '🍕', defaultScale: [1.2, 1.2, 1.2], defaultColor: '#8B4513', defaultMaterial: 'stone' as const, modelUrl: '/models/pizza_oven.glb' },
   { type: 'beer_server', name: 'ビールサーバー', icon: '🍺', defaultScale: [0.4, 0.6, 0.3], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/beer_server.glb' },
@@ -394,8 +401,8 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   // --- その他共通 ---
   { type: 'water_server', name: 'ウォーターサーバー', icon: '💧', defaultScale: [0.35, 1.1, 0.35], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/water_server.glb' },
   { type: 'air_purifier', name: '空気清浄機', icon: '🌬️', defaultScale: [0.4, 0.6, 0.25], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/air_purifier.glb' },
-  { type: 'projector', name: 'プロジェクター', icon: '📽️', defaultScale: [0.35, 0.12, 0.28], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/projector.glb' },
-  { type: 'speaker', name: 'スピーカー', icon: '🔊', defaultScale: [0.25, 0.35, 0.2], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/speaker.glb' },
-  { type: 'security_camera', name: '防犯カメラ', icon: '📹', defaultScale: [0.15, 0.12, 0.2], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/security_camera.glb' },
-  { type: 'guide_board', name: '案内板', icon: '🪧', defaultScale: [0.6, 1.2, 0.05], defaultColor: '#2C2C2C', defaultMaterial: 'metal' as const, modelUrl: '/models/guide_board.glb' },
+  { type: 'projector', name: 'プロジェクター', icon: '📽️', defaultScale: [0.35, 0.12, 0.28], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/projector.glb', mountType: 'ceiling' as const },
+  { type: 'speaker', name: 'スピーカー', icon: '🔊', defaultScale: [0.25, 0.35, 0.2], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/speaker.glb', mountType: 'wall' as const },
+  { type: 'security_camera', name: '防犯カメラ', icon: '📹', defaultScale: [0.15, 0.12, 0.2], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/security_camera.glb', mountType: 'wall' as const },
+  { type: 'guide_board', name: '案内板', icon: '🪧', defaultScale: [0.6, 1.2, 0.05], defaultColor: '#2C2C2C', defaultMaterial: 'metal' as const, modelUrl: '/models/guide_board.glb', mountType: 'wall' as const },
 ];
