@@ -29,6 +29,7 @@ import { FlowHeatmap } from './FlowHeatmap';
 import { LightingAnalysis } from './LightingAnalysis';
 import { HumanFigure } from './HumanFigure';
 import { EnvironmentPresets } from './EnvironmentPresets';
+import { ToneMappingController } from './ToneMappingController';
 import { MotionBlurEffect } from './MotionBlurEffect';
 import { LightGlow } from './LightGlow';
 import FlowSimulation from './FlowSimulation';
@@ -332,6 +333,7 @@ export function SceneCanvas({
       onPointerMissed={handlePointerMissed}
       style={{ background: bgGradient ? `linear-gradient(to bottom, ${bgGradient.top}, ${bgGradient.bottom})` : bgColor }}
     >
+      <ToneMappingController renderStyle={renderStyle} />
       <Suspense fallback={null}>
         {/* lowモード・スケッチモードではfog無効 */}
         {qualityLevel !== 'low' && !isSketchStyle && (

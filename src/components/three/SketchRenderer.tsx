@@ -164,50 +164,48 @@ float hatchPattern5(vec2 uv, float darkness, float density, float randomness, fl
   // 一貫した45度斜め線の揺らぎ
   float wobble = noise2d(uv * 3.0) * randomness;
 
-  // 段階1 (0.08~0.25): 極細の軽い45度ストローク
+  // 段階1 (0.08~): 極細の軽い45度ストローク — 最も明るい影に
   if (darkness >= 0.08) {
-    float line0 = abs(fract((uv.x + uv.y + wobble) * adjDensity * 0.6) - 0.5) * 2.0;
-    float str0 = smoothstep(0.75, 0.55, line0) * smoothstep(0.08, 0.20, darkness) * 0.4;
-    float pressVar = noise2d(uv * 40.0 + 5.0) * 0.3 + 0.7;
+    float line0 = abs(fract((uv.x + uv.y + wobble) * adjDensity * 0.5) - 0.5) * 2.0;
+    float str0 = smoothstep(0.70, 0.45, line0) * smoothstep(0.08, 0.25, darkness) * 0.5;
+    float pressVar = noise2d(uv * 40.0 + 5.0) * 0.25 + 0.75;
     result = max(result, str0 * pressVar);
   }
 
-  // 段階2 (0.20~0.45): はっきりした45度ハッチング
-  if (darkness > 0.20) {
+  // 段階2 (0.15~): 主要45度ハッチング — 中間トーンの主力
+  if (darkness > 0.15) {
     float wobble1 = noise2d(uv * 4.0 + 3.0) * randomness;
-    float line1 = abs(fract((uv.x + uv.y + wobble1) * adjDensity) - 0.5) * 2.0;
-    float str1 = smoothstep(0.50, 0.25, line1) * smoothstep(0.20, 0.35, darkness) * 0.85;
+    float line1 = abs(fract((uv.x + uv.y + wobble1) * adjDensity * 0.8) - 0.5) * 2.0;
+    float str1 = smoothstep(0.45, 0.18, line1) * min((darkness - 0.10) * 2.0, 1.0) * 0.8;
     float pressVar1 = noise2d(uv * 35.0 + 8.0) * 0.2 + 0.8;
     result = max(result, str1 * pressVar1);
   }
 
-  // 段階3 (0.40~0.65): クロスハッチ（-45度を追加）
-  if (darkness > 0.40) {
+  // 段階3 (0.35~): クロスハッチ（-45度）— 影を濃くする
+  if (darkness > 0.35) {
     float wobble2 = noise2d(uv * 5.0 + 10.0) * randomness;
-    float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity) - 0.5) * 2.0;
-    float str2 = smoothstep(0.50, 0.28, line2) * smoothstep(0.40, 0.55, darkness) * 0.85;
-    float pressVar2 = noise2d(uv * 30.0 + 12.0) * 0.15 + 0.85;
-    result = max(result, str2 * pressVar2);
+    float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity * 0.9) - 0.5) * 2.0;
+    float str2 = smoothstep(0.45, 0.20, line2) * min((darkness - 0.25) * 1.8, 1.0) * 0.75;
+    result = max(result, str2);
   }
 
-  // 段階4 (0.55~0.80): 密クロスハッチ（水平線追加）
-  if (darkness > 0.55) {
+  // 段階4 (0.50~): 水平ハッチ — さらに暗い領域
+  if (darkness > 0.50) {
     float wobble3 = noise2d(uv * 7.0 + 20.0) * randomness * 0.5;
-    float line3 = abs(fract((uv.y + wobble3) * adjDensity * 1.3) - 0.5) * 2.0;
-    float str3 = smoothstep(0.55, 0.30, line3) * smoothstep(0.55, 0.70, darkness) * 0.8;
+    float line3 = abs(fract((uv.y + wobble3) * adjDensity * 1.2) - 0.5) * 2.0;
+    float str3 = smoothstep(0.50, 0.22, line3) * min((darkness - 0.40) * 2.0, 1.0) * 0.8;
     result = max(result, str3);
   }
 
-  // 段階5 (0.75~1.0): 密集クロスハッチ＋スティップリングでほぼ黒
-  if (darkness > 0.75) {
+  // 段階5 (0.70~): 密集クロスハッチ + スティップリング — ほぼ黒
+  if (darkness > 0.70) {
     float wobble4 = noise2d(uv * 9.0 + 30.0) * randomness * 0.3;
-    float line4 = abs(fract((uv.x * 0.7 + uv.y * 1.2 + wobble4) * adjDensity * 1.5) - 0.5) * 2.0;
-    float str4 = smoothstep(0.50, 0.20, line4) * smoothstep(0.75, 0.90, darkness) * 0.9;
+    float line4 = abs(fract((uv.x * 0.7 + uv.y * 1.2 + wobble4) * adjDensity * 1.4) - 0.5) * 2.0;
+    float str4 = smoothstep(0.45, 0.15, line4) * min((darkness - 0.55) * 2.5, 1.0) * 0.9;
     result = max(result, str4);
-    // スティップリング（点描）で暗部を塗りつぶし
     float stipple = hash(floor(uv * adjDensity * 10.0));
-    float stippleThreshold = mix(0.6, 0.15, clamp((darkness - 0.75) * 4.0, 0.0, 1.0));
-    result = max(result, step(stippleThreshold, stipple) * smoothstep(0.75, 0.85, darkness) * 0.85);
+    float stippleThreshold = mix(0.55, 0.1, clamp((darkness - 0.70) * 3.5, 0.0, 1.0));
+    result = max(result, step(stippleThreshold, stipple) * (darkness - 0.60) * 0.8);
   }
 
   return clamp(result, 0.0, 1.0);
@@ -221,18 +219,19 @@ float coloredPencilStroke(vec2 uv, float density, float darkness) {
   float rotU = uv.x * cos(angle) - uv.y * sin(angle);
   float rotV = uv.x * sin(angle) + uv.y * cos(angle);
 
-  float wobble = noise2d(vec2(rotU, rotV) * 5.0) * 0.15;
-  float stroke = abs(fract((rotV + wobble) * density * 0.5) - 0.5) * 2.0;
+  float wobble = noise2d(vec2(rotU, rotV) * 4.0) * 0.2;
+  // ストロークを大きく（density * 0.35 で太い線に）
+  float stroke = abs(fract((rotV + wobble) * density * 0.35) - 0.5) * 2.0;
 
-  // ストロークの筆圧ムラ
-  float pressure = noise2d(vec2(rotU * 3.0, rotV * 0.5) + 7.0) * 0.4 + 0.6;
+  // ストロークの筆圧ムラ（強めに）
+  float pressure = noise2d(vec2(rotU * 2.0, rotV * 0.3) + 7.0) * 0.5 + 0.5;
 
-  float intensity = smoothstep(0.55, 0.20, stroke) * pressure;
+  float intensity = smoothstep(0.50, 0.12, stroke) * pressure;
 
-  // 暗い部分で二重塗り（重ね塗り感）
-  if (darkness > 0.4) {
-    float stroke2 = abs(fract((rotV + wobble * 1.3) * density * 1.2 + 0.3) - 0.5) * 2.0;
-    float layer2 = smoothstep(0.50, 0.22, stroke2) * smoothstep(0.4, 0.7, darkness) * 0.6;
+  // 暗い部分で二重塗り（30度ずらして重ね塗り感）
+  if (darkness > 0.3) {
+    float stroke2 = abs(fract((rotV + wobble * 1.5) * density * 0.5 + 0.25) - 0.5) * 2.0;
+    float layer2 = smoothstep(0.45, 0.15, stroke2) * smoothstep(0.3, 0.65, darkness) * 0.65;
     intensity = max(intensity, layer2);
   }
 
