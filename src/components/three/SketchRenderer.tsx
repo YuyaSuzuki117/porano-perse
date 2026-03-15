@@ -155,53 +155,53 @@ float hatchPattern5(vec2 uv, float darkness, float density, float randomness, fl
   float adjDensity = density * mix(1.0, 0.5, distFactor);
 
   // 非常に明るい: 線なし
-  if (darkness < 0.08) return 0.0;
+  if (darkness < 0.05) return 0.0;
 
   float result = 0.0;
   float wobble = noise2d(uv * 3.0) * randomness;
 
-  // 段階1: 明るい → 極細の軽いストローク（0.08~0.22）
-  if (darkness >= 0.08) {
+  // 段階1: 明るい → 極細の軽いストローク（0.05~0.20）— 開始閾値引き下げ
+  if (darkness >= 0.05) {
     float line0 = abs(fract((uv.x + uv.y * 0.8 + wobble) * adjDensity * 0.7) - 0.5) * 2.0;
-    float str0 = smoothstep(0.75, 0.60, line0) * smoothstep(0.08, 0.18, darkness) * 0.4;
+    float str0 = smoothstep(0.70, 0.50, line0) * smoothstep(0.05, 0.15, darkness) * 0.5;
     float pressVar = noise2d(uv * 40.0 + 5.0) * 0.3 + 0.7;
     result = max(result, str0 * pressVar);
   }
 
-  // 段階2: 中間 → 通常ハッチング（0.22~）
-  if (darkness > 0.22) {
+  // 段階2: 中間 → 通常ハッチング（0.18~）— 開始を早め線を太く
+  if (darkness > 0.18) {
     float wobble1 = noise2d(uv * 4.0 + 3.0) * randomness;
     float line1 = abs(fract((uv.x + uv.y + wobble1) * adjDensity) - 0.5) * 2.0;
-    float str1 = smoothstep(0.60, 0.45, line1) * min((darkness - 0.12) * 1.5, 1.0);
+    float str1 = smoothstep(0.55, 0.35, line1) * min((darkness - 0.08) * 1.8, 1.0);
     float pressVar1 = noise2d(uv * 35.0 + 8.0) * 0.25 + 0.75;
     result = max(result, str1 * pressVar1);
   }
 
-  // 段階3: やや暗い → クロスハッチ（0.40~）
-  if (darkness > 0.40) {
+  // 段階3: やや暗い → クロスハッチ（0.35~）— 開始を早め
+  if (darkness > 0.35) {
     float wobble2 = noise2d(uv * 5.0 + 10.0) * randomness;
     float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity) - 0.5) * 2.0;
-    float str2 = smoothstep(0.60, 0.45, line2) * (darkness - 0.25);
+    float str2 = smoothstep(0.55, 0.38, line2) * (darkness - 0.20);
     float pressVar2 = noise2d(uv * 30.0 + 12.0) * 0.2 + 0.8;
     result = max(result, str2 * pressVar2);
   }
 
-  // 段階4: 暗い → 密クロスハッチ（水平）（0.60~）
-  if (darkness > 0.60) {
+  // 段階4: 暗い → 密クロスハッチ（水平）（0.50~）— 開始を早め
+  if (darkness > 0.50) {
     float wobble3 = noise2d(uv * 7.0 + 20.0) * randomness * 0.5;
     float line3 = abs(fract((uv.y + wobble3) * adjDensity * 1.3) - 0.5) * 2.0;
-    result = max(result, smoothstep(0.7, 0.55, line3) * (darkness - 0.40) * 0.7);
+    result = max(result, smoothstep(0.65, 0.48, line3) * (darkness - 0.30) * 0.8);
   }
 
-  // 段階5: 非常に暗い → 追加密クロスハッチ + スティップリング（0.78~）
-  if (darkness > 0.78) {
+  // 段階5: 非常に暗い → 追加密クロスハッチ + スティップリング（0.70~）— 開始を早め
+  if (darkness > 0.70) {
     float wobble4 = noise2d(uv * 9.0 + 30.0) * randomness * 0.3;
     float line4 = abs(fract((uv.x * 0.7 + uv.y * 1.2 + wobble4) * adjDensity * 1.5) - 0.5) * 2.0;
-    result = max(result, smoothstep(0.65, 0.50, line4) * (darkness - 0.60) * 0.6);
+    result = max(result, smoothstep(0.60, 0.42, line4) * (darkness - 0.50) * 0.7);
     // スティップリング（点描）
     float stipple = hash(floor(uv * adjDensity * 8.0));
-    float stippleThreshold = mix(0.7, 0.3, (darkness - 0.78) * 4.5);
-    result = max(result, step(stippleThreshold, stipple) * (darkness - 0.68) * 0.5);
+    float stippleThreshold = mix(0.7, 0.3, (darkness - 0.70) * 4.5);
+    result = max(result, step(stippleThreshold, stipple) * (darkness - 0.60) * 0.6);
   }
 
   return clamp(result, 0.0, 1.0);
@@ -283,22 +283,22 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
   // ── 3種エッジ検出（強化版） ──
 
-  // 距離で線の太さを変化（近い→太い、遠い→細い）
-  float lineScale = mix(1.5, 0.5, distFactor);
+  // 距離で線の太さを変化（近い→太い、遠い→細い）— 太さ強化
+  float lineScale = mix(2.5, 0.8, distFactor);
   vec2 edgeTS = texelSize * lineScale;
 
-  // 1. シルエットエッジ（深度差大）→太い線
-  float silhouetteEdge = sobelEdgeDepth(uv, edgeTS * 1.5);
+  // 1. シルエットエッジ（深度差大）→太い線（3px相当で家具シルエット強調）
+  float silhouetteEdge = sobelEdgeDepth(uv, edgeTS * 2.0);
   // edgeThreshold を低く設定して内部エッジも検出（家具ディテール強化）
-  float silhouetteIntensity = smoothstep(edgeThreshold * 0.2, edgeThreshold * 1.2, silhouetteEdge);
+  float silhouetteIntensity = smoothstep(edgeThreshold * 0.1, edgeThreshold * 0.8, silhouetteEdge);
 
-  // 2. クリースエッジ（法線差）→中程度の線 — 感度強化
+  // 2. クリースエッジ（法線差）→中程度の線 — 感度大幅強化
   float creaseEdge = normalEdge(uv, edgeTS);
-  float creaseIntensity = smoothstep(0.06, 0.35, creaseEdge) * 0.8;
+  float creaseIntensity = smoothstep(0.03, 0.20, creaseEdge) * 0.85;
 
-  // 3. マテリアルエッジ（色差）→細い線 — 感度強化
+  // 3. マテリアルエッジ（色差）→細い線 — 感度大幅強化
   float matEdge = colorEdge(uv, edgeTS * 0.8);
-  float matIntensity = smoothstep(0.08, 0.4, matEdge) * 0.6;
+  float matIntensity = smoothstep(0.04, 0.25, matEdge) * 0.7;
 
   // エッジ合成（最大値ベース、距離+空気遠近で減衰）
   float edgeFade = mix(1.0, 0.2, distFactor) * aerialFade;
@@ -403,14 +403,14 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // colored-pencil モード: 色鉛筆スケッチ
     // ════════════════════════════════════════
 
-    // 元の色をHSVに変換して彩度を落とす（淡い色鉛筆感）
+    // 元の色をHSVに変換して彩度を調整（色がわかりやすい色鉛筆感）
     vec3 hsv = rgb2hsv(originalColor);
-    hsv.y *= 0.4; // 彩度30-50%に落とす
-    hsv.z = mix(hsv.z, 0.85, 0.3); // 明度を紙色に近づける
+    hsv.y *= 0.55; // 彩度55%で色をしっかり残す
+    hsv.z = mix(hsv.z, 0.85, 0.25); // 明度を紙色に少し近づける
     vec3 pallidColor = hsv2rgb(hsv);
 
-    // ベースは紙色と淡い元色のブレンド
-    float colorStrength = 0.35 + darkness * 0.25; // 暗い部分ほど色が強い
+    // ベースは紙色と元色のブレンド — 色をしっかり出す
+    float colorStrength = 0.45 + darkness * 0.30; // 暗い部分ほど色が強い
     result = mix(paper, pallidColor, colorStrength);
 
     // 色鉛筆の筆圧ムラ（塗りムラ表現）
@@ -419,10 +419,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     pressureMura = pressureMura * 0.5 + 0.5; // 0.25~0.75 に正規化
     result = mix(paper, result, clamp(pressureMura + 0.3, 0.0, 1.0));
 
-    // 色付きハッチング（元の色に合わせた線の色）
-    vec3 hatchColor = mix(inkColor, originalColor * 0.5, 0.6); // 元色寄りのハッチング
+    // 色付きハッチング（元の色に合わせた線の色）— より鮮やかに
+    vec3 hatchColor = mix(inkColor, originalColor * 0.65, 0.65); // 元色寄り・鮮やかなハッチング
     // 暗い部分は濃く、明るい部分は薄くハッチング
-    float coloredHatch = hatch * 0.65;
+    float coloredHatch = hatch * 0.70;
     result = mix(result, hatchColor, coloredHatch);
 
     // エッジ（輪郭線）— 色付き鉛筆線
@@ -451,16 +451,16 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // ベースは紙色
     result = paper;
 
-    // ハッチングで陰影（照明表現込み）
-    result = mix(result, inkColor, hatch * 0.7);
+    // ハッチングで陰影（照明表現込み）— 濃度アップ
+    result = mix(result, inkColor, hatch * 0.85);
 
-    // エッジ（輪郭線）— 種類別の太さ・濃さ
+    // エッジ（輪郭線）— 種類別の太さ・濃さ — 最大濃度0.95
     float silEdge = silhouetteIntensity * edgeFade * pencilMod;
-    result = mix(result, inkColor, silEdge * 0.90);
-    float crEdge = creaseIntensity * edgeFade * pencilMod * 0.65;
-    result = mix(result, inkColor * 1.1, crEdge * 0.55);
-    float mtEdge = matIntensity * edgeFade * pencilMod * 0.5;
-    result = mix(result, inkColor * 1.2, mtEdge * 0.35);
+    result = mix(result, inkColor, silEdge * 0.95);
+    float crEdge = creaseIntensity * edgeFade * pencilMod * 0.70;
+    result = mix(result, inkColor * 1.1, crEdge * 0.65);
+    float mtEdge = matIntensity * edgeFade * pencilMod * 0.55;
+    result = mix(result, inkColor * 1.2, mtEdge * 0.45);
 
     // 方向性シャドウ（右下45度）で立体感強調
     result = mix(result, inkColor * 0.8, directionalShadow * 0.5);
@@ -496,12 +496,12 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 // ── カスタムEffect クラス ──
 class SketchEffectImpl extends Effect {
   constructor({
-    edgeThreshold = 0.015,
-    hatchDensity = 10.0,
+    edgeThreshold = 0.008,
+    hatchDensity = 14.0,
     hatchRandomness = 0.3,
     paperNoiseIntensity = 0.03,
-    paperColor = new THREE.Color('#faf8f0'),
-    inkColor = new THREE.Color('#333333'),
+    paperColor = new THREE.Color('#f5f0e8'),
+    inkColor = new THREE.Color('#1a1a1a'),
     sepiaAmount = 0.4,
     mode = 0,
     time = 0,
@@ -552,12 +552,12 @@ export const SketchEffect = forwardRef<SketchEffectImpl, SketchEffectProps>(
   function SketchEffect(
     {
       mode = 'sketch',
-      edgeThreshold = 0.015,
-      hatchDensity = 10.0,
+      edgeThreshold = 0.008,
+      hatchDensity = 14.0,
       hatchRandomness = 0.3,
       paperNoiseIntensity = 0.03,
-      paperColor = '#faf8f0',
-      inkColor = '#333333',
+      paperColor = '#f5f0e8',
+      inkColor = '#1a1a1a',
       sepiaAmount = 0.4,
     },
     ref,
