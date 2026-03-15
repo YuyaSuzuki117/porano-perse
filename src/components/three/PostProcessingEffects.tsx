@@ -46,10 +46,10 @@ interface PostProcessingEffectsProps {
   renderStyle?: 'realistic' | 'sketch' | 'colored-pencil' | 'watercolor' | 'blueprint';
 }
 
-/** 色収差オフセット — high用 (ウルトラシネマティック・GC防止のためコンポーネント外定義) */
-const chromaticOffsetHigh = new THREE.Vector2(0.0008, 0.0007);
-/** 色収差オフセット — medium用 (控えめ) */
-const chromaticOffsetMedium = new THREE.Vector2(0.0003, 0.0003);
+/** 色収差オフセット — high用 (自然なレンズ収差・GC防止のためコンポーネント外定義) */
+const chromaticOffsetHigh = new THREE.Vector2(0.0006, 0.0005);
+/** 色収差オフセット — medium用 (微細なヒント程度) */
+const chromaticOffsetMedium = new THREE.Vector2(0.0002, 0.0002);
 
 function PostProcessingEffects({
   qualityLevel,
@@ -80,7 +80,7 @@ function PostProcessingEffects({
           blendFunction={BlendFunction.MULTIPLY}
           samples={192}
           radius={ssaoRadius * 0.7}
-          intensity={ssaoIntensity * 1.15}
+          intensity={ssaoIntensity * 1.2}
           luminanceInfluence={0.65}
           bias={0.0002}
           worldDistanceThreshold={1.2}
@@ -88,20 +88,20 @@ function PostProcessingEffects({
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
-          luminanceSmoothing={0.2}
-          intensity={bloomIntensity * 1.4}
+          luminanceSmoothing={0.1}
+          intensity={bloomIntensity * 1.2}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.06} contrast={0.18} />
-        <HueSaturation hue={0.03} saturation={0.12} />
+        <BrightnessContrast brightness={0.04} contrast={0.14} />
+        <HueSaturation hue={0.015} saturation={0.08} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.022} />
         <DepthOfField
           focusDistance={0.01}
-          focalLength={0.035}
-          bokehScale={6.0}
+          focalLength={0.045}
+          bokehScale={4.5}
         />
-        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.3 * 1.2} blendFunction={BlendFunction.NORMAL} />
+        <Vignette eskil={false} offset={0.2} darkness={vignetteIntensity * 1.1} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
     );
@@ -123,15 +123,15 @@ function PostProcessingEffects({
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
-          luminanceSmoothing={0.15}
-          intensity={bloomIntensity * 1.3}
+          luminanceSmoothing={0.12}
+          intensity={bloomIntensity * 1.2}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.04} contrast={0.15} />
-        <HueSaturation hue={0.02} saturation={0.1} />
+        <BrightnessContrast brightness={0.03} contrast={0.12} />
+        <HueSaturation hue={0.015} saturation={0.08} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.025} />
-        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.2} blendFunction={BlendFunction.NORMAL} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.018} />
+        <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.0} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
     );
@@ -142,23 +142,23 @@ function PostProcessingEffects({
     <EffectComposer enableNormalPass>
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
-        samples={64}
-        radius={ssaoRadius * 0.75}
-        intensity={ssaoIntensity * 1.0}
+        samples={96}
+        radius={ssaoRadius * 0.7}
+        intensity={ssaoIntensity * 1.1}
         luminanceInfluence={0.6}
         bias={0.0005}
       />
       <Bloom
         luminanceThreshold={bloomLuminanceThreshold}
-        luminanceSmoothing={0.3}
-        intensity={bloomIntensity * 0.85}
+        luminanceSmoothing={0.2}
+        intensity={bloomIntensity * 0.9}
         mipmapBlur
       />
-      <BrightnessContrast brightness={0.025} contrast={0.1} />
-      <HueSaturation hue={0.01} saturation={0.07} />
+      <BrightnessContrast brightness={0.02} contrast={0.08} />
+      <HueSaturation hue={0.01} saturation={0.06} />
       <ChromaticAberration offset={chromaticOffsetMedium} />
       <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
-      <Vignette eskil={false} offset={0.12} darkness={vignetteIntensity * 0.7} blendFunction={BlendFunction.NORMAL} />
+      <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 0.6} blendFunction={BlendFunction.NORMAL} />
       <SMAA />
     </EffectComposer>
   );
