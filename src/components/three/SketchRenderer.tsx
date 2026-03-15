@@ -184,7 +184,7 @@ float hatchPattern5(vec2 uv, float darkness, float density, float randomness, fl
   // 段階3 (0.35~): クロスハッチ（-45度）— 影を濃くする
   if (darkness > 0.35) {
     float wobble2 = noise2d(uv * 5.0 + 10.0) * randomness;
-    float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity * 0.9) - 0.5) * 2.0;
+    float line2 = abs(fract((uv.x - uv.y + wobble2) * adjDensity * 0.85) - 0.5) * 2.0;
     float str2 = smoothstep(0.45, 0.20, line2) * min((darkness - 0.25) * 1.8, 1.0) * 0.75;
     result = max(result, str2);
   }
@@ -221,15 +221,15 @@ float coloredPencilStroke(vec2 uv, float density, float darkness) {
 
   float wobble = noise2d(vec2(rotU, rotV) * 4.0) * 0.2;
   // ストロークを大きく（density * 0.35 で太い線に）
-  float stroke = abs(fract((rotV + wobble) * density * 0.35) - 0.5) * 2.0;
+  float stroke = abs(fract((rotV + wobble) * density * 0.28) - 0.5) * 2.0;
 
   // ストロークの筆圧ムラ（強めに）
   float pressure = noise2d(vec2(rotU * 2.0, rotV * 0.3) + 7.0) * 0.5 + 0.5;
 
-  float intensity = smoothstep(0.50, 0.12, stroke) * pressure;
+  float intensity = smoothstep(0.55, 0.08, stroke) * pressure;
 
   // 暗い部分で二重塗り（30度ずらして重ね塗り感）
-  if (darkness > 0.3) {
+  if (darkness > 0.25) {
     float stroke2 = abs(fract((rotV + wobble * 1.5) * density * 0.5 + 0.25) - 0.5) * 2.0;
     float layer2 = smoothstep(0.45, 0.15, stroke2) * smoothstep(0.3, 0.65, darkness) * 0.65;
     intensity = max(intensity, layer2);
@@ -347,7 +347,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
   // ── 照明ベースのハッチング密度 ──
   float lightInfluence = luminance;
-  float hatchDarkness = darkness * mix(1.4, 0.4, lightInfluence);
+  float hatchDarkness = darkness * mix(1.6, 0.3, lightInfluence);
   hatchDarkness = clamp(hatchDarkness, 0.0, 1.0);
 
   // ── 5段階ハッチング ──
@@ -381,10 +381,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     for (float dx = -3.0; dx <= 3.0; dx += 1.0) {
       for (float dy = -3.0; dy <= 3.0; dy += 1.0) {
         float w = 1.0 / (1.0 + abs(dx) + abs(dy));
-        vec2 offset = vec2(dx, dy) * texelSize * 4.5;
+        vec2 offset = vec2(dx, dy) * texelSize * 6.0;
         // 不規則なオフセットで水の流れ感
         float nOff = noise2d(uv * 30.0 + vec2(dx, dy) * 7.0);
-        offset += (nOff - 0.5) * texelSize * 4.0;
+        offset += (nOff - 0.5) * texelSize * 5.0;
         blurred += texture2D(inputBuffer, clamp(uv + offset, 0.0, 1.0)).rgb * w;
         totalWeight += w;
       }
@@ -400,15 +400,15 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     whiteout = pow(whiteout, 1.0); // 白抜きを弱める
 
     // ── ベースカラー（色をしっかり出す） ──
-    vec3 waterBase = blurred * 0.5 + originalColor * 0.5;
+    vec3 waterBase = blurred * 0.4 + originalColor * 0.6;
     // 彩度を上げて水彩らしい鮮やかさを
     vec3 hsv = rgb2hsv(waterBase);
-    hsv.y *= 1.2; // 彩度を上げる
+    hsv.y *= 1.3; // 彩度を強めに上げる
     hsv.z = mix(hsv.z, 0.9, 0.1); // 明度はほぼそのまま
     waterBase = hsv2rgb(hsv);
 
     // 色の溜まり（暗い部分でpigment pooling）— 強めに
-    float pooling = smoothstep(0.3, 0.7, darkness) * 0.6;
+    float pooling = smoothstep(0.3, 0.7, darkness) * 0.65;
     vec3 poolColor = originalColor * 0.45;
     waterBase = mix(waterBase, poolColor, pooling);
 
@@ -416,7 +416,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     waterBase += vec3(colorVariation * 0.35, colorVariation2 * 0.25, -colorVariation * 0.15);
 
     // 紙色とのブレンド（色を強く出す）
-    float colorMix = 0.65 + darkness * 0.25 + colorVariation * 0.1;
+    float colorMix = 0.72 + darkness * 0.25 + colorVariation * 0.1;
     colorMix *= (1.0 - whiteout * 0.6); // 白抜きを弱める
     vec3 watercolor = mix(paper, waterBase, colorMix);
 
@@ -431,7 +431,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
       noise2d(uv * 20.0 + 50.0) - 0.5
     );
     vec3 neighborColor = texture2D(inputBuffer, clamp(uv + wetOffset, 0.0, 1.0)).rgb;
-    watercolor = mix(watercolor, neighborColor * 0.6 + paper * 0.4, 0.08);
+    watercolor = mix(watercolor, neighborColor * 0.6 + paper * 0.4, 0.12);
 
     // ── 輪郭は極薄（水彩は線がほぼない） ──
     watercolor = mix(watercolor, inkColor * 0.4 + watercolor * 0.6, edgeIntensity * 0.06);
@@ -453,7 +453,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // ── 鮮やかな色（彩度75%） ──
     vec3 hsvC = rgb2hsv(originalColor);
-    hsvC.y *= 0.85; // 彩度をさらに上げる
+    hsvC.y *= 0.9; // 彩度をさらに上げる
     hsvC.z = mix(hsvC.z, 0.80, 0.2); // 明度を少し紙に近づける
     vec3 vividColor = hsv2rgb(hsvC);
 
@@ -465,7 +465,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float grainMask = paperGrainMask(uv, resolution);
     // ざらつきで色が一部抜ける
     float grainFade = smoothstep(0.25, 0.55, grainMask);
-    result = mix(paper, result, grainFade * 0.3 + 0.7);
+    result = mix(paper, result, grainFade * 0.2 + 0.8);
 
     // ── 方向性ストロークパターン ──
     vec2 strokeUV = uv * resolution / 4.0;
@@ -473,7 +473,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // ストロークを色で塗る（暗い部分ほど強い）
     vec3 strokeColor = vividColor * 0.8;
-    result = mix(result, strokeColor, strokePattern * 0.7 * max(darkness, 0.2));
+    result = mix(result, strokeColor, strokePattern * 0.8 * max(darkness, 0.25));
 
     // ── 重ね塗り感（暗い部分はさらに濃く） ──
     if (darkness > 0.4) {
@@ -530,8 +530,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // ── 背景: 完全に暗い紺色で上書き（inputColorを無視） ──
     // PostProcessingのバックバッファに元の背景色が残るため、
     // outputColorで完全に上書きしなければ紺色にならない
-    vec3 bgTop = vec3(0.005, 0.012, 0.035);  // 極暗紺（トーンマッピング後の持ち上げを見越して極端に暗く）
-    vec3 bgBot = vec3(0.012, 0.028, 0.065); // 暗い紺
+    vec3 bgTop = vec3(0.02, 0.05, 0.12);  // 実用的な暗紺
+    vec3 bgBot = vec3(0.04, 0.08, 0.18); // 暗い紺
     vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.7 + 0.15);
     float bgNoise = noise2d(uv * resolution * 0.03) * 0.01;
     bgColor += vec3(bgNoise * 0.1, bgNoise * 0.2, bgNoise * 0.4);
@@ -558,10 +558,11 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float minorGrid = max(gridFineH, gridFineV) * 0.08;
 
     float grid = max(majorGrid, minorGrid);
-    vec3 gridColor = vec3(0.08, 0.20, 0.38);
+    vec3 gridColor = pow(vec3(0.08, 0.20, 0.38), vec3(2.2)); // 逆ガンマ補正済み
 
     // ── 線の色: 白～シアン ──
-    vec3 lineColor = vec3(0.88, 0.94, 1.0); // #e0f0ff
+    // sRGBエンコードで持ち上がる分を相殺するため逆ガンマ補正
+    vec3 lineColor = pow(vec3(0.88, 0.94, 1.0), vec3(2.2)); // #e0f0ff — 逆補正済み
 
     // ── エッジ描画（ハッチングなし、クリーンな線のみ） ──
     // BlueprintではdistFactorの影響を弱めてクリアに
@@ -586,7 +587,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // ── 線の太さで明るさを変える（太い線=より明るい） ──
     float lineGlow = bpSilIntensity * 0.3; // シルエットに微光彩
-    vec3 glowColor = vec3(0.4, 0.7, 1.0);
+    vec3 glowColor = pow(vec3(0.4, 0.7, 1.0), vec3(2.2)); // 逆ガンマ補正済み
 
     // ── 寸法線風の短い直交線 ──
     float dimLine = 0.0;
@@ -617,6 +618,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
 
     // 背景も紺色を維持（bgMaskで薄まらないように）
     // ビネットなし（設計図は均一）
+    // sRGBエンコードで持ち上がる分を相殺する逆ガンマ補正
+    result = pow(result, vec3(2.2));
     outputColor = vec4(result, inputColor.a);
     return;
 
@@ -632,16 +635,16 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     result = paper;
 
     // ── ハッチングで陰影（コントラスト強め） ──
-    float hatchStrength = hatch * 0.95;
+    float hatchStrength = hatch * 1.0;
     result = mix(result, inkColor, hatchStrength);
 
     // ── エッジ（太くはっきり、コントラスト強） ──
     // シルエット（太い線 3-4px）
     float silEdge = silhouetteIntensity * edgeFade * pencilMod;
-    result = mix(result, inkColor * 0.95, silEdge * 0.98);
+    result = mix(result, inkColor * 0.95, silEdge * 1.0);
     // クリース（中太）
     float crEdge = creaseIntensity * edgeFade * pencilMod * 0.75;
-    result = mix(result, inkColor, crEdge * 0.75);
+    result = mix(result, inkColor, crEdge * 0.85);
     // マテリアル（細い）
     float mtEdge = matIntensity * edgeFade * pencilMod * 0.55;
     result = mix(result, inkColor * 1.1, mtEdge * 0.50);

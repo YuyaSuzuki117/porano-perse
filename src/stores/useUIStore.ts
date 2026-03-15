@@ -135,7 +135,7 @@ export const useUIStore = create<UIState>((set) => ({
   showMinimap: true,
   isDraggingFurniture: false,
   furnitureCollision: false,
-  wallDisplayMode: 'section',
+  wallDisplayMode: 'solid',
   wallOpacitySlider: 0,
   ceilingVisible: false,
   ceilingOpacitySlider: 0,

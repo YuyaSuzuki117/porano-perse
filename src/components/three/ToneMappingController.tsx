@@ -23,12 +23,14 @@ export function ToneMappingController({ renderStyle }: ToneMappingControllerProp
 
   useEffect(() => {
     if (renderStyle === 'blueprint') {
-      // blueprintモード: トーンマッピング無効（暗い紺色をそのまま表示）
+      // blueprintモード: トーンマッピング無効 + sRGB出力で正確な暗紺を表示
       gl.toneMapping = THREE.NoToneMapping;
       gl.toneMappingExposure = 1.0;
+      gl.outputColorSpace = THREE.SRGBColorSpace;
     } else {
-      // 他のモード: ACES復元
+      // 他のモード: ACES復元 + sRGB出力
       gl.toneMapping = THREE.ACESFilmicToneMapping;
+      gl.outputColorSpace = THREE.SRGBColorSpace;
     }
   }, [gl, renderStyle]);
 
