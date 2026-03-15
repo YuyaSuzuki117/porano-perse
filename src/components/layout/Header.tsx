@@ -215,6 +215,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         {isEditingName ? (
           <input
             autoFocus
+            aria-label="プロジェクト名を入力"
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             onBlur={handleNameCommit}
@@ -228,13 +229,13 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={() => { setNameInput(projectName); setIsEditingName(true); }}
             className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-text max-w-[6rem] md:max-w-none truncate"
-            title="クリックで編集"
+            aria-label={`プロジェクト名: ${projectName} - クリックで編集`}
           >
             {projectName}
           </button>
         )}
         {lastAutoSaved && (
-          <span className="text-[9px] text-gray-300 whitespace-nowrap" title={`自動保存: ${new Date(lastAutoSaved).toLocaleTimeString('ja-JP')}`}>
+          <span className="text-[9px] text-gray-500 whitespace-nowrap" title={`自動保存: ${new Date(lastAutoSaved).toLocaleTimeString('ja-JP')}`}>
             自動保存済み {new Date(lastAutoSaved).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
@@ -356,6 +357,8 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         accept=".json,.perse.json"
         onChange={handleLoad}
         className="hidden"
+        aria-label="プロジェクトファイルを選択"
+        tabIndex={-1}
       />
 
       {/* Collab + Auth + Undo/Redo + Zoom + Screenshot（デスクトップのみ） */}

@@ -494,7 +494,8 @@ export default function EditorPage() {
           {viewMode === '3d' && (
             <div
               className="absolute inset-0 tab-content-enter"
-              aria-label="3Dプレビュー"
+              aria-label="3D store preview"
+              role="region"
               {...dragHandlers}
               onTouchStart={handle3DTouchStart}
               onTouchMove={handle3DTouchMove}
@@ -874,7 +875,8 @@ export default function EditorPage() {
               className={`relative print-area ${
                 viewMode === 'split' ? 'w-1/2' : 'flex-1'
               }`}
-              aria-label="3Dプレビュー"
+              aria-label="3D store preview"
+              role="region"
               {...dragHandlers}
             >
               <ErrorBoundary>
@@ -919,7 +921,7 @@ export default function EditorPage() {
                   <button
                     onClick={() => setPhotoMode(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 text-white text-xs rounded-md backdrop-blur-sm hover:bg-amber-600/80 transition-colors"
-                    title="フォトモード (P)"
+                    aria-label="フォトモード (P)"
                   >
                     <span>📷</span>
                     <span>フォトモード</span>

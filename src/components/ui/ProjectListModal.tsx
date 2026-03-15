@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useProjectStore, SavedProject } from '@/stores/useProjectStore';
 import { listProjects as listCloudProjects, loadProject as loadCloudProject, deleteProject as deleteCloudProject, type PerseProject } from '@/lib/project-storage';
@@ -25,6 +25,18 @@ export function ProjectListModal({ isOpen, onClose }: ProjectListModalProps) {
   const [projects, setProjects] = useState<MergedProject[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loadingCloud, setLoadingCloud] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    modalRef.current?.focus();
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // ローカル+クラウドのプロジェクト一覧を統合
   const refreshList = useCallback(async () => {
@@ -157,19 +169,20 @@ export function ProjectListModal({ isOpen, onClose }: ProjectListModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="project-list-title">
+      <div ref={modalRef} tabIndex={-1} className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col outline-none">
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5 text-blue-600">
               <path d="M2 15V5a1 1 0 011-1h4l2 2h6a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1z" />
             </svg>
-            <h2 className="text-base font-semibold text-gray-800">保存済みプロジェクト</h2>
+            <h2 id="project-list-title" className="text-base font-semibold text-gray-800">保存済みプロジェクト</h2>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="閉じる"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
               <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />

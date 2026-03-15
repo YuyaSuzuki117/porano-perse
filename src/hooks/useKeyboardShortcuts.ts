@@ -12,6 +12,7 @@ import { useUIStore } from '@/stores/useUIStore';
 export function useKeyboardShortcuts() {
   const selectedFurnitureId = useUIStore(s => s.selectedFurnitureId);
   const selectedFurnitureIds = useUIStore(s => s.selectedFurnitureIds);
+  const furniture = useEditorStore((s) => s.furniture);
   const setSelectedFurniture = useEditorStore((s) => s.setSelectedFurniture);
   const duplicateSelectedFurniture = useEditorStore((s) => s.duplicateSelectedFurniture);
   const selectAllFurniture = useEditorStore((s) => s.selectAllFurniture);
@@ -110,8 +111,30 @@ export function useKeyboardShortcuts() {
       if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
         setPhotoMode(!photoMode);
       }
+
+      // 矢印キー: 家具のナビゲーション（選択中の次/前の家具を選択）
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        if (furniture.length > 0) {
+          const currentIndex = selectedFurnitureId
+            ? furniture.findIndex((f) => f.id === selectedFurnitureId)
+            : -1;
+          const nextIndex = (currentIndex + 1) % furniture.length;
+          setSelectedFurniture(furniture[nextIndex].id);
+          e.preventDefault();
+        }
+      }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        if (furniture.length > 0) {
+          const currentIndex = selectedFurnitureId
+            ? furniture.findIndex((f) => f.id === selectedFurnitureId)
+            : 0;
+          const prevIndex = (currentIndex - 1 + furniture.length) % furniture.length;
+          setSelectedFurniture(furniture[prevIndex].id);
+          e.preventDefault();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, copyFurniture, pasteFurniture, deleteSelected, duplicateFurniture, duplicateSelectedFurniture, selectAllFurniture, selectedFurnitureId, selectedFurnitureIds, setSelectedFurniture, wallDisplayMode, setWallDisplayMode, ceilingVisible, setCeilingVisible, showGrid, setShowGrid, showDimensions, setShowDimensions, showFurniture, setShowFurniture, photoMode, setPhotoMode]);
+  }, [undo, redo, copyFurniture, pasteFurniture, deleteSelected, duplicateFurniture, duplicateSelectedFurniture, selectAllFurniture, selectedFurnitureId, selectedFurnitureIds, furniture, setSelectedFurniture, wallDisplayMode, setWallDisplayMode, ceilingVisible, setCeilingVisible, showGrid, setShowGrid, showDimensions, setShowDimensions, showFurniture, setShowFurniture, photoMode, setPhotoMode]);
 }

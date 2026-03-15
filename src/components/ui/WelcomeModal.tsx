@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { STORE_TEMPLATES } from '@/data/templates';
 
 // ウェルカムモーダルに表示する代表テンプレート
@@ -22,15 +22,29 @@ export function WelcomeModal({
   onOpenTemplates,
 }: WelcomeModalProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const handleClose = (action: () => void) => {
+  const handleClose = useCallback((action: () => void) => {
     if (dontShowAgain) {
       localStorage.setItem('porano-perse-welcome-dismissed', 'permanent');
     } else {
       localStorage.setItem('porano-perse-welcome-dismissed', 'true');
     }
     action();
-  };
+  }, [dontShowAgain]);
+
+  // Escape key to close modal
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose(() => onStartEmpty());
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    // Focus the modal on mount
+    modalRef.current?.focus();
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [handleClose, onStartEmpty]);
 
   const handleTemplateClick = (templateId: string) => {
     handleClose(() => onSelectTemplate(templateId));
@@ -54,13 +68,15 @@ export function WelcomeModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 mt-[15vh] p-8 animate-welcome-in"
+        ref={modalRef}
+        tabIndex={-1}
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 mt-[15vh] p-8 animate-welcome-in outline-none"
       >
         {/* タイトル */}
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <h2 id="welcome-modal-title" className="text-2xl font-bold text-gray-800 mb-2">
             {'\uD83C\uDFE0'} Porano Perse へようこそ
           </h2>
           <p className="text-gray-500 text-sm leading-relaxed">

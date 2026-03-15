@@ -1339,7 +1339,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onChange={(e) => setLightWarmth(parseInt(e.target.value) / 100)}
               className="w-full h-1.5 accent-orange-400"
             />
-            <div className="flex justify-between text-[9px] text-gray-300 mt-0.5">
+            <div className="flex justify-between text-[9px] text-gray-400 mt-0.5">
               <span>寒色 (青白)</span>
               <span>暖色 (橙)</span>
             </div>
@@ -1362,7 +1362,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onChange={(e) => setFogDistance(parseInt(e.target.value))}
               className="w-full h-1.5 accent-blue-400"
             />
-            <div className="flex justify-between text-[9px] text-gray-300 mt-0.5">
+            <div className="flex justify-between text-[9px] text-gray-400 mt-0.5">
               <span>濃霧</span>
               <span>クリア</span>
             </div>
@@ -1418,7 +1418,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     <div className="text-[10px] text-gray-400 mt-0.5">
                       {isConfirming ? '既存の家具がすべて削除されます' : s.description}
                     </div>
-                    <div className="text-[10px] text-gray-300 mt-0.5">
+                    <div className="text-[10px] text-gray-400 mt-0.5">
                       {s.items.length}点
                     </div>
                   </div>
@@ -1511,7 +1511,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onChange={(e) => setFurnitureSearch(e.target.value)}
               placeholder="家具を検索..."
               aria-label="什器を検索"
-              className={`w-full px-3 py-2 border border-gray-200 rounded-md text-xs placeholder:text-gray-300 focus:border-blue-400 focus:outline-none mb-2 ${
+              className={`w-full px-3 py-2 border border-gray-200 rounded-md text-xs placeholder:text-gray-400 focus:border-blue-400 focus:outline-none mb-2 ${
                 isMobile ? 'min-h-[44px]' : ''
               }`}
             />
@@ -2449,6 +2449,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             isOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
           style={{ height: `${sheetHeight}dvh` }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="エディタ設定パネル"
         >
           {/* Drag handle bar — スワイプ操作エリア */}
           <div
@@ -2469,6 +2472,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
                   sheetHeight === h ? 'bg-blue-500' : 'bg-gray-200'
                 }`}
+                aria-label={`パネル高さ ${h}%`}
               />
             ))}
           </div>

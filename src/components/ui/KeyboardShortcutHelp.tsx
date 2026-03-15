@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const SHORTCUT_GROUPS = [
   {
@@ -40,6 +40,20 @@ const SHORTCUT_GROUPS = [
 export function KeyboardShortcutHelp() {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Escape key to close
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, handleKeyDown]);
+
   return (
     <>
       {/* 浮動 ? ボタン */}
@@ -59,7 +73,7 @@ export function KeyboardShortcutHelp() {
             className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed bottom-16 right-4 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-72 max-h-[70vh] overflow-y-auto">
+          <div className="fixed bottom-16 right-4 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-72 max-h-[70vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label="キーボードショートカット一覧">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-gray-800">キーボードショートカット</h3>
               <button
