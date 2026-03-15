@@ -400,25 +400,25 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float whiteout = smoothstep(0.5, 0.85, luminance);
     whiteout = pow(whiteout, 1.0); // 白抜きを弱める
 
-    // ── ベースカラー（透明感のある淡い色） ──
-    vec3 waterBase = blurred * 0.7 + originalColor * 0.3;
-    // 彩度を少し上げつつ透明感
+    // ── ベースカラー（色をしっかり出す） ──
+    vec3 waterBase = blurred * 0.5 + originalColor * 0.5;
+    // 彩度を上げて水彩らしい鮮やかさを
     vec3 hsv = rgb2hsv(waterBase);
-    hsv.y *= 1.0; // 彩度を維持
-    hsv.z = mix(hsv.z, 0.95, 0.15); // 明度上げを控えめに
+    hsv.y *= 1.2; // 彩度を上げる
+    hsv.z = mix(hsv.z, 0.9, 0.1); // 明度はほぼそのまま
     waterBase = hsv2rgb(hsv);
 
-    // 色の溜まり（暗い部分でpigment pooling）
-    float pooling = smoothstep(0.4, 0.8, darkness) * 0.55;
-    vec3 poolColor = originalColor * 0.5; // 濃い色が溜まる
+    // 色の溜まり（暗い部分でpigment pooling）— 強めに
+    float pooling = smoothstep(0.3, 0.7, darkness) * 0.6;
+    vec3 poolColor = originalColor * 0.45;
     waterBase = mix(waterBase, poolColor, pooling);
 
     // 色のムラを適用
-    waterBase += vec3(colorVariation * 0.3, colorVariation2 * 0.2, -colorVariation * 0.1);
+    waterBase += vec3(colorVariation * 0.35, colorVariation2 * 0.25, -colorVariation * 0.15);
 
-    // 紙色とのブレンド（透明感）
-    float colorMix = 0.55 + darkness * 0.35 + colorVariation * 0.1;
-    colorMix *= (1.0 - whiteout * 0.85); // 白抜き部分は紙色
+    // 紙色とのブレンド（色を強く出す）
+    float colorMix = 0.65 + darkness * 0.25 + colorVariation * 0.1;
+    colorMix *= (1.0 - whiteout * 0.6); // 白抜きを弱める
     vec3 watercolor = mix(paper, waterBase, colorMix);
 
     // ── エッジにじみ（色が広がる） ──
@@ -528,33 +528,37 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // blueprint モード: 紺背景・白シアン線・グリッド・寸法線風
     // ════════════════════════════════════════════════════════
 
-    // ── 背景: 深い紺色グラデーション ──
-    vec3 bgTop = vec3(0.04, 0.09, 0.18);    // #0a1630
-    vec3 bgBot = vec3(0.08, 0.14, 0.26);    // #142444
-    vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.8 + 0.1);
-    // 紙の微妙なテクスチャ
-    float bgNoise = noise2d(uv * resolution * 0.03) * 0.02;
-    bgColor += vec3(bgNoise * 0.3, bgNoise * 0.4, bgNoise * 0.6);
+    // ── 背景: 深い紺色（シーン内容に依存しない固定色） ──
+    vec3 bgTop = vec3(0.03, 0.06, 0.14);    // 非常に暗い紺
+    vec3 bgBot = vec3(0.06, 0.10, 0.22);    // やや明るい紺
+    // 全面を紺色で塗る（元画像を完全に無視）
+    vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.7 + 0.15);
+    float bgNoise = noise2d(uv * resolution * 0.03) * 0.015;
+    bgColor += vec3(bgNoise * 0.2, bgNoise * 0.3, bgNoise * 0.5);
 
-    // ── グリッドパターン ──
+    // ── グリッドパターン（線幅を広げて視認性UP） ──
     vec2 gridUV = uv * resolution;
-    float gridSpacing = 30.0; // ピクセル間隔
-    float gridFine = 6.0;     // 細かいグリッド間隔
+    float gridSpacing = 40.0;
+    float gridFine = 10.0;
 
-    // メジャーグリッド
+    // メジャーグリッド（太め）
     vec2 gridPos = mod(gridUV, gridSpacing);
-    float gridLineH = smoothstep(1.2, 0.0, abs(gridPos.y));
-    float gridLineV = smoothstep(1.2, 0.0, abs(gridPos.x));
-    float majorGrid = max(gridLineH, gridLineV) * 0.12;
+    float gridDistH = min(gridPos.y, gridSpacing - gridPos.y);
+    float gridDistV = min(gridPos.x, gridSpacing - gridPos.x);
+    float gridLineH = smoothstep(1.5, 0.0, gridDistH);
+    float gridLineV = smoothstep(1.5, 0.0, gridDistV);
+    float majorGrid = max(gridLineH, gridLineV) * 0.18;
 
-    // マイナーグリッド（細かい）
+    // マイナーグリッド
     vec2 gridPosFine = mod(gridUV, gridFine);
-    float gridFineH = smoothstep(0.7, 0.0, abs(gridPosFine.y));
-    float gridFineV = smoothstep(0.7, 0.0, abs(gridPosFine.x));
-    float minorGrid = max(gridFineH, gridFineV) * 0.05;
+    float gridDistFH = min(gridPosFine.y, gridFine - gridPosFine.y);
+    float gridDistFV = min(gridPosFine.x, gridFine - gridPosFine.x);
+    float gridFineH = smoothstep(0.8, 0.0, gridDistFH);
+    float gridFineV = smoothstep(0.8, 0.0, gridDistFV);
+    float minorGrid = max(gridFineH, gridFineV) * 0.08;
 
     float grid = max(majorGrid, minorGrid);
-    vec3 gridColor = vec3(0.2, 0.4, 0.6); // 薄い紺シアン
+    vec3 gridColor = vec3(0.15, 0.35, 0.55);
 
     // ── 線の色: 白～シアン ──
     vec3 lineColor = vec3(0.88, 0.94, 1.0); // #e0f0ff
@@ -610,7 +614,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // グロー
     result += glowColor * lineGlow * bpEdge * 0.25;
 
-    // 背景は紺色のまま（bgMask処理なし）
+    // 背景（遠景）も紺色のまま維持
+    result = mix(result, bgColor, bgMask * 0.5);
     // ビネットなし（設計図は均一）
     outputColor = vec4(result, inputColor.a);
     return;
