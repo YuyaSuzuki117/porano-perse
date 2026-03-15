@@ -12,6 +12,7 @@ import { showToast } from '@/components/ui/Toast';
 import { AuthButton } from '@/components/ui/AuthButton';
 import { CollaborationPanel } from '@/components/ui/CollaborationPanel';
 import { saveProject as saveToSupabase } from '@/lib/project-storage';
+import { TemplateMarketplace } from '@/components/ui/TemplateMarketplace';
 import type { ScreenshotOptions } from '@/hooks/useScreenshot';
 
 interface HeaderProps {
@@ -45,6 +46,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
   const [nameInput, setNameInput] = useState(projectName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProjectList, setShowProjectList] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
@@ -191,7 +193,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
   }, [getShareUrl]);
 
   return (
-    <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 md:px-4 shrink-0 select-none relative pt-safe">
+    <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 md:px-4 shrink-0 select-none relative pt-safe" role="banner" aria-label="ヘッダーナビゲーション">
       {/* ロゴ */}
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
@@ -243,8 +245,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={handleNew}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
+          aria-label="新規プロジェクト作成"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5" aria-hidden="true">
             <line x1="8" y1="3" x2="8" y2="13" />
             <line x1="3" y1="8" x2="13" y2="8" />
           </svg>
@@ -253,9 +256,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={handleSave}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="プロジェクトを保存"
+          aria-label="プロジェクトを保存"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5" aria-hidden="true">
             <path d="M3 2h8l3 3v8a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" />
             <path d="M5 2v4h5V2" />
             <rect x="4" y="9" width="8" height="4" rx="0.5" />
@@ -265,9 +268,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="プロジェクトを読み込み"
+          aria-label="プロジェクトを開く"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5" aria-hidden="true">
             <path d="M2 13V5a1 1 0 011-1h3l2 2h5a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z" />
           </svg>
           <span>開く</span>
@@ -276,7 +279,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={() => setShowProjectList(true)}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="保存済みプロジェクト一覧"
+          aria-label="保存済みプロジェクト一覧"
         >
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
             <path d="M2 13V5a1 1 0 011-1h3l2 2h5a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1z" />
@@ -285,9 +288,22 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <span>一覧</span>
         </button>
         <button
+          onClick={() => setShowMarketplace(true)}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
+          aria-label="テンプレートマーケットプレイス"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+            <rect x="2" y="2" width="5" height="5" rx="1" />
+            <rect x="9" y="2" width="5" height="5" rx="1" />
+            <rect x="2" y="9" width="5" height="5" rx="1" />
+            <rect x="9" y="9" width="5" height="5" rx="1" />
+          </svg>
+          <span>テンプレート</span>
+        </button>
+        <button
           onClick={handleShare}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="共有URLをコピー"
+          aria-label="共有URLをコピー"
         >
           {shareCopied ? (
             <>
@@ -309,7 +325,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={handleShowQR}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="QRコードで共有"
+          aria-label="QRコードで共有"
         >
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
             <rect x="2" y="2" width="5" height="5" rx="0.5" />
@@ -322,7 +338,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={handleClipboardImport}
           className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md transition-colors border border-gray-200"
-          title="クリップボードからプロジェクトJSON読込"
+          aria-label="クリップボードからプロジェクト読込"
         >
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
             <rect x="4" y="2" width="8" height="12" rx="1" />
@@ -358,9 +374,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
               ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               : 'text-gray-200 cursor-not-allowed'
           }`}
-          title="元に戻す (Ctrl+Z)"
+          aria-label="元に戻す (Ctrl+Z)"
         >
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4" aria-hidden="true">
             <path d="M4 8l4-4M4 8l4 4" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M4 8h9a4 4 0 010 8H9" strokeLinecap="round" />
           </svg>
@@ -373,9 +389,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
               ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               : 'text-gray-200 cursor-not-allowed'
           }`}
-          title="やり直す (Ctrl+Shift+Z)"
+          aria-label="やり直す (Ctrl+Shift+Z)"
         >
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4" aria-hidden="true">
             <path d="M16 8l-4-4M16 8l-4 4" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M16 8H7a4 4 0 000 8h4" strokeLinecap="round" />
           </svg>
@@ -388,9 +404,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={zoomOut}
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-            title="ズームアウト"
+            aria-label="ズームアウト"
           >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3" aria-hidden="true">
               <line x1="3" y1="8" x2="13" y2="8" />
             </svg>
           </button>
@@ -400,9 +416,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={zoomIn}
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-            title="ズームイン"
+            aria-label="ズームイン"
           >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3" aria-hidden="true">
               <line x1="8" y1="3" x2="8" y2="13" />
               <line x1="3" y1="8" x2="13" y2="8" />
             </svg>
@@ -410,7 +426,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={resetZoom}
             className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors text-[9px] font-medium"
-            title="ズームリセット"
+            aria-label="ズームリセット"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3">
               <path d="M2 8a6 6 0 1011.5 2.5" />
@@ -426,6 +442,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={(e) => { e.stopPropagation(); setExportDropdownOpen(!exportDropdownOpen); }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors shadow-sm"
+            aria-label="出力メニュー"
+            aria-expanded={exportDropdownOpen}
+            aria-haspopup="true"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
               <path d="M8 2v8M5 7l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
@@ -438,7 +457,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           </button>
 
           {exportDropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 bg-white shadow-xl border border-gray-200 rounded-lg z-50 w-56 py-1">
+            <div className="absolute top-full right-0 mt-1 bg-white shadow-xl border border-gray-200 rounded-lg z-50 w-56 py-1" role="menu" aria-label="出力オプション">
               {onScreenshot && (
                 <button
                   onClick={() => { onScreenshot(); setExportDropdownOpen(false); }}
@@ -530,7 +549,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors active:bg-gray-100 ${
             canUndo() ? 'text-gray-500' : 'text-gray-200 cursor-not-allowed'
           }`}
-          title="元に戻す"
+          aria-label="元に戻す"
         >
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
             <path d="M4 8l4-4M4 8l4 4" strokeLinecap="round" strokeLinejoin="round" />
@@ -543,7 +562,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors active:bg-gray-100 ${
             canRedo() ? 'text-gray-500' : 'text-gray-200 cursor-not-allowed'
           }`}
-          title="やり直す"
+          aria-label="やり直す"
         >
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
             <path d="M16 8l-4-4M16 8l-4 4" strokeLinecap="round" strokeLinejoin="round" />
@@ -554,7 +573,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={() => onScreenshot()}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-blue-600 text-white active:bg-blue-700 transition-colors"
-            title="スクリーンショット保存"
+            aria-label="スクリーンショット保存"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
               <rect x="2" y="4" width="12" height="9" rx="1.5" />
@@ -567,7 +586,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={onExportPDF}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-red-600 text-white active:bg-red-700 transition-colors"
-            title="PDF出力"
+            aria-label="PDF出力"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
               <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
@@ -579,9 +598,11 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <button
           onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(!mobileMenuOpen); }}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-gray-600 active:bg-gray-100 transition-colors"
-          title="メニュー"
+          aria-label="メニューを開く"
+          aria-expanded={mobileMenuOpen}
+          aria-haspopup="true"
         >
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5" aria-hidden="true">
             <line x1="3" y1="5" x2="17" y2="5" strokeLinecap="round" />
             <line x1="3" y1="10" x2="17" y2="10" strokeLinecap="round" />
             <line x1="3" y1="15" x2="17" y2="15" strokeLinecap="round" />
@@ -591,11 +612,12 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
 
       {/* モバイルメニュー — タッチターゲット44px以上 */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full right-0 bg-white shadow-xl border border-gray-200 rounded-b-lg z-50 w-56 p-2">
+        <div className="md:hidden absolute top-full right-0 bg-white shadow-xl border border-gray-200 rounded-b-lg z-50 w-56 p-2" role="menu" aria-label="モバイルメニュー">
           <button onClick={() => { handleNew(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">新規</button>
           <button onClick={() => { handleSave(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">保存</button>
           <button onClick={() => { fileInputRef.current?.click(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">開く</button>
           <button onClick={() => { setShowProjectList(true); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">プロジェクト一覧</button>
+          <button onClick={() => { setShowMarketplace(true); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">テンプレート</button>
           <button onClick={() => { handleShare(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">
             {shareCopied ? 'コピー済!' : '共有リンク作成'}
           </button>
@@ -631,6 +653,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
       )}
       <ProjectListModal isOpen={showProjectList} onClose={() => setShowProjectList(false)} />
       <QRCodeModal isOpen={showQR} onClose={() => setShowQR(false)} url={qrUrl} projectName={projectName} />
+      <TemplateMarketplace isOpen={showMarketplace} onClose={() => setShowMarketplace(false)} />
     </header>
   );
 }
