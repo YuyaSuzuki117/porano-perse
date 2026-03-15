@@ -42,7 +42,7 @@ const PRESETS: Record<EnvironmentPresetName, PresetConfig> = {
   // スタジオ: 均一な柔らかい光、製品撮影向け（環境反射強化）
   studio: {
     dreiPreset: 'studio',
-    envMapIntensity: 1.3,
+    envMapIntensity: 1.5,
     backgroundColor: '#e8e8e8',
     backgroundGradientTop: '#f5f5f5',
     backgroundGradientBottom: '#d0d0d0',
@@ -50,7 +50,7 @@ const PRESETS: Record<EnvironmentPresetName, PresetConfig> = {
   // 室内: 暖かみのあるアパートメント光、インテリア確認向け（反射品質向上のため強度増）
   indoor: {
     dreiPreset: 'apartment',
-    envMapIntensity: 1.2,
+    envMapIntensity: 1.4,
     backgroundColor: '#f5ead6',
     backgroundGradientTop: '#fff5e6',
     backgroundGradientBottom: '#d4c4a8',

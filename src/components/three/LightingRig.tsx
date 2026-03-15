@@ -148,11 +148,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
           intensity={1.2 * b}
           color={lightColor}
           castShadow
-          shadow-mapSize={[8192, 8192]}
-          shadow-bias={-0.0001}
-          shadow-radius={5}
-          shadow-blurSamples={20}
-          shadow-normalBias={0.02}
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0002}
+          shadow-radius={4}
+          shadow-blurSamples={16}
+          shadow-normalBias={0.03}
           shadow-camera-near={0.1}
           shadow-camera-far={roomBounds.maxDim * 2.5}
           shadow-camera-left={-roomBounds.maxDim * 0.8}
@@ -263,11 +263,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.5 * b}
         color={lightColor}
         castShadow
-        shadow-mapSize={[16384, 16384]}
-        shadow-bias={-0.00005}
-        shadow-radius={4}
-        shadow-blurSamples={64}
-        shadow-normalBias={0.015}
+        shadow-mapSize={[4096, 4096]}
+        shadow-bias={-0.0001}
+        shadow-radius={5}
+        shadow-blurSamples={32}
+        shadow-normalBias={0.02}
         shadow-camera-near={0.05}
         shadow-camera-far={roomBounds.maxDim * 2.5}
         shadow-camera-left={-roomBounds.maxDim * 0.96}
@@ -300,11 +300,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         color={lightColor}
         distance={Math.max(roomBounds.w, roomBounds.d) * 2}
         castShadow
-        shadow-mapSize={[8192, 8192]}
-        shadow-bias={-0.00005}
-        shadow-normalBias={0.015}
-        shadow-radius={6}
-        shadow-blurSamples={40}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0001}
+        shadow-normalBias={0.02}
+        shadow-radius={5}
+        shadow-blurSamples={24}
       />
 
       <spotLight
@@ -374,11 +374,11 @@ export const LightingRig = React.memo(function LightingRig({ style, walls, roomH
         intensity={1.2 * 0.3 * b}
         color={fillColor}
         castShadow
-        shadow-mapSize={[8192, 8192]}
-        shadow-bias={-0.0001}
-        shadow-radius={6}
-        shadow-blurSamples={25}
-        shadow-normalBias={0.02}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0002}
+        shadow-radius={5}
+        shadow-blurSamples={16}
+        shadow-normalBias={0.03}
         shadow-camera-near={0.1}
         shadow-camera-far={roomBounds.maxDim * 2.5}
         shadow-camera-left={-roomBounds.maxDim * 0.8}

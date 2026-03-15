@@ -220,10 +220,10 @@ export function SceneCanvas({
   const handleCanvasCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     // 暖色スタイルは若干露出を上げて明るく温かみのある印象に
-    const warmBoost = isWarmStyle ? 0.12 : 0.03;
+    const warmBoost = isWarmStyle ? 0.10 : 0.02;
     gl.toneMappingExposure = isNight
-      ? 0.85 + lightBrightness / 400
-      : 1.35 + lightBrightness / 200 + warmBoost;
+      ? 0.80 + lightBrightness / 450
+      : 1.25 + lightBrightness / 250 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.localClippingEnabled = true;
     // lowモード: シャドウ完全無効 + ピクセル比1.0制限
@@ -233,7 +233,7 @@ export function SceneCanvas({
     } else {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 3.0 : 2.0));
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
       // high品質: 物理ベースライト減衰（リアルな光の落ち方）
       if (qualityLevel === 'high') {
         // Three.js r155+: renderer.useLegacyLights は非推奨だが光減衰に影響
@@ -261,8 +261,8 @@ export function SceneCanvas({
   return (
     <Canvas
       shadows
-      dpr={[1, 3.0]}
-      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 16 } : {}) }}
+      dpr={[1, 2.5]}
+      gl={{ antialias: qualityLevel !== 'low', preserveDrawingBuffer: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true, ...(qualityLevel === 'high' ? { samples: 8 } : {}) }}
       camera={{
         position: cameraPosition,
         fov: dynamicFov,
@@ -283,7 +283,7 @@ export function SceneCanvas({
         <LightingRig style={styleConfig} walls={walls} roomHeight={roomHeight} brightness={effectiveBrightness} warmth={effectiveWarmth} qualityLevel={qualityLevel} />
         <EnvironmentPresets
           preset={isNight ? 'night' : (environmentPreset as 'studio' | 'indoor' | 'outdoor' | 'sunset' | 'warehouse' | 'night')}
-          intensity={qualityLevel === 'high' ? 2.5 : qualityLevel === 'medium' ? 1.5 : 0.8}
+          intensity={qualityLevel === 'high' ? 1.8 : qualityLevel === 'medium' ? 1.2 : 0.6}
           showBackground={false}
         />
 
@@ -551,11 +551,11 @@ export function SceneCanvas({
         {qualityLevel === 'high' && (
           <ContactShadows
             position={[0, 0.001, 0]}
-            opacity={isNight ? 0.4 : 0.5}
+            opacity={isNight ? 0.35 : 0.45}
             scale={maxDim * 1.5}
-            blur={6.0}
-            far={6}
-            resolution={4096}
+            blur={4.0}
+            far={5}
+            resolution={2048}
             color={isWarmStyle ? '#3A2515' : '#1A1A1A'}
           />
         )}
