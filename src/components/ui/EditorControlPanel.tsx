@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useId } from 'react';
+import { useState, useRef, useCallback, useId, useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useCameraStore } from '@/stores/useCameraStore';
 import { useProjectStore } from '@/stores/useProjectStore';
@@ -28,6 +28,13 @@ import { TextureUploadPanel } from '@/components/ui/TextureUploadPanel';
 import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
 import { RenderQualityPanel } from '@/components/ui/RenderQualityPanel';
 import { FinishEditorPanel } from '@/components/ui/FinishEditorPanel';
+import ModelImportPanel, {
+  loadCustomModels,
+  deleteCustomModel,
+  base64ToBlobUrl,
+  type ModelImportResult,
+  type CustomModelEntry,
+} from '@/components/ui/ModelImportPanel';
 
 interface EditorControlPanelProps {
   isMobile?: boolean;
@@ -178,6 +185,27 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
   const [roomTemplateConfirm, setRoomTemplateConfirm] = useState<string | null>(null);
   const [furnitureSearch, setFurnitureSearch] = useState('');
   const [furnitureCategory, setFurnitureCategory] = useState<string>('all');
+  const [showModelImport, setShowModelImport] = useState(false);
+  const [customModels, setCustomModels] = useState<CustomModelEntry[]>([]);
+  const [customBlobUrls, setCustomBlobUrls] = useState<Map<string, string>>(new Map());
+
+  // localStorage からカスタムモデルを復元
+  useEffect(() => {
+    const saved = loadCustomModels();
+    setCustomModels(saved);
+    // blob URL を生成
+    const urls = new Map<string, string>();
+    for (const model of saved) {
+      urls.set(model.id, base64ToBlobUrl(model.data));
+    }
+    setCustomBlobUrls(urls);
+    return () => {
+      // クリーンアップ
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [matWallOpen, setMatWallOpen] = useState(true);
   const [matFloorOpen, setMatFloorOpen] = useState(false);
   const [matFurnitureOpen, setMatFurnitureOpen] = useState(false);
@@ -203,6 +231,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     '設備': ['register', 'sink', 'fridge', 'washing_machine', 'air_conditioner', 'tv_monitor', 'refrigerator', 'washbasin', 'toilet', 'stairs'],
     '什器': ['register_counter', 'partition', 'bed'],
     'その他': ['plant', 'mirror', 'coat_rack'],
+    'カスタム': ['custom'],
   };
 
   const CATEGORY_LIST = [
@@ -214,7 +243,19 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     { key: '設備', label: '設備' },
     { key: '什器', label: '什器' },
     { key: 'その他', label: 'その他' },
+    ...(customModels.length > 0 ? [{ key: 'カスタム', label: 'カスタム' }] : []),
   ];
+
+  // カスタムモデルをカタログ形式に変換
+  const customCatalogItems = customModels.map((m) => ({
+    type: 'custom' as const,
+    name: m.name,
+    icon: '📦',
+    defaultScale: m.scale as [number, number, number],
+    defaultColor: '#888888',
+    modelUrl: customBlobUrls.get(m.id) || '',
+    _customId: m.id,
+  }));
 
   const filteredCatalog = FURNITURE_CATALOG.filter(item => {
     const searchLower = furnitureSearch.toLowerCase();
@@ -225,6 +266,17 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       (FURNITURE_CATEGORIES[furnitureCategory]?.includes(item.type) ?? false);
     return matchesSearch && matchesCategory;
   });
+
+  // 「カスタム」カテゴリまたは「全て」の場合、カスタムモデルも表示
+  const filteredCustomItems = customCatalogItems.filter(item => {
+    const searchLower = furnitureSearch.toLowerCase();
+    const matchesSearch = furnitureSearch === '' ||
+      item.name.toLowerCase().includes(searchLower);
+    const matchesCategory = furnitureCategory === 'all' || furnitureCategory === 'カスタム';
+    return matchesSearch && matchesCategory;
+  });
+
+  const allFilteredCatalog = [...filteredCatalog, ...filteredCustomItems];
 
   const handleAddFurniture = (type: string) => {
     const catalog = FURNITURE_CATALOG.find((c) => c.type === type);
@@ -256,35 +308,53 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     addFurnitureSet(items);
   };
 
-  const modelInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImport3DModel = useCallback((file: File) => {
-    if (!file) return;
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'glb' && ext !== 'gltf') {
-      alert('対応形式: .glb / .gltf ファイルのみ');
-      return;
-    }
-    const nameWithoutExt = file.name.replace(/\.(glb|gltf)$/i, '');
-    const name = window.prompt('モデル名を入力', nameWithoutExt) || nameWithoutExt;
-    const blobUrl = URL.createObjectURL(file);
+  const handleModelImportResult = useCallback((result: ModelImportResult) => {
     addFurniture({
-      id: `custom_${Date.now()}`,
+      id: result.customModelId,
       type: 'custom',
-      name,
+      name: result.name,
       position: [0, 0, 0],
       rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      modelUrl: blobUrl,
+      scale: result.scale,
+      modelUrl: result.blobUrl,
     });
+    // カスタムモデル一覧を更新
+    setCustomModels(loadCustomModels());
+    setCustomBlobUrls((prev) => {
+      const next = new Map(prev);
+      next.set(result.customModelId, result.blobUrl);
+      return next;
+    });
+    setShowModelImport(false);
   }, [addFurniture]);
 
-  const handleModelFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleImport3DModel(file);
-    // reset so same file can be re-imported
-    e.target.value = '';
-  }, [handleImport3DModel]);
+  const handleDeleteCustomModel = useCallback((id: string) => {
+    deleteCustomModel(id);
+    setCustomModels(loadCustomModels());
+    const url = customBlobUrls.get(id);
+    if (url) {
+      URL.revokeObjectURL(url);
+      setCustomBlobUrls((prev) => {
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [customBlobUrls]);
+
+  const handleAddCustomToScene = useCallback((model: CustomModelEntry) => {
+    const blobUrl = customBlobUrls.get(model.id);
+    if (!blobUrl) return;
+    addFurniture({
+      id: `${model.id}_${Date.now()}`,
+      type: 'custom',
+      name: model.name,
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: model.scale,
+      modelUrl: blobUrl,
+    });
+  }, [addFurniture, customBlobUrls]);
 
   // Panel content shared between mobile and desktop
   const panelContent = (
@@ -393,8 +463,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md hover:from-amber-600 hover:to-orange-600'
               : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border border-gray-200 hover:from-amber-50 hover:to-orange-50 hover:text-amber-700 hover:border-amber-300'
           }`}
+          aria-label={photoMode ? 'フォトモードを終了' : 'フォトモードを開始'}
+          aria-pressed={photoMode}
         >
-          <span className="text-base">{photoMode ? '🔙' : '📷'}</span>
+          <span className="text-base" aria-hidden="true">{photoMode ? '🔙' : '📷'}</span>
           {photoMode ? 'フォトモード終了' : 'フォトモード'}
         </button>
         {photoMode && (
@@ -1391,38 +1463,40 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </button>
         </div>
 
-        {/* 3Dモデル読込ボタン */}
+        {/* 3Dモデルインポートボタン */}
         <button
-          onClick={() => modelInputRef.current?.click()}
+          onClick={() => setShowModelImport(true)}
           className="w-full mb-2 px-2 py-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-md text-xs font-medium text-purple-700 flex items-center justify-center gap-1.5 transition-colors"
         >
           <span>📦</span>
-          3Dモデル読込 (.glb/.gltf)
+          モデルをインポート (.glb/.gltf)
         </button>
-        <input
-          ref={modelInputRef}
-          type="file"
-          accept=".glb,.gltf"
-          onChange={handleModelFileChange}
-          className="hidden"
-        />
 
-        {/* カスタムモデル一覧 */}
-        {furniture.filter(f => f.type === 'custom').length > 0 && (
+        {/* カスタムモデルカタログ */}
+        {customModels.length > 0 && (
           <div className="mb-2 p-2 bg-purple-50/50 border border-purple-100 rounded-md">
-            <div className="text-[10px] font-medium text-purple-600 mb-1">読込済みモデル</div>
-            <div className="text-[9px] text-amber-600 mb-1.5">* ページ再読込後は再インポートが必要です</div>
+            <div className="text-[10px] font-medium text-purple-600 mb-1">カスタムモデル ({customModels.length})</div>
             <div className="space-y-0.5">
-              {furniture.filter(f => f.type === 'custom').map(f => (
+              {customModels.map((m) => (
                 <div
-                  key={f.id}
-                  className={`flex items-center gap-1 px-1.5 py-1 rounded text-[10px] cursor-pointer transition-colors ${
-                    selectedFurnitureId === f.id ? 'bg-purple-200 text-purple-800' : 'hover:bg-purple-100 text-purple-700'
-                  }`}
-                  onClick={() => setSelectedFurniture(f.id)}
+                  key={m.id}
+                  className="flex items-center gap-1 px-1.5 py-1 rounded text-[10px] hover:bg-purple-100 text-purple-700 group"
                 >
-                  <span>📦</span>
-                  <span className="truncate flex-1">{f.name}</span>
+                  <button
+                    onClick={() => handleAddCustomToScene(m)}
+                    className="flex items-center gap-1 flex-1 min-w-0 text-left"
+                    title="シーンに追加"
+                  >
+                    <span>📦</span>
+                    <span className="truncate">{m.name}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCustomModel(m.id)}
+                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity px-1"
+                    title="カタログから削除"
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -1436,6 +1510,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               value={furnitureSearch}
               onChange={(e) => setFurnitureSearch(e.target.value)}
               placeholder="家具を検索..."
+              aria-label="什器を検索"
               className={`w-full px-3 py-2 border border-gray-200 rounded-md text-xs placeholder:text-gray-300 focus:border-blue-400 focus:outline-none mb-2 ${
                 isMobile ? 'min-h-[44px]' : ''
               }`}
@@ -1459,32 +1534,48 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 </button>
               ))}
             </div>
-            {filteredCatalog.length === 0 ? (
+            {allFilteredCatalog.length === 0 ? (
               <div className="text-center py-4 text-xs text-gray-400">
                 該当する什器がありません
               </div>
             ) : (
               <div className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`} role="listbox" aria-label="什器カタログ">
-                {filteredCatalog.map((item) => (
-                  <button
-                    key={item.type}
-                    role="option"
-                    aria-selected={false}
-                    aria-label={item.name}
-                    onClick={() => handleAddFurniture(item.type)}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('application/x-furniture-type', item.type);
-                      e.dataTransfer.effectAllowed = 'copy';
-                    }}
-                    className={`flex items-center gap-1 px-2 py-1.5 bg-gray-50 rounded hover:bg-blue-50 border border-gray-200 text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
-                      isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
-                    }`}
-                  >
-                    <span className={isMobile ? 'text-2xl' : 'text-base'}>{item.icon}</span>
-                    <span className={`text-gray-700 truncate ${isMobile ? 'text-[11px] font-medium' : 'text-[10px]'}`}>{item.name}</span>
-                  </button>
-                ))}
+                {allFilteredCatalog.map((item) => {
+                  const isCustom = '_customId' in item;
+                  const key = isCustom ? (item as typeof customCatalogItems[number])._customId : item.type;
+                  return (
+                    <button
+                      key={key}
+                      role="option"
+                      aria-selected={false}
+                      aria-label={item.name}
+                      onClick={() => {
+                        if (isCustom) {
+                          const customItem = item as typeof customCatalogItems[number];
+                          const model = customModels.find((m) => m.id === customItem._customId);
+                          if (model) handleAddCustomToScene(model);
+                        } else {
+                          handleAddFurniture(item.type);
+                        }
+                      }}
+                      draggable={!isCustom}
+                      onDragStart={(e) => {
+                        if (!isCustom) {
+                          e.dataTransfer.setData('application/x-furniture-type', item.type);
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }
+                      }}
+                      className={`flex items-center gap-1 px-2 py-1.5 rounded hover:bg-blue-50 border text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
+                        isCustom ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'
+                      } ${
+                        isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
+                      }`}
+                    >
+                      <span className={isMobile ? 'text-2xl' : 'text-base'}>{item.icon}</span>
+                      <span className={`truncate ${isMobile ? 'text-[11px] font-medium' : 'text-[10px]'} ${isCustom ? 'text-purple-700' : 'text-gray-700'}`}>{item.name}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2334,6 +2425,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     }
   }, [sheetHeight, onClose]);
 
+  const modelImportModal = showModelImport ? (
+    <ModelImportPanel
+      onImport={handleModelImportResult}
+      onClose={() => setShowModelImport(false)}
+    />
+  ) : null;
+
   if (isMobile) {
     return (
       <>
@@ -2379,15 +2477,19 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {isOpen ? panelContent : null}
           </div>
         </div>
+        {modelImportModal}
       </>
     );
   }
 
   // Desktop: sidebar
   return (
-    <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col text-sm scroll-smooth-panel" role="complementary" aria-label="エディタコントロールパネル">
-      {panelContent}
-    </div>
+    <>
+      <div className="w-72 bg-white border-l border-gray-200 overflow-y-auto flex flex-col text-sm scroll-smooth-panel" role="complementary" aria-label="エディタコントロールパネル">
+        {panelContent}
+      </div>
+      {modelImportModal}
+    </>
   );
 }
 
