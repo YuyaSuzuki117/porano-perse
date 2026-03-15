@@ -366,4 +366,36 @@ export const FURNITURE_CATALOG: FurnitureCatalogItem[] = [
   { type: 'plant_small', name: '観葉植物（小）', icon: '🌱', defaultScale: [0.2, 0.3, 0.2], defaultColor: '#228B22', defaultMaterial: 'plastic' as const, modelUrl: '/models/plant_small.glb' },
   { type: 'digital_signage', name: 'デジタルサイネージ', icon: '📺', defaultScale: [0.7, 1.2, 0.08], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/digital_signage.glb' },
   { type: 'indirect_light', name: '間接照明', icon: '💡', defaultScale: [0.8, 0.3, 0.15], defaultColor: '#FFD700', defaultMaterial: 'metal' as const, modelUrl: '/models/indirect_light.glb' },
+  // --- 飲食店 ---
+  { type: 'pizza_oven', name: 'ピザ窯', icon: '🍕', defaultScale: [1.2, 1.2, 1.2], defaultColor: '#8B4513', defaultMaterial: 'stone' as const, modelUrl: '/models/pizza_oven.glb' },
+  { type: 'beer_server', name: 'ビールサーバー', icon: '🍺', defaultScale: [0.4, 0.6, 0.3], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/beer_server.glb' },
+  { type: 'ice_cream_case', name: 'アイスクリームケース', icon: '🍦', defaultScale: [1.2, 0.9, 0.7], defaultColor: '#FFFFFF', defaultMaterial: 'glass' as const, modelUrl: '/models/ice_cream_case.glb' },
+  { type: 'sushi_counter', name: '寿司カウンター', icon: '🍣', defaultScale: [3.0, 1.1, 0.8], defaultColor: '#DEB887', defaultMaterial: 'wood' as const, modelUrl: '/models/sushi_counter.glb' },
+  { type: 'teppan_table', name: '鉄板焼きテーブル', icon: '🥩', defaultScale: [1.2, 0.75, 0.8], defaultColor: '#444444', defaultMaterial: 'metal' as const, modelUrl: '/models/teppan_table.glb' },
+  { type: 'noodle_cooker', name: '麺茹で機', icon: '🍜', defaultScale: [0.6, 0.85, 0.6], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/noodle_cooker.glb' },
+  { type: 'ice_maker', name: '製氷機', icon: '🧊', defaultScale: [0.6, 0.9, 0.6], defaultColor: '#E8E8E8', defaultMaterial: 'metal' as const, modelUrl: '/models/ice_maker.glb' },
+  // --- ホテル・宿泊 ---
+  { type: 'bed_single', name: 'ベッド（シングル）', icon: '🛏️', defaultScale: [1.0, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const, modelUrl: '/models/bed_single.glb' },
+  { type: 'bed_double', name: 'ベッド（ダブル）', icon: '🛏️', defaultScale: [1.6, 0.55, 2.0], defaultColor: '#F5F5DC', defaultMaterial: 'fabric' as const, modelUrl: '/models/bed_double.glb' },
+  { type: 'night_table', name: 'ナイトテーブル', icon: '🛋️', defaultScale: [0.45, 0.55, 0.4], defaultColor: '#8B6914', defaultMaterial: 'wood' as const, modelUrl: '/models/night_table.glb' },
+  { type: 'dresser', name: 'ドレッサー', icon: '🪞', defaultScale: [0.8, 1.4, 0.45], defaultColor: '#DEB887', defaultMaterial: 'wood' as const, modelUrl: '/models/dresser.glb' },
+  { type: 'room_service_cart', name: 'ルームサービスカート', icon: '🛒', defaultScale: [0.8, 0.85, 0.5], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/room_service_cart.glb' },
+  // --- カフェ・バー ---
+  { type: 'espresso_machine', name: 'エスプレッソマシン', icon: '☕', defaultScale: [0.45, 0.5, 0.45], defaultColor: '#2C2C2C', defaultMaterial: 'metal' as const, modelUrl: '/models/espresso_machine.glb' },
+  { type: 'cake_showcase', name: 'ケーキショーケース', icon: '🍰', defaultScale: [1.2, 1.2, 0.7], defaultColor: '#FFFFFF', defaultMaterial: 'glass' as const, modelUrl: '/models/cake_showcase.glb' },
+  { type: 'ice_bin', name: 'アイスビン', icon: '🧊', defaultScale: [0.5, 0.5, 0.4], defaultColor: '#C0C0C0', defaultMaterial: 'metal' as const, modelUrl: '/models/ice_bin.glb' },
+  { type: 'cocktail_station', name: 'カクテルステーション', icon: '🍸', defaultScale: [1.2, 0.9, 0.6], defaultColor: '#333333', defaultMaterial: 'metal' as const, modelUrl: '/models/cocktail_station.glb' },
+  // --- ジム・スパ ---
+  { type: 'treadmill', name: 'トレッドミル', icon: '🏃', defaultScale: [0.8, 1.4, 1.8], defaultColor: '#333333', defaultMaterial: 'plastic' as const, modelUrl: '/models/treadmill.glb' },
+  { type: 'dumbbell_rack', name: 'ダンベルラック', icon: '🏋️', defaultScale: [1.2, 1.2, 0.5], defaultColor: '#333333', defaultMaterial: 'metal' as const, modelUrl: '/models/dumbbell_rack.glb' },
+  { type: 'yoga_mat', name: 'ヨガマット', icon: '🧘', defaultScale: [0.6, 0.01, 1.8], defaultColor: '#6B5B95', defaultMaterial: 'plastic' as const, modelUrl: '/models/yoga_mat.glb' },
+  { type: 'locker', name: 'ロッカー', icon: '🔒', defaultScale: [0.9, 1.8, 0.5], defaultColor: '#808080', defaultMaterial: 'metal' as const, modelUrl: '/models/locker.glb' },
+  { type: 'sauna_bench', name: 'サウナベンチ', icon: '♨️', defaultScale: [1.5, 0.45, 0.5], defaultColor: '#DEB887', defaultMaterial: 'wood' as const, modelUrl: '/models/sauna_bench.glb' },
+  // --- その他共通 ---
+  { type: 'water_server', name: 'ウォーターサーバー', icon: '💧', defaultScale: [0.35, 1.1, 0.35], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/water_server.glb' },
+  { type: 'air_purifier', name: '空気清浄機', icon: '🌬️', defaultScale: [0.4, 0.6, 0.25], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/air_purifier.glb' },
+  { type: 'projector', name: 'プロジェクター', icon: '📽️', defaultScale: [0.35, 0.12, 0.28], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/projector.glb' },
+  { type: 'speaker', name: 'スピーカー', icon: '🔊', defaultScale: [0.25, 0.35, 0.2], defaultColor: '#1A1A1A', defaultMaterial: 'plastic' as const, modelUrl: '/models/speaker.glb' },
+  { type: 'security_camera', name: '防犯カメラ', icon: '📹', defaultScale: [0.15, 0.12, 0.2], defaultColor: '#FFFFFF', defaultMaterial: 'plastic' as const, modelUrl: '/models/security_camera.glb' },
+  { type: 'guide_board', name: '案内板', icon: '🪧', defaultScale: [0.6, 1.2, 0.05], defaultColor: '#2C2C2C', defaultMaterial: 'metal' as const, modelUrl: '/models/guide_board.glb' },
 ];

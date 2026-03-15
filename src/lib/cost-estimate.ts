@@ -124,6 +124,38 @@ export const FURNITURE_PRICES: Record<FurnitureType, FurniturePriceInfo> = {
   plant_small: { minPrice: 1000, maxPrice: 5000, averagePrice: 2500, nameJa: '観葉植物（小）' },
   digital_signage: { minPrice: 80000, maxPrice: 400000, averagePrice: 200000, nameJa: 'デジタルサイネージ' },
   indirect_light: { minPrice: 10000, maxPrice: 50000, averagePrice: 25000, nameJa: '間接照明' },
+  // 飲食店
+  pizza_oven: { minPrice: 300000, maxPrice: 1500000, averagePrice: 700000, nameJa: 'ピザ窯' },
+  beer_server: { minPrice: 50000, maxPrice: 300000, averagePrice: 150000, nameJa: 'ビールサーバー' },
+  ice_cream_case: { minPrice: 100000, maxPrice: 500000, averagePrice: 250000, nameJa: 'アイスクリームケース' },
+  sushi_counter: { minPrice: 200000, maxPrice: 1000000, averagePrice: 500000, nameJa: '寿司カウンター' },
+  teppan_table: { minPrice: 150000, maxPrice: 800000, averagePrice: 400000, nameJa: '鉄板焼きテーブル' },
+  noodle_cooker: { minPrice: 80000, maxPrice: 400000, averagePrice: 200000, nameJa: '麺茹で機' },
+  ice_maker: { minPrice: 100000, maxPrice: 500000, averagePrice: 250000, nameJa: '製氷機' },
+  // ホテル・宿泊
+  bed_single: { minPrice: 30000, maxPrice: 150000, averagePrice: 70000, nameJa: 'ベッド（シングル）' },
+  bed_double: { minPrice: 50000, maxPrice: 250000, averagePrice: 120000, nameJa: 'ベッド（ダブル）' },
+  night_table: { minPrice: 10000, maxPrice: 50000, averagePrice: 25000, nameJa: 'ナイトテーブル' },
+  dresser: { minPrice: 30000, maxPrice: 150000, averagePrice: 70000, nameJa: 'ドレッサー' },
+  room_service_cart: { minPrice: 20000, maxPrice: 80000, averagePrice: 40000, nameJa: 'ルームサービスカート' },
+  // カフェ・バー
+  espresso_machine: { minPrice: 100000, maxPrice: 800000, averagePrice: 350000, nameJa: 'エスプレッソマシン' },
+  cake_showcase: { minPrice: 80000, maxPrice: 400000, averagePrice: 200000, nameJa: 'ケーキショーケース' },
+  ice_bin: { minPrice: 10000, maxPrice: 50000, averagePrice: 25000, nameJa: 'アイスビン' },
+  cocktail_station: { minPrice: 100000, maxPrice: 500000, averagePrice: 250000, nameJa: 'カクテルステーション' },
+  // ジム・スパ
+  treadmill: { minPrice: 150000, maxPrice: 800000, averagePrice: 400000, nameJa: 'トレッドミル' },
+  dumbbell_rack: { minPrice: 30000, maxPrice: 150000, averagePrice: 70000, nameJa: 'ダンベルラック' },
+  yoga_mat: { minPrice: 2000, maxPrice: 10000, averagePrice: 5000, nameJa: 'ヨガマット' },
+  locker: { minPrice: 20000, maxPrice: 100000, averagePrice: 50000, nameJa: 'ロッカー' },
+  sauna_bench: { minPrice: 30000, maxPrice: 120000, averagePrice: 60000, nameJa: 'サウナベンチ' },
+  // その他共通
+  water_server: { minPrice: 15000, maxPrice: 60000, averagePrice: 30000, nameJa: 'ウォーターサーバー' },
+  air_purifier: { minPrice: 20000, maxPrice: 80000, averagePrice: 40000, nameJa: '空気清浄機' },
+  projector: { minPrice: 30000, maxPrice: 200000, averagePrice: 80000, nameJa: 'プロジェクター' },
+  speaker: { minPrice: 10000, maxPrice: 80000, averagePrice: 30000, nameJa: 'スピーカー' },
+  security_camera: { minPrice: 15000, maxPrice: 80000, averagePrice: 35000, nameJa: '防犯カメラ' },
+  guide_board: { minPrice: 15000, maxPrice: 60000, averagePrice: 30000, nameJa: '案内板' },
 };
 
 // --- 消費税率 ---

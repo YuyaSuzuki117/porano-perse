@@ -627,6 +627,161 @@ const furniture = {
     { ...merge([box(0.70, 0.02, 0.06, 0, 0.07, 0)]), color: [0.95, 0.85, 0.50], name: 'light_strip' },
     { ...merge([box(0.75, 0.08, 0.02, 0, 0.04, -0.05)]), color: MS, name: 'back_plate', metallic: 0.5 },
   ],
+  // --- 飲食店 ---
+  pizza_oven: () => [
+    { ...merge([box(1.0, 0.80, 0.90, 0, 0.40, 0)]), color: [0.75, 0.55, 0.35], name: 'body' },
+    { ...merge([cyl(0.50, 0.50, 0.05, 12, 0, 0.82, 0)]), color: [0.65, 0.45, 0.25], name: 'dome_base' },
+    { ...merge([cyl(0.45, 0.10, 0.35, 12, 0, 1.02, 0)]), color: [0.65, 0.45, 0.25], name: 'dome' },
+    { ...merge([box(0.40, 0.35, 0.02, 0, 0.55, 0.46)]), color: MD, name: 'opening', metallic: 0.5 },
+    { ...merge([cyl(0.06, 0.06, 0.30, 6, 0.30, 1.35, -0.20)]), color: [0.55, 0.35, 0.20], name: 'chimney' },
+  ],
+  beer_server: () => [
+    { ...merge([box(0.30, 0.35, 0.25, 0, 0.175, 0)]), color: MS, name: 'body', metallic: 0.6 },
+    { ...merge([cyl(0.015, 0.015, 0.20, 6, -0.06, 0.45, 0.05), cyl(0.015, 0.015, 0.20, 6, 0.06, 0.45, 0.05)]), color: [0.85, 0.70, 0.20], name: 'taps', metallic: 0.8 },
+    { ...merge([box(0.20, 0.02, 0.15, 0, 0.01, 0.08)]), color: MS, name: 'drip_tray', metallic: 0.7 },
+  ],
+  ice_cream_case: () => [
+    { ...merge([box(1.10, 0.60, 0.65, 0, 0.30, 0)]), color: [0.95, 0.95, 0.95], name: 'body' },
+    { ...merge([box(1.0, 0.02, 0.55, 0, 0.62, 0)]), color: [0.7, 0.85, 0.9], name: 'glass_top' },
+    { ...merge([box(1.0, 0.30, 0.02, 0, 0.80, -0.27)]), color: [0.7, 0.85, 0.9], name: 'glass_back' },
+  ],
+  sushi_counter: () => [
+    { ...merge([box(2.50, 0.05, 0.70, 0, 0.92, 0)]), color: WL, name: 'top' },
+    { ...merge([box(2.46, 0.58, 0.04, 0, 0.62, 0.33), box(0.04, 0.58, 0.66, -1.23, 0.62, 0), box(0.04, 0.58, 0.66, 1.23, 0.62, 0), box(2.46, 0.58, 0.04, 0, 0.62, -0.33)]), color: W, name: 'body' },
+    { ...merge([box(2.40, 0.30, 0.02, 0, 1.10, -0.15)]), color: [0.7, 0.85, 0.9], name: 'neta_case' },
+    { ...merge([box(2.40, 0.02, 0.20, 0, 0.95, -0.15)]), color: [0.95, 0.95, 0.95], name: 'neta_shelf' },
+  ],
+  teppan_table: () => [
+    { ...merge([box(1.0, 0.04, 0.70, 0, 0.74, 0)]), color: WL, name: 'table_top' },
+    { ...merge([box(0.70, 0.03, 0.50, 0, 0.77, 0)]), color: MS, name: 'iron_plate', metallic: 0.8 },
+    { ...merge([box(0.04, 0.72, 0.04, -0.46, 0.36, -0.31), box(0.04, 0.72, 0.04, 0.46, 0.36, -0.31), box(0.04, 0.72, 0.04, -0.46, 0.36, 0.31), box(0.04, 0.72, 0.04, 0.46, 0.36, 0.31)]), color: MD, name: 'legs', metallic: 0.5 },
+  ],
+  noodle_cooker: () => [
+    { ...merge([box(0.55, 0.75, 0.55, 0, 0.375, 0)]), color: MS, name: 'body', metallic: 0.6 },
+    { ...merge([box(0.45, 0.10, 0.45, 0, 0.80, 0)]), color: MS, name: 'rim', metallic: 0.7 },
+    { ...merge([cyl(0.06, 0.06, 0.04, 6, 0.20, 0.55, 0.30)]), color: MD, name: 'knob', metallic: 0.5 },
+  ],
+  ice_maker: () => [
+    { ...merge([box(0.55, 0.85, 0.55, 0, 0.425, 0)]), color: [0.92, 0.92, 0.92], name: 'body' },
+    { ...merge([box(0.50, 0.02, 0.50, 0, 0.86, 0)]), color: MS, name: 'top', metallic: 0.4 },
+    { ...merge([box(0.04, 0.10, 0.04, 0.22, 0.45, 0.29)]), color: MD, name: 'handle', metallic: 0.6 },
+  ],
+  // --- ホテル・宿泊 ---
+  bed_single: () => [
+    { ...merge([box(0.97, 0.28, 1.95, 0, 0.14, 0)]), color: WL, name: 'frame' },
+    { ...merge([box(0.90, 0.16, 1.85, 0, 0.36, 0)]), color: [0.9, 0.9, 0.95], name: 'mattress' },
+    { ...merge([box(0.97, 0.65, 0.05, 0, 0.47, -0.95)]), color: WD, name: 'headboard' },
+    { ...merge([box(0.35, 0.08, 0.30, -0.20, 0.48, -0.70)]), color: [0.9, 0.9, 0.95], name: 'pillow' },
+  ],
+  bed_double: () => [
+    { ...merge([box(1.55, 0.28, 1.95, 0, 0.14, 0)]), color: WL, name: 'frame' },
+    { ...merge([box(1.45, 0.16, 1.85, 0, 0.36, 0)]), color: [0.9, 0.9, 0.95], name: 'mattress' },
+    { ...merge([box(1.55, 0.65, 0.05, 0, 0.47, -0.95)]), color: WD, name: 'headboard' },
+    { ...merge([box(0.35, 0.08, 0.30, -0.35, 0.48, -0.70), box(0.35, 0.08, 0.30, 0.35, 0.48, -0.70)]), color: [0.9, 0.9, 0.95], name: 'pillows' },
+  ],
+  night_table: () => [
+    { ...merge([box(0.40, 0.03, 0.35, 0, 0.52, 0)]), color: WL, name: 'top' },
+    { ...merge([box(0.38, 0.20, 0.33, 0, 0.40, 0)]), color: W, name: 'drawer' },
+    { ...merge([box(0.38, 0.18, 0.33, 0, 0.18, 0)]), color: W, name: 'cabinet' },
+    { ...merge([box(0.06, 0.02, 0.03, 0, 0.40, 0.18)]), color: MS, name: 'handle', metallic: 0.6 },
+  ],
+  dresser: () => [
+    { ...merge([box(0.75, 0.03, 0.40, 0, 0.78, 0)]), color: WL, name: 'top' },
+    { ...merge([box(0.73, 0.50, 0.38, 0, 0.50, 0)]), color: W, name: 'drawers' },
+    { ...merge([box(0.60, 0.50, 0.03, 0, 1.08, -0.18)]), color: [0.85, 0.88, 0.92], name: 'mirror', metallic: 0.9 },
+    { ...merge([box(0.64, 0.54, 0.02, 0, 1.08, -0.20)]), color: WD, name: 'mirror_frame' },
+    { ...merge([box(0.04, 0.75, 0.04, -0.34, 0.375, -0.16), box(0.04, 0.75, 0.04, 0.34, 0.375, -0.16)]), color: WD, name: 'legs' },
+  ],
+  room_service_cart: () => [
+    { ...merge([box(0.70, 0.02, 0.45, 0, 0.80, 0)]), color: MS, name: 'top_shelf', metallic: 0.6 },
+    { ...merge([box(0.70, 0.02, 0.45, 0, 0.40, 0)]), color: MS, name: 'bottom_shelf', metallic: 0.6 },
+    { ...merge([cyl(0.02, 0.02, 0.78, 6, -0.32, 0.40, -0.20), cyl(0.02, 0.02, 0.78, 6, 0.32, 0.40, -0.20), cyl(0.02, 0.02, 0.78, 6, -0.32, 0.40, 0.20), cyl(0.02, 0.02, 0.78, 6, 0.32, 0.40, 0.20)]), color: MS, name: 'poles', metallic: 0.7 },
+    { ...merge([cyl(0.03, 0.03, 0.02, 6, -0.32, 0.01, -0.20), cyl(0.03, 0.03, 0.02, 6, 0.32, 0.01, -0.20), cyl(0.03, 0.03, 0.02, 6, -0.32, 0.01, 0.20), cyl(0.03, 0.03, 0.02, 6, 0.32, 0.01, 0.20)]), color: MD, name: 'wheels', metallic: 0.5 },
+  ],
+  // --- カフェ・バー ---
+  espresso_machine: () => [
+    { ...merge([box(0.40, 0.40, 0.40, 0, 0.20, 0)]), color: MD, name: 'body', metallic: 0.5 },
+    { ...merge([box(0.10, 0.08, 0.02, -0.08, 0.45, -0.12), box(0.10, 0.08, 0.02, 0.08, 0.45, -0.12)]), color: [0.2, 0.3, 0.5], name: 'displays' },
+    { ...merge([cyl(0.02, 0.02, 0.08, 6, -0.08, 0.10, 0.22), cyl(0.02, 0.02, 0.08, 6, 0.08, 0.10, 0.22)]), color: MS, name: 'spouts', metallic: 0.7 },
+    { ...merge([box(0.15, 0.02, 0.12, 0, 0.05, 0.18)]), color: MS, name: 'drip_tray', metallic: 0.6 },
+  ],
+  cake_showcase: () => [
+    { ...merge([box(1.10, 0.50, 0.65, 0, 0.25, 0)]), color: [0.95, 0.95, 0.95], name: 'base' },
+    { ...merge([box(1.06, 0.60, 0.02, 0, 0.80, 0.31), box(1.06, 0.60, 0.02, 0, 0.80, -0.31), box(0.02, 0.60, 0.62, 0.53, 0.80, 0), box(0.02, 0.60, 0.62, -0.53, 0.80, 0)]), color: [0.7, 0.85, 0.9], name: 'glass' },
+    { ...merge([box(1.10, 0.03, 0.65, 0, 1.12, 0)]), color: [0.95, 0.95, 0.95], name: 'top' },
+    { ...merge([box(1.02, 0.02, 0.58, 0, 0.75, 0)]), color: [0.95, 0.95, 0.95], name: 'shelf' },
+  ],
+  ice_bin: () => [
+    { ...merge([box(0.45, 0.40, 0.35, 0, 0.20, 0)]), color: MS, name: 'body', metallic: 0.6 },
+    { ...merge([box(0.47, 0.02, 0.37, 0, 0.41, 0)]), color: MS, name: 'rim', metallic: 0.7 },
+    { ...merge([box(0.04, 0.06, 0.04, 0.18, 0.44, 0)]), color: MD, name: 'handle', metallic: 0.6 },
+  ],
+  cocktail_station: () => [
+    { ...merge([box(1.10, 0.04, 0.55, 0, 0.90, 0)]), color: MS, name: 'top', metallic: 0.5 },
+    { ...merge([box(1.06, 0.56, 0.51, 0, 0.61, 0)]), color: MD, name: 'body', metallic: 0.3 },
+    { ...merge([box(0.30, 0.12, 0.30, -0.30, 0.72, 0)]), color: MS, name: 'sink', metallic: 0.7 },
+    { ...merge([box(0.40, 0.20, 0.10, 0.25, 1.05, -0.20)]), color: WD, name: 'speed_rail' },
+  ],
+  // --- ジム・スパ ---
+  treadmill: () => [
+    { ...merge([box(0.70, 0.08, 1.50, 0, 0.15, 0)]), color: MD, name: 'deck' },
+    { ...merge([box(0.65, 0.04, 1.40, 0, 0.20, 0)]), color: [0.15, 0.15, 0.15], name: 'belt', roughness: 0.9 },
+    { ...merge([cyl(0.03, 0.03, 1.10, 6, -0.30, 0.75, -0.50), cyl(0.03, 0.03, 1.10, 6, 0.30, 0.75, -0.50)]), color: MD, name: 'uprights', metallic: 0.5 },
+    { ...merge([box(0.55, 0.10, 0.10, 0, 1.30, -0.50)]), color: MD, name: 'console' },
+    { ...merge([box(0.30, 0.08, 0.02, 0, 1.35, -0.48)]), color: [0.2, 0.3, 0.5], name: 'display' },
+    { ...merge([box(0.50, 0.03, 0.08, 0, 1.05, -0.50)]), color: MD, name: 'handlebar', metallic: 0.6 },
+  ],
+  dumbbell_rack: () => [
+    { ...merge([box(0.03, 1.10, 0.45, -0.55, 0.55, 0), box(0.03, 1.10, 0.45, 0.55, 0.55, 0)]), color: MD, name: 'sides', metallic: 0.5 },
+    { ...merge([box(1.10, 0.03, 0.40, 0, 0.10, 0), box(1.10, 0.03, 0.40, 0, 0.40, 0), box(1.10, 0.03, 0.40, 0, 0.70, 0), box(1.10, 0.03, 0.40, 0, 1.00, 0)]), color: MS, name: 'shelves', metallic: 0.4 },
+    { ...merge([cyl(0.03, 0.03, 0.15, 6, -0.30, 0.22, 0.05), cyl(0.03, 0.03, 0.15, 6, 0, 0.22, 0.05), cyl(0.03, 0.03, 0.15, 6, 0.30, 0.22, 0.05)]), color: [0.2, 0.2, 0.2], name: 'dumbbells' },
+  ],
+  yoga_mat: () => [
+    { ...merge([box(0.60, 0.008, 1.70, 0, 0.004, 0)]), color: [0.42, 0.36, 0.58], name: 'mat', roughness: 0.95 },
+  ],
+  locker: () => [
+    { ...merge([box(0.85, 1.75, 0.45, 0, 0.875, 0)]), color: MS, name: 'body', metallic: 0.5 },
+    { ...merge([box(0.02, 1.70, 0.01, 0, 0.875, 0.23)]), color: MD, name: 'divider', metallic: 0.4 },
+    { ...merge([box(0.04, 0.08, 0.04, -0.20, 0.90, 0.25), box(0.04, 0.08, 0.04, 0.20, 0.90, 0.25)]), color: MD, name: 'handles', metallic: 0.6 },
+    { ...merge([box(0.82, 0.02, 0.40, 0, 0.88, 0)]), color: [0.6, 0.6, 0.65], name: 'shelf', metallic: 0.4 },
+  ],
+  sauna_bench: () => [
+    { ...merge([box(1.30, 0.04, 0.40, 0, 0.44, 0)]), color: WL, name: 'seat' },
+    { ...merge([box(0.06, 0.43, 0.35, -0.55, 0.215, 0), box(0.06, 0.43, 0.35, 0.55, 0.215, 0), box(0.06, 0.43, 0.35, 0, 0.215, 0)]), color: W, name: 'legs' },
+  ],
+  // --- その他共通 ---
+  water_server: () => [
+    { ...merge([box(0.30, 0.90, 0.30, 0, 0.45, 0)]), color: [0.95, 0.95, 0.95], name: 'body' },
+    { ...merge([cyl(0.12, 0.12, 0.30, 8, 0, 1.05, 0)]), color: [0.7, 0.85, 0.95], name: 'bottle' },
+    { ...merge([box(0.08, 0.04, 0.06, 0, 0.50, 0.17)]), color: [0.2, 0.5, 0.8], name: 'tap_cold' },
+    { ...merge([box(0.08, 0.04, 0.06, 0, 0.60, 0.17)]), color: [0.8, 0.2, 0.2], name: 'tap_hot' },
+  ],
+  air_purifier: () => [
+    { ...merge([box(0.35, 0.55, 0.20, 0, 0.275, 0)]), color: [0.95, 0.95, 0.95], name: 'body' },
+    { ...merge([box(0.25, 0.15, 0.02, 0, 0.48, 0.11)]), color: [0.85, 0.85, 0.85], name: 'vent' },
+    { ...merge([box(0.08, 0.04, 0.02, 0.10, 0.30, 0.11)]), color: [0.2, 0.5, 0.3], name: 'indicator' },
+  ],
+  projector: () => [
+    { ...merge([box(0.30, 0.08, 0.24, 0, 0.04, 0)]), color: [0.15, 0.15, 0.15], name: 'body' },
+    { ...merge([cyl(0.04, 0.04, 0.03, 8, 0, 0.04, 0.14)]), color: [0.2, 0.3, 0.5], name: 'lens' },
+    { ...merge([box(0.20, 0.02, 0.16, 0, -0.01, 0)]), color: MD, name: 'base' },
+  ],
+  speaker: () => [
+    { ...merge([box(0.22, 0.30, 0.18, 0, 0.15, 0)]), color: [0.12, 0.12, 0.12], name: 'body' },
+    { ...merge([cyl(0.06, 0.06, 0.02, 8, 0, 0.20, 0.10)]), color: [0.2, 0.2, 0.2], name: 'woofer' },
+    { ...merge([cyl(0.025, 0.025, 0.02, 8, 0, 0.08, 0.10)]), color: [0.2, 0.2, 0.2], name: 'tweeter' },
+  ],
+  security_camera: () => [
+    { ...merge([box(0.08, 0.06, 0.04, 0, 0.03, -0.04)]), color: [0.95, 0.95, 0.95], name: 'mount' },
+    { ...merge([cyl(0.03, 0.03, 0.10, 8, 0, 0.03, 0.02)]), color: [0.95, 0.95, 0.95], name: 'body' },
+    { ...merge([cyl(0.02, 0.015, 0.04, 6, 0, 0.03, 0.09)]), color: MD, name: 'lens', metallic: 0.5 },
+  ],
+  guide_board: () => [
+    { ...merge([box(0.55, 0.75, 0.03, 0, 0.95, 0)]), color: [0.15, 0.15, 0.15], name: 'board' },
+    { ...merge([box(0.59, 0.79, 0.02, 0, 0.95, -0.02)]), color: MS, name: 'frame', metallic: 0.5 },
+    { ...merge([cyl(0.025, 0.03, 0.55, 6, 0, 0.28, 0)]), color: MS, name: 'pole', metallic: 0.6 },
+    { ...merge([cyl(0.18, 0.20, 0.03, 8, 0, 0.015, 0)]), color: MD, name: 'base', metallic: 0.5 },
+  ],
 };
 
 console.log('Generating GLB furniture models...\n');

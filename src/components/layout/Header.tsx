@@ -10,6 +10,7 @@ import { ProjectListModal } from '@/components/ui/ProjectListModal';
 import { QRCodeModal } from '@/components/ui/QRCodeModal';
 import { showToast } from '@/components/ui/Toast';
 import { AuthButton } from '@/components/ui/AuthButton';
+import { saveProject as saveToSupabase } from '@/lib/project-storage';
 
 interface HeaderProps {
   onScreenshot?: (scale?: number) => void;
@@ -75,8 +76,10 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
     setIsEditingName(false);
   }, [nameInput, setProjectName]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const json = exportProject();
+
+    // JSONファイルとしてダウンロード
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -85,7 +88,18 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
     a.download = `porano-perse-project-${timestamp}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [exportProject]);
+
+    // Supabaseにも保存（利用可能な場合）
+    try {
+      const data = JSON.parse(json);
+      const savedId = await saveToSupabase({ name: projectName, data });
+      if (savedId) {
+        showToast('クラウドにも保存しました', 'success');
+      }
+    } catch {
+      // Supabase unavailable — file download succeeded, so safe to ignore
+    }
+  }, [exportProject, projectName]);
 
   const handleLoad = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

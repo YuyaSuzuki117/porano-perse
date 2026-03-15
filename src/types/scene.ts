@@ -166,6 +166,38 @@ export type FurnitureType =
   | 'plant_small'     // 観葉植物（小）
   | 'digital_signage' // デジタルサイネージ
   | 'indirect_light'  // 間接照明
+  // --- 飲食店 ---
+  | 'pizza_oven'      // ピザ窯
+  | 'beer_server'     // ビールサーバー
+  | 'ice_cream_case'  // アイスクリームケース
+  | 'sushi_counter'   // 寿司カウンター
+  | 'teppan_table'    // 鉄板焼きテーブル
+  | 'noodle_cooker'   // 麺茹で機
+  | 'ice_maker'       // 製氷機
+  // --- ホテル・宿泊 ---
+  | 'bed_single'      // ベッド（シングル）
+  | 'bed_double'      // ベッド（ダブル）
+  | 'night_table'     // ナイトテーブル
+  | 'dresser'         // ドレッサー
+  | 'room_service_cart' // ルームサービスカート
+  // --- カフェ・バー ---
+  | 'espresso_machine' // エスプレッソマシン
+  | 'cake_showcase'   // ケーキショーケース
+  | 'ice_bin'         // アイスビン
+  | 'cocktail_station' // カクテルステーション
+  // --- ジム・スパ ---
+  | 'treadmill'       // トレッドミル
+  | 'dumbbell_rack'   // ダンベルラック
+  | 'yoga_mat'        // ヨガマット
+  | 'locker'          // ロッカー
+  | 'sauna_bench'     // サウナベンチ
+  // --- その他共通 ---
+  | 'water_server'    // ウォーターサーバー
+  | 'air_purifier'    // 空気清浄機
+  | 'projector'       // プロジェクター
+  | 'speaker'         // スピーカー
+  | 'security_camera' // 防犯カメラ
+  | 'guide_board'     // 案内板
   | 'custom';         // カスタム3Dモデル
 
 export interface FurnitureCatalogItem {
