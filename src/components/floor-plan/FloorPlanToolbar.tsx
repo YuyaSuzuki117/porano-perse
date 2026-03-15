@@ -185,18 +185,18 @@ export default function FloorPlanToolbar() {
           onMouseLeave={() => setHoveredTool(null)}
           className={`
             flex flex-col items-center justify-center gap-0.5
-            w-10 h-10 md:w-11 md:h-11 rounded-lg
-            transition-all duration-100 text-xs relative
+            w-10 h-10 md:w-11 md:h-11 rounded-sm
+            text-xs relative
             active:scale-95
             ${
               isActive
-                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25'
-                : 'text-gray-600 hover:bg-gray-200/80 hover:text-gray-800 active:bg-gray-200'
+                ? 'text-blue-600 bg-gray-50 border-l-2 border-blue-600'
+                : 'text-gray-500 hover:bg-gray-50 border-l-2 border-transparent'
             }
           `}
         >
           {tool.icon}
-          <span className="text-[7px] md:text-[8px] leading-none mt-0.5 font-medium">{tool.label}</span>
+          <span className="text-[7px] md:text-[8px] leading-none mt-0.5 font-medium blueprint-label" style={{ textTransform: 'none', fontSize: 'inherit' }}>{tool.label}</span>
         </button>
         <Tooltip
           text={`${tool.label} (${tool.shortcut})`}
@@ -212,9 +212,9 @@ export default function FloorPlanToolbar() {
   );
 
   return (
-    <div className="flex flex-col items-center gap-0.5 py-2 md:py-3 px-1.5 md:px-2 bg-gray-50/80 border-r border-gray-200 w-[48px] md:w-[56px] shrink-0">
+    <div className="flex flex-col items-center gap-0.5 py-2 md:py-3 px-1 md:px-1.5 bg-white border-r border-gray-200 w-[48px] md:w-[56px] shrink-0">
       {/* タイトル */}
-      <div className="text-[9px] text-gray-400 text-center mb-1 font-semibold tracking-wider uppercase">
+      <div className="blueprint-label text-center mb-1">
         Tools
       </div>
 

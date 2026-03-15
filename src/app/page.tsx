@@ -104,7 +104,7 @@ const SceneCanvas = dynamic(
       <div className="flex-1 flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-blue-600 rounded-sm flex items-center justify-center">
               <svg viewBox="0 0 20 20" fill="none" className="w-7 h-7">
                 <path d="M3 14L10 4l7 10H3z" fill="white" opacity={0.9} />
                 <path d="M7 14L10 8l3 6H7z" fill="white" opacity={0.5} />
@@ -112,9 +112,9 @@ const SceneCanvas = dynamic(
             </div>
           </div>
           <div className="flex items-baseline justify-center gap-0.5 mb-4">
-            <span className="text-base font-bold tracking-tight text-white">Porano</span>
-            <span className="text-base font-light text-gray-500 mx-0.5">/</span>
-            <span className="text-base font-semibold text-blue-400">Perse</span>
+            <span className="text-sm font-medium tracking-wide text-white">PORANO</span>
+            <span className="text-sm font-light text-gray-500 mx-0.5">/</span>
+            <span className="text-sm font-medium tracking-wide text-blue-400">PERSE</span>
           </div>
           <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full mx-auto mb-3" />
           <p className="text-gray-500 text-xs">Loading 3D engine...</p>
@@ -508,8 +508,8 @@ export default function EditorPage() {
         {/* Rendering overlay */}
         {isRendering && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
-            <div className="bg-white rounded-xl px-8 py-6 shadow-2xl flex flex-col items-center gap-3">
-              <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full" />
+            <div className="bg-white rounded-sm px-8 py-6 shadow flex flex-col items-center gap-3">
+              <div className="animate-spin w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full" />
               <span className="text-sm font-medium text-gray-700" aria-live="polite">{t('misc.rendering')}</span>
             </div>
           </div>
@@ -523,7 +523,7 @@ export default function EditorPage() {
               aria-label="2D図面エディタ"
             >
               <FloorPlanEditor canvasRef2D={canvasRef2D} />
-              <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs text-gray-500 font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md border border-gray-200 pointer-events-none">
+              <div className="absolute top-2 left-2 blueprint-label bg-white/90 px-2.5 py-1.5 rounded-sm border border-gray-200 pointer-events-none">
                 {t('view.2d')}
               </div>
             </div>
@@ -551,10 +551,10 @@ export default function EditorPage() {
               <EmptyStateOverlay isMobile />
               {!photoMode && !fullscreen3D && (
                 <div className="absolute top-2 left-2 right-2 flex items-center gap-2 z-10">
-                  <div className="bg-black/60 backdrop-blur-sm text-xs text-white font-semibold tracking-wider uppercase px-2.5 py-1.5 rounded-md pointer-events-none flex-shrink-0">
+                  <div className="blueprint-label bg-black/60 text-white px-2.5 py-1.5 rounded-sm pointer-events-none flex-shrink-0">
                     {t('view.3d')}
                   </div>
-                  <div className="flex bg-white/80 backdrop-blur-sm rounded-lg shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
+                  <div className="flex bg-white/80 rounded-sm border border-gray-200" role="radiogroup" aria-label="レンダリングスタイル">
                     {([
                       { style: 'sketch' as const, label: '鉛筆' },
                       { style: 'colored-pencil' as const, label: '色鉛筆' },
@@ -566,10 +566,10 @@ export default function EditorPage() {
                         role="radio"
                         aria-checked={renderStyle === style}
                         onClick={() => setRenderStyle(style)}
-                        className={`px-2.5 py-2 text-xs font-medium transition-colors rounded-lg min-h-[44px] min-w-[44px] ${
+                        className={`px-2.5 py-2 text-xs font-medium rounded-sm min-h-[44px] min-w-[44px] active:scale-95 ${
                           renderStyle === style
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            ? 'text-blue-600 bg-gray-50'
+                            : 'text-gray-500 hover:bg-gray-50'
                         }`}
                       >
                         {label}
@@ -650,11 +650,10 @@ export default function EditorPage() {
                 </div>
               )}
               {isDragOver && (
-                <div className="absolute inset-0 bg-blue-500/20 border-4 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-50 pointer-events-none">
-                  <div className="bg-blue-600/90 text-white px-6 py-4 rounded-xl shadow-2xl text-center">
-                    <div className="text-3xl mb-2">📦</div>
+                <div className="absolute inset-0 bg-blue-600/10 border-2 border-dashed border-blue-600 rounded-sm flex items-center justify-center z-50 pointer-events-none">
+                  <div className="bg-gray-800 text-white px-6 py-4 rounded-sm shadow text-center">
                     <div className="text-sm font-medium">{t('misc.drop_model')}</div>
-                    <div className="text-xs text-blue-200 mt-1">.glb / .gltf</div>
+                    <div className="text-xs text-gray-400 mt-1">.glb / .gltf</div>
                   </div>
                 </div>
               )}
@@ -803,7 +802,7 @@ export default function EditorPage() {
           {/* メインFABボタン */}
           <button
             onClick={() => setFabOpen(!fabOpen)}
-            className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white active:scale-90 transition-all duration-200 ${
+            className={`w-14 h-14 rounded-full shadow flex items-center justify-center text-white active:scale-95 ${
               fabOpen ? 'rotate-45 bg-gray-600' : 'bg-blue-600'
             }`}
             aria-label="クイックアクション"
@@ -828,7 +827,7 @@ export default function EditorPage() {
               role="tab"
               aria-selected={mobileTab === key}
               onClick={() => { handleMobileTab(key); setFabOpen(false); }}
-              className={`flex-1 flex flex-col items-center justify-center min-h-[56px] py-2 text-xs font-medium transition-all active:scale-95 active:bg-gray-50 ${
+              className={`flex-1 flex flex-col items-center justify-center min-h-[56px] py-2 text-xs font-medium active:scale-95 ${
                 mobileTab === key
                   ? 'text-blue-600'
                   : 'text-gray-400'
@@ -885,8 +884,8 @@ export default function EditorPage() {
       {/* Rendering overlay */}
       {isRendering && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-xl px-8 py-6 shadow-2xl flex flex-col items-center gap-3">
-            <div className="animate-spin w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full" />
+          <div className="bg-white rounded-sm px-8 py-6 shadow flex flex-col items-center gap-3">
+            <div className="animate-spin w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full" />
             <span className="text-sm font-medium text-gray-700" aria-live="polite">レンダリング中...</span>
           </div>
         </div>
@@ -954,11 +953,11 @@ export default function EditorPage() {
               <EmptyStateOverlay isMobile={false} />
               {/* 3Dラベル + レンダリングスタイル切替 */}
               <div className="absolute top-2 left-2 flex items-center gap-2 z-10">
-                <div className="bg-black/60 backdrop-blur-sm text-[10px] text-white font-semibold tracking-wider uppercase px-2 py-1 rounded-md pointer-events-none">
+                <div className="blueprint-label bg-black/60 text-white px-2 py-1 rounded-sm pointer-events-none">
                   3D プレビュー
                 </div>
                 {!photoMode && (
-                  <div className="flex bg-white/80 backdrop-blur-sm rounded-lg shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
+                  <div className="flex bg-white/80 rounded-sm border border-gray-200" role="radiogroup" aria-label="レンダリングスタイル">
                     {([
                       { style: 'sketch' as const, label: '鉛筆' },
                       { style: 'colored-pencil' as const, label: '色鉛筆' },
@@ -970,10 +969,10 @@ export default function EditorPage() {
                         role="radio"
                         aria-checked={renderStyle === style}
                         onClick={() => setRenderStyle(style)}
-                        className={`px-2 py-1 text-xs font-medium transition-colors rounded-lg ${
+                        className={`px-2 py-1 text-xs font-medium rounded-sm active:scale-95 ${
                           renderStyle === style
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            ? 'text-blue-600 bg-gray-50'
+                            : 'text-gray-500 hover:bg-gray-50'
                         }`}
                       >
                         {label}
@@ -1019,7 +1018,7 @@ export default function EditorPage() {
                 <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-40">
                   <button
                     onClick={() => takeHiResScreenshot()}
-                    className="group flex items-center gap-2 px-5 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
+                    className="group flex items-center gap-2 px-5 py-3 bg-blue-600 text-white font-medium rounded-sm shadow hover:bg-blue-700 active:scale-95"
                     aria-label={t('misc.shoot_hd')}
                   >
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 group-hover:animate-pulse" aria-hidden="true">
@@ -1031,7 +1030,7 @@ export default function EditorPage() {
                   </button>
                   <button
                     onClick={() => setPhotoMode(false)}
-                    className="px-3 py-1.5 bg-white/80 text-gray-600 text-xs rounded-full shadow-sm border border-gray-200 hover:bg-white hover:text-gray-900 transition-all duration-200"
+                    className="px-3 py-1.5 bg-white/80 text-gray-600 text-xs rounded-sm border border-gray-200 hover:bg-gray-50 active:scale-95"
                     aria-label={t('view.photo_end')}
                   >
                     {t('view.photo_end')} <span className="text-gray-400 ml-1">P</span>
@@ -1039,11 +1038,10 @@ export default function EditorPage() {
                 </div>
               )}
               {isDragOver && (
-                <div className="absolute inset-0 bg-blue-500/20 backdrop-blur-[2px] border-4 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-50 pointer-events-none animate-[dropzonePulse_1.5s_ease-in-out_infinite]">
-                  <div className="bg-blue-600/90 text-white px-8 py-5 rounded-xl shadow-2xl text-center animate-[dropzoneBounce_0.3s_ease-out]">
-                    <div className="text-4xl mb-2 animate-bounce">📦</div>
-                    <div className="text-sm font-bold">{t('misc.drop_model')}</div>
-                    <div className="text-xs text-blue-200 mt-1.5 bg-blue-700/50 px-3 py-1 rounded-full inline-block">.glb / .gltf</div>
+                <div className="absolute inset-0 bg-blue-600/10 border-2 border-dashed border-blue-600 rounded-sm flex items-center justify-center z-50 pointer-events-none">
+                  <div className="bg-gray-800 text-white px-8 py-5 rounded-sm shadow text-center">
+                    <div className="text-sm font-medium">{t('misc.drop_model')}</div>
+                    <div className="text-xs text-gray-400 mt-1.5">.glb / .gltf</div>
                   </div>
                 </div>
               )}
@@ -1058,7 +1056,7 @@ export default function EditorPage() {
         {!showAIPanel && (
           <button
             onClick={() => setShowAIPanel(true)}
-            className="fixed bottom-4 right-[304px] z-[100] flex items-center justify-center w-10 h-10 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+            className="fixed bottom-4 right-[304px] z-[100] flex items-center justify-center w-10 h-10 bg-white border border-gray-200 text-gray-500 rounded-sm hover:bg-gray-50 active:scale-95"
             aria-label="AIアシストを開く"
             title="AIアシスト"
           >

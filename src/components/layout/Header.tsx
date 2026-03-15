@@ -50,10 +50,10 @@ function HeaderIconButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'p-1.5 rounded-md transition-colors',
+        'p-1.5 rounded-sm active:scale-95',
         disabled && 'text-gray-300 cursor-not-allowed',
-        !disabled && !active && 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
-        !disabled && active && 'text-blue-600 bg-blue-50',
+        !disabled && !active && 'text-gray-500 hover:bg-gray-50',
+        !disabled && active && 'text-blue-600 bg-gray-50',
         extraClass
       )}
       aria-label={ariaLabel}
@@ -248,16 +248,16 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
     <header className="h-12 bg-white border-b border-gray-200 flex items-center px-3 md:px-4 shrink-0 select-none relative pt-safe" role="banner" aria-label={locale === 'ja' ? 'ヘッダーナビゲーション' : 'Header Navigation'}>
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+        <div className="w-7 h-7 bg-blue-600 rounded-sm flex items-center justify-center">
           <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4">
             <path d="M3 14L10 4l7 10H3z" fill="white" opacity={0.9} />
             <path d="M7 14L10 8l3 6H7z" fill="white" opacity={0.5} />
           </svg>
         </div>
         <div className="flex items-baseline gap-0.5">
-          <span className="text-base font-bold tracking-tight text-gray-800">Porano</span>
-          <span className="text-base font-light text-gray-400 mx-0.5">/</span>
-          <span className="text-base font-semibold text-blue-600">Perse</span>
+          <span className="text-sm font-medium tracking-wide text-gray-800">PORANO</span>
+          <span className="text-sm font-light text-gray-300 mx-0.5">/</span>
+          <span className="text-sm font-medium tracking-wide text-blue-600">PERSE</span>
         </div>
       </div>
 
@@ -275,19 +275,19 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
               if (e.key === 'Enter') handleNameCommit();
               if (e.key === 'Escape') { setNameInput(projectName); setIsEditingName(false); }
             }}
-            className="text-xs text-gray-700 bg-white px-2.5 py-1 rounded-md border border-blue-400 outline-none w-24 md:w-40"
+            className="text-xs text-gray-700 bg-transparent blueprint-input w-24 md:w-40"
           />
         ) : (
           <button
             onClick={() => { setNameInput(projectName); setIsEditingName(true); }}
-            className="text-xs text-gray-600 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-text max-w-[6rem] md:max-w-none truncate"
+            className="text-xs text-gray-600 bg-transparent px-1 py-0.5 border-b border-gray-200 hover:border-gray-400 cursor-text max-w-[6rem] md:max-w-none truncate rounded-none"
             aria-label={`プロジェクト名: ${projectName} - クリックで編集`}
           >
             {projectName}
           </button>
         )}
         {lastAutoSaved && (
-          <span className="text-[9px] text-gray-500 whitespace-nowrap hidden md:inline" title={`${t('header.auto_saved')}: ${new Date(lastAutoSaved).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : 'en-US')}`}>
+          <span className="text-[9px] text-gray-400 whitespace-nowrap hidden md:inline blueprint-num" title={`${t('header.auto_saved')}: ${new Date(lastAutoSaved).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : 'en-US')}`}>
             {t('header.auto_saved')} {new Date(lastAutoSaved).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
@@ -340,22 +340,22 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         <Sep />
 
         {/* Zoom controls */}
-        <div className="flex items-center gap-0.5 bg-gray-50 rounded-md border border-gray-200 px-1">
+        <div className="flex items-center gap-0.5 border border-gray-200 rounded-sm px-1">
           <button
             onClick={zoomOut}
-            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+            className="p-1 text-gray-500 hover:bg-gray-50 rounded-sm active:scale-95"
             aria-label={t('header.zoom_out')}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3" aria-hidden="true">
               <line x1="3" y1="8" x2="13" y2="8" />
             </svg>
           </button>
-          <span className="text-[10px] text-gray-500 font-mono tabular-nums w-10 text-center">
+          <span className="blueprint-num text-[10px] text-gray-500 w-10 text-center">
             {Math.round(zoom * 100)}%
           </span>
           <button
             onClick={zoomIn}
-            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+            className="p-1 text-gray-500 hover:bg-gray-50 rounded-sm active:scale-95"
             aria-label={t('header.zoom_in')}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3" aria-hidden="true">
@@ -365,7 +365,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           </button>
           <button
             onClick={resetZoom}
-            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+            className="p-1 text-gray-500 hover:bg-gray-50 rounded-sm active:scale-95"
             aria-label={t('header.zoom_reset')}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3" aria-hidden="true">
@@ -394,7 +394,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           </HeaderIconButton>
 
           {shareDropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 bg-white shadow-lg border border-gray-200 rounded-lg z-50 w-52 py-1" role="menu">
+            <div className="absolute top-full right-0 mt-1 bg-white shadow border border-gray-200 rounded-sm z-50 w-52 py-1" role="menu">
               <button
                 onClick={() => { handleShare(); setShareDropdownOpen(false); }}
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
@@ -441,9 +441,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           <button
             onClick={(e) => { e.stopPropagation(); setExportDropdownOpen(!exportDropdownOpen); setShareDropdownOpen(false); setSettingsDropdownOpen(false); }}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors shadow-sm',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium active:scale-95',
               exportDropdownOpen
-                ? 'bg-blue-700 text-white'
+                ? 'bg-blue-600 text-white'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             )}
             aria-label={t('header.export_menu')}
@@ -461,7 +461,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           </button>
 
           {exportDropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 bg-white shadow-lg border border-gray-200 rounded-lg z-50 w-56 py-1" role="menu" aria-label={t('header.export_menu')}>
+            <div className="absolute top-full right-0 mt-1 bg-white shadow border border-gray-200 rounded-sm z-50 w-56 py-1" role="menu" aria-label={t('header.export_menu')}>
               {onScreenshot && (
                 <button
                   onClick={() => { onScreenshot(); setExportDropdownOpen(false); }}
@@ -560,7 +560,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
           </HeaderIconButton>
 
           {settingsDropdownOpen && (
-            <div className="absolute top-full right-0 mt-1 bg-white shadow-lg border border-gray-200 rounded-lg z-50 w-52 py-1" role="menu">
+            <div className="absolute top-full right-0 mt-1 bg-white shadow border border-gray-200 rounded-sm z-50 w-52 py-1" role="menu">
               <button
                 onClick={() => { toggleLocale(); setSettingsDropdownOpen(false); }}
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
@@ -625,7 +625,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         {onScreenshot && (
           <button
             onClick={() => onScreenshot()}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-blue-600 text-white active:bg-blue-700 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-sm bg-blue-600 text-white active:scale-95"
             aria-label={t('header.screenshot')}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5" aria-hidden="true">
@@ -637,7 +637,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         )}
         <button
           onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(!mobileMenuOpen); }}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-gray-600 active:bg-gray-100 transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-sm text-gray-600 active:scale-95"
           aria-label={t('header.menu')}
           aria-expanded={mobileMenuOpen}
           aria-haspopup="true"
@@ -652,7 +652,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full right-0 bg-white shadow-lg border border-gray-200 rounded-b-lg z-50 w-56 p-2" role="menu" aria-label={t('header.menu')}>
+        <div className="md:hidden absolute top-full right-0 bg-white shadow border border-gray-200 rounded-sm z-50 w-56 p-2" role="menu" aria-label={t('header.menu')}>
           <button onClick={() => { handleNew(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">{t('header.new')}</button>
           <button onClick={() => { handleSave(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">{t('header.save')}</button>
           <button onClick={() => { fileInputRef.current?.click(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">{t('header.open')}</button>

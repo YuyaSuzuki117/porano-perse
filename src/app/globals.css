@@ -21,6 +21,47 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 建築図面風: 数値はタブラー等幅 */
+.blueprint-num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono), ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+  letter-spacing: -0.01em;
+}
+
+/* 建築図面風ラベル: 小さく、トラッキング広め、大文字 */
+.blueprint-label {
+  font-size: 0.625rem; /* 10px */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280; /* gray-500 */
+  font-weight: 500;
+}
+
+/* 建築図面風セクションタイトル */
+.blueprint-title {
+  font-weight: 500;
+  color: #1f2937; /* gray-800 */
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+/* 建築図面風: 下線のみの数値入力 */
+.blueprint-input {
+  border: none;
+  border-bottom: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  padding: 0.25rem 0;
+  outline: none;
+}
+.blueprint-input:focus {
+  border-bottom-color: #2563eb; /* blue-600 */
 }
 
 /* モバイルでアドレスバーを考慮した動的ビューポート高さ */
@@ -52,61 +93,36 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Collapsible section animation */
+/* Collapsible section: instant toggle, no animation (baseline-ui) */
 .section-content {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .section-content[data-open="true"] {
   grid-template-rows: 1fr;
 }
 .section-content > div {
   overflow: hidden;
-  transition: opacity 200ms ease;
   opacity: 0;
 }
 .section-content[data-open="true"] > div {
   opacity: 1;
-  transition: opacity 300ms ease 50ms;
 }
 
-/* Tab content fade + slide */
-.tab-content-enter {
-  animation: tabFadeIn 150ms ease-out;
-}
-@keyframes tabFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* Tab content: no animation (baseline-ui) */
+.tab-content-enter {}
 
-/* Drop zone animations */
-@keyframes dropzonePulse {
-  0%, 100% { border-color: rgb(192 132 252); }
-  50% { border-color: rgb(168 85 247); }
-}
-@keyframes dropzoneBounce {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
+/* Drop zone: static border, no pulse/bounce (baseline-ui) */
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+/* Mobile bottom sheet: instant (baseline-ui) */
+.bottom-sheet {}
 
-/* Mobile bottom sheet spring */
-.bottom-sheet {
-  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1), height 200ms ease;
-}
-
-/* Universal button feedback — smooth transitions + press effect */
+/* Button feedback: press scale only (baseline-ui: no color transition) */
 button, [role="button"] {
-  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
   cursor: pointer;
 }
 button:active:not(:disabled), [role="button"]:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 /* Exclude canvas and 3D interaction areas from button press effect */
 canvas, canvas:active {

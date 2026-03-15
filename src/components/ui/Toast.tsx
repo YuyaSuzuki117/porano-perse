@@ -72,8 +72,8 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
 
   return (
     <div
-      className={`${bgColor} text-white text-sm px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2 cursor-pointer transition-all duration-300 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+      className={`${bgColor} text-white text-sm px-4 py-2.5 rounded-sm shadow flex items-center gap-2 cursor-pointer ${
+        visible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={onDismiss}
     >

@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
-
 import { useUIStore } from '@/stores/useUIStore';
+import { showToast } from '@/components/ui/Toast';
 /**
  * キーボードショートカットを一括管理するカスタムフック。
  * Ctrl+Z (undo), Ctrl+Shift+Z/Y (redo), Ctrl+C/V/D/A,
@@ -45,9 +45,11 @@ export function useKeyboardShortcuts() {
         if (e.key === 'z' && !e.shiftKey) {
           e.preventDefault();
           undo();
+          showToast('元に戻しました', 'info');
         } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
           e.preventDefault();
           redo();
+          showToast('やり直しました', 'info');
         } else if (e.key === 'c') {
           e.preventDefault();
           copyFurniture();

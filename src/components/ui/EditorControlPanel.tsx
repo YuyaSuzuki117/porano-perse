@@ -30,6 +30,7 @@ import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
 import { RenderQualityPanel } from '@/components/ui/RenderQualityPanel';
 import { FinishEditorPanel } from '@/components/ui/FinishEditorPanel';
 import { useTranslation } from '@/lib/i18n';
+import { showToast } from '@/components/ui/Toast';
 import ModelImportPanel, {
   loadCustomModels,
   deleteCustomModel,
@@ -303,6 +304,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       modelUrl: catalog.modelUrl,
       heightOffset: defaultY > 0 ? defaultY : undefined,
     });
+    showToast(`${catalog.name} を追加しました`, 'success');
   };
 
   const handleAddSet = (setId: string) => {
@@ -365,6 +367,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       scale: model.scale,
       modelUrl: blobUrl,
     });
+    showToast(`${model.name} を追加しました`, 'success');
   }, [addFurniture, customBlobUrls]);
 
   // Panel content shared between mobile and desktop
@@ -372,7 +375,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     <>
       {/* View Mode - hidden on mobile (tab bar handles this) */}
       {!isMobile && (
-        <div className="p-3 border-b border-gray-200 bg-gray-50">
+        <div className="p-3 border-b border-gray-200">
           <div className="flex gap-1" role="tablist" aria-label="ビューモード切替">
             {(['2d', 'split', '3d'] as const).map((mode) => (
               <button
@@ -380,10 +383,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 role="tab"
                 aria-selected={viewMode === mode}
                 onClick={() => setViewMode(mode)}
-                className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`flex-1 px-2 py-1.5 rounded-sm text-xs font-medium active:scale-95 ${
                   viewMode === mode
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 {mode === '2d' ? '図面' : mode === '3d' ? '3D' : '分割'}
@@ -469,10 +472,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             // フォトモード開始時はパネルを閉じて3Dビューを表示
             if (next && isMobile && onClose) onClose();
           }}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-sm text-sm font-medium active:scale-95 ${
             photoMode
-              ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
-              : 'bg-white text-gray-600 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-600 border border-gray-200 hover:bg-gray-50'
           }`}
           aria-label={photoMode ? 'フォトモードを終了' : 'フォトモードを開始'}
           aria-pressed={photoMode}
@@ -508,11 +511,11 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               newProject();
             }
           }}
-          className="w-full flex items-center gap-2.5 p-2 mb-2 rounded-lg border-2 border-dashed border-gray-300 bg-white hover:bg-green-50 hover:border-green-400 transition-all text-left group"
+          className="w-full flex items-center gap-2.5 p-2 mb-2 rounded-sm border border-dashed border-gray-300 hover:bg-gray-50 text-left group active:scale-95"
         >
-          <span className="text-lg flex-shrink-0 group-hover:scale-110 transition-transform">+</span>
+          <span className="text-lg flex-shrink-0">+</span>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-gray-700 group-hover:text-green-700">新規プロジェクト</div>
+            <div className="text-xs font-medium text-gray-700">新規プロジェクト</div>
             <div className="text-[10px] text-gray-400">空の部屋から始める (6x6m)</div>
           </div>
         </button>
@@ -530,10 +533,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   loadRoomTemplate(tpl.id);
                 }
               }}
-              className="flex flex-col items-center gap-1 p-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm transition-all text-center group"
+              className="flex flex-col items-center gap-1 p-2 rounded-sm border border-gray-200 hover:bg-gray-50 text-center active:scale-95"
             >
-              <span className="text-lg group-hover:scale-110 transition-transform">{tpl.icon}</span>
-              <div className="text-[10px] font-semibold text-gray-800 group-hover:text-blue-700 leading-tight">{tpl.name}</div>
+              <span className="text-lg">{tpl.icon}</span>
+              <div className="text-[10px] font-medium text-gray-700 leading-tight">{tpl.name}</div>
               <div className="text-[9px] text-gray-400 leading-tight">{tpl.walls[0] ? `${Math.round(Math.abs(tpl.walls[0].end.x - tpl.walls[0].start.x))}x${Math.round(Math.abs(tpl.walls[1].end.y - tpl.walls[1].start.y))}m` : ''}</div>
             </button>
           ))}
@@ -546,13 +549,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             <button
               key={tpl.id}
               onClick={() => loadTemplate(tpl.id)}
-              className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm transition-all text-left group"
+              className="w-full flex items-start gap-2.5 p-2 rounded-sm border border-gray-200 hover:bg-gray-50 text-left active:scale-95"
             >
-              <span className="text-xl flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+              <span className="text-xl flex-shrink-0 mt-0.5">
                 {tpl.thumbnail}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-semibold text-gray-800 group-hover:text-blue-700">
+                <div className="text-xs font-medium text-gray-700">
                   {tpl.name}
                 </div>
                 <div className="text-[10px] text-gray-400 mt-0.5">
@@ -567,13 +570,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       {/* テンプレート適用確認ダイアログ */}
       {roomTemplateConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl p-5 max-w-xs w-full mx-4">
-            <p className="text-sm text-gray-800 font-semibold mb-2">プロジェクトを上書きしますか？</p>
+          <div className="bg-white rounded-sm shadow p-5 max-w-xs w-full mx-4">
+            <p className="text-sm text-gray-800 font-medium mb-2">プロジェクトを上書きしますか？</p>
             <p className="text-xs text-gray-500 mb-4">現在のデータ（壁・家具）は全て置き換えられます。</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setRoomTemplateConfirm(null)}
-                className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                className="flex-1 px-3 py-1.5 text-xs rounded-sm border border-gray-300 hover:bg-gray-50 active:scale-95"
               >
                 キャンセル
               </button>
@@ -586,7 +589,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   }
                   setRoomTemplateConfirm(null);
                 }}
-                className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="flex-1 px-3 py-1.5 text-xs rounded-sm bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
               >
                 適用する
               </button>
@@ -599,7 +602,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       <Section title={t('panel.room_settings')} collapsible={isMobile} mobileCollapsible={isMobile}>
         <div className="space-y-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('panel.ceiling_height')}</label>
+            <label className="blueprint-label block mb-1">{t('panel.ceiling_height')}</label>
             <input
               type="number"
               value={roomHeight}
@@ -610,7 +613,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               min={2}
               max={10}
               step={0.1}
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              className="w-full blueprint-input text-sm"
             />
           </div>
           {/* 壁の表示制御 */}
@@ -629,10 +632,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={wallDisplayMode === mode}
                   onClick={() => setWallDisplayMode(mode)}
-                  className={`flex-1 text-[10px] px-1 py-1 rounded transition-all ${
+                  className={`flex-1 text-[10px] px-1 py-1 rounded-sm active:scale-95 ${
                     wallDisplayMode === mode
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   {label}
@@ -641,12 +644,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </div>
             {/* 壁透過度スライダー（transparentモード時） */}
             {wallDisplayMode === 'transparent' && (
-              <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="mt-2 p-2 border border-gray-200 rounded-sm">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-medium text-purple-700">
+                  <label className="blueprint-label">
                     壁の透過度
                   </label>
-                  <span className="text-[11px] font-bold text-purple-600 bg-white px-1.5 py-0.5 rounded border border-purple-200 tabular-nums">
+                  <span className="blueprint-num text-[11px] text-gray-600">
                     {wallOpacitySlider}%
                   </span>
                 </div>
@@ -657,9 +660,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   step={5}
                   value={wallOpacitySlider}
                   onChange={(e) => setWallOpacitySlider(parseInt(e.target.value))}
-                  className="w-full h-2 accent-purple-600 cursor-pointer"
+                  className="w-full h-2 accent-blue-600 cursor-pointer"
                 />
-                <div className="flex justify-between text-[8px] text-purple-400 mt-0.5">
+                <div className="flex justify-between text-[8px] text-gray-400 mt-0.5">
                   <span>不透明</span>
                   <span>透明</span>
                 </div>
@@ -667,12 +670,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             )}
             {/* 断面カット高さスライダー */}
             {wallDisplayMode === 'section' && (
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mt-2 p-2 border border-gray-200 rounded-sm">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-medium text-blue-700">
+                  <label className="blueprint-label">
                     カット高さ
                   </label>
-                  <span className="text-[11px] font-bold text-blue-600 bg-white px-1.5 py-0.5 rounded border border-blue-200 tabular-nums">
+                  <span className="blueprint-num text-[11px] text-gray-600">
                     {sectionCutHeight.toFixed(1)}m
                   </span>
                 </div>
@@ -685,7 +688,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   onChange={(e) => setSectionCutHeight(parseFloat(e.target.value))}
                   className="w-full h-2 accent-blue-600 cursor-pointer"
                 />
-                <div className="flex justify-between text-[8px] text-blue-400 mt-0.5">
+                <div className="flex justify-between text-[8px] text-gray-400 mt-0.5">
                   <span>0.5m</span>
                   <span>3.0m</span>
                 </div>
@@ -694,7 +697,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {/* ジオラマモードボタン */}
             <button
               onClick={activateDioramaMode}
-              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all"
+              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded-sm bg-blue-600 text-white font-medium hover:bg-blue-700 active:scale-95"
             >
               ジオラマモード
             </button>
@@ -707,7 +710,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 role="radio"
                 aria-checked={ceilingVisible}
                 onClick={() => setCeilingVisible(true)}
-                className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
+                className={`flex-1 text-[10px] px-1.5 py-1 rounded active:scale-95 ${
                   ceilingVisible
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -719,7 +722,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 role="radio"
                 aria-checked={!ceilingVisible}
                 onClick={() => setCeilingVisible(false)}
-                className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
+                className={`flex-1 text-[10px] px-1.5 py-1 rounded active:scale-95 ${
                   !ceilingVisible
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -730,12 +733,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </div>
             {/* 天井透過度スライダー（天井表示時） */}
             {ceilingVisible && (
-              <div className="mt-2 p-2 bg-teal-50 border border-teal-200 rounded-lg">
+              <div className="mt-2 p-2 border border-gray-200 rounded-sm">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-medium text-teal-700">
+                  <label className="blueprint-label">
                     天井の透過度
                   </label>
-                  <span className="text-[11px] font-bold text-teal-600 bg-white px-1.5 py-0.5 rounded border border-teal-200 tabular-nums">
+                  <span className="blueprint-num text-[11px] text-gray-600">
                     {ceilingOpacitySlider}%
                   </span>
                 </div>
@@ -746,9 +749,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   step={5}
                   value={ceilingOpacitySlider}
                   onChange={(e) => setCeilingOpacitySlider(parseInt(e.target.value))}
-                  className="w-full h-2 accent-teal-600 cursor-pointer"
+                  className="w-full h-2 accent-blue-600 cursor-pointer"
                 />
-                <div className="flex justify-between text-[8px] text-teal-400 mt-0.5">
+                <div className="flex justify-between text-[8px] text-gray-400 mt-0.5">
                   <span>不透明</span>
                   <span>透明</span>
                 </div>
@@ -819,7 +822,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     role="radio"
                     aria-checked={gridSnapSize === size}
                     onClick={() => setGridSnapSize(size)}
-                    className={`flex-1 text-[10px] px-1.5 py-1 rounded transition-all ${
+                    className={`flex-1 text-[10px] px-1.5 py-1 rounded active:scale-95 ${
                       gridSnapSize === size
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -856,7 +859,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 role="radio"
                 aria-checked={style === key}
                 onClick={() => setStyle(key)}
-                className={`relative px-2 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+                className={`relative px-2 py-1.5 rounded text-xs font-medium active:scale-95 ${
                   style === key
                     ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50 scale-[1.02]'
                     : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-sm border border-gray-200'
@@ -882,7 +885,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         </div>
         <button
           onClick={() => useCameraStore.getState().setStyleCompareMode(true)}
-          className="mt-2 w-full px-3 py-1.5 rounded text-xs font-medium bg-blue-50 text-gray-700 hover:bg-blue-100 border border-gray-200 transition-all"
+          className="mt-2 w-full px-3 py-1.5 rounded text-xs font-medium bg-blue-50 text-gray-700 hover:bg-blue-100 border border-gray-200 active:scale-95"
         >
           A/B スタイル比較
         </button>
@@ -892,10 +895,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       <Section title="マテリアル" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <div className="space-y-1">
           {/* ── 壁マテリアル ── */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-sm overflow-hidden">
             <button
               onClick={() => setMatWallOpen(!matWallOpen)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -947,7 +950,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       <button
                         key={color}
                         onClick={() => setWallColorOverride(color)}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border transition-all ${
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border active:scale-95 ${
                           wallColorOverride === color
                             ? 'border-blue-400 bg-blue-50 text-blue-700'
                             : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
@@ -980,7 +983,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       <button
                         key={type ?? 'default'}
                         onClick={() => setWallTextureType(type)}
-                        className={`px-1.5 py-1 rounded text-[10px] transition-all ${
+                        className={`px-1.5 py-1 rounded text-[10px] active:scale-95 ${
                           wallTextureType === type
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1004,10 +1007,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </div>
 
           {/* ── 床マテリアル ── */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-sm overflow-hidden">
             <button
               onClick={() => setMatFloorOpen(!matFloorOpen)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -1059,7 +1062,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       <button
                         key={color}
                         onClick={() => setFloorColorOverride(color)}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border transition-all ${
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border active:scale-95 ${
                           floorColorOverride === color
                             ? 'border-blue-400 bg-blue-50 text-blue-700'
                             : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
@@ -1092,7 +1095,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       <button
                         key={type ?? 'default'}
                         onClick={() => setFloorTextureType(type)}
-                        className={`px-1.5 py-1 rounded text-[10px] transition-all ${
+                        className={`px-1.5 py-1 rounded text-[10px] active:scale-95 ${
                           floorTextureType === type
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1117,10 +1120,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
           {/* ── 什器マテリアル（選択時のみ） ── */}
           {selectedFurnitureItem && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-sm overflow-hidden">
               <button
                 onClick={() => setMatFurnitureOpen(!matFurnitureOpen)}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100"
               >
                 <div className="flex items-center gap-2">
                   <span
@@ -1154,7 +1157,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                         <button
                           key={mat}
                           onClick={() => updateFurnitureMaterial(selectedFurnitureItem.id, mat)}
-                          className={`px-1.5 py-1 rounded text-[10px] transition-all ${
+                          className={`px-1.5 py-1 rounded text-[10px] active:scale-95 ${
                             (selectedFurnitureItem.material || 'wood') === mat
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1201,7 +1204,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 <button
                   key={preset.key}
                   onClick={() => applyRoomAtmosphere(preset.key)}
-                  className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                  className={`w-full flex items-center gap-2 p-2 rounded-sm border text-left active:scale-95 ${
                     isActive
                       ? `${preset.activeBg} ${preset.activeText} ${preset.activeBorder} ring-1 ring-opacity-50 shadow-sm`
                       : `${preset.bg} ${preset.border} hover:shadow-sm`
@@ -1237,7 +1240,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={qualityLevel === level}
                   onClick={() => setQualityLevel(level)}
-                  className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium transition-all ${
+                  className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium active:scale-95 ${
                     qualityLevel === level
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -1268,7 +1271,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={renderStyle === style}
                   onClick={() => setRenderStyle(style)}
-                  className={`flex-1 px-1.5 py-1.5 rounded text-[9px] font-medium transition-all ${
+                  className={`flex-1 px-1.5 py-1.5 rounded text-[9px] font-medium active:scale-95 ${
                     renderStyle === style
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -1294,7 +1297,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   key={preset.name}
                   onClick={() => applyLightingPreset(preset)}
                   title={preset.description}
-                  className={`relative flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-lg text-[9px] font-medium transition-all border ${
+                  className={`relative flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-sm text-[9px] font-medium active:scale-95 border ${
                     activeLightingPreset === preset.name
                       ? 'bg-blue-50 text-blue-800 border-blue-300 ring-1 ring-blue-200 shadow-sm'
                       : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -1323,7 +1326,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   key={atm.name}
                   onClick={() => applyLightingPreset({ ...atm, colorHint: '' })}
                   title={atm.description}
-                  className={`px-2 py-1 rounded text-[9px] font-medium text-left transition-all border ${
+                  className={`px-2 py-1 rounded text-[9px] font-medium text-left active:scale-95 border ${
                     activeLightingPreset === atm.name
                       ? 'bg-blue-50 text-blue-700 border-blue-300 ring-1 ring-blue-200'
                       : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
@@ -1339,7 +1342,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           <div className="flex gap-1">
             <button
               onClick={() => toggleDarkMode()}
-              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-sm text-xs font-medium active:scale-95 border ${
                 darkMode
                   ? 'bg-indigo-900 text-indigo-200 border-indigo-600 ring-1 ring-indigo-500'
                   : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -1351,7 +1354,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </button>
             <button
               onClick={() => setMeasurementActive(!measurementActive)}
-              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-sm text-xs font-medium active:scale-95 border ${
                 measurementActive
                   ? 'bg-blue-600 text-white border-blue-500 ring-1 ring-blue-400'
                   : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -1370,12 +1373,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
 
           {/* Day/Night Toggle — ビジュアル版 */}
           <div>
-            <div className="relative flex rounded-lg overflow-hidden border border-gray-200 h-8">
+            <div className="relative flex rounded-sm overflow-hidden border border-gray-200 h-8">
               {(['day', 'night'] as const).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setDayNight(mode)}
-                  className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium transition-all duration-300 ${
+                  className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium active:scale-95 ${
                     dayNight === mode
                       ? mode === 'day'
                         ? 'bg-blue-600 text-white shadow-inner'
@@ -1412,7 +1415,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 <button
                   key={pct}
                   onClick={() => setLightBrightness(pct / 100)}
-                  className={`flex-1 text-[9px] py-0.5 rounded border transition-all ${
+                  className={`flex-1 text-[9px] py-0.5 rounded border active:scale-95 ${
                     Math.round(lightBrightness * 100) === pct
                       ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
                       : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'
@@ -1497,7 +1500,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                       setShowApplyConfirm(s.id);
                     }
                   }}
-                  className={`w-full flex items-start gap-2.5 p-2 rounded-lg border text-left transition-all group ${
+                  className={`w-full flex items-start gap-2.5 p-2 rounded-sm border text-left active:scale-95 group ${
                     isConfirming
                       ? 'bg-red-50 border-red-300 hover:bg-red-100'
                       : isRecommended
@@ -1572,7 +1575,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
         {/* 3Dモデルインポートボタン */}
         <button
           onClick={() => setShowModelImport(true)}
-          className="w-full mb-2 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md text-xs font-medium text-blue-600 flex items-center justify-center gap-1.5 transition-colors"
+          className="w-full mb-2 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md text-xs font-medium text-blue-600 flex items-center justify-center gap-1.5"
         >
           <span>📦</span>
           モデルをインポート (.glb/.gltf)
@@ -1628,7 +1631,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={furnitureCategory === cat.key}
                   onClick={() => setFurnitureCategory(cat.key)}
-                  className={`rounded font-medium transition-colors whitespace-nowrap ${
+                  className={`rounded font-medium whitespace-nowrap ${
                     isMobile ? 'px-3 py-1.5 text-xs min-h-[36px]' : 'px-2 py-1 text-[10px]'
                   } ${
                     furnitureCategory === cat.key
@@ -1671,7 +1674,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                           e.dataTransfer.effectAllowed = 'copy';
                         }
                       }}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded hover:bg-blue-50 border text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
+                      className={`flex items-center gap-1 px-2 py-1.5 rounded hover:bg-blue-50 border text-left text-xs active:scale-95 duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
                         isCustom ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
                       } ${
                         isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
@@ -1691,7 +1694,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               <button
                 key={s.id}
                 onClick={() => handleAddSet(s.id)}
-                className="w-full flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 border border-gray-200 text-left transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm"
+                className="w-full flex items-center gap-2 p-2 bg-gray-50 rounded-sm hover:bg-blue-50 border border-gray-200 text-left active:scale-95 duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm"
               >
                 <span className="text-xl">{s.icon}</span>
                 <div>
@@ -1849,7 +1852,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   <button
                     key={color}
                     onClick={() => updateFurnitureColor(selectedFurnitureItem.id, color)}
-                    className={`w-5 h-5 rounded border-2 transition-all hover:scale-110 ${
+                    className={`w-5 h-5 rounded border-2 active:scale-95 hover:scale-110 ${
                       selectedFurnitureItem.color?.toLowerCase() === color.toLowerCase()
                         ? 'border-blue-500 ring-1 ring-blue-300'
                         : 'border-gray-300'
@@ -1886,7 +1889,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             <div>
               <button
                 onClick={() => toggleLockFurniture(selectedFurnitureItem.id)}
-                className={`w-full px-2 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                className={`w-full px-2 py-1.5 rounded text-xs font-medium flex items-center justify-center gap-1.5 ${
                   selectedFurnitureItem.locked
                     ? 'bg-blue-50 text-blue-600 border border-blue-300 hover:bg-blue-100'
                     : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
@@ -2133,7 +2136,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             <div className="flex gap-1.5">
               <select
                 id="auto-layout-room-type"
-                className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="flex-1 text-xs border border-gray-200 rounded-sm px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
                 defaultValue="cafe"
               >
                 <option value="cafe">カフェ</option>
@@ -2151,7 +2154,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     applyAutoLayout(select.value);
                   }
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors whitespace-nowrap"
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm whitespace-nowrap"
               >
                 🤖 適用
               </button>
@@ -2162,7 +2165,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           <div className="flex gap-2">
             <button
               onClick={toggleFlowHeatmap}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-sm active:scale-95 ${
                 showFlowHeatmap
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -2172,7 +2175,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             </button>
             <button
               onClick={toggleLightingAnalysis}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-sm active:scale-95 ${
                 showLightingAnalysis
                   ? 'bg-yellow-500 text-white shadow-sm'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -2216,7 +2219,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   <button
                     key={env}
                     onClick={() => setEnvironmentPreset(env)}
-                    className={`px-2 py-1.5 text-[11px] rounded-lg transition-all ${
+                    className={`px-2 py-1.5 text-[11px] rounded-sm active:scale-95 ${
                       environmentPreset === env
                         ? 'bg-blue-500 text-white shadow-sm'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -2434,7 +2437,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                 resetTutorial();
                 window.location.reload();
               }}
-              className="w-full text-left px-3 py-2 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              className="w-full text-left px-3 py-2 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-sm"
             >
               チュートリアルを再表示
             </button>
@@ -2442,7 +2445,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onClick={() => {
                 resetQuickTips();
               }}
-              className="w-full text-left px-3 py-2 text-xs text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full text-left px-3 py-2 text-xs text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-sm"
             >
               ヒント表示をリセット
             </button>
@@ -2579,7 +2582,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               <button
                 key={h}
                 onClick={() => setSheetHeight(h)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                className={`w-1.5 h-1.5 rounded-full ${
                   sheetHeight === h ? 'bg-blue-500' : 'bg-gray-200'
                 }`}
                 aria-label={`パネル高さ ${h}%`}
@@ -2651,7 +2654,7 @@ function SnapshotPanel() {
     <div className="space-y-2">
       <button
         onClick={() => saveSnapshot()}
-        className="w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+        className="w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm active:scale-[0.98] flex items-center justify-center gap-1.5"
       >
         <span>📸</span>
         <span>スナップショット保存</span>
@@ -2666,7 +2669,7 @@ function SnapshotPanel() {
           {[...snapshots].reverse().map((snap) => (
             <div
               key={snap.id}
-              className="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-lg text-[11px] group hover:bg-gray-100 transition-colors"
+              className="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-sm text-[11px] group hover:bg-gray-100"
             >
               <div className="flex-1 min-w-0 mr-2">
                 {editingId === snap.id ? (
@@ -2697,13 +2700,13 @@ function SnapshotPanel() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => loadSnapshot(snap.id)}
-                  className="px-1.5 py-0.5 text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                  className="px-1.5 py-0.5 text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 rounded"
                 >
                   読込
                 </button>
                 <button
                   onClick={() => deleteSnapshot(snap.id)}
-                  className="px-1 py-0.5 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                  className="px-1 py-0.5 text-[10px] text-gray-400 hover:text-red-500"
                   title="削除"
                 >
                   🗑️
@@ -2744,22 +2747,22 @@ function Section({
   };
 
   return (
-    <div className="border-b border-gray-100" role="region" aria-label={title}>
+    <div className="border-b border-gray-200" role="region" aria-label={title}>
       <button
         onClick={isCollapsible ? () => setIsOpen(!isOpen) : undefined}
         onKeyDown={handleKeyDown}
-        className={`w-full p-3 pb-2 flex items-center justify-between transition-colors duration-150 ${isCollapsible ? 'cursor-pointer hover:bg-gray-50 active:scale-[0.99]' : 'cursor-default'}`}
+        className={`w-full p-3 pb-2 flex items-center justify-between ${isCollapsible ? 'cursor-pointer hover:bg-gray-50 active:scale-95' : 'cursor-default'}`}
         aria-expanded={isCollapsible ? isOpen : undefined}
         aria-controls={isCollapsible ? contentId : undefined}
       >
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
+        <h3 className="blueprint-label">{title}</h3>
         {isCollapsible && (
-          <span className={`text-[10px] text-gray-400 transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-90' : ''}`} aria-hidden="true">▶</span>
+          <span className={`text-[10px] text-gray-400 ${isOpen ? 'rotate-90' : ''}`} aria-hidden="true">▶</span>
         )}
       </button>
       <div className="section-content" data-open={isCollapsible ? isOpen : true} id={contentId}>
         <div>
-          <div className="px-3 pb-3">{children}</div>
+          <div className="px-3 pb-3 space-y-3">{children}</div>
         </div>
       </div>
     </div>
