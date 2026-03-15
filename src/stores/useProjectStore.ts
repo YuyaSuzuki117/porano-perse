@@ -33,6 +33,12 @@ export interface ProjectState {
   // ウォーターマーク
   enableWatermark: boolean;
   setEnableWatermark: (v: boolean) => void;
+  watermarkPosition: 'bottom-left' | 'bottom-right' | 'none';
+  setWatermarkPosition: (v: 'bottom-left' | 'bottom-right' | 'none') => void;
+  watermarkOpacity: number; // 0.0 ~ 1.0
+  setWatermarkOpacity: (v: number) => void;
+  watermarkFontScale: number; // 0.5 ~ 2.0
+  setWatermarkFontScale: (v: number) => void;
 
   // プロジェクト操作
   exportProject: () => string;
@@ -58,10 +64,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   })(),
   lastAutoSaved: null,
   enableWatermark: false,
+  watermarkPosition: 'bottom-right' as const,
+  watermarkOpacity: 0.12,
+  watermarkFontScale: 1.0,
 
   // ── アクション ──
   markAutoSaved: () => set({ lastAutoSaved: Date.now() }),
   setEnableWatermark: (enableWatermark) => set({ enableWatermark }),
+  setWatermarkPosition: (watermarkPosition) => set({ watermarkPosition }),
+  setWatermarkOpacity: (watermarkOpacity) => set({ watermarkOpacity: Math.max(0, Math.min(1, watermarkOpacity)) }),
+  setWatermarkFontScale: (watermarkFontScale) => set({ watermarkFontScale: Math.max(0.5, Math.min(2, watermarkFontScale)) }),
 
   // プロジェクト操作（useEditorStoreに委任）
   exportProject: () => {

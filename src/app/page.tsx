@@ -11,26 +11,73 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { useDragDrop } from '@/hooks/useDragDrop';
 import { Header } from '@/components/layout/Header';
-import { EditorControlPanel } from '@/components/ui/EditorControlPanel';
-import { CameraPresetButtons } from '@/components/ui/CameraPresetButtons';
-import { WelcomeModal } from '@/components/ui/WelcomeModal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { KeyboardShortcutHelp } from '@/components/ui/KeyboardShortcutHelp';
-import { AlignmentToolbar } from '@/components/ui/AlignmentToolbar';
 import { ToastContainer, showToast } from '@/components/ui/Toast';
-import { OnboardingTutorial, isTutorialDone } from '@/components/ui/OnboardingTutorial';
+import { isTutorialDone } from '@/components/ui/OnboardingTutorial';
 import { QuickTipsContainer } from '@/components/ui/QuickTips';
-import { StyleComparisonModal } from '@/components/ui/StyleComparisonModal';
-import { MeasurementTool } from '@/components/three/MeasurementTool';
-import { MiniMap } from '@/components/ui/MiniMap';
-import { FurnitureContextMenu } from '@/components/ui/FurnitureContextMenu';
-import SeatCounter from '@/components/ui/SeatCounter';
-import AIAssistPanel from '@/components/ui/AIAssistPanel';
-import { SelectionOverlay } from '@/components/ui/SelectionOverlay';
-import { exportProposalPDF } from '@/lib/pdf-export';
-import { FURNITURE_CATALOG } from '@/data/furniture';
-import { preloadGLTFModel } from '@/lib/gltf-loader';
-import { joinRoom } from '@/lib/realtime-collab';
+
+// --- Dynamic imports: 重いUIコンポーネントをコード分割 ---
+const EditorControlPanel = dynamic(
+  () => import('@/components/ui/EditorControlPanel').then((mod) => mod.EditorControlPanel),
+  { ssr: false }
+);
+
+const CameraPresetButtons = dynamic(
+  () => import('@/components/ui/CameraPresetButtons').then((mod) => mod.CameraPresetButtons),
+  { ssr: false }
+);
+
+const WelcomeModal = dynamic(
+  () => import('@/components/ui/WelcomeModal').then((mod) => mod.WelcomeModal),
+  { ssr: false }
+);
+
+const KeyboardShortcutHelp = dynamic(
+  () => import('@/components/ui/KeyboardShortcutHelp').then((mod) => mod.KeyboardShortcutHelp),
+  { ssr: false }
+);
+
+const AlignmentToolbar = dynamic(
+  () => import('@/components/ui/AlignmentToolbar').then((mod) => mod.AlignmentToolbar),
+  { ssr: false }
+);
+
+const OnboardingTutorial = dynamic(
+  () => import('@/components/ui/OnboardingTutorial').then((mod) => mod.OnboardingTutorial),
+  { ssr: false }
+);
+
+const StyleComparisonModal = dynamic(
+  () => import('@/components/ui/StyleComparisonModal').then((mod) => mod.StyleComparisonModal),
+  { ssr: false }
+);
+
+const MeasurementTool = dynamic(
+  () => import('@/components/three/MeasurementTool').then((mod) => mod.MeasurementTool),
+  { ssr: false }
+);
+
+const MiniMap = dynamic(
+  () => import('@/components/ui/MiniMap').then((mod) => mod.MiniMap),
+  { ssr: false }
+);
+
+const FurnitureContextMenu = dynamic(
+  () => import('@/components/ui/FurnitureContextMenu').then((mod) => mod.FurnitureContextMenu),
+  { ssr: false }
+);
+
+const SeatCounter = dynamic(
+  () => import('@/components/ui/SeatCounter'),
+  { ssr: false }
+);
+
+const AIAssistPanel = dynamic(
+  () => import('@/components/ui/AIAssistPanel'),
+  { ssr: false }
+);
+
+// SelectionOverlay: imported dynamically only when needed in sub-components
 
 const FloorPlanEditor = dynamic(
   () =>
@@ -219,18 +266,32 @@ export default function EditorPage() {
   useKeyboardShortcuts();
 
   // カスタムフック: スクリーンショット
-  const { takeScreenshot, takeHiResScreenshot, isRendering } = useScreenshot(canvasRef);
+  const { takeScreenshot, takeHiResScreenshot, takeBatchScreenshots, isRendering, batchProgress } = useScreenshot(canvasRef);
 
   // Restore from localStorage on mount
   useEffect(() => {
     restoreFromLocalStorage();
   }, [restoreFromLocalStorage]);
 
-  // GLBモデルのプリロード
+  // GLBモデルのプリロード（アイドル時に遅延実行）
   useEffect(() => {
-    FURNITURE_CATALOG.filter(c => c.modelUrl).forEach(c => {
-      preloadGLTFModel(c.modelUrl!);
-    });
+    const load = () => {
+      Promise.all([
+        import('@/data/furniture'),
+        import('@/lib/gltf-loader'),
+      ]).then(([{ FURNITURE_CATALOG }, { preloadGLTFModel }]) => {
+        FURNITURE_CATALOG.filter(c => c.modelUrl).forEach(c => {
+          preloadGLTFModel(c.modelUrl!);
+        });
+      });
+    };
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(load, { timeout: 5000 });
+      return () => window.cancelIdleCallback(id);
+    } else {
+      const timer = setTimeout(load, 2000);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   // URLハッシュまたはクエリパラメータからプロジェクト復元
@@ -261,10 +322,12 @@ export default function EditorPage() {
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room');
     if (roomId) {
-      joinRoom(roomId).then((ok) => {
-        if (ok) {
-          showToast('共同編集ルームに接続しました', 'success');
-        }
+      import('@/lib/realtime-collab').then(({ joinRoom }) => {
+        joinRoom(roomId).then((ok) => {
+          if (ok) {
+            showToast('共同編集ルームに接続しました', 'success');
+          }
+        });
       });
     }
   }, []);
@@ -350,15 +413,17 @@ export default function EditorPage() {
   }, []);
 
   const handleExportPDF = useCallback(() => {
-    const state = useEditorStore.getState();
-    exportProposalPDF(canvasRef, canvasRef2D, {
-      projectName: state.projectName,
-      walls: state.walls,
-      furniture: state.furniture,
-      style: state.style,
-      roomHeight: state.roomHeight,
-      annotations: state.annotations,
-      openings: state.openings,
+    import('@/lib/pdf-export').then(({ exportProposalPDF }) => {
+      const state = useEditorStore.getState();
+      exportProposalPDF(canvasRef, canvasRef2D, {
+        projectName: state.projectName,
+        walls: state.walls,
+        furniture: state.furniture,
+        style: state.style,
+        roomHeight: state.roomHeight,
+        annotations: state.annotations,
+        openings: state.openings,
+      });
     });
   }, []);
 
@@ -399,7 +464,7 @@ export default function EditorPage() {
         <ToastContainer />
         <StyleComparisonModal canvasRef={canvasRef} />
         {!fullscreen3D && (
-          <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+          <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} onBatchExport={takeBatchScreenshots} batchProgress={batchProgress} />
         )}
         <MeasurementTool active={measurementActive} canvasRef={canvasRef} />
 
@@ -751,7 +816,7 @@ export default function EditorPage() {
       <QuickTipsContainer />
       <ToastContainer />
         <StyleComparisonModal canvasRef={canvasRef} />
-      <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} />
+      <Header onScreenshot={takeScreenshot} onHiResScreenshot={takeHiResScreenshot} onExportPDF={handleExportPDF} onPrint={handlePrint} canvasRef={canvasRef} onBatchExport={takeBatchScreenshots} batchProgress={batchProgress} />
       <MeasurementTool active={measurementActive} canvasRef={canvasRef} />
 
       {/* Rendering overlay */}

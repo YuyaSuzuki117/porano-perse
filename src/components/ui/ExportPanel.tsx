@@ -2,11 +2,13 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditorStore } from '@/stores/useEditorStore';
+import { useProjectStore } from '@/stores/useProjectStore';
 import { computeFloorArea } from '@/lib/geometry';
 import { STYLE_PRESETS } from '@/data/styles';
 import { FurnitureItem } from '@/types/scene';
 import { useVideoExport } from '@/hooks/useVideoExport';
 import { ERPIntegrationPanel } from '@/components/ui/ERPIntegrationPanel';
+import type { ResolutionPreset, ScreenshotFormat, ScreenshotOptions } from '@/hooks/useScreenshot';
 
 const ERP_ENABLED = process.env.NEXT_PUBLIC_ERP_INTEGRATION_ENABLED === 'true';
 
@@ -19,10 +21,14 @@ interface ProposalInfo {
 }
 
 interface ExportPanelProps {
-  onCapture3D: (scale?: number) => void;
+  onCapture3D: (scaleOrOptions?: number | ScreenshotOptions) => void;
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   /** パノラマ書き出しトリガー */
   onPanoramaExport?: () => void;
+  /** バッチエクスポート */
+  onBatchExport?: (options?: ScreenshotOptions) => void;
+  /** バッチ進捗 */
+  batchProgress?: { current: number; total: number } | null;
 }
 
 /** 坪数への変換 (1坪 = 3.305785 m2) */
@@ -257,7 +263,7 @@ function buildProposalHTML(
 </html>`;
 }
 
-export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: ExportPanelProps) {
+export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchExport, batchProgress }: ExportPanelProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'proposal' | 'image' | 'data' | 'erp'>('proposal');
   const [previewHtml, setPreviewHtml] = useState('');
@@ -410,11 +416,42 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: Export
     setIsModalOpen(false);
   }, [exportProject, projectName]);
 
-  /** 高解像度PNG出力 */
-  const handleCapturePNG = useCallback((scale: number) => {
-    onCapture3D(scale);
+  // 画像出力オプション state
+  const [imgResolution, setImgResolution] = useState<ResolutionPreset>('2x');
+  const [imgFormat, setImgFormat] = useState<ScreenshotFormat>('png');
+  const [imgTransparent, setImgTransparent] = useState(false);
+
+  // ウォーターマーク設定
+  const enableWatermark = useProjectStore((s) => s.enableWatermark);
+  const setEnableWatermark = useProjectStore((s) => s.setEnableWatermark);
+  const watermarkPosition = useProjectStore((s) => s.watermarkPosition);
+  const setWatermarkPosition = useProjectStore((s) => s.setWatermarkPosition);
+  const watermarkOpacity = useProjectStore((s) => s.watermarkOpacity);
+  const setWatermarkOpacity = useProjectStore((s) => s.setWatermarkOpacity);
+
+  /** スクリーンショット撮影（オプション付き） */
+  const handleCapturePNG = useCallback(() => {
+    const opts: ScreenshotOptions = {
+      resolution: imgResolution,
+      format: imgFormat,
+      jpegQuality: 0.95,
+      transparentBackground: imgTransparent && imgFormat === 'png',
+    };
+    onCapture3D(opts);
     setIsModalOpen(false);
-  }, [onCapture3D]);
+  }, [onCapture3D, imgResolution, imgFormat, imgTransparent]);
+
+  /** バッチエクスポート */
+  const handleBatchExport = useCallback(() => {
+    if (!onBatchExport) return;
+    const opts: ScreenshotOptions = {
+      resolution: imgResolution,
+      format: imgFormat,
+      jpegQuality: 0.95,
+      transparentBackground: imgTransparent && imgFormat === 'png',
+    };
+    onBatchExport(opts);
+  }, [onBatchExport, imgResolution, imgFormat, imgTransparent]);
 
   // --- レンダリング ---
 
@@ -599,36 +636,168 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport }: Export
 
             {/* 画像出力タブ */}
             {activeTab === 'image' && (
-              <div className="p-5 space-y-3">
-                <p className="text-xs text-gray-500 mb-4">3Dビューのスクリーンショットを PNG 形式でダウンロードします。</p>
-                <div className="space-y-2">
-                  {([
-                    { scale: 1, label: '標準 (1x)', desc: '画面表示と同じ解像度', badge: '' },
-                    { scale: 2, label: '高品質 (2x)', desc: 'プレゼン資料向け', badge: 'おすすめ' },
-                    { scale: 4, label: '超高品質 (4x)', desc: 'A4印刷・大判出力向け', badge: '' },
-                  ] as const).map(({ scale, label, desc, badge }) => (
+              <div className="p-5 space-y-4">
+                <p className="text-xs text-gray-500">3Dビューのスクリーンショットをダウンロードします。</p>
+
+                {/* 解像度選択 */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-500 mb-2">解像度</label>
+                  <div className="flex gap-2">
+                    {([
+                      { key: '1x' as const, label: '標準', desc: '画面解像度' },
+                      { key: '2x' as const, label: 'HD', desc: 'プレゼン向け' },
+                      { key: '4x' as const, label: '4K', desc: '印刷向け' },
+                    ]).map(({ key, label, desc }) => (
+                      <button
+                        key={key}
+                        onClick={() => setImgResolution(key)}
+                        className={`flex-1 px-3 py-2.5 rounded-lg border text-center transition-all ${
+                          imgResolution === key
+                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className={`text-sm font-bold ${imgResolution === key ? 'text-blue-700' : 'text-gray-700'}`}>{key}</div>
+                        <div className={`text-[10px] ${imgResolution === key ? 'text-blue-500' : 'text-gray-400'}`}>{label}</div>
+                        <div className={`text-[9px] ${imgResolution === key ? 'text-blue-400' : 'text-gray-300'}`}>{desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* フォーマット & オプション */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-2">フォーマット</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setImgFormat('png')}
+                        className={`flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                          imgFormat === 'png'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        PNG
+                      </button>
+                      <button
+                        onClick={() => { setImgFormat('jpeg'); setImgTransparent(false); }}
+                        className={`flex-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                          imgFormat === 'jpeg'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        JPEG
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-2">背景透過</label>
                     <button
-                      key={scale}
-                      onClick={() => handleCapturePNG(scale)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-gray-200 transition-all group"
+                      onClick={() => setImgTransparent(!imgTransparent)}
+                      disabled={imgFormat === 'jpeg'}
+                      className={`w-full px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                        imgTransparent && imgFormat === 'png'
+                          ? 'border-green-500 bg-green-50 text-green-700 ring-1 ring-green-200'
+                          : 'border-gray-200 bg-gray-50 text-gray-500'
+                      } ${imgFormat === 'jpeg' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm group-hover:bg-blue-200 transition-colors">
-                          {scale}x
-                        </div>
-                        <div className="text-left">
-                          <div className="text-sm font-medium text-gray-800">{label}</div>
-                          <div className="text-[11px] text-gray-400">{desc}</div>
+                      {imgTransparent && imgFormat === 'png' ? 'ON' : 'OFF'}
+                      {imgFormat === 'jpeg' && <span className="text-[9px] ml-1">(PNGのみ)</span>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ウォーターマーク設定 */}
+                <div className="border border-gray-200 rounded-lg p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-gray-500">ウォーターマーク</span>
+                    <button
+                      onClick={() => setEnableWatermark(!enableWatermark)}
+                      className={`relative w-9 h-5 rounded-full transition-colors ${
+                        enableWatermark ? 'bg-blue-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                        enableWatermark ? 'translate-x-4' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                  {enableWatermark && (
+                    <div className="space-y-2 pt-1">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1">位置</label>
+                        <div className="flex gap-1.5">
+                          {([
+                            { key: 'bottom-left' as const, label: '左下' },
+                            { key: 'bottom-right' as const, label: '右下' },
+                            { key: 'none' as const, label: 'なし' },
+                          ]).map(({ key, label }) => (
+                            <button
+                              key={key}
+                              onClick={() => setWatermarkPosition(key)}
+                              className={`flex-1 px-2 py-1 rounded text-[10px] font-medium border transition-all ${
+                                watermarkPosition === key
+                                  ? 'border-blue-400 bg-blue-50 text-blue-600'
+                                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                      {badge && (
-                        <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                          {badge}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1">透明度: {Math.round(watermarkOpacity * 100)}%</label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={Math.round(watermarkOpacity * 100)}
+                          onChange={(e) => setWatermarkOpacity(Number(e.target.value) / 100)}
+                          className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* 撮影ボタン */}
+                <button
+                  onClick={handleCapturePNG}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                    <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  スクリーンショットを撮影 ({imgResolution} {imgFormat.toUpperCase()})
+                </button>
+
+                {/* バッチエクスポート */}
+                {onBatchExport && (
+                  <button
+                    onClick={handleBatchExport}
+                    disabled={!!batchProgress}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm disabled:opacity-60 disabled:cursor-wait"
+                  >
+                    {batchProgress ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+                        </svg>
+                        撮影中... {batchProgress.current}/{batchProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                          <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        全角度一括エクスポート (ZIP)
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {/* 動画・パノラマ セクション */}
                 <div className="pt-3 border-t border-gray-200">

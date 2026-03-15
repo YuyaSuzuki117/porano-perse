@@ -12,16 +12,19 @@ import { showToast } from '@/components/ui/Toast';
 import { AuthButton } from '@/components/ui/AuthButton';
 import { CollaborationPanel } from '@/components/ui/CollaborationPanel';
 import { saveProject as saveToSupabase } from '@/lib/project-storage';
+import type { ScreenshotOptions } from '@/hooks/useScreenshot';
 
 interface HeaderProps {
-  onScreenshot?: (scale?: number) => void;
+  onScreenshot?: (scaleOrOptions?: number | ScreenshotOptions) => void;
   onHiResScreenshot?: () => void;
   onExportPDF?: () => void;
   onPrint?: () => void;
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  onBatchExport?: (options?: ScreenshotOptions) => void;
+  batchProgress?: { current: number; total: number } | null;
 }
 
-export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, canvasRef }: HeaderProps) {
+export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, canvasRef, onBatchExport, batchProgress }: HeaderProps) {
   const projectName = useEditorStore((s) => s.projectName);
   const setProjectName = useEditorStore((s) => s.setProjectName);
   const zoom = useUIStore(s => s.zoom);
@@ -516,7 +519,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         </div>
 
         {/* エクスポート */}
-        <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} />
+        <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} onBatchExport={onBatchExport} batchProgress={batchProgress} />
       </div>
 
       {/* モバイル: タッチターゲット44px以上のボタン群 */}
@@ -622,7 +625,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
             <span>ウォーターマーク追加</span>
           </label>
           <div className="px-1 py-1">
-            <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} />
+            <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} onBatchExport={onBatchExport} batchProgress={batchProgress} />
           </div>
         </div>
       )}
