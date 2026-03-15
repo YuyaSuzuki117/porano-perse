@@ -28,6 +28,7 @@ import { TextureUploadPanel } from '@/components/ui/TextureUploadPanel';
 import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
 import { RenderQualityPanel } from '@/components/ui/RenderQualityPanel';
 import { FinishEditorPanel } from '@/components/ui/FinishEditorPanel';
+import { useTranslation } from '@/lib/i18n';
 import ModelImportPanel, {
   loadCustomModels,
   deleteCustomModel,
@@ -43,6 +44,7 @@ interface EditorControlPanelProps {
 }
 
 export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }: EditorControlPanelProps) {
+  const { t } = useTranslation();
   // UI状態 → useUIStore
   const {
     selectedWallId,
@@ -151,6 +153,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     applyLightingPreset,
     qualityLevel,
     setQualityLevel,
+    renderStyle,
+    setRenderStyle,
     activeRoomAtmosphere,
     applyRoomAtmosphere,
     showHumanFigures,
@@ -575,10 +579,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       )}
 
       {/* Quick Room Setup */}
-      <Section title="部屋設定" collapsible={isMobile} mobileCollapsible={isMobile}>
+      <Section title={t('panel.room_settings')} collapsible={isMobile} mobileCollapsible={isMobile}>
         <div className="space-y-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">天井高 (m)</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('panel.ceiling_height')}</label>
             <input
               type="number"
               value={roomHeight}
@@ -594,13 +598,13 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </div>
           {/* 壁の表示制御 */}
           <div>
-            <label className="block text-[10px] text-gray-400 mb-1">壁の表示</label>
-            <div className="flex gap-1" role="radiogroup" aria-label="壁の表示モード">
+            <label className="block text-[10px] text-gray-400 mb-1">{t('panel.wall_display')}</label>
+            <div className="flex gap-1" role="radiogroup" aria-label={t('panel.wall_display')}>
               {([
-                { mode: 'solid' as const, label: '実線' },
-                { mode: 'transparent' as const, label: '半透明' },
-                { mode: 'hidden' as const, label: '非表示' },
-                { mode: 'section' as const, label: '断面' },
+                { mode: 'solid' as const, label: t('wall_mode.solid') },
+                { mode: 'transparent' as const, label: t('wall_mode.transparent') },
+                { mode: 'hidden' as const, label: t('wall_mode.hidden') },
+                { mode: 'section' as const, label: t('wall_mode.section') },
               ]).map(({ mode, label }) => (
                 <button
                   key={mode}
@@ -653,8 +657,8 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </div>
           {/* 天井の表示制御 */}
           <div>
-            <label className="block text-[10px] text-gray-400 mb-1">天井</label>
-            <div className="flex gap-1" role="radiogroup" aria-label="天井の表示">
+            <label className="block text-[10px] text-gray-400 mb-1">{t('panel.ceiling_display')}</label>
+            <div className="flex gap-1" role="radiogroup" aria-label={t('panel.ceiling_display')}>
               <button
                 role="radio"
                 aria-checked={ceilingVisible}
@@ -764,16 +768,16 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
               onChange={(e) => setSnapToWall(e.target.checked)}
               className="w-3.5 h-3.5 accent-amber-500"
             />
-            壁スナップ
+            {t('panel.wall_snap')}
           </label>
           <p className="text-[9px] text-gray-400">
-            壁から30cm以内で自動吸着
+            {t('panel.wall_snap_desc')}
           </p>
         </div>
       </Section>
 
       {/* Style */}
-      <Section title="スタイル" collapsible={isMobile} mobileCollapsible={isMobile}>
+      <Section title={t('panel.style')} collapsible={isMobile} mobileCollapsible={isMobile}>
         <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="スタイル選択">
           {(Object.entries(STYLE_PRESETS) as [StylePreset, (typeof STYLE_PRESETS)[StylePreset]][]).map(
             ([key, config]) => (
@@ -828,7 +832,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   className="w-5 h-5 rounded border border-gray-300 shadow-inner"
                   style={{ backgroundColor: wallColorOverride ?? STYLE_PRESETS[style].wallColor }}
                 />
-                <span className="text-xs font-medium text-gray-700">壁</span>
+                <span className="text-xs font-medium text-gray-700">{t('panel.wall')}</span>
                 {(wallColorOverride || wallTextureType) && (
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                 )}
@@ -940,7 +944,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   className="w-5 h-5 rounded border border-gray-300 shadow-inner"
                   style={{ backgroundColor: floorColorOverride ?? STYLE_PRESETS[style].floorColor }}
                 />
-                <span className="text-xs font-medium text-gray-700">床</span>
+                <span className="text-xs font-medium text-gray-700">{t('panel.floor')}</span>
                 {(floorColorOverride || floorTextureType) && (
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                 )}
@@ -1112,7 +1116,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       <Section title="ルーム雰囲気プリセット" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <div className="space-y-2">
           <p className="text-[9px] text-gray-400 mb-1">
-            壁・床・照明を一括で切り替え
+            {t('style.change_desc')}
           </p>
           <div className="grid grid-cols-1 gap-1.5">
             {([
@@ -1176,6 +1180,36 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {qualityLevel === 'low' && (
               <p className="text-[9px] text-gray-400 mt-1">
                 モバイルや動作が重い場合に推奨
+              </p>
+            )}
+          </div>
+          {/* レンダリングスタイル */}
+          <div>
+            <div className="text-[10px] text-gray-500 mb-1 font-medium">レンダリングスタイル</div>
+            <div className="flex gap-1" role="radiogroup" aria-label="レンダリングスタイル">
+              {([
+                { style: 'sketch' as const, label: '線画', icon: '✏️' },
+                { style: 'watercolor' as const, label: '水彩', icon: '🎨' },
+                { style: 'realistic' as const, label: 'リアル', icon: '📷' },
+              ]).map(({ style, label, icon }) => (
+                <button
+                  key={style}
+                  role="radio"
+                  aria-checked={renderStyle === style}
+                  onClick={() => setRenderStyle(style)}
+                  className={`flex-1 px-2 py-1.5 rounded text-[10px] font-medium transition-all ${
+                    renderStyle === style
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  <span className="mr-0.5">{icon}</span>{label}
+                </button>
+              ))}
+            </div>
+            {(renderStyle === 'sketch' || renderStyle === 'watercolor') && (
+              <p className="text-[9px] text-amber-600 mt-1">
+                建築スケッチ風 — 影・AO無効で高速描画
               </p>
             )}
           </div>
@@ -1250,12 +1284,12 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   ? 'bg-blue-600 text-white border-blue-500 ring-1 ring-blue-400'
                   : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
               }`}
-              aria-label="計測ツール切替"
+              aria-label={t('tool.measure')}
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
                 <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h13A1.5 1.5 0 0118 3.5v2.256A1.5 1.5 0 0116.5 7.25h-.878l.042.042a1 1 0 01-1.414 1.414L13.5 7.957V16.5a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5V3.5z" clipRule="evenodd" />
               </svg>
-              <span>計測</span>
+              <span>{t('tool.measure')}</span>
             </button>
           </div>
 
@@ -1371,7 +1405,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       </Section>
 
       {/* 家具セット一括配置 */}
-      <Section title="家具セット一括配置" collapsible defaultOpen={false} mobileCollapsible={isMobile}>
+      <Section title={t('panel.furniture_set')} collapsible defaultOpen={false} mobileCollapsible={isMobile}>
         <div className="space-y-1.5">
           <p className="text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1 border border-amber-200">
             現在の家具はすべてクリアされ、選択したセットに置き換わります
@@ -1439,7 +1473,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
       </Section>
 
       {/* Furniture */}
-      <Section title="什器・家具" collapsible={isMobile} mobileCollapsible={isMobile} defaultOpen={true}>
+      <Section title={t('panel.furniture_catalog')} collapsible={isMobile} mobileCollapsible={isMobile} defaultOpen={true}>
         <div className="flex gap-1 mb-2" role="tablist" aria-label="什器表示切替">
           <button
             role="tab"

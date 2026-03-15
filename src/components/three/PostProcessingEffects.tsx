@@ -13,6 +13,10 @@
  * - Noise (フィルムグレイン): high のみ、映画的テクスチャ
  * - DepthOfField: high + photoMode 時のみ被写界深度
  * - SSAO チューニング強化: サンプル数増・bias微細化
+ *
+ * ■ スケッチ/水彩レンダリング (2026-03-15)
+ * - renderStyle='sketch' | 'watercolor' 時は全リアリスティックエフェクトを無効化
+ * - カスタムSketchEffectのみ適用（軽量・高パフォーマンス）
  */
 
 import {
@@ -29,6 +33,7 @@ import {
 } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
+import { SketchEffect } from './SketchRenderer';
 
 interface PostProcessingEffectsProps {
   qualityLevel: 'high' | 'medium' | 'low';
@@ -38,6 +43,7 @@ interface PostProcessingEffectsProps {
   bloomIntensity: number;
   vignetteIntensity: number;
   photoMode?: boolean;
+  renderStyle?: 'realistic' | 'sketch' | 'watercolor';
 }
 
 /** 色収差オフセット — high用 (ウルトラシネマティック・GC防止のためコンポーネント外定義) */
@@ -53,7 +59,19 @@ function PostProcessingEffects({
   bloomIntensity,
   vignetteIntensity,
   photoMode = false,
+  renderStyle = 'realistic',
 }: PostProcessingEffectsProps) {
+
+  // ── sketch / watercolor モード: 軽量シェーダーのみ ──
+  if (renderStyle === 'sketch' || renderStyle === 'watercolor') {
+    return (
+      <EffectComposer enableNormalPass={false}>
+        <SketchEffect mode={renderStyle} />
+        <SMAA />
+      </EffectComposer>
+    );
+  }
+
   // ── high + photoMode: DOF含む全エフェクト + シネマティック強化 ──
   if (qualityLevel === 'high' && photoMode) {
     return (

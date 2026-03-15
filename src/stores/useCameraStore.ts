@@ -205,6 +205,10 @@ export interface CameraState {
   // フォトモード（qualityLevel復帰用）
   setPhotoMode: (v: boolean) => void;
 
+  // レンダリングスタイル
+  renderStyle: 'realistic' | 'sketch' | 'watercolor';
+  setRenderStyle: (style: 'realistic' | 'sketch' | 'watercolor') => void;
+
   // ジオラマモード
   activateDioramaMode: () => void;
 }
@@ -267,6 +271,7 @@ export const useCameraStore = create<CameraState>((set, get) => ({
   showElectrical: false,
   showHVAC: false,
   showSmoke: false,
+  renderStyle: 'sketch' as const,
 
   // ── アクション ──
   setCameraPreset: (cameraPreset) => set({ cameraPreset }),
@@ -479,6 +484,8 @@ export const useCameraStore = create<CameraState>((set, get) => ({
   toggleElectrical: () => set((s) => ({ showElectrical: !s.showElectrical })),
   toggleHVAC: () => set((s) => ({ showHVAC: !s.showHVAC })),
   toggleSmoke: () => set((s) => ({ showSmoke: !s.showSmoke })),
+
+  setRenderStyle: (renderStyle) => set({ renderStyle }),
 
   // フォトモード（qualityLevel復帰用 — UIStoreと連携）
   setPhotoMode: (v: boolean) => {

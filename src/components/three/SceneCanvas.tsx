@@ -131,6 +131,7 @@ export function SceneCanvas({
   const showElectrical = useCameraStore((s) => s.showElectrical);
   const showHVAC = useCameraStore((s) => s.showHVAC);
   const showSmoke = useCameraStore((s) => s.showSmoke);
+  const renderStyle = useCameraStore((s) => s.renderStyle);
   const setSkyTimeOfDay = useCameraStore((s) => s.setSkyTimeOfDay);
   const updateAnnotation = useEditorStore((s) => s.updateAnnotation);
   const deleteAnnotation = useEditorStore((s) => s.deleteAnnotation);
@@ -151,9 +152,14 @@ export function SceneCanvas({
   const controlsRef = useRef(null);
 
   const isNight = dayNight === 'night';
+  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor';
 
   // スタイル別背景色
   const bgColor = useMemo(() => {
+    // スケッチモード: 紙色
+    if (isSketchStyle) {
+      return '#faf8f0';
+    }
     if (!isNight) {
       // 昼はスタイルによらず薄い背景
       return '#f0f0f0';
@@ -165,7 +171,7 @@ export function SceneCanvas({
       industrial: '#181818',
     };
     return nightBgMap[styleName] || '#1a1a2e';
-  }, [isNight, styleName]);
+  }, [isNight, isSketchStyle, styleName]);
 
   const envPreset = isNight ? 'night' : 'apartment';
   const effectiveBrightness = isNight ? lightBrightness * 0.4 : lightBrightness;
@@ -226,11 +232,16 @@ export function SceneCanvas({
       : 1.25 + lightBrightness / 250 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.localClippingEnabled = true;
+    // sketch/watercolorモード: シャドウ無効（軽量レンダリング）
+    if (isSketchStyle) {
+      gl.shadowMap.enabled = false;
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    }
     // lowモード: シャドウ完全無効 + ピクセル比1.0制限
-    if (qualityLevel === 'low') {
+    else if (qualityLevel === 'low') {
       gl.shadowMap.enabled = false;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-    } else {
+    } else if (!isSketchStyle) {
       gl.shadowMap.enabled = true;
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
       gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
@@ -244,7 +255,7 @@ export function SceneCanvas({
     if (canvasRef) {
       (canvasRef as React.MutableRefObject<HTMLCanvasElement | null>).current = gl.domElement;
     }
-  }, [canvasRef, isNight, isWarmStyle, lightBrightness, qualityLevel]);
+  }, [canvasRef, isNight, isWarmStyle, isSketchStyle, lightBrightness, qualityLevel]);
 
   const handlePointerMissed = useCallback(() => {
     onSelectFurniture(null);
@@ -275,8 +286,8 @@ export function SceneCanvas({
       style={{ background: bgColor }}
     >
       <Suspense fallback={null}>
-        {/* lowモードではfog無効 */}
-        {qualityLevel !== 'low' && (
+        {/* lowモード・スケッチモードではfog無効 */}
+        {qualityLevel !== 'low' && !isSketchStyle && (
           <fog attach="fog" args={[bgColor, fogDistance * 0.7, fogDistance * 1.15]} />
         )}
 
@@ -547,8 +558,8 @@ export function SceneCanvas({
           <MotionBlurEffect enabled={isAutoWalkthrough || isFirstPersonMode} intensity={0.3} />
         )}
 
-        {/* ContactShadows はhigh品質のみ（非常に重い） */}
-        {qualityLevel === 'high' && (
+        {/* ContactShadows はhigh品質のみ（非常に重い）、スケッチモードでは無効 */}
+        {qualityLevel === 'high' && !isSketchStyle && (
           <ContactShadows
             position={[0, 0.001, 0]}
             opacity={isNight ? 0.35 : 0.45}
@@ -638,8 +649,8 @@ export function SceneCanvas({
           <PanoramaExporter trigger={panoramaTrigger} onComplete={onPanoramaComplete} />
         )}
 
-        {/* PostProcessingはmedium/high品質で有効（lowでは無効） */}
-        {qualityLevel !== 'low' && (
+        {/* PostProcessingはmedium/high品質で有効（lowでは無効）、sketch/watercolorでも軽量エフェクト適用 */}
+        {(qualityLevel !== 'low' || isSketchStyle) && (
           <Suspense fallback={null}>
             <LazyPostProcessing
               qualityLevel={qualityLevel}
@@ -649,6 +660,7 @@ export function SceneCanvas({
               bloomIntensity={bloomIntensity}
               vignetteIntensity={vignetteIntensity}
               photoMode={photoMode}
+              renderStyle={renderStyle}
             />
           </Suspense>
         )}
