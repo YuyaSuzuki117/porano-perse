@@ -68,6 +68,9 @@ body {
 .h-dvh-safe {
   height: 100vh;
   height: 100dvh;
+  /* PWA standalone表示時のセーフエリア対応 */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* セーフエリア対応パディング */

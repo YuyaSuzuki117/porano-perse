@@ -554,11 +554,11 @@ export default function EditorPage() {
               </ErrorBoundary>
               <EmptyStateOverlay isMobile />
               {!photoMode && !fullscreen3D && (
-                <div className="absolute top-2 left-2 right-2 flex items-center gap-2 z-10">
+                <div className="absolute top-2 left-2 right-28 flex items-center gap-2 z-10">
                   <div className="blueprint-label bg-black/60 text-white px-2.5 py-1.5 rounded-sm pointer-events-none flex-shrink-0">
                     {t('view.3d')}
                   </div>
-                  <div className="flex bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 shadow-sm" role="radiogroup" aria-label="レンダリングスタイル">
+                  <div className="flex bg-white/90 backdrop-blur-sm rounded-md border border-gray-200 shadow-sm overflow-x-auto" role="radiogroup" aria-label="レンダリングスタイル">
                     {([
                       { style: 'sketch' as const, label: '鉛筆', icon: '✏️' },
                       { style: 'colored-pencil' as const, label: '色鉛筆', icon: '🖍️' },
@@ -960,8 +960,8 @@ export default function EditorPage() {
                 />
               </ErrorBoundary>
               <EmptyStateOverlay isMobile={false} />
-              {/* 3Dラベル + レンダリングスタイル切替 */}
-              <div className="absolute top-2 left-2 flex items-center gap-2 z-10">
+              {/* 3Dラベル + レンダリングスタイル切替（右側はカメラプリセットボタン領域を確保） */}
+              <div className="absolute top-2 left-2 right-28 flex items-center gap-2 z-10">
                 <div className="blueprint-label bg-black/60 text-white px-2 py-1 rounded-sm pointer-events-none">
                   3D プレビュー
                 </div>

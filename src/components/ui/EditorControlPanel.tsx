@@ -70,7 +70,6 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setCeilingOpacitySlider,
     sectionCutHeight,
     setSectionCutHeight,
-    activateDioramaMode,
     wallColorOverride,
     floorColorOverride,
     wallTextureType,
@@ -187,6 +186,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
     setToneMappingPreset,
     renderQualityPreset,
     setRenderQualityPreset,
+    activateDioramaMode,
   } = useCameraStore();
 
   const [annotationColor, setAnnotationColor] = useState('#ef4444');
