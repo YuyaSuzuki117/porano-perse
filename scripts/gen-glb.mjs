@@ -239,42 +239,110 @@ const CR = [0.941, 0.910, 0.816]; // cream
 const furniture = {
   chair: () => {
     const parts = [
-      { ...box(0.42, 0.035, 0.40, 0, 0.46, 0), color: W, name: 'seat' },
-      { ...box(0.38, 0.04, 0.36, 0, 0.50, 0), color: FR, name: 'cushion', roughness: 0.85 },
-      { ...box(0.42, 0.38, 0.025, 0, 0.68, -0.19), color: W, name: 'back' },
-      { ...cyl(0.015, 0.018, 0.45, 6, -0.17, 0.225, -0.17), color: WD, name: 'leg1' },
-      { ...cyl(0.015, 0.018, 0.45, 6, 0.17, 0.225, -0.17), color: WD, name: 'leg2' },
-      { ...cyl(0.015, 0.018, 0.45, 6, -0.17, 0.225, 0.17), color: WD, name: 'leg3' },
-      { ...cyl(0.015, 0.018, 0.45, 6, 0.17, 0.225, 0.17), color: WD, name: 'leg4' },
+      // 座面フレーム（前方やや広め）
+      { ...box(0.42, 0.025, 0.40, 0, 0.455, 0), color: W, name: 'seat_frame' },
+      // 座面エッジ（前面の丸み表現）
+      { ...merge([cyl(0.015, 0.015, 0.40, 8, 0, 0.455, 0.20), cyl(0.015, 0.015, 0.40, 8, 0, 0.455, -0.20)]), color: W, name: 'seat_edges' },
+      // クッション（少し沈んだ表現）
+      { ...box(0.36, 0.035, 0.34, 0, 0.49, 0.01), color: FR, name: 'cushion', roughness: 0.85 },
+      // 背もたれ（3段分割で曲線表現）
+      { ...box(0.38, 0.14, 0.022, 0, 0.58, -0.185), color: W, name: 'back_lower' },
+      { ...box(0.38, 0.14, 0.020, 0, 0.72, -0.190), color: W, name: 'back_mid' },
+      { ...box(0.38, 0.10, 0.018, 0, 0.84, -0.195), color: W, name: 'back_upper' },
+      // 背もたれクッション
+      { ...box(0.32, 0.28, 0.015, 0, 0.70, -0.17), color: FR, name: 'back_cushion', roughness: 0.85 },
+      // 脚4本（テーパー付き円柱）
+      { ...merge([cyl(0.014, 0.018, 0.44, 8, -0.18, 0.22, -0.17)]), color: WD, name: 'leg_bl' },
+      { ...merge([cyl(0.014, 0.018, 0.44, 8, 0.18, 0.22, -0.17)]), color: WD, name: 'leg_br' },
+      { ...merge([cyl(0.014, 0.018, 0.44, 8, -0.18, 0.22, 0.17)]), color: WD, name: 'leg_fl' },
+      { ...merge([cyl(0.014, 0.018, 0.44, 8, 0.18, 0.22, 0.17)]), color: WD, name: 'leg_fr' },
+      // 横桟（前後左右）
+      { ...merge([box(0.32, 0.02, 0.015, 0, 0.12, -0.17), box(0.32, 0.02, 0.015, 0, 0.12, 0.17)]), color: WD, name: 'stretchers_fb' },
+      { ...merge([box(0.015, 0.02, 0.30, -0.18, 0.12, 0), box(0.015, 0.02, 0.30, 0.18, 0.12, 0)]), color: WD, name: 'stretchers_lr' },
     ];
     return parts.map(p => ({ ...merge([p]), color: p.color, name: p.name, roughness: p.roughness }));
   },
   table_square: () => [
-    { ...merge([box(0.9, 0.04, 0.9, 0, 0.74, 0)]), color: WL, name: 'top' },
-    { ...merge([box(0.05, 0.66, 0.05, -0.40, 0.33, -0.40), box(0.05, 0.66, 0.05, 0.40, 0.33, -0.40), box(0.05, 0.66, 0.05, -0.40, 0.33, 0.40), box(0.05, 0.66, 0.05, 0.40, 0.33, 0.40)]), color: WD, name: 'legs' },
-    { ...merge([box(0.82, 0.06, 0.03, 0, 0.69, 0.42), box(0.82, 0.06, 0.03, 0, 0.69, -0.42), box(0.03, 0.06, 0.82, 0.42, 0.69, 0), box(0.03, 0.06, 0.82, -0.42, 0.69, 0)]), color: W, name: 'apron' },
+    // 天板（面取り表現: 本体+エッジ帯）
+    { ...merge([box(0.88, 0.035, 0.88, 0, 0.74, 0)]), color: WL, name: 'top' },
+    { ...merge([box(0.90, 0.01, 0.90, 0, 0.72, 0)]), color: WL, name: 'top_edge' },
+    // テーパー脚（上が細く下が太い円柱）
+    { ...merge([cyl(0.022, 0.030, 0.70, 8, -0.39, 0.35, -0.39)]), color: WD, name: 'leg_bl' },
+    { ...merge([cyl(0.022, 0.030, 0.70, 8, 0.39, 0.35, -0.39)]), color: WD, name: 'leg_br' },
+    { ...merge([cyl(0.022, 0.030, 0.70, 8, -0.39, 0.35, 0.39)]), color: WD, name: 'leg_fl' },
+    { ...merge([cyl(0.022, 0.030, 0.70, 8, 0.39, 0.35, 0.39)]), color: WD, name: 'leg_fr' },
+    // 幕板（4面）
+    { ...merge([box(0.76, 0.055, 0.025, 0, 0.695, 0.41), box(0.76, 0.055, 0.025, 0, 0.695, -0.41)]), color: W, name: 'apron_fb' },
+    { ...merge([box(0.025, 0.055, 0.80, 0.41, 0.695, 0), box(0.025, 0.055, 0.80, -0.41, 0.695, 0)]), color: W, name: 'apron_lr' },
+    // 横桟（H型補強）
+    { ...merge([box(0.74, 0.02, 0.02, 0, 0.15, 0)]), color: WD, name: 'stretcher_x' },
+    { ...merge([box(0.02, 0.02, 0.74, 0, 0.15, 0)]), color: WD, name: 'stretcher_z' },
   ],
   sofa: () => [
-    { ...merge([box(1.6, 0.12, 0.75, 0, 0.16, 0)]), color: WD, name: 'frame' },
-    { ...merge([box(0.72, 0.14, 0.62, -0.38, 0.35, 0.04), box(0.72, 0.14, 0.62, 0.38, 0.35, 0.04)]), color: FR, name: 'cushions', roughness: 0.85 },
-    { ...merge([box(1.52, 0.42, 0.14, 0, 0.56, -0.30)]), color: FR, name: 'back', roughness: 0.85 },
-    { ...merge([box(0.12, 0.28, 0.65, -0.76, 0.42, 0.02), box(0.12, 0.28, 0.65, 0.76, 0.42, 0.02)]), color: FR, name: 'arms', roughness: 0.85 },
-    { ...merge([box(0.20, 0.12, 0.20, -0.55, 0.52, -0.15)]), color: FB, name: 'pillow', roughness: 0.9 },
+    // フレーム（木製ベース）
+    { ...merge([box(1.60, 0.10, 0.75, 0, 0.15, 0)]), color: WD, name: 'frame' },
+    // 脚（円柱4本）
+    { ...merge([cyl(0.025, 0.025, 0.08, 8, -0.70, 0.04, -0.30), cyl(0.025, 0.025, 0.08, 8, 0.70, 0.04, -0.30), cyl(0.025, 0.025, 0.08, 8, -0.70, 0.04, 0.30), cyl(0.025, 0.025, 0.08, 8, 0.70, 0.04, 0.30)]), color: WD, name: 'legs' },
+    // 座面クッション3分割
+    { ...merge([box(0.46, 0.13, 0.58, -0.50, 0.33, 0.04)]), color: FR, name: 'cushion_l', roughness: 0.85 },
+    { ...merge([box(0.46, 0.13, 0.58, 0, 0.33, 0.04)]), color: FR, name: 'cushion_c', roughness: 0.85 },
+    { ...merge([box(0.46, 0.13, 0.58, 0.50, 0.33, 0.04)]), color: FR, name: 'cushion_r', roughness: 0.85 },
+    // 背もたれクッション3分割
+    { ...merge([box(0.46, 0.36, 0.12, -0.50, 0.58, -0.28)]), color: FR, name: 'back_l', roughness: 0.85 },
+    { ...merge([box(0.46, 0.38, 0.12, 0, 0.59, -0.28)]), color: FR, name: 'back_c', roughness: 0.85 },
+    { ...merge([box(0.46, 0.36, 0.12, 0.50, 0.58, -0.28)]), color: FR, name: 'back_r', roughness: 0.85 },
+    // アームレスト（丸み: 上に円柱）
+    { ...merge([box(0.10, 0.22, 0.62, -0.76, 0.40, 0.02)]), color: FR, name: 'arm_l', roughness: 0.85 },
+    { ...merge([cyl(0.05, 0.05, 0.62, 8, -0.76, 0.52, 0.02)]), color: FR, name: 'arm_l_top', roughness: 0.85 },
+    { ...merge([box(0.10, 0.22, 0.62, 0.76, 0.40, 0.02)]), color: FR, name: 'arm_r', roughness: 0.85 },
+    { ...merge([cyl(0.05, 0.05, 0.62, 8, 0.76, 0.52, 0.02)]), color: FR, name: 'arm_r_top', roughness: 0.85 },
+    // クッションピロー
+    { ...merge([box(0.18, 0.11, 0.08, -0.55, 0.50, -0.15), box(0.18, 0.11, 0.08, 0.55, 0.50, -0.15)]), color: FB, name: 'pillows', roughness: 0.9 },
   ],
   counter: () => [
-    { ...merge([box(1.5, 0.04, 0.6, 0, 0.92, 0)]), color: CR, name: 'top' },
-    { ...merge([box(1.46, 0.58, 0.04, 0, 0.62, 0.28), box(0.04, 0.58, 0.56, -0.73, 0.62, 0), box(0.04, 0.58, 0.56, 0.73, 0.62, 0), box(1.46, 0.58, 0.02, 0, 0.62, -0.29)]), color: W, name: 'body' },
-    { ...merge([box(1.42, 0.02, 0.52, 0, 0.45, 0)]), color: WL, name: 'shelf' },
+    // 天板（オーバーハング: 本体より大きい）
+    { ...merge([box(1.54, 0.04, 0.64, 0, 0.93, 0)]), color: CR, name: 'top' },
+    // 天板エッジ（面取り表現）
+    { ...merge([box(1.56, 0.012, 0.66, 0, 0.905, 0)]), color: CR, name: 'top_edge' },
+    // 前面パネル
+    { ...merge([box(1.46, 0.58, 0.03, 0, 0.62, 0.29)]), color: W, name: 'front_panel' },
+    // 側面パネル
+    { ...merge([box(0.03, 0.58, 0.56, -0.73, 0.62, 0), box(0.03, 0.58, 0.56, 0.73, 0.62, 0)]), color: W, name: 'side_panels' },
+    // 背面パネル
+    { ...merge([box(1.46, 0.58, 0.02, 0, 0.62, -0.29)]), color: WD, name: 'back_panel' },
+    // 棚板2段
+    { ...merge([box(1.40, 0.02, 0.52, 0, 0.50, 0)]), color: WL, name: 'shelf_upper' },
+    { ...merge([box(1.40, 0.02, 0.52, 0, 0.35, 0)]), color: WL, name: 'shelf_lower' },
+    // 幕板（前面装飾ライン）
+    { ...merge([box(1.42, 0.03, 0.01, 0, 0.88, 0.30)]), color: WD, name: 'apron' },
+    // 脚（短い台座）
+    { ...merge([box(0.06, 0.04, 0.06, -0.68, 0.02, -0.24), box(0.06, 0.04, 0.06, 0.68, 0.02, -0.24), box(0.06, 0.04, 0.06, -0.68, 0.02, 0.24), box(0.06, 0.04, 0.06, 0.68, 0.02, 0.24)]), color: MD, name: 'feet' },
   ],
   stool: () => [
-    { ...merge([cyl(0.16, 0.16, 0.04, 12, 0, 0.72, 0)]), color: MS, name: 'seat', metallic: 0.7 },
-    { ...merge([cyl(0.14, 0.14, 0.03, 12, 0, 0.755, 0)]), color: FR, name: 'cushion', roughness: 0.85 },
-    { ...merge([cyl(0.02, 0.025, 0.55, 6, 0, 0.42, 0)]), color: MD, name: 'pole', metallic: 0.7 },
-    { ...merge([cyl(0.20, 0.22, 0.03, 12, 0, 0.05, 0)]), color: MD, name: 'base', metallic: 0.7 },
+    // 座面ベース
+    { ...merge([cyl(0.16, 0.16, 0.03, 14, 0, 0.72, 0)]), color: MS, name: 'seat_base', metallic: 0.7 },
+    // クッション（ふっくら）
+    { ...merge([cyl(0.145, 0.145, 0.025, 14, 0, 0.75, 0)]), color: FR, name: 'cushion', roughness: 0.85 },
+    { ...merge([cyl(0.13, 0.13, 0.01, 14, 0, 0.77, 0)]), color: FR, name: 'cushion_top', roughness: 0.85 },
+    // 支柱（ガスシリンダー表現）
+    { ...merge([cyl(0.018, 0.022, 0.50, 8, 0, 0.44, 0)]), color: MD, name: 'cylinder', metallic: 0.7 },
+    // カバー
+    { ...merge([cyl(0.03, 0.03, 0.04, 8, 0, 0.68, 0)]), color: MD, name: 'collar', metallic: 0.6 },
+    // ベース
+    { ...merge([cyl(0.20, 0.22, 0.025, 14, 0, 0.05, 0)]), color: MD, name: 'base', metallic: 0.7 },
+    { ...merge([cyl(0.18, 0.18, 0.01, 14, 0, 0.065, 0)]), color: [0.22, 0.22, 0.25], name: 'base_top', metallic: 0.6 },
+    // フットリング
+    { ...merge([cyl(0.12, 0.12, 0.015, 12, 0, 0.30, 0)]), color: MD, name: 'foot_ring', metallic: 0.6 },
   ],
   shelf: () => [
-    { ...merge([box(0.03, 1.2, 0.35, -0.42, 0.60, 0), box(0.03, 1.2, 0.35, 0.42, 0.60, 0)]), color: WD, name: 'sides' },
-    { ...merge([box(0.84, 0.02, 0.34, 0, 0.05, 0), box(0.84, 0.02, 0.34, 0, 0.43, 0), box(0.84, 0.02, 0.34, 0, 0.81, 0), box(0.84, 0.02, 0.34, 0, 1.19, 0)]), color: WL, name: 'shelves' },
+    // 側板
+    { ...merge([box(0.025, 1.25, 0.34, -0.43, 0.625, 0), box(0.025, 1.25, 0.34, 0.43, 0.625, 0)]), color: WD, name: 'sides' },
+    // 棚板5段
+    { ...merge([box(0.86, 0.018, 0.33, 0, 0.02, 0), box(0.86, 0.018, 0.33, 0, 0.27, 0), box(0.86, 0.018, 0.33, 0, 0.52, 0), box(0.86, 0.018, 0.33, 0, 0.77, 0), box(0.86, 0.018, 0.33, 0, 1.02, 0), box(0.86, 0.018, 0.33, 0, 1.24, 0)]), color: WL, name: 'shelves' },
+    // 背板
+    { ...merge([box(0.84, 1.22, 0.008, 0, 0.625, -0.17)]), color: W, name: 'back_panel' },
+    // 棚板前面エッジ（厚み表現）
+    { ...merge([box(0.86, 0.025, 0.01, 0, 0.02, 0.17), box(0.86, 0.025, 0.01, 0, 0.27, 0.17), box(0.86, 0.025, 0.01, 0, 0.52, 0.17), box(0.86, 0.025, 0.01, 0, 0.77, 0.17), box(0.86, 0.025, 0.01, 0, 1.02, 0.17)]), color: WD, name: 'shelf_edges' },
   ],
   plant: () => [
     { ...merge([cyl(0.12, 0.09, 0.18, 10, 0, 0.09, 0)]), color: TC, name: 'pot' },
@@ -282,23 +350,57 @@ const furniture = {
     { ...merge([box(0.22, 0.18, 0.20, 0, 0.52, 0), box(0.18, 0.16, 0.22, -0.08, 0.48, 0.06), box(0.18, 0.14, 0.18, 0.06, 0.46, -0.05)]), color: GL, name: 'leaves' },
   ],
   desk: () => [
-    { ...merge([box(1.2, 0.03, 0.6, 0, 0.74, 0)]), color: WL, name: 'top' },
-    { ...merge([box(0.40, 0.30, 0.55, 0.38, 0.56, 0)]), color: W, name: 'drawers' },
-    { ...merge([box(0.04, 0.72, 0.04, -0.56, 0.36, -0.26), box(0.04, 0.72, 0.04, -0.56, 0.36, 0.26)]), color: MD, name: 'legs', metallic: 0.5 },
+    // 天板
+    { ...merge([box(1.22, 0.03, 0.62, 0, 0.74, 0)]), color: WL, name: 'top' },
+    { ...merge([box(1.24, 0.01, 0.64, 0, 0.72, 0)]), color: WL, name: 'top_edge' },
+    // 引き出しユニット（3段）
+    { ...merge([box(0.38, 0.58, 0.54, 0.38, 0.43, 0)]), color: W, name: 'drawer_body' },
+    { ...merge([box(0.36, 0.16, 0.02, 0.38, 0.62, 0.28), box(0.36, 0.16, 0.02, 0.38, 0.44, 0.28), box(0.36, 0.16, 0.02, 0.38, 0.26, 0.28)]), color: WL, name: 'drawer_fronts' },
+    { ...merge([box(0.06, 0.02, 0.02, 0.38, 0.62, 0.30), box(0.06, 0.02, 0.02, 0.38, 0.44, 0.30), box(0.06, 0.02, 0.02, 0.38, 0.26, 0.30)]), color: MS, name: 'drawer_handles', metallic: 0.6 },
+    // 左脚（金属L字フレーム）
+    { ...merge([box(0.04, 0.72, 0.04, -0.56, 0.36, -0.26)]), color: MD, name: 'leg_l_back', metallic: 0.5 },
+    { ...merge([box(0.04, 0.72, 0.04, -0.56, 0.36, 0.26)]), color: MD, name: 'leg_l_front', metallic: 0.5 },
+    { ...merge([box(0.04, 0.04, 0.48, -0.56, 0.02, 0)]), color: MD, name: 'leg_l_base', metallic: 0.5 },
+    // キーボードトレイ
+    { ...merge([box(0.50, 0.015, 0.28, -0.10, 0.65, 0.15)]), color: WL, name: 'kb_tray' },
+    // 配線穴表現
+    { ...merge([cyl(0.025, 0.025, 0.035, 8, 0.38, 0.74, -0.15)]), color: MD, name: 'cable_hole', metallic: 0.4 },
   ],
   bench: () => [
     { ...merge([box(1.2, 0.04, 0.35, 0, 0.44, 0)]), color: W, name: 'seat' },
     { ...merge([box(0.04, 0.43, 0.30, -0.48, 0.215, 0), box(0.04, 0.43, 0.30, 0.48, 0.215, 0)]), color: WD, name: 'legs' },
   ],
   bookcase: () => [
-    { ...merge([box(0.03, 1.8, 0.35, -0.44, 0.90, 0), box(0.03, 1.8, 0.35, 0.44, 0.90, 0), box(0.91, 0.03, 0.35, 0, 1.80, 0), box(0.88, 1.76, 0.01, 0, 0.90, -0.17)]), color: WD, name: 'frame' },
-    { ...merge([box(0.88, 0.02, 0.34, 0, 0.02, 0), box(0.88, 0.02, 0.34, 0, 0.38, 0), box(0.88, 0.02, 0.34, 0, 0.74, 0), box(0.88, 0.02, 0.34, 0, 1.10, 0), box(0.88, 0.02, 0.34, 0, 1.46, 0)]), color: WL, name: 'shelves' },
+    // 側板
+    { ...merge([box(0.025, 1.82, 0.34, -0.44, 0.91, 0), box(0.025, 1.82, 0.34, 0.44, 0.91, 0)]), color: WD, name: 'sides' },
+    // 天板
+    { ...merge([box(0.91, 0.025, 0.35, 0, 1.81, 0)]), color: WD, name: 'top' },
+    // 背板
+    { ...merge([box(0.86, 1.78, 0.008, 0, 0.91, -0.17)]), color: W, name: 'back' },
+    // 棚板5段（エッジ付き）
+    { ...merge([box(0.86, 0.018, 0.33, 0, 0.02, 0), box(0.86, 0.018, 0.33, 0, 0.38, 0), box(0.86, 0.018, 0.33, 0, 0.74, 0), box(0.86, 0.018, 0.33, 0, 1.10, 0), box(0.86, 0.018, 0.33, 0, 1.46, 0)]), color: WL, name: 'shelves' },
+    // 棚板エッジ
+    { ...merge([box(0.86, 0.022, 0.008, 0, 0.02, 0.17), box(0.86, 0.022, 0.008, 0, 0.38, 0.17), box(0.86, 0.022, 0.008, 0, 0.74, 0.17), box(0.86, 0.022, 0.008, 0, 1.10, 0.17), box(0.86, 0.022, 0.008, 0, 1.46, 0.17)]), color: WD, name: 'shelf_edges' },
+    // 下段扉（キャビネット部分: パネル2枚）
+    { ...merge([box(0.42, 0.34, 0.015, -0.22, 0.20, 0.18)]), color: W, name: 'door_l' },
+    { ...merge([box(0.42, 0.34, 0.015, 0.22, 0.20, 0.18)]), color: W, name: 'door_r' },
+    // 扉取っ手
+    { ...merge([box(0.02, 0.06, 0.02, -0.02, 0.20, 0.20), box(0.02, 0.06, 0.02, 0.02, 0.20, 0.20)]), color: MS, name: 'door_handles', metallic: 0.6 },
+    // 台座（巾木）
+    { ...merge([box(0.90, 0.04, 0.02, 0, 0.02, 0.18)]), color: WD, name: 'plinth' },
   ],
   // ─── Additional furniture types ───
   table_round: () => [
-    { ...merge([cyl(0.40, 0.40, 0.04, 12, 0, 0.74, 0)]), color: WL, name: 'top' },
-    { ...merge([cyl(0.04, 0.06, 0.68, 8, 0, 0.37, 0)]), color: WD, name: 'pedestal' },
-    { ...merge([cyl(0.22, 0.24, 0.03, 10, 0, 0.015, 0)]), color: WD, name: 'base' },
+    // 天板（厚みのある円盤+エッジ）
+    { ...merge([cyl(0.40, 0.40, 0.035, 16, 0, 0.74, 0)]), color: WL, name: 'top' },
+    { ...merge([cyl(0.41, 0.41, 0.01, 16, 0, 0.72, 0)]), color: WL, name: 'top_edge' },
+    // ペデスタル（テーパー）
+    { ...merge([cyl(0.035, 0.055, 0.66, 10, 0, 0.37, 0)]), color: WD, name: 'pedestal' },
+    // ペデスタル装飾リング
+    { ...merge([cyl(0.05, 0.05, 0.03, 10, 0, 0.68, 0)]), color: WD, name: 'collar' },
+    // ベース（3本脚＋中心）
+    { ...merge([cyl(0.22, 0.24, 0.025, 12, 0, 0.012, 0)]), color: WD, name: 'base' },
+    { ...merge([box(0.06, 0.02, 0.20, 0, 0.01, 0.14), box(0.18, 0.02, 0.06, -0.12, 0.01, -0.10), box(0.18, 0.02, 0.06, 0.12, 0.01, -0.10)]), color: WD, name: 'base_feet' },
   ],
   pendant_light: () => [
     { ...merge([cyl(0.005, 0.005, 0.30, 4, 0, 0.85, 0)]), color: MD, name: 'chain', metallic: 0.8 },
@@ -341,9 +443,25 @@ const furniture = {
     { ...merge([box(0.66, 0.86, 0.02, 0, 0.80, -0.02)]), color: WD, name: 'frame' },
   ],
   reception_desk: () => [
-    { ...merge([box(1.8, 0.04, 0.7, 0, 0.92, 0)]), color: CR, name: 'top' },
-    { ...merge([box(1.76, 0.60, 0.04, 0, 0.61, 0.33), box(0.04, 0.60, 0.66, -0.88, 0.61, 0), box(0.04, 0.60, 0.66, 0.88, 0.61, 0)]), color: W, name: 'body' },
-    { ...merge([box(0.80, 0.60, 0.04, 0.48, 0.61, -0.33)]), color: W, name: 'return' },
+    // 天板（オーバーハング）
+    { ...merge([box(1.84, 0.04, 0.74, 0, 0.93, 0)]), color: CR, name: 'top' },
+    { ...merge([box(1.86, 0.012, 0.76, 0, 0.905, 0)]), color: CR, name: 'top_edge' },
+    // フロントカウンター（2段: 上段高め＋下段来客側）
+    { ...merge([box(1.76, 0.20, 0.03, 0, 0.82, 0.34)]), color: W, name: 'front_upper' },
+    { ...merge([box(1.76, 0.42, 0.03, 0, 0.50, 0.35)]), color: WL, name: 'front_lower' },
+    // 前面装飾ライン
+    { ...merge([box(1.72, 0.015, 0.02, 0, 0.71, 0.36)]), color: WD, name: 'front_accent' },
+    // 側面パネル
+    { ...merge([box(0.03, 0.60, 0.68, -0.88, 0.61, 0), box(0.03, 0.60, 0.68, 0.88, 0.61, 0)]), color: W, name: 'sides' },
+    // リターン（L字カウンター）
+    { ...merge([box(0.80, 0.60, 0.03, 0.48, 0.61, -0.33)]), color: W, name: 'return_panel' },
+    { ...merge([box(0.82, 0.04, 0.36, 0.48, 0.93, -0.50)]), color: CR, name: 'return_top' },
+    // 内側棚板
+    { ...merge([box(1.70, 0.02, 0.60, 0, 0.45, 0)]), color: WL, name: 'inner_shelf' },
+    // 幕板（背面装飾）
+    { ...merge([box(1.72, 0.58, 0.02, 0, 0.61, -0.33)]), color: WD, name: 'back_panel' },
+    // 台座
+    { ...merge([box(1.78, 0.06, 0.04, 0, 0.03, 0.35)]), color: MD, name: 'plinth' },
   ],
   tv_monitor: () => [
     { ...merge([box(0.80, 0.50, 0.03, 0, 0.65, 0)]), color: MD, name: 'screen', metallic: 0.3 },
@@ -392,9 +510,24 @@ const furniture = {
     { ...merge([box(0.25, 0.02, 0.20, 0, 0.12, 0.05)]), color: [0.8, 0.8, 0.8], name: 'keypad' },
   ],
   register_counter: () => [
-    { ...merge([box(1.2, 0.04, 0.6, 0, 0.92, 0)]), color: CR, name: 'top' },
-    { ...merge([box(1.16, 0.58, 0.56, 0, 0.62, 0)]), color: W, name: 'body' },
-    { ...merge([box(0.30, 0.20, 0.02, 0.30, 1.10, 0)]), color: MD, name: 'screen' },
+    // 天板（オーバーハング）
+    { ...merge([box(1.24, 0.035, 0.64, 0, 0.93, 0)]), color: CR, name: 'top' },
+    { ...merge([box(1.26, 0.01, 0.66, 0, 0.905, 0)]), color: CR, name: 'top_edge' },
+    // ボディ前面+側面+背面
+    { ...merge([box(1.16, 0.56, 0.03, 0, 0.62, 0.29)]), color: W, name: 'front' },
+    { ...merge([box(0.03, 0.56, 0.56, -0.58, 0.62, 0), box(0.03, 0.56, 0.56, 0.58, 0.62, 0)]), color: W, name: 'sides' },
+    { ...merge([box(1.16, 0.56, 0.02, 0, 0.62, -0.29)]), color: WD, name: 'back' },
+    // 内部棚板
+    { ...merge([box(1.12, 0.02, 0.52, 0, 0.50, 0)]), color: WL, name: 'shelf' },
+    // 台座（巾木）
+    { ...merge([box(1.18, 0.05, 0.03, 0, 0.025, 0.29)]), color: MD, name: 'plinth' },
+    // レジスクリーン（タブレット型）
+    { ...merge([box(0.28, 0.18, 0.015, 0.32, 1.08, 0.05)]), color: [0.10, 0.10, 0.12], name: 'screen' },
+    // スクリーンスタンド
+    { ...merge([cyl(0.015, 0.02, 0.12, 6, 0.32, 0.98, 0.05)]), color: MD, name: 'screen_stand', metallic: 0.5 },
+    { ...merge([box(0.08, 0.01, 0.08, 0.32, 0.94, 0.05)]), color: MD, name: 'screen_base', metallic: 0.5 },
+    // カード端末
+    { ...merge([box(0.08, 0.02, 0.14, -0.30, 0.94, 0.12)]), color: [0.15, 0.15, 0.15], name: 'card_reader' },
   ],
   menu_board: () => [
     { ...merge([box(0.60, 0.80, 0.03, 0, 0.90, 0)]), color: [0.15, 0.25, 0.15], name: 'board' },
@@ -431,10 +564,23 @@ const furniture = {
     { ...merge([box(1.32, 0.02, 0.62, 0, 0.45, 0)]), color: WL, name: 'shelf' },
   ],
   bed: () => [
-    { ...merge([box(1.40, 0.30, 2.00, 0, 0.15, 0)]), color: WL, name: 'frame' },
-    { ...merge([box(1.30, 0.18, 1.90, 0, 0.39, 0)]), color: [0.9, 0.9, 0.95], name: 'mattress' },
-    { ...merge([box(1.40, 0.70, 0.05, 0, 0.50, -0.98)]), color: WD, name: 'headboard' },
-    { ...merge([box(0.50, 0.10, 0.40, -0.30, 0.52, -0.70)]), color: [0.9, 0.9, 0.95], name: 'pillow' },
+    // フレーム（サイドレール）
+    { ...merge([box(0.03, 0.24, 1.94, -0.68, 0.12, 0), box(0.03, 0.24, 1.94, 0.68, 0.12, 0)]), color: WL, name: 'side_rails' },
+    { ...merge([box(1.36, 0.24, 0.03, 0, 0.12, 0.96)]), color: WL, name: 'footboard' },
+    // すのこ
+    { ...merge([box(1.32, 0.02, 0.12, 0, 0.23, -0.60), box(1.32, 0.02, 0.12, 0, 0.23, -0.20), box(1.32, 0.02, 0.12, 0, 0.23, 0.20), box(1.32, 0.02, 0.12, 0, 0.23, 0.60)]), color: W, name: 'slats' },
+    // 脚
+    { ...merge([box(0.06, 0.22, 0.06, -0.64, 0.01, -0.92), box(0.06, 0.22, 0.06, 0.64, 0.01, -0.92), box(0.06, 0.22, 0.06, -0.64, 0.01, 0.92), box(0.06, 0.22, 0.06, 0.64, 0.01, 0.92)]), color: WD, name: 'legs' },
+    // マットレス（2層）
+    { ...merge([box(1.28, 0.14, 1.86, 0, 0.32, 0)]), color: [0.92, 0.92, 0.95], name: 'mattress' },
+    { ...merge([box(1.26, 0.05, 1.84, 0, 0.42, 0)]), color: [0.95, 0.95, 0.98], name: 'mattress_top', roughness: 0.9 },
+    // ヘッドボード
+    { ...merge([box(1.40, 0.65, 0.04, 0, 0.53, -0.97)]), color: WD, name: 'headboard' },
+    { ...merge([box(0.55, 0.48, 0.015, -0.30, 0.50, -0.94), box(0.55, 0.48, 0.015, 0.30, 0.50, -0.94)]), color: W, name: 'hb_panels' },
+    // 枕
+    { ...merge([box(0.45, 0.08, 0.35, -0.28, 0.50, -0.70)]), color: [0.95, 0.95, 0.98], name: 'pillow', roughness: 0.9 },
+    // 掛け布団
+    { ...merge([box(1.24, 0.06, 1.10, 0, 0.48, 0.25)]), color: [0.85, 0.85, 0.90], name: 'blanket', roughness: 0.9 },
   ],
   toilet: () => [
     { ...merge([cyl(0.20, 0.18, 0.35, 10, 0, 0.175, 0)]), color: [0.95, 0.95, 0.95], name: 'bowl' },
@@ -442,11 +588,25 @@ const furniture = {
     { ...merge([cyl(0.21, 0.21, 0.02, 10, 0, 0.36, 0)]), color: [0.95, 0.95, 0.95], name: 'lid' },
   ],
   armchair: () => [
-    { ...merge([box(0.65, 0.04, 0.55, 0, 0.42, 0)]), color: W, name: 'seat_frame' },
-    { ...merge([box(0.55, 0.08, 0.48, 0, 0.48, 0)]), color: FR, name: 'cushion', roughness: 0.85 },
-    { ...merge([box(0.65, 0.45, 0.04, 0, 0.66, -0.26)]), color: FR, name: 'back', roughness: 0.85 },
-    { ...merge([box(0.08, 0.25, 0.50, -0.32, 0.52, 0), box(0.08, 0.25, 0.50, 0.32, 0.52, 0)]), color: FR, name: 'arms', roughness: 0.85 },
-    { ...merge([cyl(0.02, 0.025, 0.40, 6, -0.28, 0.20, -0.22), cyl(0.02, 0.025, 0.40, 6, 0.28, 0.20, -0.22), cyl(0.02, 0.025, 0.40, 6, -0.28, 0.20, 0.22), cyl(0.02, 0.025, 0.40, 6, 0.28, 0.20, 0.22)]), color: WD, name: 'legs' },
+    // 座面フレーム
+    { ...merge([box(0.65, 0.035, 0.55, 0, 0.42, 0)]), color: W, name: 'seat_frame' },
+    // 座面クッション（ふっくら2層）
+    { ...merge([box(0.52, 0.06, 0.46, 0, 0.47, 0.01)]), color: FR, name: 'cushion', roughness: 0.85 },
+    { ...merge([box(0.48, 0.02, 0.42, 0, 0.51, 0.01)]), color: FR, name: 'cushion_top', roughness: 0.85 },
+    // 背もたれ（曲面表現: 3段）
+    { ...merge([box(0.58, 0.16, 0.035, 0, 0.55, -0.25)]), color: FR, name: 'back_lower', roughness: 0.85 },
+    { ...merge([box(0.56, 0.16, 0.03, 0, 0.71, -0.26)]), color: FR, name: 'back_mid', roughness: 0.85 },
+    { ...merge([box(0.52, 0.12, 0.025, 0, 0.85, -0.27)]), color: FR, name: 'back_upper', roughness: 0.85 },
+    // アームレスト（丸みトップ付き）
+    { ...merge([box(0.07, 0.20, 0.48, -0.32, 0.50, 0)]), color: FR, name: 'arm_l', roughness: 0.85 },
+    { ...merge([cyl(0.035, 0.035, 0.48, 8, -0.32, 0.61, 0)]), color: FR, name: 'arm_l_top', roughness: 0.85 },
+    { ...merge([box(0.07, 0.20, 0.48, 0.32, 0.50, 0)]), color: FR, name: 'arm_r', roughness: 0.85 },
+    { ...merge([cyl(0.035, 0.035, 0.48, 8, 0.32, 0.61, 0)]), color: FR, name: 'arm_r_top', roughness: 0.85 },
+    // 脚（テーパー円柱）
+    { ...merge([cyl(0.018, 0.022, 0.40, 8, -0.28, 0.20, -0.22)]), color: WD, name: 'leg_bl' },
+    { ...merge([cyl(0.018, 0.022, 0.40, 8, 0.28, 0.20, -0.22)]), color: WD, name: 'leg_br' },
+    { ...merge([cyl(0.018, 0.022, 0.40, 8, -0.28, 0.20, 0.22)]), color: WD, name: 'leg_fl' },
+    { ...merge([cyl(0.018, 0.022, 0.40, 8, 0.28, 0.20, 0.22)]), color: WD, name: 'leg_fr' },
   ],
   washbasin: () => [
     { ...merge([box(0.50, 0.04, 0.40, 0, 0.80, 0)]), color: [0.95, 0.95, 0.95], name: 'top' },
@@ -462,19 +622,50 @@ const furniture = {
     { ...merge([cyl(0.20, 0.22, 0.03, 8, -0.45, 0.015, 0), cyl(0.20, 0.22, 0.03, 8, 0.45, 0.015, 0)]), color: MD, name: 'bases', metallic: 0.5 },
   ],
   // ─── 飲食店向け ───
-  booth_sofa: () => [
-    { ...merge([box(1.50, 0.12, 0.65, 0, 0.16, 0)]), color: WD, name: 'frame' },
-    { ...merge([box(1.40, 0.14, 0.55, 0, 0.35, 0.03)]), color: [0.545, 0.271, 0.075], name: 'seat_cushion', roughness: 0.85 },
-    { ...merge([box(1.42, 0.55, 0.10, 0, 0.62, -0.28)]), color: [0.545, 0.271, 0.075], name: 'back', roughness: 0.85 },
-    { ...merge([box(0.10, 0.42, 0.60, -0.72, 0.48, 0), box(0.10, 0.42, 0.60, 0.72, 0.48, 0)]), color: [0.545, 0.271, 0.075], name: 'arms', roughness: 0.85 },
-  ],
+  booth_sofa: () => {
+    const BL = [0.545, 0.271, 0.075]; // brown leather
+    const BLD = [0.45, 0.22, 0.06]; // darker brown
+    return [
+      // 木製ベースフレーム
+      { ...merge([box(1.50, 0.10, 0.65, 0, 0.15, 0)]), color: WD, name: 'frame' },
+      // 脚
+      { ...merge([box(0.05, 0.08, 0.05, -0.68, 0.04, -0.26), box(0.05, 0.08, 0.05, 0.68, 0.04, -0.26), box(0.05, 0.08, 0.05, -0.68, 0.04, 0.26), box(0.05, 0.08, 0.05, 0.68, 0.04, 0.26)]), color: WD, name: 'legs' },
+      // 座面クッション2分割
+      { ...merge([box(0.66, 0.12, 0.52, -0.35, 0.32, 0.04)]), color: BL, name: 'seat_l', roughness: 0.85 },
+      { ...merge([box(0.66, 0.12, 0.52, 0.35, 0.32, 0.04)]), color: BL, name: 'seat_r', roughness: 0.85 },
+      // ステッチライン（クッション間）
+      { ...merge([box(0.005, 0.13, 0.50, 0, 0.32, 0.04)]), color: BLD, name: 'stitch_center' },
+      // 背もたれ（ダイヤモンドタフティング表現: 3分割）
+      { ...merge([box(0.44, 0.50, 0.08, -0.46, 0.62, -0.26)]), color: BL, name: 'back_l', roughness: 0.85 },
+      { ...merge([box(0.44, 0.52, 0.08, 0, 0.63, -0.26)]), color: BL, name: 'back_c', roughness: 0.85 },
+      { ...merge([box(0.44, 0.50, 0.08, 0.46, 0.62, -0.26)]), color: BL, name: 'back_r', roughness: 0.85 },
+      // 背もたれステッチライン
+      { ...merge([box(0.005, 0.48, 0.085, -0.23, 0.62, -0.26), box(0.005, 0.48, 0.085, 0.23, 0.62, -0.26)]), color: BLD, name: 'back_stitches' },
+      // アームレスト（丸みトップ）
+      { ...merge([box(0.08, 0.36, 0.58, -0.72, 0.48, 0)]), color: BL, name: 'arm_l', roughness: 0.85 },
+      { ...merge([cyl(0.04, 0.04, 0.58, 8, -0.72, 0.67, 0)]), color: BL, name: 'arm_l_top', roughness: 0.85 },
+      { ...merge([box(0.08, 0.36, 0.58, 0.72, 0.48, 0)]), color: BL, name: 'arm_r', roughness: 0.85 },
+      { ...merge([cyl(0.04, 0.04, 0.58, 8, 0.72, 0.67, 0)]), color: BL, name: 'arm_r_top', roughness: 0.85 },
+    ];
+  },
   bar_chair: () => [
-    { ...merge([cyl(0.17, 0.17, 0.04, 10, 0, 0.90, 0)]), color: MD, name: 'seat', metallic: 0.5 },
-    { ...merge([box(0.30, 0.02, 0.04, 0, 0.92, 0)]), color: FR, name: 'cushion', roughness: 0.85 },
-    { ...merge([box(0.34, 0.25, 0.02, 0, 1.08, -0.16)]), color: MD, name: 'back', metallic: 0.5 },
-    { ...merge([cyl(0.02, 0.025, 0.70, 6, 0, 0.52, 0)]), color: MD, name: 'pole', metallic: 0.7 },
-    { ...merge([cyl(0.20, 0.22, 0.03, 10, 0, 0.015, 0)]), color: MD, name: 'base', metallic: 0.7 },
-    { ...merge([cyl(0.01, 0.01, 0.12, 4, 0, 0.55, 0.12), cyl(0.01, 0.01, 0.12, 4, 0, 0.55, -0.12)]), color: MD, name: 'footrest', metallic: 0.6 },
+    // 座面（円形ベース+クッション）
+    { ...merge([cyl(0.17, 0.17, 0.03, 12, 0, 0.895, 0)]), color: MD, name: 'seat_base', metallic: 0.5 },
+    { ...merge([cyl(0.155, 0.155, 0.03, 12, 0, 0.925, 0)]), color: FR, name: 'cushion', roughness: 0.85 },
+    // 背もたれ（湾曲表現: 3パーツ）
+    { ...merge([box(0.14, 0.22, 0.02, -0.14, 1.06, -0.14)]), color: MD, name: 'back_l', metallic: 0.5 },
+    { ...merge([box(0.12, 0.24, 0.02, 0, 1.07, -0.16)]), color: MD, name: 'back_c', metallic: 0.5 },
+    { ...merge([box(0.14, 0.22, 0.02, 0.14, 1.06, -0.14)]), color: MD, name: 'back_r', metallic: 0.5 },
+    // 背もたれ上部フレーム
+    { ...merge([box(0.34, 0.02, 0.02, 0, 1.19, -0.15)]), color: MD, name: 'back_top', metallic: 0.6 },
+    // 細い支柱
+    { ...merge([cyl(0.018, 0.022, 0.72, 8, 0, 0.52, 0)]), color: MD, name: 'pole', metallic: 0.7 },
+    // ベース（重厚な円盤）
+    { ...merge([cyl(0.21, 0.23, 0.025, 12, 0, 0.012, 0)]), color: MD, name: 'base', metallic: 0.7 },
+    { ...merge([cyl(0.19, 0.19, 0.01, 12, 0, 0.03, 0)]), color: [0.20, 0.20, 0.24], name: 'base_top', metallic: 0.6 },
+    // フットレストリング（円形）
+    { ...merge([cyl(0.14, 0.14, 0.015, 12, 0, 0.35, 0)]), color: MD, name: 'footrest_ring', metallic: 0.6 },
+    { ...merge([cyl(0.125, 0.125, 0.015, 12, 0, 0.35, 0)]), color: [0.30, 0.30, 0.34], name: 'footrest_inner', metallic: 0.5 },
   ],
   wine_rack: () => [
     { ...merge([box(0.03, 1.40, 0.30, -0.37, 0.70, 0), box(0.03, 1.40, 0.30, 0.37, 0.70, 0)]), color: WD, name: 'sides' },
@@ -495,19 +686,61 @@ const furniture = {
   ],
   // ─── オフィス向け ───
   office_desk: () => [
-    { ...merge([box(1.40, 0.03, 0.70, 0, 0.74, 0)]), color: WL, name: 'top' },
-    { ...merge([box(0.04, 0.72, 0.04, -0.66, 0.36, -0.31), box(0.04, 0.72, 0.04, 0.66, 0.36, -0.31), box(0.04, 0.72, 0.04, -0.66, 0.36, 0.31), box(0.04, 0.72, 0.04, 0.66, 0.36, 0.31)]), color: MS, name: 'legs', metallic: 0.5 },
-    { ...merge([box(0.40, 0.30, 0.60, 0.48, 0.56, 0)]), color: W, name: 'drawers' },
-    { ...merge([box(1.30, 0.04, 0.02, 0, 0.10, -0.31)]), color: MS, name: 'crossbar', metallic: 0.5 },
+    // 天板（面取りエッジ）
+    { ...merge([box(1.40, 0.028, 0.70, 0, 0.74, 0)]), color: WL, name: 'top' },
+    { ...merge([box(1.42, 0.008, 0.72, 0, 0.72, 0)]), color: WL, name: 'top_edge' },
+    // 金属脚（L字フレーム: 左側）
+    { ...merge([box(0.035, 0.72, 0.035, -0.66, 0.36, -0.31)]), color: MS, name: 'leg_lb', metallic: 0.5 },
+    { ...merge([box(0.035, 0.72, 0.035, -0.66, 0.36, 0.31)]), color: MS, name: 'leg_lf', metallic: 0.5 },
+    { ...merge([box(0.035, 0.035, 0.58, -0.66, 0.02, 0)]), color: MS, name: 'leg_l_base', metallic: 0.5 },
+    // 金属脚（L字フレーム: 右側）
+    { ...merge([box(0.035, 0.72, 0.035, 0.66, 0.36, -0.31)]), color: MS, name: 'leg_rb', metallic: 0.5 },
+    { ...merge([box(0.035, 0.72, 0.035, 0.66, 0.36, 0.31)]), color: MS, name: 'leg_rf', metallic: 0.5 },
+    { ...merge([box(0.035, 0.035, 0.58, 0.66, 0.02, 0)]), color: MS, name: 'leg_r_base', metallic: 0.5 },
+    // 引き出しユニット（3段）
+    { ...merge([box(0.38, 0.56, 0.58, 0.48, 0.43, 0)]), color: W, name: 'drawer_body' },
+    { ...merge([box(0.36, 0.16, 0.015, 0.48, 0.62, 0.30), box(0.36, 0.16, 0.015, 0.48, 0.44, 0.30), box(0.36, 0.16, 0.015, 0.48, 0.26, 0.30)]), color: WL, name: 'drawer_fronts' },
+    { ...merge([box(0.06, 0.02, 0.02, 0.48, 0.62, 0.32), box(0.06, 0.02, 0.02, 0.48, 0.44, 0.32), box(0.06, 0.02, 0.02, 0.48, 0.26, 0.32)]), color: MS, name: 'drawer_handles', metallic: 0.6 },
+    // 背面横桟
+    { ...merge([box(1.28, 0.035, 0.02, 0, 0.10, -0.31)]), color: MS, name: 'crossbar', metallic: 0.5 },
+    // 配線ダクト
+    { ...merge([box(0.40, 0.06, 0.04, -0.20, 0.70, -0.33)]), color: MD, name: 'cable_tray', metallic: 0.3 },
+    // 配線穴
+    { ...merge([cyl(0.025, 0.025, 0.03, 8, 0.20, 0.74, -0.20)]), color: MD, name: 'cable_hole', metallic: 0.4 },
   ],
   office_chair: () => [
-    { ...merge([cyl(0.20, 0.20, 0.04, 10, 0, 0.45, 0)]), color: MD, name: 'seat_base', metallic: 0.3 },
-    { ...merge([box(0.44, 0.06, 0.44, 0, 0.50, 0)]), color: [0.15, 0.15, 0.15], name: 'cushion', roughness: 0.85 },
-    { ...merge([box(0.42, 0.45, 0.04, 0, 0.78, -0.20)]), color: [0.15, 0.15, 0.15], name: 'back', roughness: 0.85 },
-    { ...merge([cyl(0.025, 0.03, 0.30, 6, 0, 0.28, 0)]), color: MD, name: 'pole', metallic: 0.7 },
-    { ...merge([cyl(0.18, 0.18, 0.03, 10, 0, 0.02, 0)]), color: MD, name: 'base', metallic: 0.6 },
-    { ...merge([cyl(0.015, 0.015, 0.02, 4, 0.15, 0.01, 0), cyl(0.015, 0.015, 0.02, 4, -0.15, 0.01, 0), cyl(0.015, 0.015, 0.02, 4, 0, 0.01, 0.15), cyl(0.015, 0.015, 0.02, 4, 0, 0.01, -0.15)]), color: MD, name: 'casters', metallic: 0.5 },
-    { ...merge([box(0.04, 0.08, 0.20, -0.24, 0.60, 0), box(0.04, 0.08, 0.20, 0.24, 0.60, 0)]), color: MD, name: 'armrests', metallic: 0.4 },
+    // 5本脚ベース（星形）
+    { ...merge([
+      box(0.28, 0.02, 0.03, 0, 0.015, 0),
+      box(0.03, 0.02, 0.28, 0, 0.015, 0),
+      box(0.20, 0.02, 0.20, 0, 0.015, 0),
+      box(0.20, 0.02, 0.20, 0.08, 0.015, -0.08),
+    ]), color: MD, name: 'base_star', metallic: 0.6 },
+    // キャスター5個
+    { ...merge([
+      cyl(0.015, 0.015, 0.018, 6, 0.14, 0.005, 0),
+      cyl(0.015, 0.015, 0.018, 6, -0.14, 0.005, 0),
+      cyl(0.015, 0.015, 0.018, 6, 0, 0.005, 0.14),
+      cyl(0.015, 0.015, 0.018, 6, 0, 0.005, -0.14),
+      cyl(0.015, 0.015, 0.018, 6, 0.10, 0.005, 0.10),
+    ]), color: [0.1, 0.1, 0.1], name: 'casters' },
+    // ガスシリンダー
+    { ...merge([cyl(0.02, 0.025, 0.28, 8, 0, 0.16, 0)]), color: MD, name: 'cylinder', metallic: 0.7 },
+    // 座面プレート
+    { ...merge([cyl(0.18, 0.18, 0.025, 10, 0, 0.44, 0)]), color: MD, name: 'seat_plate', metallic: 0.3 },
+    // 座面クッション（前方やや広い台形風）
+    { ...merge([box(0.44, 0.055, 0.44, 0, 0.48, 0.01)]), color: [0.15, 0.15, 0.15], name: 'cushion', roughness: 0.85 },
+    { ...merge([box(0.40, 0.02, 0.40, 0, 0.52, 0.01)]), color: [0.12, 0.12, 0.12], name: 'cushion_top', roughness: 0.85 },
+    // 背もたれ（メッシュ表現: 枠+内面）
+    { ...merge([box(0.42, 0.03, 0.03, 0, 1.01, -0.20)]), color: MD, name: 'back_top_frame', metallic: 0.4 },
+    { ...merge([box(0.42, 0.03, 0.03, 0, 0.58, -0.20)]), color: MD, name: 'back_bot_frame', metallic: 0.4 },
+    { ...merge([box(0.02, 0.42, 0.03, -0.20, 0.79, -0.20), box(0.02, 0.42, 0.03, 0.20, 0.79, -0.20)]), color: MD, name: 'back_side_frame', metallic: 0.4 },
+    { ...merge([box(0.38, 0.38, 0.015, 0, 0.79, -0.20)]), color: [0.20, 0.20, 0.20], name: 'back_mesh', roughness: 0.9 },
+    // ランバーサポート
+    { ...merge([box(0.30, 0.08, 0.025, 0, 0.65, -0.18)]), color: [0.12, 0.12, 0.12], name: 'lumbar', roughness: 0.85 },
+    // アームレスト（T字型）
+    { ...merge([box(0.04, 0.24, 0.03, -0.24, 0.64, -0.05), box(0.04, 0.24, 0.03, 0.24, 0.64, -0.05)]), color: MD, name: 'arm_posts', metallic: 0.4 },
+    { ...merge([box(0.04, 0.02, 0.22, -0.24, 0.77, -0.05), box(0.04, 0.02, 0.22, 0.24, 0.77, -0.05)]), color: [0.10, 0.10, 0.10], name: 'arm_pads', roughness: 0.85 },
   ],
   file_cabinet: () => [
     { ...merge([box(0.42, 1.25, 0.55, 0, 0.625, 0)]), color: MS, name: 'body', metallic: 0.5 },
@@ -546,17 +779,52 @@ const furniture = {
     { ...merge([box(0.60, 0.70, 0.03, 0, 1.18, -0.20)]), color: [0.85, 0.88, 0.92], name: 'mirror_surface', metallic: 0.9 },
     { ...merge([box(0.64, 0.74, 0.02, 0, 1.18, -0.22)]), color: WD, name: 'mirror_frame' },
   ],
-  waiting_sofa: () => [
-    { ...merge([box(1.60, 0.12, 0.65, 0, 0.18, 0)]), color: MD, name: 'frame', metallic: 0.3 },
-    { ...merge([box(0.70, 0.14, 0.55, -0.38, 0.35, 0.02), box(0.70, 0.14, 0.55, 0.38, 0.35, 0.02)]), color: [0.29, 0.40, 0.25], name: 'cushions', roughness: 0.85 },
-    { ...merge([box(1.52, 0.38, 0.10, 0, 0.55, -0.28)]), color: [0.29, 0.40, 0.25], name: 'back', roughness: 0.85 },
-    { ...merge([box(0.10, 0.25, 0.58, -0.76, 0.40, 0), box(0.10, 0.25, 0.58, 0.76, 0.40, 0)]), color: [0.29, 0.40, 0.25], name: 'arms', roughness: 0.85 },
-  ],
+  waiting_sofa: () => {
+    const GR = [0.29, 0.40, 0.25]; // green fabric
+    const GRD = [0.22, 0.32, 0.18];
+    return [
+      // 金属フレーム
+      { ...merge([box(1.58, 0.08, 0.63, 0, 0.16, 0)]), color: MD, name: 'frame', metallic: 0.3 },
+      // 金属脚
+      { ...merge([cyl(0.02, 0.02, 0.10, 8, -0.72, 0.05, -0.26), cyl(0.02, 0.02, 0.10, 8, 0.72, 0.05, -0.26), cyl(0.02, 0.02, 0.10, 8, -0.72, 0.05, 0.26), cyl(0.02, 0.02, 0.10, 8, 0.72, 0.05, 0.26)]), color: MD, name: 'legs', metallic: 0.5 },
+      // 座面クッション3分割
+      { ...merge([box(0.46, 0.12, 0.52, -0.50, 0.32, 0.02)]), color: GR, name: 'seat_l', roughness: 0.85 },
+      { ...merge([box(0.46, 0.12, 0.52, 0, 0.32, 0.02)]), color: GR, name: 'seat_c', roughness: 0.85 },
+      { ...merge([box(0.46, 0.12, 0.52, 0.50, 0.32, 0.02)]), color: GR, name: 'seat_r', roughness: 0.85 },
+      // ステッチライン
+      { ...merge([box(0.005, 0.13, 0.50, -0.25, 0.32, 0.02), box(0.005, 0.13, 0.50, 0.25, 0.32, 0.02)]), color: GRD, name: 'seat_stitches' },
+      // 背もたれ（分割+厚み）
+      { ...merge([box(1.50, 0.34, 0.08, 0, 0.55, -0.27)]), color: GR, name: 'back_main', roughness: 0.85 },
+      { ...merge([box(1.46, 0.04, 0.06, 0, 0.74, -0.27)]), color: GRD, name: 'back_top_roll', roughness: 0.85 },
+      // アームレスト（丸みトップ）
+      { ...merge([box(0.08, 0.22, 0.56, -0.76, 0.40, 0)]), color: GR, name: 'arm_l', roughness: 0.85 },
+      { ...merge([cyl(0.04, 0.04, 0.56, 8, -0.76, 0.52, 0)]), color: GR, name: 'arm_l_top', roughness: 0.85 },
+      { ...merge([box(0.08, 0.22, 0.56, 0.76, 0.40, 0)]), color: GR, name: 'arm_r', roughness: 0.85 },
+      { ...merge([cyl(0.04, 0.04, 0.56, 8, 0.76, 0.52, 0)]), color: GR, name: 'arm_r_top', roughness: 0.85 },
+    ];
+  },
   // ─── 小売向け ───
   display_shelf: () => [
-    { ...merge([box(0.03, 1.75, 0.40, -0.57, 0.88, 0), box(0.03, 1.75, 0.40, 0.57, 0.88, 0)]), color: [0.9, 0.9, 0.9], name: 'sides' },
-    { ...merge([box(1.14, 0.02, 0.38, 0, 0.02, 0), box(1.14, 0.02, 0.38, 0, 0.37, 0), box(1.14, 0.02, 0.38, 0, 0.72, 0), box(1.14, 0.02, 0.38, 0, 1.07, 0), box(1.14, 0.02, 0.38, 0, 1.42, 0), box(1.14, 0.02, 0.38, 0, 1.75, 0)]), color: [0.95, 0.95, 0.95], name: 'shelves' },
-    { ...merge([box(1.14, 1.75, 0.01, 0, 0.88, -0.20)]), color: [0.85, 0.85, 0.85], name: 'back' },
+    // 側板（金属フレーム）
+    { ...merge([box(0.025, 1.78, 0.38, -0.57, 0.89, 0), box(0.025, 1.78, 0.38, 0.57, 0.89, 0)]), color: [0.85, 0.85, 0.88], name: 'sides', metallic: 0.3 },
+    // 天板
+    { ...merge([box(1.16, 0.02, 0.40, 0, 1.78, 0)]), color: [0.90, 0.90, 0.92], name: 'top', metallic: 0.2 },
+    // 棚板6段（ガラス風透明感）
+    { ...merge([box(1.12, 0.012, 0.36, 0, 0.02, 0), box(1.12, 0.012, 0.36, 0, 0.37, 0), box(1.12, 0.012, 0.36, 0, 0.72, 0), box(1.12, 0.012, 0.36, 0, 1.07, 0), box(1.12, 0.012, 0.36, 0, 1.42, 0)]), color: [0.75, 0.88, 0.92], name: 'glass_shelves' },
+    // 棚板ブラケット（各段左右）
+    { ...merge([
+      box(0.02, 0.03, 0.06, -0.50, 0.02, 0.15), box(0.02, 0.03, 0.06, 0.50, 0.02, 0.15),
+      box(0.02, 0.03, 0.06, -0.50, 0.37, 0.15), box(0.02, 0.03, 0.06, 0.50, 0.37, 0.15),
+      box(0.02, 0.03, 0.06, -0.50, 0.72, 0.15), box(0.02, 0.03, 0.06, 0.50, 0.72, 0.15),
+      box(0.02, 0.03, 0.06, -0.50, 1.07, 0.15), box(0.02, 0.03, 0.06, 0.50, 1.07, 0.15),
+      box(0.02, 0.03, 0.06, -0.50, 1.42, 0.15), box(0.02, 0.03, 0.06, 0.50, 1.42, 0.15),
+    ]), color: [0.80, 0.80, 0.83], name: 'brackets', metallic: 0.4 },
+    // 背板
+    { ...merge([box(1.10, 1.76, 0.008, 0, 0.89, -0.19)]), color: [0.90, 0.90, 0.90], name: 'back' },
+    // 価格プレートホルダー（前面各段）
+    { ...merge([box(1.10, 0.025, 0.005, 0, 0.04, 0.19), box(1.10, 0.025, 0.005, 0, 0.39, 0.19), box(1.10, 0.025, 0.005, 0, 0.74, 0.19)]), color: [0.7, 0.7, 0.72], name: 'price_rails', metallic: 0.3 },
+    // ベースキック
+    { ...merge([box(1.14, 0.05, 0.03, 0, 0.025, 0.20)]), color: [0.75, 0.75, 0.78], name: 'kick_plate', metallic: 0.3 },
   ],
   glass_showcase: () => [
     { ...merge([box(0.96, 0.04, 0.46, 0, 0.92, 0), box(0.96, 0.04, 0.46, 0, 0.02, 0)]), color: MD, name: 'frame', metallic: 0.5 },
@@ -668,16 +936,48 @@ const furniture = {
   ],
   // --- ホテル・宿泊 ---
   bed_single: () => [
-    { ...merge([box(0.97, 0.28, 1.95, 0, 0.14, 0)]), color: WL, name: 'frame' },
-    { ...merge([box(0.90, 0.16, 1.85, 0, 0.36, 0)]), color: [0.9, 0.9, 0.95], name: 'mattress' },
-    { ...merge([box(0.97, 0.65, 0.05, 0, 0.47, -0.95)]), color: WD, name: 'headboard' },
-    { ...merge([box(0.35, 0.08, 0.30, -0.20, 0.48, -0.70)]), color: [0.9, 0.9, 0.95], name: 'pillow' },
+    // フレーム（サイドレール+フットボード）
+    { ...merge([box(0.03, 0.22, 1.90, -0.47, 0.11, 0), box(0.03, 0.22, 1.90, 0.47, 0.11, 0)]), color: WL, name: 'side_rails' },
+    { ...merge([box(0.94, 0.22, 0.03, 0, 0.11, 0.94)]), color: WL, name: 'footboard' },
+    // すのこ（マットレス受け）
+    { ...merge([box(0.90, 0.02, 0.12, 0, 0.21, -0.60), box(0.90, 0.02, 0.12, 0, 0.21, -0.20), box(0.90, 0.02, 0.12, 0, 0.21, 0.20), box(0.90, 0.02, 0.12, 0, 0.21, 0.60)]), color: W, name: 'slats' },
+    // 脚
+    { ...merge([box(0.05, 0.20, 0.05, -0.44, 0.00, -0.90), box(0.05, 0.20, 0.05, 0.44, 0.00, -0.90), box(0.05, 0.20, 0.05, -0.44, 0.00, 0.90), box(0.05, 0.20, 0.05, 0.44, 0.00, 0.90)]), color: WD, name: 'legs' },
+    // マットレス（2層: スプリング+トップ）
+    { ...merge([box(0.88, 0.12, 1.82, 0, 0.29, 0)]), color: [0.92, 0.92, 0.95], name: 'mattress_base' },
+    { ...merge([box(0.86, 0.05, 1.80, 0, 0.38, 0)]), color: [0.95, 0.95, 0.98], name: 'mattress_top', roughness: 0.9 },
+    // ヘッドボード（パネル分割）
+    { ...merge([box(0.97, 0.60, 0.04, 0, 0.50, -0.96)]), color: WD, name: 'headboard_frame' },
+    { ...merge([box(0.40, 0.45, 0.015, -0.22, 0.48, -0.93)]), color: W, name: 'headboard_panel_l' },
+    { ...merge([box(0.40, 0.45, 0.015, 0.22, 0.48, -0.93)]), color: W, name: 'headboard_panel_r' },
+    // 枕
+    { ...merge([box(0.32, 0.07, 0.25, -0.18, 0.45, -0.72)]), color: [0.95, 0.95, 0.98], name: 'pillow', roughness: 0.9 },
+    // 掛け布団
+    { ...merge([box(0.84, 0.06, 1.10, 0, 0.44, 0.25)]), color: [0.85, 0.85, 0.90], name: 'blanket', roughness: 0.9 },
   ],
   bed_double: () => [
-    { ...merge([box(1.55, 0.28, 1.95, 0, 0.14, 0)]), color: WL, name: 'frame' },
-    { ...merge([box(1.45, 0.16, 1.85, 0, 0.36, 0)]), color: [0.9, 0.9, 0.95], name: 'mattress' },
-    { ...merge([box(1.55, 0.65, 0.05, 0, 0.47, -0.95)]), color: WD, name: 'headboard' },
-    { ...merge([box(0.35, 0.08, 0.30, -0.35, 0.48, -0.70), box(0.35, 0.08, 0.30, 0.35, 0.48, -0.70)]), color: [0.9, 0.9, 0.95], name: 'pillows' },
+    // フレーム（サイドレール+フットボード）
+    { ...merge([box(0.03, 0.22, 1.90, -0.76, 0.11, 0), box(0.03, 0.22, 1.90, 0.76, 0.11, 0)]), color: WL, name: 'side_rails' },
+    { ...merge([box(1.52, 0.22, 0.03, 0, 0.11, 0.94)]), color: WL, name: 'footboard' },
+    // すのこ
+    { ...merge([box(1.48, 0.02, 0.12, 0, 0.21, -0.60), box(1.48, 0.02, 0.12, 0, 0.21, -0.20), box(1.48, 0.02, 0.12, 0, 0.21, 0.20), box(1.48, 0.02, 0.12, 0, 0.21, 0.60)]), color: W, name: 'slats' },
+    // 中央補強
+    { ...merge([box(0.04, 0.20, 1.86, 0, 0.11, 0)]), color: WL, name: 'center_support' },
+    // 脚
+    { ...merge([box(0.05, 0.20, 0.05, -0.72, 0.00, -0.90), box(0.05, 0.20, 0.05, 0.72, 0.00, -0.90), box(0.05, 0.20, 0.05, -0.72, 0.00, 0.90), box(0.05, 0.20, 0.05, 0.72, 0.00, 0.90), box(0.05, 0.20, 0.05, 0, 0.00, -0.90), box(0.05, 0.20, 0.05, 0, 0.00, 0.90)]), color: WD, name: 'legs' },
+    // マットレス（2層）
+    { ...merge([box(1.44, 0.12, 1.82, 0, 0.29, 0)]), color: [0.92, 0.92, 0.95], name: 'mattress_base' },
+    { ...merge([box(1.42, 0.05, 1.80, 0, 0.38, 0)]), color: [0.95, 0.95, 0.98], name: 'mattress_top', roughness: 0.9 },
+    // ヘッドボード（装飾パネル3分割）
+    { ...merge([box(1.55, 0.65, 0.04, 0, 0.52, -0.96)]), color: WD, name: 'headboard_frame' },
+    { ...merge([box(0.42, 0.48, 0.015, -0.42, 0.48, -0.93)]), color: W, name: 'hb_panel_l' },
+    { ...merge([box(0.42, 0.48, 0.015, 0, 0.48, -0.93)]), color: W, name: 'hb_panel_c' },
+    { ...merge([box(0.42, 0.48, 0.015, 0.42, 0.48, -0.93)]), color: W, name: 'hb_panel_r' },
+    // 枕2個
+    { ...merge([box(0.30, 0.07, 0.24, -0.32, 0.45, -0.72)]), color: [0.95, 0.95, 0.98], name: 'pillow_l', roughness: 0.9 },
+    { ...merge([box(0.30, 0.07, 0.24, 0.32, 0.45, -0.72)]), color: [0.95, 0.95, 0.98], name: 'pillow_r', roughness: 0.9 },
+    // 掛け布団
+    { ...merge([box(1.40, 0.06, 1.10, 0, 0.44, 0.25)]), color: [0.85, 0.85, 0.90], name: 'blanket', roughness: 0.9 },
   ],
   night_table: () => [
     { ...merge([box(0.40, 0.03, 0.35, 0, 0.52, 0)]), color: WL, name: 'top' },
