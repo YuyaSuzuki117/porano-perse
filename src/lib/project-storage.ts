@@ -95,16 +95,46 @@ export async function saveProject(params: SaveProjectParams): Promise<string | n
     return data?.id ?? null;
   }
 
-  // UPSERT: user_id+name or anonymous_id+name で重複判定
-  const conflictColumn = owner.user_id ? 'user_id,name' : 'anonymous_id,name';
+  // SELECT→INSERT/UPDATE パターン（部分ユニークインデックスは
+  // PostgREST の on_conflict では参照できないため upsert 不可）
+  let existingQuery = supabase
+    .from('perse_projects')
+    .select('id')
+    .eq('name', params.name);
+
+  if (owner.user_id) {
+    existingQuery = existingQuery.eq('user_id', owner.user_id);
+  } else if (owner.anonymous_id) {
+    existingQuery = existingQuery.eq('anonymous_id', owner.anonymous_id);
+  }
+
+  const { data: existing } = await existingQuery.maybeSingle();
+
+  if (existing) {
+    // UPDATE existing row
+    const { data, error } = await supabase
+      .from('perse_projects')
+      .update(row)
+      .eq('id', existing.id)
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('[ProjectStorage] upsert-update error:', error);
+      return null;
+    }
+    return data?.id ?? null;
+  }
+
+  // INSERT new row
   const { data, error } = await supabase
     .from('perse_projects')
-    .upsert(row, { onConflict: conflictColumn })
+    .insert(row)
     .select('id')
     .single();
 
   if (error) {
-    console.error('[ProjectStorage] upsert error:', error);
+    console.error('[ProjectStorage] insert error:', error);
     return null;
   }
   return data?.id ?? null;
