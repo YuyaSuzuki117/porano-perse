@@ -60,6 +60,21 @@ const LIGHTING_LABELS: Record<string, string> = {
   cool: '寒色系',
 };
 
+const PERSE_STYLE_OPTIONS = [
+  { value: 'photorealistic', label: 'フォトリアル' },
+  { value: 'sketch', label: 'スケッチ風' },
+  { value: 'watercolor', label: '水彩画風' },
+  { value: 'modern', label: 'モダン' },
+  { value: 'japanese', label: '和風' },
+  { value: 'industrial', label: 'インダストリアル' },
+  { value: 'scandinavian', label: '北欧' },
+  { value: 'luxury', label: 'ラグジュアリー' },
+  { value: 'cafe', label: 'カフェ風' },
+  { value: 'minimal', label: 'ミニマル' },
+  { value: 'warm', label: '暖かみのある' },
+  { value: 'cool', label: 'クールモダン' },
+];
+
 type TabId = 'photo' | 'layout' | 'generate';
 
 interface AIAssistPanelProps {
@@ -655,23 +670,227 @@ function LayoutCard({ suggestion, index }: { suggestion: LayoutSuggestion; index
   );
 }
 
-// ── タブ3: AI画像生成（準備中） ────────────────────
+// ── タブ3: AIパースイメージ生成 ──────────────────────
+
+/** 3Dキャンバスからbase64スクリーンショットを取得 */
+function capture3DCanvasBase64(): { base64: string; mimeType: string } | null {
+  // R3Fのキャンバスを探す（preserveDrawingBuffer: true が必要）
+  const canvases = document.querySelectorAll('canvas');
+  let targetCanvas: HTMLCanvasElement | null = null;
+
+  for (const c of canvases) {
+    // R3Fキャンバスは通常WebGLコンテキストを持つ
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    if (gl) {
+      targetCanvas = c;
+      break;
+    }
+  }
+
+  if (!targetCanvas) return null;
+
+  try {
+    const dataUrl = targetCanvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+    if (!base64) return null;
+    return { base64, mimeType: 'image/png' };
+  } catch {
+    return null;
+  }
+}
 
 function ImageGenerationTab() {
+  const [style, setStyle] = useState('photorealistic');
+  const [additionalPrompt, setAdditionalPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<APIError | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<{
+    base64: string;
+    mimeType: string;
+    description: string;
+  } | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+
+  const captureAndGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    setGeneratedImage(null);
+
+    // 3Dキャンバスからスクリーンショットを取得
+    const captured = capture3DCanvasBase64();
+    if (!captured) {
+      setError({
+        message: '3Dビューのキャプチャに失敗しました。3Dビューが表示されていることを確認してください。',
+        code: 'CAPTURE_FAILED',
+      });
+      setLoading(false);
+      return;
+    }
+
+    setScreenshotPreview(`data:${captured.mimeType};base64,${captured.base64}`);
+
+    try {
+      const res = await fetch('/api/ai/generate-perse-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: captured.base64,
+          mimeType: captured.mimeType,
+          style,
+          additionalPrompt: additionalPrompt || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `サーバーエラー (${res.status})`);
+      }
+
+      const data = await res.json();
+      setGeneratedImage({
+        base64: data.imageBase64,
+        mimeType: data.imageMimeType,
+        description: data.description,
+      });
+    } catch (err) {
+      setError(parseAPIError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadImage = useCallback(() => {
+    if (!generatedImage) return;
+    const link = document.createElement('a');
+    link.href = `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
+    link.download = `perse-image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('パースイメージをダウンロードしました', 'success');
+  }, [generatedImage]);
+
   return (
-    <div className="p-4 flex flex-col items-center justify-center min-h-[300px] text-center">
-      <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-        </svg>
+    <div className="p-4 space-y-4">
+      {/* 説明 */}
+      <div className="bg-gray-800/40 rounded-lg p-3">
+        <p className="text-xs text-gray-400 leading-relaxed">
+          現在の3Dビューをキャプチャし、AIがフォトリアルな完成パースイメージを生成します。
+        </p>
       </div>
-      <h3 className="text-sm font-medium text-gray-300 mb-2">AIイメージ生成</h3>
-      <p className="text-xs text-gray-500 leading-relaxed max-w-[220px]">
-        Nano Banana (gemini-2.5-flash-image) による完成パースイメージの自動生成機能を準備中です。
-      </p>
-      <div className="mt-4 px-3 py-1.5 rounded-full bg-gray-800 text-[10px] text-gray-400">
-        準備中
+
+      {/* スタイル選択 */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">スタイル</label>
+        <select
+          value={style}
+          onChange={(e) => setStyle(e.target.value)}
+          disabled={loading}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+        >
+          {PERSE_STYLE_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
       </div>
+
+      {/* 追加指示 */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">追加指示（任意）</label>
+        <textarea
+          value={additionalPrompt}
+          onChange={(e) => setAdditionalPrompt(e.target.value)}
+          placeholder="例: 夕暮れ時の雰囲気で、観葉植物を多めに..."
+          rows={2}
+          disabled={loading}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none placeholder:text-gray-600 disabled:opacity-50"
+        />
+      </div>
+
+      {/* 生成ボタン */}
+      <button
+        onClick={captureAndGenerate}
+        disabled={loading}
+        className={
+          'w-full py-2.5 rounded-lg text-sm font-medium transition-all ' +
+          (!loading
+            ? 'bg-purple-600 hover:bg-purple-500 text-white'
+            : 'bg-gray-800 text-gray-500 cursor-not-allowed')
+        }
+      >
+        {loading ? <Spinner label="パースイメージを生成中..." /> : '3Dビューからパースイメージを生成'}
+      </button>
+
+      {/* ローディング中の進捗表示 */}
+      {loading && (
+        <div className="bg-gray-800/60 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
+            <p className="text-xs text-gray-400">AIが画像を生成しています...</p>
+          </div>
+          <p className="text-[10px] text-gray-500">
+            gemini-2.0-flash-exp で処理中（20〜50秒かかる場合があります）
+          </p>
+          {screenshotPreview && (
+            <div>
+              <p className="text-[10px] text-gray-500 mb-1">入力画像:</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={screenshotPreview}
+                alt="キャプチャされた3Dビュー"
+                className="w-full rounded-md border border-gray-700 opacity-60"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* エラー */}
+      {error && <ErrorBanner error={error} />}
+
+      {/* 生成結果 */}
+      {generatedImage && (
+        <div className="space-y-3 pt-2">
+          {/* 生成画像プレビュー */}
+          <div className="bg-gray-800/60 rounded-lg p-3 space-y-2">
+            <p className="text-xs text-gray-400 mb-1">生成されたパースイメージ</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`data:${generatedImage.mimeType};base64,${generatedImage.base64}`}
+              alt="生成されたパースイメージ"
+              className="w-full rounded-md border border-gray-700"
+            />
+          </div>
+
+          {/* 説明テキスト */}
+          {generatedImage.description && (
+            <div className="bg-gray-800/60 rounded-lg p-3">
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                {generatedImage.description}
+              </p>
+            </div>
+          )}
+
+          {/* ダウンロードボタン */}
+          <button
+            onClick={downloadImage}
+            className="w-full py-2 rounded-lg text-sm font-medium bg-green-600/80 hover:bg-green-600 text-white transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            ダウンロード
+          </button>
+
+          {/* 再生成ボタン */}
+          <button
+            onClick={captureAndGenerate}
+            className="w-full py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+          >
+            別のスタイルで再生成
+          </button>
+        </div>
+      )}
     </div>
   );
 }
