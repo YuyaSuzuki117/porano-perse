@@ -1472,6 +1472,11 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                     aria-selected={false}
                     aria-label={item.name}
                     onClick={() => handleAddFurniture(item.type)}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('application/x-furniture-type', item.type);
+                      e.dataTransfer.effectAllowed = 'copy';
+                    }}
                     className={`flex items-center gap-1 px-2 py-1.5 bg-gray-50 rounded hover:bg-blue-50 border border-gray-200 text-left text-xs transition-all duration-150 active:scale-95 hover:border-blue-300 hover:shadow-sm ${
                       isMobile ? 'flex-col gap-1 py-2.5 text-center min-h-[56px] justify-center' : ''
                     }`}

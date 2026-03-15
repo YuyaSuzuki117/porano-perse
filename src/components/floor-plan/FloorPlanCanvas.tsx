@@ -2545,6 +2545,50 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     }
   })();
 
+  // --- カタログからの家具ドラッグ&ドロップ受付 ---
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (e.dataTransfer.types.includes('application/x-furniture-type')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const handleDropFurniture = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const furnitureType = e.dataTransfer.getData('application/x-furniture-type');
+    if (!furnitureType) return;
+    e.preventDefault();
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // ドロップ位置をCanvas座標に変換
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const canvasX = (e.clientX - rect.left) * dpr;
+    const canvasY = (e.clientY - rect.top) * dpr;
+
+    // Canvas座標 → ワールド座標
+    const worldPt = screenToWorld(canvasX, canvasY);
+
+    // カタログから家具情報を取得
+    const catalogItem = FURNITURE_CATALOG.find(c => c.type === furnitureType);
+    if (!catalogItem) return;
+
+    const newItem: FurnitureItem = {
+      id: `${catalogItem.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      type: catalogItem.type,
+      name: catalogItem.name,
+      position: [worldPt.x, catalogItem.defaultScale[1] / 2, worldPt.y],
+      rotation: [0, 0, 0],
+      scale: [...catalogItem.defaultScale] as [number, number, number],
+      color: catalogItem.defaultColor,
+      material: catalogItem.defaultMaterial,
+      modelUrl: catalogItem.modelUrl,
+    };
+    addFurniture(newItem);
+    setSelectedFurniture(newItem.id);
+  }, [screenToWorld, addFurniture, setSelectedFurniture]);
+
   // クイック家具ピッカーのアイテム追加ハンドラ
   const handleQuickAddFurniture = useCallback((catalogItem: typeof FURNITURE_CATALOG[0], worldPos: Point2D) => {
     const newItem: FurnitureItem = {
@@ -2565,6 +2609,8 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     <div
       ref={containerRef}
       className="relative w-full h-full min-h-[400px] bg-[#FAFBFC]"
+      onDragOver={handleDragOver}
+      onDrop={handleDropFurniture}
     >
       <canvas
         ref={canvasRef}

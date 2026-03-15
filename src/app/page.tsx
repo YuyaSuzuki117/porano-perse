@@ -46,21 +46,6 @@ const FloorPlanEditor = dynamic(
   }
 );
 
-const PixelRoomEditor = dynamic(
-  () => import('@/components/pixel-editor/PixelRoomEditor'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 flex items-center justify-center bg-[#1a1a2e]">
-        <div className="text-center">
-          <div className="text-[#e94560] font-mono text-sm font-bold mb-2">LOADING...</div>
-          <div className="animate-pulse text-[#5a5a5a] font-mono text-xs">Pixel Editor</div>
-        </div>
-      </div>
-    ),
-  }
-);
-
 const SceneCanvas = dynamic(
   () =>
     import('@/components/three/SceneCanvas').then((mod) => mod.SceneCanvas),
@@ -185,7 +170,7 @@ export default function EditorPage() {
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [mobileTab, setMobileTab] = useState<'2d' | '3d' | 'settings'>('2d');
   const [fabOpen, setFabOpen] = useState(false);
-  const [showPixelEditor, setShowPixelEditor] = useState(false);
+
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [fullscreen3D, setFullscreen3D] = useState(false);
 
@@ -768,22 +753,8 @@ export default function EditorPage() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* メインビューポート */}
         <div className="flex-1 flex">
-          {/* Pixel editor (replaces 2D when active) */}
-          {showPixelEditor && viewMode !== '3d' && (
-            <div className="relative flex-1" aria-label="ドットエディタ">
-              <PixelRoomEditor />
-              {/* Toggle back to 2D */}
-              <button
-                onClick={() => setShowPixelEditor(false)}
-                className="absolute top-2 right-2 z-20 bg-[#16213e] text-[#e94560] text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-md border border-[#0f3460] hover:bg-[#2a2a50] transition-colors"
-                aria-label="2D図面に戻す"
-              >
-                2D図面に戻す
-              </button>
-            </div>
-          )}
           {/* 2D図面 */}
-          {!showPixelEditor && (viewMode === '2d' || viewMode === 'split') && (
+          {(viewMode === '2d' || viewMode === 'split') && (
             <div
               className={`relative bg-white ${
                 viewMode === 'split' ? 'w-1/2' : 'flex-1'
@@ -795,15 +766,6 @@ export default function EditorPage() {
               <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-[10px] text-gray-500 font-semibold tracking-wider uppercase px-2 py-1 rounded-md border border-gray-200 pointer-events-none">
                 2D 図面
               </div>
-              {/* Pixel editor toggle */}
-              <button
-                onClick={() => setShowPixelEditor(true)}
-                className="absolute top-2 right-2 z-20 bg-[#1a1a2e] text-[#e94560] text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-md border border-[#0f3460] hover:bg-[#2a2a50] hover:text-white transition-colors flex items-center gap-1"
-                aria-label="ドットエディタに切替"
-              >
-                <span>🎮</span>
-                <span>ドットエディタ</span>
-              </button>
             </div>
           )}
 
