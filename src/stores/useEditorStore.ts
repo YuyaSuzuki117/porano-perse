@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { WallSegment, Opening, EditorTool, Point2D, RoomLabel } from '@/types/floor-plan';
 import { FurnitureItem, FurnitureMaterial, StylePreset, Annotation } from '@/types/scene';
+import { WallFinishAssignment, RoomFinishAssignment, FittingSpec, EquipmentItem, RouteSegment } from '@/types/finishing';
 import { createRectRoom, createLShapeRoom, createUShapeRoom } from '@/lib/geometry';
 import { DEFAULT_TEMPLATE, getTemplateById } from '@/data/templates';
 import { getRoomTemplateById } from '@/data/room-templates';
@@ -476,6 +477,23 @@ interface EditorState {
   // Round 10: 煙パーティクル
   showSmoke: boolean;
   toggleSmoke: () => void;
+
+  // 仕上げ材・設備・配線
+  wallFinishAssignments: WallFinishAssignment[];
+  roomFinishAssignments: RoomFinishAssignment[];
+  fittingSpecs: FittingSpec[];
+  equipmentItems: EquipmentItem[];
+  routes: RouteSegment[];
+  setWallFinish: (wallId: string, finishMaterialId: string) => void;
+  setAllWallsFinish: (finishMaterialId: string) => void;
+  setRoomFloorFinish: (roomLabelId: string, finishId: string) => void;
+  setRoomCeilingFinish: (roomLabelId: string, finishId: string) => void;
+  addEquipment: (item: Omit<EquipmentItem, 'id'>) => void;
+  updateEquipment: (id: string, updates: Partial<EquipmentItem>) => void;
+  deleteEquipment: (id: string) => void;
+  addRoute: (route: Omit<RouteSegment, 'id'>) => void;
+  deleteRoute: (id: string) => void;
+  setFittingSpec: (openingId: string, spec: Partial<FittingSpec>) => void;
 }
 
 function takeSnapshot(s: { walls: WallSegment[]; openings: Opening[]; furniture: FurnitureItem[]; roomLabels?: RoomLabel[]; roomHeight?: number; style?: StylePreset }): HistorySnapshot {
@@ -1963,6 +1981,56 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   toggleElectrical: () => set((s) => ({ showElectrical: !s.showElectrical })),
   toggleHVAC: () => set((s) => ({ showHVAC: !s.showHVAC })),
   toggleSmoke: () => set((s) => ({ showSmoke: !s.showSmoke })),
+
+  // ─── 仕上げ材・設備・配線 ───────────────────────
+  wallFinishAssignments: [] as WallFinishAssignment[],
+  roomFinishAssignments: [] as RoomFinishAssignment[],
+  fittingSpecs: [] as FittingSpec[],
+  equipmentItems: [] as EquipmentItem[],
+  routes: [] as RouteSegment[],
+
+  setWallFinish: (wallId: string, finishMaterialId: string) => set((s) => ({
+    wallFinishAssignments: [...s.wallFinishAssignments.filter((a: WallFinishAssignment) => a.wallId !== wallId), { wallId, finishMaterialId }],
+  })),
+  setAllWallsFinish: (finishMaterialId: string) => set((s) => ({
+    wallFinishAssignments: s.walls.map((w: WallSegment) => ({ wallId: w.id, finishMaterialId })),
+  })),
+  setRoomFloorFinish: (roomLabelId: string, finishId: string) => set((s) => {
+    const existing = s.roomFinishAssignments.find((a: RoomFinishAssignment) => a.roomLabelId === roomLabelId);
+    if (existing) {
+      return { roomFinishAssignments: s.roomFinishAssignments.map((a: RoomFinishAssignment) => a.roomLabelId === roomLabelId ? { ...a, floorFinishId: finishId } : a) };
+    }
+    return { roomFinishAssignments: [...s.roomFinishAssignments, { roomLabelId, floorFinishId: finishId }] };
+  }),
+  setRoomCeilingFinish: (roomLabelId: string, finishId: string) => set((s) => {
+    const existing = s.roomFinishAssignments.find((a: RoomFinishAssignment) => a.roomLabelId === roomLabelId);
+    if (existing) {
+      return { roomFinishAssignments: s.roomFinishAssignments.map((a: RoomFinishAssignment) => a.roomLabelId === roomLabelId ? { ...a, ceilingFinishId: finishId } : a) };
+    }
+    return { roomFinishAssignments: [...s.roomFinishAssignments, { roomLabelId, ceilingFinishId: finishId }] };
+  }),
+  addEquipment: (item: Omit<EquipmentItem, 'id'>) => set((s) => ({
+    equipmentItems: [...s.equipmentItems, { ...item, id: `eq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` } as EquipmentItem],
+  })),
+  updateEquipment: (id: string, updates: Partial<EquipmentItem>) => set((s) => ({
+    equipmentItems: s.equipmentItems.map((e: EquipmentItem) => e.id === id ? { ...e, ...updates } : e),
+  })),
+  deleteEquipment: (id: string) => set((s) => ({
+    equipmentItems: s.equipmentItems.filter((e: EquipmentItem) => e.id !== id),
+  })),
+  addRoute: (route: Omit<RouteSegment, 'id'>) => set((s) => ({
+    routes: [...s.routes, { ...route, id: `rt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` } as RouteSegment],
+  })),
+  deleteRoute: (id: string) => set((s) => ({
+    routes: s.routes.filter((r: RouteSegment) => r.id !== id),
+  })),
+  setFittingSpec: (openingId: string, spec: Partial<FittingSpec>) => set((s) => {
+    const existing = s.fittingSpecs.find((f: FittingSpec) => f.openingId === openingId);
+    if (existing) {
+      return { fittingSpecs: s.fittingSpecs.map((f: FittingSpec) => f.openingId === openingId ? { ...f, ...spec } : f) };
+    }
+    return { fittingSpecs: [...s.fittingSpecs, { openingId, productName: 'ドア', material: 'wood' as const, unitPrice: 80000, quantity: 1, ...spec }] };
+  }),
 }));
 
 export { LOCALSTORAGE_KEY };

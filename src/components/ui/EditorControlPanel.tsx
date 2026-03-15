@@ -24,6 +24,7 @@ import { BatchEditPanel } from '@/components/ui/BatchEditPanel';
 import { TextureUploadPanel } from '@/components/ui/TextureUploadPanel';
 import { ColorHarmonyPanel } from '@/components/ui/ColorHarmonyPanel';
 import { RenderQualityPanel } from '@/components/ui/RenderQualityPanel';
+import { FinishEditorPanel } from '@/components/ui/FinishEditorPanel';
 
 interface EditorControlPanelProps {
   isMobile?: boolean;
@@ -362,6 +363,9 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
           </div>
         </div>
       )}
+
+      {/* 仕上げ材・設備 */}
+      <FinishEditorPanel />
 
       {/* フォトモード */}
       <div className="px-3 py-2 border-b border-gray-100">

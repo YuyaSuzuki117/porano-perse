@@ -175,3 +175,89 @@ export function costEstimateToCSV(estimate: CostEstimate): string {
 
   return lines.join('\n');
 }
+
+// ─── 仕上げ材・設備・配線のコスト計算 ────────────────────
+
+import { WallSegment, Opening } from '@/types/floor-plan';
+import {
+  WallFinishAssignment, RoomFinishAssignment, FittingSpec,
+  EquipmentItem, RouteSegment, FinishCostSection, FinishCostLineItem,
+} from '@/types/finishing';
+import { getFinishMaterial } from '@/data/finish-materials';
+import { ROUTE_TYPES } from '@/data/equipment-catalog';
+
+/** 壁面積計算 (壁長さ × 室高 - 開口部面積) */
+export function calcWallArea(wall: WallSegment, roomHeight: number, openings: Opening[]): number {
+  const dx = wall.end.x - wall.start.x;
+  const dy = wall.end.y - wall.start.y;
+  const wallLen = Math.sqrt(dx * dx + dy * dy);
+  const grossArea = wallLen * roomHeight;
+  const wallOpenings = openings.filter(o => o.wallId === wall.id);
+  const openingArea = wallOpenings.reduce((sum, o) => sum + o.width * o.height, 0);
+  return Math.max(0, grossArea - openingArea);
+}
+
+/** 仕上げ材コストセクション */
+export function calcFinishCosts(
+  walls: WallSegment[], openings: Opening[], roomHeight: number,
+  wallAssignments: WallFinishAssignment[], roomAssignments: RoomFinishAssignment[], floorArea: number,
+): FinishCostSection {
+  const items: FinishCostLineItem[] = [];
+  for (const assign of wallAssignments) {
+    const wall = walls.find(w => w.id === assign.wallId);
+    const mat = getFinishMaterial(assign.finishMaterialId);
+    if (!wall || !mat) continue;
+    const area = calcWallArea(wall, roomHeight, openings);
+    if (area > 0) {
+      items.push({ name: `壁: ${mat.name}`, quantity: Math.round(area * 10) / 10, unit: 'm²', unitPrice: mat.unitPrice, total: Math.round(area * mat.unitPrice) });
+    }
+  }
+  for (const assign of roomAssignments) {
+    if (assign.floorFinishId) {
+      const mat = getFinishMaterial(assign.floorFinishId);
+      if (mat) {
+        const area = assign.floorAreaOverride ?? floorArea;
+        items.push({ name: `床: ${mat.name}`, quantity: Math.round(area * 10) / 10, unit: 'm²', unitPrice: mat.unitPrice, total: Math.round(area * mat.unitPrice) });
+      }
+    }
+    if (assign.ceilingFinishId) {
+      const mat = getFinishMaterial(assign.ceilingFinishId);
+      if (mat) {
+        const area = assign.floorAreaOverride ?? floorArea;
+        items.push({ name: `天井: ${mat.name}`, quantity: Math.round(area * 10) / 10, unit: 'm²', unitPrice: mat.unitPrice, total: Math.round(area * mat.unitPrice) });
+      }
+    }
+  }
+  return { label: '仕上げ材', items, subtotal: items.reduce((s, i) => s + i.total, 0) };
+}
+
+/** 建具コストセクション */
+export function calcFittingCosts(fittings: FittingSpec[]): FinishCostSection {
+  const items: FinishCostLineItem[] = fittings.map(f => ({
+    name: f.productName, spec: f.material, quantity: f.quantity, unit: '枚', unitPrice: f.unitPrice, total: f.unitPrice * f.quantity,
+  }));
+  return { label: '建具', items, subtotal: items.reduce((s, i) => s + i.total, 0) };
+}
+
+/** 設備コストセクション */
+export function calcEquipmentCosts(equipment: EquipmentItem[]): FinishCostSection {
+  const items: FinishCostLineItem[] = equipment.map(e => ({
+    name: e.name, spec: e.spec, quantity: e.quantity, unit: '台', unitPrice: e.unitPrice, total: e.unitPrice * e.quantity,
+  }));
+  return { label: '設備', items, subtotal: items.reduce((s, i) => s + i.total, 0) };
+}
+
+/** 配線・配管コストセクション */
+export function calcRoutingCosts(routes: RouteSegment[]): FinishCostSection {
+  const items: FinishCostLineItem[] = routes.map(r => {
+    const rt = ROUTE_TYPES.find(t => t.type === r.type);
+    let len = 0;
+    for (let i = 1; i < r.points.length; i++) {
+      const dx = r.points[i][0] - r.points[i - 1][0];
+      const dy = r.points[i][1] - r.points[i - 1][1];
+      len += Math.sqrt(dx * dx + dy * dy);
+    }
+    return { name: rt?.name || r.type, quantity: Math.round(len * 10) / 10, unit: 'm', unitPrice: rt?.unitPrice || 3000, total: Math.round(len * (rt?.unitPrice || 3000)) };
+  });
+  return { label: '配線・配管', items, subtotal: items.reduce((s, i) => s + i.total, 0) };
+}
