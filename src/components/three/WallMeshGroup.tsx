@@ -351,8 +351,8 @@ function useWallTexture(
     if (!res.useNormalMap) {
       return null;
     }
-    // 壁ノーマルマップ: HIGH=1024, MEDIUM=512 (resのnormalとは独立)
-    const S = qualityLevel === 'high' ? 1024 : res.normal;
+    // 壁ノーマルマップ: HIGH=2048, MEDIUM=1024 (resのnormalとは独立)
+    const S = qualityLevel === 'high' ? 2048 : 1024;
     const cacheKey = `wall-normal-${styleName}-${S}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
@@ -383,8 +383,8 @@ function useWallTexture(
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
-        // 砂粒の凹凸（ノーマルマップ上のランダムなドット）
-        for (let i = 0; i < 400; i++) {
+        // 砂粒の凹凸（ノーマルマップ上のランダムなドット — 高解像度対応で密度増加）
+        for (let i = 0; i < 800; i++) {
           const px = Math.random() * S;
           const py = Math.random() * S;
           const r = 128 + (Math.random() - 0.5) * 25;
@@ -408,11 +408,12 @@ function useWallTexture(
       }
       case 'luxury': {
         // スエード風微細布目バンプ
-        // 細かいクロスハッチ
-        ctx.globalAlpha = 0.3;
+        // 細かいクロスハッチ（高解像度で間隔を密に）
+        ctx.globalAlpha = 0.35;
         ctx.strokeStyle = 'rgb(132, 132, 255)';
         ctx.lineWidth = 0.5;
-        for (let i = 0; i < S * 2; i += 5) {
+        const luxStep = Math.max(3, Math.round(5 * 512 / S));
+        for (let i = 0; i < S * 2; i += luxStep) {
           ctx.beginPath();
           ctx.moveTo(i - S, 0);
           ctx.lineTo(i, S);
@@ -423,8 +424,8 @@ function useWallTexture(
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
-        // 微細ノイズ
-        for (let i = 0; i < 200; i++) {
+        // 微細ノイズ（高解像度対応で密度増加）
+        for (let i = 0; i < 500; i++) {
           const px = Math.random() * S;
           const py = Math.random() * S;
           const r = 128 + (Math.random() - 0.5) * 8;
@@ -1044,7 +1045,7 @@ function WallMesh({ wall, openings, style, isNight, wallColorOverride, wallTextu
           ref={materialRef}
           map={wallTexture}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.8, 0.8) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(1.1, 1.1) : undefined}
           roughnessMap={wallRoughnessMap}
           roughness={1.0}
           metalness={metalness}

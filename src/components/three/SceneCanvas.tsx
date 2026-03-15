@@ -218,10 +218,10 @@ export function SceneCanvas({
   const handleCanvasCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     // 暖色スタイルは若干露出を上げて明るく温かみのある印象に
-    const warmBoost = isWarmStyle ? 0.1 : 0;
+    const warmBoost = isWarmStyle ? 0.12 : 0.03;
     gl.toneMappingExposure = isNight
-      ? 0.8 + lightBrightness / 400
-      : 1.3 + lightBrightness / 200 + warmBoost;
+      ? 0.85 + lightBrightness / 400
+      : 1.35 + lightBrightness / 200 + warmBoost;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.localClippingEnabled = true;
     // lowモード: シャドウ完全無効 + ピクセル比1.0制限
@@ -281,7 +281,7 @@ export function SceneCanvas({
         <LightingRig style={styleConfig} walls={walls} roomHeight={roomHeight} brightness={effectiveBrightness} warmth={effectiveWarmth} qualityLevel={qualityLevel} />
         <EnvironmentPresets
           preset={isNight ? 'night' : (environmentPreset as 'studio' | 'indoor' | 'outdoor' | 'sunset' | 'warehouse' | 'night')}
-          intensity={qualityLevel === 'high' ? 2.0 : qualityLevel === 'medium' ? 1.2 : 0.8}
+          intensity={qualityLevel === 'high' ? 2.5 : qualityLevel === 'medium' ? 1.5 : 0.8}
           showBackground={false}
         />
 

@@ -7,6 +7,7 @@ import { KeyboardShortcuts } from '@/components/ui/KeyboardShortcuts';
 import { ProjectListModal } from '@/components/ui/ProjectListModal';
 import { QRCodeModal } from '@/components/ui/QRCodeModal';
 import { showToast } from '@/components/ui/Toast';
+import { AuthButton } from '@/components/ui/AuthButton';
 
 interface HeaderProps {
   onScreenshot?: (scale?: number) => void;
@@ -321,8 +322,10 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
         className="hidden"
       />
 
-      {/* Undo/Redo + Zoom + Screenshot（デスクトップのみ） */}
+      {/* Auth + Undo/Redo + Zoom + Screenshot（デスクトップのみ） */}
       <div className="hidden md:flex ml-auto items-center gap-1 relative">
+        <AuthButton />
+        <div className="w-px h-5 bg-gray-200 mx-0.5" />
         <KeyboardShortcuts />
         <div className="w-px h-5 bg-gray-200 mx-0.5" />
         <button

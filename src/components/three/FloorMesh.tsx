@@ -110,8 +110,8 @@ function useFloorTexture(
     if (!res.useNormalMap) {
       return null;
     }
-    // 品質連動ノーマルマップ解像度: HIGH=1024, MEDIUM=512
-    const normalSize = qualityLevel === 'high' ? 1024 : 512;
+    // 品質連動ノーマルマップ解像度: HIGH=2048, MEDIUM=1024
+    const normalSize = qualityLevel === 'high' ? 2048 : 1024;
     const cacheKey = `floor-normal-${effectiveTextureType}-${normalSize}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
@@ -171,8 +171,8 @@ function useFloorTexture(
   }, [effectiveTextureType, roundedW, roundedD, res.useNormalMap, qualityLevel]);
 
   const roughnessMap = useMemo(() => {
-    // 品質連動ラフネスマップ解像度: HIGH=512, MEDIUM=256
-    const roughSize = qualityLevel === 'high' ? 512 : 256;
+    // 品質連動ラフネスマップ解像度: HIGH=1024, MEDIUM=512
+    const roughSize = qualityLevel === 'high' ? 1024 : 512;
     const cacheKey = `floor-roughness-${effectiveTextureType}-${roughSize}`;
     const baseTex = getCachedTexture(cacheKey, () => {
     const canvas = document.createElement('canvas');
@@ -377,7 +377,7 @@ export const FloorMesh = React.memo(function FloorMesh({ walls, style }: FloorMe
         <meshPhysicalMaterial
           map={map}
           normalMap={normalMap ?? undefined}
-          normalScale={normalMap ? new THREE.Vector2(0.85, 0.85) : undefined}
+          normalScale={normalMap ? new THREE.Vector2(1.2, 1.2) : undefined}
           roughnessMap={roughnessMap}
           roughness={roughness}
           metalness={metalness}

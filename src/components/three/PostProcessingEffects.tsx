@@ -61,12 +61,12 @@ function PostProcessingEffects({
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
           samples={192}
-          radius={ssaoRadius}
-          intensity={ssaoIntensity}
-          luminanceInfluence={0.7}
-          bias={0.0003}
-          worldDistanceThreshold={1.5}
-          worldProximityThreshold={0.7}
+          radius={ssaoRadius * 0.7}
+          intensity={ssaoIntensity * 1.15}
+          luminanceInfluence={0.65}
+          bias={0.0002}
+          worldDistanceThreshold={1.2}
+          worldProximityThreshold={0.5}
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
@@ -96,23 +96,23 @@ function PostProcessingEffects({
         <SSAO
           blendFunction={BlendFunction.MULTIPLY}
           samples={192}
-          radius={ssaoRadius}
-          intensity={ssaoIntensity}
-          luminanceInfluence={0.7}
-          bias={0.0003}
-          worldDistanceThreshold={1.5}
-          worldProximityThreshold={0.7}
+          radius={ssaoRadius * 0.7}
+          intensity={ssaoIntensity * 1.15}
+          luminanceInfluence={0.65}
+          bias={0.0002}
+          worldDistanceThreshold={1.2}
+          worldProximityThreshold={0.5}
         />
         <Bloom
           luminanceThreshold={bloomLuminanceThreshold}
-          luminanceSmoothing={0.2}
-          intensity={bloomIntensity * 1.2}
+          luminanceSmoothing={0.15}
+          intensity={bloomIntensity * 1.3}
           mipmapBlur
         />
-        <BrightnessContrast brightness={0.06} contrast={0.18} />
-        <HueSaturation hue={0.03} saturation={0.12} />
+        <BrightnessContrast brightness={0.04} contrast={0.15} />
+        <HueSaturation hue={0.02} saturation={0.1} />
         <ChromaticAberration offset={chromaticOffsetHigh} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.025} />
         <Vignette eskil={false} offset={0.15} darkness={vignetteIntensity * 1.15 * 1.2} blendFunction={BlendFunction.NORMAL} />
         <SMAA />
       </EffectComposer>
@@ -125,20 +125,21 @@ function PostProcessingEffects({
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
         samples={64}
-        radius={ssaoRadius}
-        intensity={ssaoIntensity * 0.9}
+        radius={ssaoRadius * 0.75}
+        intensity={ssaoIntensity * 1.0}
         luminanceInfluence={0.6}
-        bias={0.0008}
+        bias={0.0005}
       />
       <Bloom
-        luminanceThreshold={bloomLuminanceThreshold + 0.08}
-        luminanceSmoothing={0.4}
-        intensity={bloomIntensity * 0.7}
+        luminanceThreshold={bloomLuminanceThreshold}
+        luminanceSmoothing={0.3}
+        intensity={bloomIntensity * 0.85}
+        mipmapBlur
       />
       <BrightnessContrast brightness={0.025} contrast={0.1} />
-      <HueSaturation saturation={0.07} />
+      <HueSaturation hue={0.01} saturation={0.07} />
       <ChromaticAberration offset={chromaticOffsetMedium} />
-      <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.035} />
+      <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.03} />
       <Vignette eskil={false} offset={0.12} darkness={vignetteIntensity * 0.7} blendFunction={BlendFunction.NORMAL} />
       <SMAA />
     </EffectComposer>

@@ -146,6 +146,8 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
   const updateFurniture = useEditorStore((s) => s.updateFurniture);
   const addFurniture = useEditorStore((s) => s.addFurniture);
   const roomLabels = useEditorStore((s) => s.roomLabels);
+  const equipmentItems = useEditorStore((s) => s.equipmentItems);
+  const routes = useEditorStore((s) => s.routes);
 
   // ビュー状態
   const [view, setView] = useState<ViewState>({
@@ -685,6 +687,57 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     // 面積ラベル描画
     drawAreaLabels(ctx);
 
+    // 配線・配管ルート描画
+    const ROUTE_COLORS: Record<string, string> = { electrical: '#E04040', plumbing_water: '#4080E0', plumbing_drain: '#40A040', gas: '#E0A020', lan: '#8040C0' };
+    for (const route of routes) {
+      if (route.points.length < 2) continue;
+      ctx.beginPath();
+      const rp0 = worldToScreen({ x: route.points[0][0], y: route.points[0][1] });
+      ctx.moveTo(rp0.x, rp0.y);
+      for (let ri = 1; ri < route.points.length; ri++) {
+        const rp = worldToScreen({ x: route.points[ri][0], y: route.points[ri][1] });
+        ctx.lineTo(rp.x, rp.y);
+      }
+      ctx.strokeStyle = ROUTE_COLORS[route.type] || '#888';
+      ctx.lineWidth = route.isConcealed ? 1.5 : 2.5;
+      if (route.isConcealed) ctx.setLineDash([6, 4]);
+      else ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      for (const pt of route.points) {
+        const ps = worldToScreen({ x: pt[0], y: pt[1] });
+        ctx.beginPath();
+        ctx.arc(ps.x, ps.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = ROUTE_COLORS[route.type] || '#888';
+        ctx.fill();
+      }
+    }
+
+    // 設備アイコン描画
+    const EQ_ICONS: Record<string, { color: string; symbol: string }> = {
+      air_conditioner: { color: '#4488FF', symbol: '❄' }, outlet: { color: '#FF8844', symbol: '⊞' },
+      switch: { color: '#FF8844', symbol: '□' }, lighting_downlight: { color: '#FFCC00', symbol: '◉' },
+      lighting_ceiling: { color: '#FFCC00', symbol: '☀' }, fire_alarm: { color: '#FF4444', symbol: '▲' },
+      exhaust_fan: { color: '#88CCFF', symbol: '◎' }, lan_port: { color: '#8844CC', symbol: '⊡' },
+      intercom: { color: '#44AA44', symbol: '☎' },
+    };
+    for (const eq of equipmentItems) {
+      const eqs = worldToScreen({ x: eq.position[0], y: eq.position[1] });
+      const eqIcon = EQ_ICONS[eq.type] || { color: '#888', symbol: '?' };
+      ctx.beginPath();
+      ctx.arc(eqs.x, eqs.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = eqIcon.color + '30';
+      ctx.fill();
+      ctx.strokeStyle = eqIcon.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = eqIcon.color;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(eqIcon.symbol, eqs.x, eqs.y);
+    }
+
     // マウスから最近壁/角への距離表示
     drawNearestDistance(ctx);
 
@@ -776,6 +829,8 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
     measurements,
     measuringStart,
     roomLabels,
+    equipmentItems,
+    routes,
     wallSnapLines,
     resizingFurnitureId,
     resizeDimLabel,
