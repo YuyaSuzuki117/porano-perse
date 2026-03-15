@@ -8,7 +8,14 @@ import {
   formatJPY,
   FURNITURE_PRICES,
   CostEstimate,
+  calcFinishCosts,
+  calcFittingCosts,
+  calcEquipmentCosts,
+  calcRoutingCosts,
 } from '@/lib/cost-estimate';
+import { useEditorStore } from '@/stores/useEditorStore';
+import { FinishCostSection } from '@/types/finishing';
+import { computeFloorArea } from '@/lib/geometry';
 
 // --- 型定義 ---
 
@@ -193,21 +200,11 @@ export default function CostEstimatePanel({ furniture, onClose }: CostEstimatePa
         </table>
       </div>
 
+      {/* 仕上げ材・設備コストセクション */}
+      <FinishCostSections />
+
       {/* フッター（合計） */}
-      <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
-        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>小計</span>
-          <span>{estimate.formatted.subtotal}</span>
-        </div>
-        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>消費税({(estimate.taxRate * 100).toFixed(0)}%)</span>
-          <span>{estimate.formatted.taxAmount}</span>
-        </div>
-        <div className="flex justify-between text-base font-bold text-gray-800 dark:text-gray-200 pt-1 border-t border-gray-200 dark:border-gray-600">
-          <span>合計</span>
-          <span className="text-blue-600 dark:text-blue-400">{estimate.formatted.total}</span>
-        </div>
-      </div>
+      <FinishGrandTotal furnitureTotal={estimate.subtotal} taxRate={estimate.taxRate} formattedEstimate={estimate.formatted} />
     </div>
   );
 }
@@ -280,5 +277,125 @@ function CostRow({ item, isOverridden, onPriceChange, onPriceReset }: CostRowPro
         {formatJPY(item.subtotal)}
       </td>
     </tr>
+  );
+}
+
+/** 仕上げ材・設備・配線コストセクション */
+function FinishCostSections() {
+  const walls = useEditorStore(s => s.walls);
+  const openings = useEditorStore(s => s.openings);
+  const roomHeight = useEditorStore(s => s.roomHeight);
+  const wallAssignments = useEditorStore(s => s.wallFinishAssignments);
+  const roomAssignments = useEditorStore(s => s.roomFinishAssignments);
+  const fittingSpecs = useEditorStore(s => s.fittingSpecs);
+  const equipmentItems = useEditorStore(s => s.equipmentItems);
+  const routes = useEditorStore(s => s.routes);
+
+  const floorArea = useMemo(() => {
+    if (walls.length < 3) return 0;
+    return computeFloorArea(walls);
+  }, [walls]);
+
+  const sections = useMemo(() => {
+    const s: FinishCostSection[] = [];
+    const finish = calcFinishCosts(walls, openings, roomHeight, wallAssignments, roomAssignments, floorArea);
+    if (finish.items.length > 0) s.push(finish);
+    const fitting = calcFittingCosts(fittingSpecs);
+    if (fitting.items.length > 0) s.push(fitting);
+    const equip = calcEquipmentCosts(equipmentItems);
+    if (equip.items.length > 0) s.push(equip);
+    const route = calcRoutingCosts(routes);
+    if (route.items.length > 0) s.push(route);
+    return s;
+  }, [walls, openings, roomHeight, wallAssignments, roomAssignments, fittingSpecs, equipmentItems, routes, floorArea]);
+
+  if (sections.length === 0) return null;
+
+  return (
+    <div className="border-t border-gray-200 dark:border-gray-700">
+      {sections.map(section => (
+        <FinishSectionBlock key={section.label} section={section} />
+      ))}
+    </div>
+  );
+}
+
+function FinishSectionBlock({ section }: { section: FinishCostSection }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="border-b border-gray-100 dark:border-gray-700">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-750 hover:bg-gray-100 transition-colors text-xs"
+      >
+        <span className="font-semibold text-gray-700 dark:text-gray-300">{section.label}</span>
+        <span className="text-gray-500">{formatJPY(section.subtotal)} {open ? '▼' : '▶'}</span>
+      </button>
+      {open && (
+        <table className="w-full text-xs">
+          <tbody>
+            {section.items.map((item, i) => (
+              <tr key={i} className="border-b border-gray-50 dark:border-gray-700/30">
+                <td className="px-4 py-1.5 text-gray-600 dark:text-gray-400">{item.name}</td>
+                <td className="px-2 py-1.5 text-right text-gray-500 w-16">{item.quantity}{item.unit}</td>
+                <td className="px-2 py-1.5 text-right text-gray-500 w-20">@{formatJPY(item.unitPrice)}</td>
+                <td className="px-4 py-1.5 text-right font-medium text-gray-700 dark:text-gray-300 w-24">{formatJPY(item.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function FinishGrandTotal({ furnitureTotal, taxRate, formattedEstimate }: { furnitureTotal: number; taxRate: number; formattedEstimate: { subtotal: string; taxAmount: string; total: string } }) {
+  const walls = useEditorStore(s => s.walls);
+  const openings = useEditorStore(s => s.openings);
+  const roomHeight = useEditorStore(s => s.roomHeight);
+  const wallAssignments = useEditorStore(s => s.wallFinishAssignments);
+  const roomAssignments = useEditorStore(s => s.roomFinishAssignments);
+  const fittingSpecs = useEditorStore(s => s.fittingSpecs);
+  const equipmentItems = useEditorStore(s => s.equipmentItems);
+  const routes = useEditorStore(s => s.routes);
+
+  const floorArea = useMemo(() => walls.length < 3 ? 0 : computeFloorArea(walls), [walls]);
+
+  const extraTotal = useMemo(() => {
+    let t = 0;
+    t += calcFinishCosts(walls, openings, roomHeight, wallAssignments, roomAssignments, floorArea).subtotal;
+    t += calcFittingCosts(fittingSpecs).subtotal;
+    t += calcEquipmentCosts(equipmentItems).subtotal;
+    t += calcRoutingCosts(routes).subtotal;
+    return t;
+  }, [walls, openings, roomHeight, wallAssignments, roomAssignments, fittingSpecs, equipmentItems, routes, floorArea]);
+
+  const grandSubtotal = furnitureTotal + extraTotal;
+  const grandTax = Math.round(grandSubtotal * taxRate);
+  const grandTotal = grandSubtotal + grandTax;
+
+  return (
+    <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
+      {extraTotal > 0 && (
+        <>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>家具</span><span>{formatJPY(furnitureTotal)}</span>
+          </div>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>仕上げ・設備・配線</span><span>{formatJPY(extraTotal)}</span>
+          </div>
+        </>
+      )}
+      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+        <span>小計</span><span>{extraTotal > 0 ? formatJPY(grandSubtotal) : formattedEstimate.subtotal}</span>
+      </div>
+      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+        <span>消費税({(taxRate * 100).toFixed(0)}%)</span><span>{extraTotal > 0 ? formatJPY(grandTax) : formattedEstimate.taxAmount}</span>
+      </div>
+      <div className="flex justify-between text-base font-bold text-gray-800 dark:text-gray-200 pt-1 border-t border-gray-200 dark:border-gray-600">
+        <span>合計</span>
+        <span className="text-blue-600 dark:text-blue-400">{extraTotal > 0 ? formatJPY(grandTotal) : formattedEstimate.total}</span>
+      </div>
+    </div>
   );
 }
