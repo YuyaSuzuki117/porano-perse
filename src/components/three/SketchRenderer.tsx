@@ -531,8 +531,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // ── 背景: 完全に暗い紺色で上書き（inputColorを無視） ──
     // PostProcessingのバックバッファに元の背景色が残るため、
     // outputColorで完全に上書きしなければ紺色にならない
-    vec3 bgTop = vec3(0.015, 0.03, 0.08);   // ほぼ黒
-    vec3 bgBot = vec3(0.03, 0.06, 0.14);    // 暗い紺
+    vec3 bgTop = vec3(0.005, 0.012, 0.035);  // 極暗紺（トーンマッピング後の持ち上げを見越して極端に暗く）
+    vec3 bgBot = vec3(0.012, 0.028, 0.065); // 暗い紺
     vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.7 + 0.15);
     float bgNoise = noise2d(uv * resolution * 0.03) * 0.01;
     bgColor += vec3(bgNoise * 0.1, bgNoise * 0.2, bgNoise * 0.4);
@@ -559,7 +559,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     float minorGrid = max(gridFineH, gridFineV) * 0.08;
 
     float grid = max(majorGrid, minorGrid);
-    vec3 gridColor = vec3(0.15, 0.35, 0.55);
+    vec3 gridColor = vec3(0.08, 0.20, 0.38);
 
     // ── 線の色: 白～シアン ──
     vec3 lineColor = vec3(0.88, 0.94, 1.0); // #e0f0ff
