@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { shaderMaterial } from '@react-three/drei';
 import { extend, useFrame } from '@react-three/fiber';
+import { perlin2d } from '@/lib/perlin-noise-texture';
 
 /* ─── 型定義 ─── */
 
@@ -27,24 +28,64 @@ function generateBaseTexture(type: ParallaxTextureType, size: number): HTMLCanva
 
   switch (type) {
     case 'brick': {
-      ctx.fillStyle = 'rgb(180,90,60)';
+      // モルタル背景
+      ctx.fillStyle = 'rgb(160,155,140)';
       ctx.fillRect(0, 0, size, size);
       const brickW = size / 4;
       const brickH = size / 8;
-      const mortarW = size * 0.01;
+      const mortarW = size * 0.012;
+      // レンガベースカラーパレット（自然な色バリエーション）
+      const brickColors: [number, number, number][] = [
+        [180, 90, 60], [170, 80, 50], [190, 95, 65], [165, 85, 55],
+        [185, 88, 58], [175, 92, 62], [160, 78, 48], [195, 100, 70],
+      ];
+      let brickIdx = 0;
       for (let row = 0; row < 8; row++) {
         const offset = row % 2 === 0 ? 0 : brickW / 2;
         for (let col = -1; col < 5; col++) {
-          const x = col * brickW + offset;
-          const y = row * brickH;
-          // モルタル溝
-          ctx.fillStyle = 'rgb(160,155,140)';
-          ctx.fillRect(x - mortarW, y, mortarW * 2, brickH);
-          ctx.fillRect(x, y - mortarW, brickW, mortarW * 2);
-          // レンガ面
-          const rv = Math.floor(Math.random() * 20 - 10);
-          ctx.fillStyle = `rgb(${175 + rv},${85 + rv},${55 + rv})`;
-          ctx.fillRect(x + mortarW, y + mortarW, brickW - mortarW * 2, brickH - mortarW * 2);
+          const bx = col * brickW + offset;
+          const by = row * brickH;
+          brickIdx++;
+          // レンガごとに異なるベースカラーを選択
+          const baseCol = brickColors[brickIdx % brickColors.length];
+
+          // レンガ面にPerlinノイズベースのテクスチャを適用
+          const innerX = Math.max(0, Math.round(bx + mortarW));
+          const innerY = Math.max(0, Math.round(by + mortarW));
+          const innerW = Math.min(Math.round(brickW - mortarW * 2), size - innerX);
+          const innerH = Math.min(Math.round(brickH - mortarW * 2), size - innerY);
+          if (innerW <= 0 || innerH <= 0) continue;
+
+          const brickImageData = ctx.createImageData(innerW, innerH);
+          const bd = brickImageData.data;
+          for (let py = 0; py < innerH; py++) {
+            for (let px = 0; px < innerW; px++) {
+              // Perlinノイズで自然な色ムラと表面のザラつきを生成
+              const nx = (px + brickIdx * 50) / 40;
+              const ny = (py + brickIdx * 37) / 40;
+              const surfaceNoise = perlin2d(nx, ny) * 12;
+              const grainNoise = perlin2d(nx * 5, ny * 5) * 4;
+              const combined = surfaceNoise + grainNoise * 0.4;
+
+              const idx = (py * innerW + px) * 4;
+              bd[idx]     = Math.max(0, Math.min(255, Math.round(baseCol[0] + combined)));
+              bd[idx + 1] = Math.max(0, Math.min(255, Math.round(baseCol[1] + combined * 0.6)));
+              bd[idx + 2] = Math.max(0, Math.min(255, Math.round(baseCol[2] + combined * 0.4)));
+              bd[idx + 3] = 255;
+            }
+          }
+          ctx.putImageData(brickImageData, innerX, innerY);
+
+          // エッジの経年変化（角が丸くなった感じ）
+          ctx.globalAlpha = 0.15;
+          const edgeGrad = ctx.createLinearGradient(innerX, innerY, innerX, innerY + innerH);
+          edgeGrad.addColorStop(0, 'rgba(0,0,0,0.1)');
+          edgeGrad.addColorStop(0.15, 'transparent');
+          edgeGrad.addColorStop(0.85, 'transparent');
+          edgeGrad.addColorStop(1, 'rgba(0,0,0,0.08)');
+          ctx.fillStyle = edgeGrad;
+          ctx.fillRect(innerX, innerY, innerW, innerH);
+          ctx.globalAlpha = 1;
         }
       }
       break;

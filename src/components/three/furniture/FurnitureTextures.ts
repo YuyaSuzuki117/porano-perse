@@ -16,87 +16,166 @@ const WOOD_BASE_COLORS: Record<WoodType, { base: [number, number, number]; shade
 };
 
 /** 木目テクスチャキャッシュ */
-const woodTextureCache = new Map<string, THREE.CanvasTexture>();
+const woodTextureCache = new Map<string, { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture }>();
 
-/** 木目プロシージャルテクスチャ生成 */
+/** 木目プロシージャルテクスチャ生成（ノーマルマップ付き） */
 export function generateWoodTexture(width: number, height: number, woodType: WoodType): THREE.CanvasTexture {
+  const result = generateWoodTextureWithNormal(width, height, woodType);
+  return result.map;
+}
+
+/** 木目テクスチャ + ノーマルマップを取得 */
+export function generateWoodTextureWithNormal(width: number, height: number, woodType: WoodType): { map: THREE.CanvasTexture; normalMap: THREE.CanvasTexture } {
   const key = `wood-${woodType}-${width}-${height}`;
   const cached = woodTextureCache.get(key);
   if (cached) return cached;
 
+  // テクスチャ解像度を512以上に引き上げ（上限1024）
+  const texW = Math.max(512, Math.min(1024, width));
+  const texH = Math.max(512, Math.min(1024, height));
+
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = texW;
+  canvas.height = texH;
   const ctx = canvas.getContext('2d')!;
+
+  const normalCanvas = document.createElement('canvas');
+  normalCanvas.width = texW;
+  normalCanvas.height = texH;
+  const nCtx = normalCanvas.getContext('2d')!;
+  nCtx.fillStyle = 'rgb(128,128,255)';
+  nCtx.fillRect(0, 0, texW, texH);
 
   const colors = WOOD_BASE_COLORS[woodType];
   const [br, bg, bb] = colors.base;
 
   // ベースカラー塗りつぶし
   ctx.fillStyle = `rgb(${br},${bg},${bb})`;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillRect(0, 0, texW, texH);
 
-  // 木目ライン（縦方向の平行線 + sin波の揺れ）
-  const lineCount = Math.floor(width / 4);
+  // 木目ライン（縦方向の平行線 + sin波の揺れ + 第2高調波）
+  const lineCount = Math.floor(texW / 3);
   for (let i = 0; i < lineCount; i++) {
     const shade = colors.shades[i % colors.shades.length];
-    const alpha = 0.15 + Math.random() * 0.25;
+    const alpha = 0.12 + Math.random() * 0.28;
     ctx.strokeStyle = `rgba(${shade[0]},${shade[1]},${shade[2]},${alpha})`;
-    ctx.lineWidth = 0.5 + Math.random() * 1.5;
+    ctx.lineWidth = 0.4 + Math.random() * 1.8;
     ctx.beginPath();
-    const baseX = (i / lineCount) * width;
-    const amplitude = 2 + Math.random() * 1;
-    const period = 40 + Math.random() * 20;
+    const baseX = (i / lineCount) * texW;
+    const amplitude = 1.5 + Math.random() * 2.5;
+    const period = 35 + Math.random() * 25;
     const phase = Math.random() * Math.PI * 2;
-    for (let y = 0; y < height; y += 2) {
-      const x = baseX + Math.sin((y / period) * Math.PI * 2 + phase) * amplitude;
+    const phase2 = Math.random() * Math.PI * 2;
+    for (let y = 0; y < texH; y += 2) {
+      const wave1 = Math.sin((y / period) * Math.PI * 2 + phase) * amplitude;
+      const wave2 = Math.sin((y / period) * Math.PI * 4.3 + phase2) * amplitude * 0.3;
+      const x = baseX + wave1 + wave2;
       if (y === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
+
+    // ノーマルマップにも木目の凹凸を反映
+    const nAlpha = alpha * 0.6;
+    const nShift = (i % 2 === 0) ? 138 : 118;
+    nCtx.strokeStyle = `rgba(${nShift},128,255,${nAlpha})`;
+    nCtx.lineWidth = ctx.lineWidth * 1.5;
+    nCtx.beginPath();
+    for (let y = 0; y < texH; y += 2) {
+      const wave1 = Math.sin((y / period) * Math.PI * 2 + phase) * amplitude;
+      const wave2 = Math.sin((y / period) * Math.PI * 4.3 + phase2) * amplitude * 0.3;
+      const x = baseX + wave1 + wave2;
+      if (y === 0) nCtx.moveTo(x, y);
+      else nCtx.lineTo(x, y);
+    }
+    nCtx.stroke();
   }
 
-  // 年輪ノット（1-2個）
-  const knotCount = 1 + Math.floor(Math.random() * 2);
+  // 年輪ノット（2-4個、サイズ増大、年輪パターン強化）
+  const knotCount = 2 + Math.floor(Math.random() * 3);
   for (let k = 0; k < knotCount; k++) {
-    const kx = Math.random() * width;
-    const ky = Math.random() * height;
-    const kRadius = 5 + Math.random() * 3;
-    const grad = ctx.createRadialGradient(kx, ky, 0, kx, ky, kRadius);
+    const kx = Math.random() * texW;
+    const ky = Math.random() * texH;
+    const kRadius = 6 + Math.random() * 8;
     const darkShade = colors.shades[0];
-    grad.addColorStop(0, `rgba(${darkShade[0] - 30},${darkShade[1] - 30},${darkShade[2] - 20},0.6)`);
-    grad.addColorStop(0.5, `rgba(${darkShade[0] - 15},${darkShade[1] - 15},${darkShade[2] - 10},0.3)`);
+
+    // ノット中心部
+    const grad = ctx.createRadialGradient(kx, ky, 0, kx, ky, kRadius);
+    grad.addColorStop(0, `rgba(${Math.max(0, darkShade[0] - 40)},${Math.max(0, darkShade[1] - 40)},${Math.max(0, darkShade[2] - 30)},0.7)`);
+    grad.addColorStop(0.4, `rgba(${Math.max(0, darkShade[0] - 20)},${Math.max(0, darkShade[1] - 20)},${Math.max(0, darkShade[2] - 15)},0.5)`);
     grad.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
     ctx.fillStyle = grad;
-    ctx.fillRect(kx - kRadius, ky - kRadius, kRadius * 2, kRadius * 2);
+    ctx.beginPath();
+    ctx.arc(kx, ky, kRadius, 0, Math.PI * 2);
+    ctx.fill();
 
-    // ノット周辺の同心年輪
-    for (let ring = 1; ring <= 3; ring++) {
-      ctx.strokeStyle = `rgba(${darkShade[0]},${darkShade[1]},${darkShade[2]},${0.15 / ring})`;
-      ctx.lineWidth = 0.5;
+    // ノーマルマップ上のノットの凹み
+    const nGrad = nCtx.createRadialGradient(kx, ky, 0, kx, ky, kRadius);
+    nGrad.addColorStop(0, 'rgba(110,110,255,0.5)');
+    nGrad.addColorStop(1, 'rgba(128,128,255,0)');
+    nCtx.fillStyle = nGrad;
+    nCtx.beginPath();
+    nCtx.arc(kx, ky, kRadius, 0, Math.PI * 2);
+    nCtx.fill();
+
+    // ノット周辺の同心年輪（揺らぎ付き楕円）
+    const ringCount = 4 + Math.floor(Math.random() * 4);
+    for (let ring = 1; ring <= ringCount; ring++) {
+      const ringAlpha = 0.18 / (ring * 0.7);
+      ctx.strokeStyle = `rgba(${darkShade[0]},${darkShade[1]},${darkShade[2]},${ringAlpha})`;
+      ctx.lineWidth = 0.4 + Math.random() * 0.4;
       ctx.beginPath();
-      ctx.arc(kx, ky, kRadius + ring * 2, 0, Math.PI * 2);
+      const rx = kRadius + ring * (1.8 + Math.random() * 1.5);
+      const ry = rx * (0.75 + Math.random() * 0.25);
+      const rotation = Math.random() * 0.4;
+      ctx.ellipse(kx, ky, rx, ry, rotation, 0, Math.PI * 2);
       ctx.stroke();
+
+      // ノーマルマップにも年輪リング
+      nCtx.strokeStyle = `rgba(${ring % 2 === 0 ? 140 : 116},128,255,${ringAlpha * 1.5})`;
+      nCtx.lineWidth = 1.2;
+      nCtx.beginPath();
+      nCtx.ellipse(kx, ky, rx, ry, rotation, 0, Math.PI * 2);
+      nCtx.stroke();
     }
   }
 
-  // クロスグレイン（端材のように横方向の細い線を少し加える）
-  const crossCount = 3 + Math.floor(Math.random() * 4);
+  // クロスグレイン（端材のように横方向の細い線 — ベジエ曲線で自然に）
+  const crossCount = 4 + Math.floor(Math.random() * 5);
   for (let c = 0; c < crossCount; c++) {
-    const cy = Math.random() * height;
-    ctx.strokeStyle = `rgba(${colors.shades[1][0]},${colors.shades[1][1]},${colors.shades[1][2]},0.08)`;
-    ctx.lineWidth = 0.5;
+    const cy = Math.random() * texH;
+    const shade = colors.shades[1];
+    ctx.strokeStyle = `rgba(${shade[0]},${shade[1]},${shade[2]},${0.06 + Math.random() * 0.06})`;
+    ctx.lineWidth = 0.3 + Math.random() * 0.5;
     ctx.beginPath();
     ctx.moveTo(0, cy);
-    ctx.lineTo(width, cy + (Math.random() - 0.5) * 4);
+    const cp1x = texW * 0.33;
+    const cp1y = cy + (Math.random() - 0.5) * 6;
+    const cp2x = texW * 0.66;
+    const cp2y = cy + (Math.random() - 0.5) * 6;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, texW, cy + (Math.random() - 0.5) * 8);
     ctx.stroke();
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  woodTextureCache.set(key, texture);
-  return texture;
+  // 微細な表面グレイン（ドット状のザラつき）
+  for (let i = 0; i < Math.floor(texW * texH / 200); i++) {
+    const x = Math.random() * texW;
+    const y = Math.random() * texH;
+    const shade = colors.shades[Math.floor(Math.random() * colors.shades.length)];
+    ctx.fillStyle = `rgba(${shade[0]},${shade[1]},${shade[2]},0.06)`;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  const mapTex = new THREE.CanvasTexture(canvas);
+  mapTex.wrapS = THREE.RepeatWrapping;
+  mapTex.wrapT = THREE.RepeatWrapping;
+  const normalTex = new THREE.CanvasTexture(normalCanvas);
+  normalTex.wrapS = THREE.RepeatWrapping;
+  normalTex.wrapT = THREE.RepeatWrapping;
+
+  const result = { map: mapTex, normalMap: normalTex };
+  woodTextureCache.set(key, result);
+  return result;
 }
 
 /** 布地パターン基本色 */
@@ -466,7 +545,9 @@ export function generateMetalTexture(width: number, height: number, finish: Meta
 
 /** 品質レベル連動テクスチャ解像度ヘルパー */
 export function getFurnitureTexSizes(ql: 'high' | 'medium' | 'low') {
-  const size = ql === 'high' ? 2048 : ql === 'medium' ? 512 : 256;
-  const small = ql === 'high' ? 1024 : ql === 'medium' ? 256 : 128;
+  // medium: 512→1024に引き上げ（プロシージャルテクスチャ品質向上）
+  // high: 2048→1024に制限（モバイル対応上限）
+  const size = ql === 'high' ? 1024 : ql === 'medium' ? 1024 : 512;
+  const small = ql === 'high' ? 1024 : ql === 'medium' ? 512 : 256;
   return { size, small };
 }

@@ -23,6 +23,7 @@ import {
 } from './furniture/FurnitureGeometryCache';
 import {
   generateWoodTexture,
+  generateWoodTextureWithNormal,
   generateFabricTexture,
   generateMetalTexture,
   getFurnitureTexSizes,

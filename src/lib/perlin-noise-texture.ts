@@ -76,7 +76,7 @@ function lerp(a: number, b: number, t: number): number {
  * 2D Perlinノイズ値を返す
  * @returns -1.0 〜 1.0 の範囲
  */
-function perlin2d(x: number, y: number): number {
+export function perlin2d(x: number, y: number): number {
   // 格子セルの整数座標
   const xi = Math.floor(x) & 255;
   const yi = Math.floor(y) & 255;
@@ -106,7 +106,7 @@ function perlin2d(x: number, y: number): number {
  * フラクタルブラウン運動（fBm）— 複数オクターブのPerlinノイズ合成
  * @returns -1.0 〜 1.0 の範囲（概算）
  */
-function fbm(x: number, y: number, octaves: number, persistence: number): number {
+export function fbm(x: number, y: number, octaves: number, persistence: number): number {
   let total = 0;
   let amplitude = 1;
   let frequency = 1;

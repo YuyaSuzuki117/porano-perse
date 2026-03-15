@@ -10,6 +10,7 @@ import { useEditorStore } from '@/stores/useEditorStore';
 import { useCameraStore } from '@/stores/useCameraStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { getCachedTexture, getTextureResolution } from '@/lib/texture-cache';
+import { perlin2d, fbm } from '@/lib/perlin-noise-texture';
 
 // ---------------------------------------------------------------------------
 // useFloorTexture — スタイル別プロシージャルテクスチャ生成フック
@@ -475,129 +476,130 @@ function drawTatamiTexture(ctx: CanvasRenderingContext2D, base: string) {
 
 /** 2. luxury — 大理石風（白〜グレーの斑模様、微かな金の筋） */
 function drawMarbleTexture(ctx: CanvasRenderingContext2D, base: string) {
-  // 下地を白〜グレーのグラデーションムラにする
-  for (let i = 0; i < 60; i++) {
-    const x = Math.random() * 1024;
-    const y = Math.random() * 1024;
-    const radius = 40 + Math.random() * 120;
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    const v = (Math.random() - 0.5) * 20;
-    gradient.addColorStop(0, adjustBrightness(base, v));
-    gradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.4;
-    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
-  }
-  ctx.globalAlpha = 1;
+  const S = 1024;
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const data = imageData.data;
+  const [br, bg, bb] = parseColor(base);
 
-  // 大理石の脈（グレーの筋）
-  ctx.globalAlpha = 0.12;
-  for (let i = 0; i < 8; i++) {
-    ctx.strokeStyle = adjustBrightness(base, -40 + Math.random() * 20);
-    ctx.lineWidth = 0.5 + Math.random() * 1.5;
+  // Perlinノイズベースの大理石脈模様
+  // domain warping: ノイズで座標をゆがめて自然な脈を生成
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 4;
+      const ny = py / S * 4;
+
+      // ドメインワーピング（座標をノイズでゆがめて脈状パターンを生成）
+      const warpX = fbm(nx + 1.7, ny + 9.2, 4, 0.5) * 1.5;
+      const warpY = fbm(nx + 5.3, ny + 1.3, 4, 0.5) * 1.5;
+      const veinNoise = fbm(nx + warpX, ny + warpY, 5, 0.55);
+
+      // 二次ワーピングで更に複雑な脈パターン
+      const warp2X = fbm(nx + warpX * 0.8 + 3.1, ny + warpY * 0.8 + 7.7, 3, 0.5) * 0.8;
+      const warp2Y = fbm(nx + warpX * 0.8 + 8.3, ny + warpY * 0.8 + 2.8, 3, 0.5) * 0.8;
+      const veinNoise2 = fbm(nx + warp2X, ny + warp2Y, 4, 0.5);
+
+      // 高周波ノイズで表面の微細な粒状感
+      const fineNoise = perlin2d(nx * 12, ny * 12) * 0.08;
+
+      // 脈の暗さを計算（veinNoise の絶対値が小さいほど脈の中心）
+      const veinIntensity = Math.abs(veinNoise) * 0.6 + Math.abs(veinNoise2) * 0.4;
+      const veinDark = Math.max(0, 1 - veinIntensity * 2.5); // 0=脈なし, 1=脈中心
+
+      // ベースカラーに対するノイズ変調
+      const baseModulation = veinNoise * 15 + fineNoise * 10;
+      // 脈部分は暗く
+      const veinDarkness = veinDark * 45;
+
+      const idx = (py * S + px) * 4;
+      data[idx]     = Math.max(0, Math.min(255, Math.round(br + baseModulation - veinDarkness)));
+      data[idx + 1] = Math.max(0, Math.min(255, Math.round(bg + baseModulation * 0.95 - veinDarkness * 0.9)));
+      data[idx + 2] = Math.max(0, Math.min(255, Math.round(bb + baseModulation * 0.85 - veinDarkness * 0.7)));
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  // 金の筋（脈に沿うようにベジエ曲線で表現）
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < 5; i++) {
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 0.3 + Math.random() * 0.8;
     ctx.beginPath();
-    let x = Math.random() * 1024;
-    let y = Math.random() * 1024;
+    let x = Math.random() * S;
+    let y = Math.random() * S;
     ctx.moveTo(x, y);
     for (let j = 0; j < 8; j++) {
-      const cx1 = x + (Math.random() - 0.5) * 200;
-      const cy1 = y + (Math.random() - 0.3) * 150;
-      const cx2 = cx1 + (Math.random() - 0.5) * 200;
-      const cy2 = cy1 + (Math.random() - 0.3) * 150;
-      x = cx2 + (Math.random() - 0.5) * 100;
-      y = cy2 + (Math.random() - 0.3) * 100;
+      const cx1 = x + (Math.random() - 0.5) * 160;
+      const cy1 = y + (Math.random() - 0.3) * 120;
+      const cx2 = cx1 + (Math.random() - 0.5) * 160;
+      const cy2 = cy1 + (Math.random() - 0.3) * 120;
+      x = cx2 + (Math.random() - 0.5) * 80;
+      y = cy2 + (Math.random() - 0.3) * 80;
       ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x, y);
     }
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-
-  // 金の筋（微か）
-  ctx.globalAlpha = 0.06;
-  for (let i = 0; i < 4; i++) {
-    ctx.strokeStyle = '#C9A84C';
-    ctx.lineWidth = 0.3 + Math.random() * 0.7;
-    ctx.beginPath();
-    let x = Math.random() * 1024;
-    let y = Math.random() * 1024;
-    ctx.moveTo(x, y);
-    for (let j = 0; j < 6; j++) {
-      x += (Math.random() - 0.5) * 180;
-      y += (Math.random() - 0.3) * 140;
-      ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-
-  // 微細な斑点
-  for (let i = 0; i < 300; i++) {
-    const x = Math.random() * 1024;
-    const y = Math.random() * 1024;
-    ctx.fillStyle = adjustBrightness(base, (Math.random() - 0.5) * 15);
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(x, y, 1.5, 1.5);
-  }
-  ctx.globalAlpha = 1;
 }
 
-/** 3. industrial — コンクリート風（骨材質感、ピンホール、細いひび割れ、型枠跡） */
+/** 3. industrial — コンクリート風（Perlinノイズベース + 骨材 + ピンホール + ひび割れ + 型枠跡） */
 function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
-  // 大きな色ムラ（Perlin風の波状）
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * 1024;
-    const y = Math.random() * 1024;
-    const radius = 30 + Math.random() * 120;
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, adjustBrightness(base, (Math.random() - 0.5) * 20));
-    gradient.addColorStop(0.6, adjustBrightness(base, (Math.random() - 0.5) * 10));
-    gradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.3;
-    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
-  }
-  ctx.globalAlpha = 1;
+  const S = 1024;
+  const [br, bg, bb] = parseColor(base);
 
-  // 骨材（大きめの砂利粒 — 丸い形状でリアルに）
-  for (let i = 0; i < 120; i++) {
-    const ax = Math.random() * 1024;
-    const ay = Math.random() * 1024;
-    const ar = 1.5 + Math.random() * 3.5;
+  // Perlinノイズベースの大きな色ムラ（打ちっぱなし感）
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const pixelData = imageData.data;
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 6;
+      const ny = py / S * 6;
+      // 低周波ノイズ: 大きなムラ
+      const lowFreq = fbm(nx, ny, 4, 0.5) * 18;
+      // 中周波ノイズ: 骨材のザラつき
+      const midFreq = fbm(nx * 3 + 100, ny * 3 + 100, 3, 0.45) * 8;
+      // 高周波ノイズ: 砂粒感
+      const highFreq = perlin2d(nx * 15, ny * 15) * 4;
+
+      const combined = lowFreq + midFreq * 0.6 + highFreq * 0.3;
+      const idx = (py * S + px) * 4;
+      pixelData[idx]     = Math.max(0, Math.min(255, Math.round(br + combined)));
+      pixelData[idx + 1] = Math.max(0, Math.min(255, Math.round(bg + combined * 0.97)));
+      pixelData[idx + 2] = Math.max(0, Math.min(255, Math.round(bb + combined * 0.93)));
+      pixelData[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  // 骨材（大きめの砂利粒 — 楕円形状でリアルに）
+  for (let i = 0; i < 150; i++) {
+    const ax = Math.random() * S;
+    const ay = Math.random() * S;
+    const ar = 1.5 + Math.random() * 4;
     const agregate = ctx.createRadialGradient(ax, ay, 0, ax, ay, ar);
-    const abrightness = (Math.random() - 0.5) * 30;
-    agregate.addColorStop(0, adjustBrightness(base, abrightness + 5));
-    agregate.addColorStop(0.7, adjustBrightness(base, abrightness));
+    const abrightness = (Math.random() - 0.5) * 35;
+    agregate.addColorStop(0, adjustBrightness(base, abrightness + 8));
+    agregate.addColorStop(0.6, adjustBrightness(base, abrightness));
     agregate.addColorStop(1, adjustBrightness(base, abrightness - 5));
     ctx.fillStyle = agregate;
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.4;
     ctx.beginPath();
-    ctx.ellipse(ax, ay, ar, ar * (0.7 + Math.random() * 0.3), Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.ellipse(ax, ay, ar, ar * (0.6 + Math.random() * 0.4), Math.random() * Math.PI, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  // 細かい砂粒
-  for (let i = 0; i < 900; i++) {
-    const x = Math.random() * 1024;
-    const y = Math.random() * 1024;
-    const size = Math.random() * 2.5 + 0.5;
-    ctx.fillStyle = adjustBrightness(base, (Math.random() - 0.5) * 22);
-    ctx.globalAlpha = 0.4;
-    ctx.fillRect(x, y, size, size);
-  }
-  ctx.globalAlpha = 1;
-
   // ピンホール（気泡跡 — グラデーション付きで深さ表現）
-  for (let i = 0; i < 70; i++) {
-    const px = Math.random() * 1024;
-    const py = Math.random() * 1024;
-    const pr = 0.8 + Math.random() * 2.5;
+  for (let i = 0; i < 80; i++) {
+    const px = Math.random() * S;
+    const py = Math.random() * S;
+    const pr = 0.6 + Math.random() * 2.8;
     const pinholeGrad = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    pinholeGrad.addColorStop(0, adjustBrightness(base, -35));
-    pinholeGrad.addColorStop(0.6, adjustBrightness(base, -25));
-    pinholeGrad.addColorStop(1, adjustBrightness(base, -10));
+    pinholeGrad.addColorStop(0, adjustBrightness(base, -40));
+    pinholeGrad.addColorStop(0.5, adjustBrightness(base, -28));
+    pinholeGrad.addColorStop(1, adjustBrightness(base, -8));
     ctx.fillStyle = pinholeGrad;
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.45;
     ctx.beginPath();
     ctx.arc(px, py, pr, 0, Math.PI * 2);
     ctx.fill();
@@ -605,26 +607,28 @@ function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
   ctx.globalAlpha = 1;
 
   // 細いひび割れ（分岐するリアルなパターン）
-  for (let i = 0; i < 4; i++) {
-    ctx.strokeStyle = adjustBrightness(base, -35);
-    ctx.lineWidth = 0.3 + Math.random() * 0.4;
-    ctx.globalAlpha = 0.18;
+  for (let i = 0; i < 5; i++) {
+    ctx.strokeStyle = adjustBrightness(base, -38);
+    ctx.lineWidth = 0.3 + Math.random() * 0.5;
+    ctx.globalAlpha = 0.22;
     ctx.beginPath();
-    let x = Math.random() * 1024;
-    let y = Math.random() * 1024;
+    let x = Math.random() * S;
+    let y = Math.random() * S;
     ctx.moveTo(x, y);
     const angle = Math.random() * Math.PI * 2;
-    const segments = 6 + Math.floor(Math.random() * 4);
+    const segments = 8 + Math.floor(Math.random() * 6);
     for (let j = 0; j < segments; j++) {
-      const stepLen = 15 + Math.random() * 40;
-      const jitter = (Math.random() - 0.5) * 0.8;
+      const stepLen = 12 + Math.random() * 45;
+      const jitter = (Math.random() - 0.5) * 0.9;
       x += Math.cos(angle + jitter) * stepLen;
       y += Math.sin(angle + jitter) * stepLen;
       ctx.lineTo(x, y);
-      // 分岐（20%確率）
-      if (Math.random() < 0.2) {
-        const bx = x + (Math.random() - 0.5) * 30;
-        const by = y + (Math.random() - 0.5) * 30;
+      // 分岐（25%確率）
+      if (Math.random() < 0.25) {
+        const branchAngle = angle + jitter + (Math.random() - 0.5) * 1.5;
+        const bLen = 10 + Math.random() * 25;
+        const bx = x + Math.cos(branchAngle) * bLen;
+        const by = y + Math.sin(branchAngle) * bLen;
         ctx.moveTo(x, y);
         ctx.lineTo(bx, by);
         ctx.moveTo(x, y);
@@ -648,15 +652,15 @@ function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
   ctx.globalAlpha = 1;
 
   // 水染み跡（大きな薄い染み）
-  for (let i = 0; i < 3; i++) {
-    const sx = Math.random() * 1024;
-    const sy = Math.random() * 1024;
-    const sr = 40 + Math.random() * 80;
-    const stainGrad = ctx.createRadialGradient(sx, sy, sr * 0.3, sx, sy, sr);
-    stainGrad.addColorStop(0, adjustBrightness(base, -8));
+  for (let i = 0; i < 4; i++) {
+    const sx = Math.random() * S;
+    const sy = Math.random() * S;
+    const sr = 40 + Math.random() * 90;
+    const stainGrad = ctx.createRadialGradient(sx, sy, sr * 0.2, sx, sy, sr);
+    stainGrad.addColorStop(0, adjustBrightness(base, -10));
     stainGrad.addColorStop(1, 'transparent');
     ctx.fillStyle = stainGrad;
-    ctx.globalAlpha = 0.08;
+    ctx.globalAlpha = 0.1;
     ctx.beginPath();
     ctx.arc(sx, sy, sr, 0, Math.PI * 2);
     ctx.fill();
@@ -664,69 +668,88 @@ function drawConcreteTexture(ctx: CanvasRenderingContext2D, base: string) {
   ctx.globalAlpha = 1;
 }
 
-/** 4. modern — 大判タイル風（60cm角グリッド、目地の陰影強調、タイル表面の微妙な色ムラ） */
+/** 4. modern — 大判タイル風（60cm角グリッド、目地の陰影強調、Perlinノイズ表面テクスチャ） */
 function drawLargeTileTexture(ctx: CanvasRenderingContext2D, base: string) {
+  const S = 1024;
   const tileSize = 154; // ~60cm in 1024px for ~4m repeat
   const groutWidth = 3;
   const groutColor = adjustBrightness(base, 25);
+  const [br, bg, bb] = parseColor(base);
 
   // 目地ベース
   ctx.fillStyle = groutColor;
-  ctx.fillRect(0, 0, 1024, 1024);
+  ctx.fillRect(0, 0, S, S);
 
-  for (let x = 0; x < 1024; x += tileSize) {
-    for (let y = 0; y < 1024; y += tileSize) {
-      const variation = (Math.random() - 0.5) * 6;
+  // タイルカウンタ（色バリエーション用）
+  let tileIdx = 0;
+  for (let tx = 0; tx < S; tx += tileSize) {
+    for (let ty = 0; ty < S; ty += tileSize) {
+      tileIdx++;
+      // タイルごとの微妙な色差
+      const variation = Math.sin(tileIdx * 7.3) * 5;
       const tileBase = adjustBrightness(base, variation);
-      ctx.fillStyle = tileBase;
-      ctx.fillRect(
-        x + groutWidth,
-        y + groutWidth,
-        tileSize - groutWidth * 2,
-        tileSize - groutWidth * 2
+      const [tbr, tbg, tbb] = parseColor(tileBase);
+
+      // タイル内部にPerlinノイズベースの磁器/石材テクスチャを生成
+      const innerX = tx + groutWidth;
+      const innerY = ty + groutWidth;
+      const innerW = Math.min(tileSize - groutWidth * 2, S - innerX);
+      const innerH = Math.min(tileSize - groutWidth * 2, S - innerY);
+
+      if (innerW <= 0 || innerH <= 0) continue;
+
+      // タイル表面をImageDataで直接描画（Perlinノイズ）
+      const tileImageData = ctx.createImageData(innerW, innerH);
+      const tileData = tileImageData.data;
+      for (let py = 0; py < innerH; py++) {
+        for (let px = 0; px < innerW; px++) {
+          const nx = (px + tileIdx * 100) / 120;
+          const ny = (py + tileIdx * 77) / 120;
+          // 石材/磁器の表面パターン
+          const surfaceNoise = fbm(nx, ny, 3, 0.5) * 6;
+          // 微細な粒状感
+          const grainNoise = perlin2d(nx * 8, ny * 8) * 2;
+
+          const combined = surfaceNoise + grainNoise * 0.5;
+          const idx = (py * innerW + px) * 4;
+          tileData[idx]     = Math.max(0, Math.min(255, Math.round(tbr + combined)));
+          tileData[idx + 1] = Math.max(0, Math.min(255, Math.round(tbg + combined * 0.95)));
+          tileData[idx + 2] = Math.max(0, Math.min(255, Math.round(tbb + combined * 0.9)));
+          tileData[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(tileImageData, innerX, innerY);
+
+      // 反射差を表現するグラデーション（タイルの光沢感の方向性）
+      const gradAngle = Math.sin(tileIdx * 3.1) * 0.3;
+      const gx = Math.cos(gradAngle);
+      const gy = Math.sin(gradAngle);
+      const grad = ctx.createLinearGradient(
+        innerX + innerW * (0.5 - gx * 0.5), innerY + innerH * (0.5 - gy * 0.5),
+        innerX + innerW * (0.5 + gx * 0.5), innerY + innerH * (0.5 + gy * 0.5)
       );
-
-      // タイル表面の微妙な色ムラ（放射状グラデーション）
-      for (let i = 0; i < 4; i++) {
-        const cx = x + groutWidth + Math.random() * (tileSize - groutWidth * 2);
-        const cy = y + groutWidth + Math.random() * (tileSize - groutWidth * 2);
-        const radius = 15 + Math.random() * 30;
-        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        gradient.addColorStop(0, adjustBrightness(tileBase, (Math.random() - 0.5) * 8));
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.globalAlpha = 0.15;
-        ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-      }
-
-      // 微細なスペックル（磁器質感）
-      for (let i = 0; i < 18; i++) {
-        const sx = x + groutWidth + Math.random() * (tileSize - groutWidth * 2);
-        const sy = y + groutWidth + Math.random() * (tileSize - groutWidth * 2);
-        ctx.fillStyle = adjustBrightness(tileBase, (Math.random() - 0.5) * 6);
-        ctx.globalAlpha = 0.15;
-        ctx.fillRect(sx, sy, 1.5, 1.5);
-      }
-      ctx.globalAlpha = 1;
+      grad.addColorStop(0, `rgba(255,255,255,0.03)`);
+      grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, `rgba(0,0,0,0.03)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(innerX, innerY, innerW, innerH);
 
       // 目地の陰影（暗い側 + 明るい側で立体感）
-      ctx.strokeStyle = adjustBrightness(base, -20);
+      ctx.strokeStyle = adjustBrightness(base, -22);
       ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.3;
-      // 下と右の辺（影側）
+      ctx.globalAlpha = 0.35;
       ctx.beginPath();
-      ctx.moveTo(x + groutWidth, y + tileSize - groutWidth);
-      ctx.lineTo(x + tileSize - groutWidth, y + tileSize - groutWidth);
-      ctx.lineTo(x + tileSize - groutWidth, y + groutWidth);
+      ctx.moveTo(tx + groutWidth, ty + tileSize - groutWidth);
+      ctx.lineTo(tx + tileSize - groutWidth, ty + tileSize - groutWidth);
+      ctx.lineTo(tx + tileSize - groutWidth, ty + groutWidth);
       ctx.stroke();
-      // 上と左の辺（光側）
-      ctx.strokeStyle = adjustBrightness(base, 12);
+      ctx.strokeStyle = adjustBrightness(base, 14);
       ctx.lineWidth = 0.8;
-      ctx.globalAlpha = 0.2;
+      ctx.globalAlpha = 0.22;
       ctx.beginPath();
-      ctx.moveTo(x + groutWidth, y + tileSize - groutWidth);
-      ctx.lineTo(x + groutWidth, y + groutWidth);
-      ctx.lineTo(x + tileSize - groutWidth, y + groutWidth);
+      ctx.moveTo(tx + groutWidth, ty + tileSize - groutWidth);
+      ctx.lineTo(tx + groutWidth, ty + groutWidth);
+      ctx.lineTo(tx + tileSize - groutWidth, ty + groutWidth);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
@@ -1350,107 +1373,112 @@ function drawTatamiNormal(ctx: CanvasRenderingContext2D) {
 }
 
 function drawMarbleNormal(ctx: CanvasRenderingContext2D) {
-  // 大理石の脈に沿った微妙な凹凸
-  for (let i = 0; i < 6; i++) {
-    ctx.strokeStyle = 'rgb(120, 120, 255)';
-    ctx.lineWidth = 1.5 + Math.random() * 2;
-    ctx.globalAlpha = 0.15;
-    ctx.beginPath();
-    let x = Math.random() * 512;
-    let y = Math.random() * 512;
-    ctx.moveTo(x, y);
-    for (let j = 0; j < 6; j++) {
-      const cx1 = x + (Math.random() - 0.5) * 100;
-      const cy1 = y + (Math.random() - 0.3) * 80;
-      const cx2 = cx1 + (Math.random() - 0.5) * 100;
-      const cy2 = cy1 + (Math.random() - 0.3) * 80;
-      x = cx2 + (Math.random() - 0.5) * 50;
-      y = cy2 + (Math.random() - 0.3) * 50;
-      ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x, y);
+  const S = 512;
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const data = imageData.data;
+
+  // Perlinノイズベースの高さフィールドを生成（大理石の脈 = 凹み）
+  const heightField = new Float32Array(S * S);
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 4;
+      const ny = py / S * 4;
+      // ドメインワーピングで脈パターンの高さを算出
+      const warpX = fbm(nx + 1.7, ny + 9.2, 4, 0.5) * 1.5;
+      const warpY = fbm(nx + 5.3, ny + 1.3, 4, 0.5) * 1.5;
+      const veinNoise = fbm(nx + warpX, ny + warpY, 5, 0.55);
+      const veinIntensity = Math.abs(veinNoise);
+      // 脈部分は凹む（高さが低い）
+      const veinDepth = Math.max(0, 1 - veinIntensity * 3) * 0.4;
+      // 表面の微細なうねり
+      const surfaceUndulation = fbm(nx * 3, ny * 3, 3, 0.5) * 0.1;
+      heightField[py * S + px] = 0.5 - veinDepth + surfaceUndulation;
     }
-    ctx.stroke();
-    // 脈のハイライト側
-    ctx.strokeStyle = 'rgb(136, 136, 255)';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
   }
-  ctx.globalAlpha = 1;
-  // 磨かれた表面の微細なうねり
-  for (let i = 0; i < 12; i++) {
-    const cx = Math.random() * 512;
-    const cy = Math.random() * 512;
-    const radius = 15 + Math.random() * 40;
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    const r = Math.round(128 + (Math.random() - 0.5) * 8);
-    const g = Math.round(128 + (Math.random() - 0.5) * 8);
-    gradient.addColorStop(0, `rgb(${r}, ${g}, 255)`);
-    gradient.addColorStop(1, 'rgb(128, 128, 255)');
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+
+  // ソーベルフィルタで法線ベクトルを算出
+  const strength = 1.2;
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const xp = (px + 1) % S;
+      const xm = (px - 1 + S) % S;
+      const yp = (py + 1) % S;
+      const ym = (py - 1 + S) % S;
+
+      const dxVal = heightField[py * S + xp] - heightField[py * S + xm];
+      const dyVal = heightField[yp * S + px] - heightField[ym * S + px];
+
+      const normalX = -dxVal * strength;
+      const normalY = -dyVal * strength;
+      const normalZ = 1.0;
+      const len = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+
+      const idx = (py * S + px) * 4;
+      data[idx]     = Math.max(0, Math.min(255, Math.round((normalX / len * 0.5 + 0.5) * 255)));
+      data[idx + 1] = Math.max(0, Math.min(255, Math.round((normalY / len * 0.5 + 0.5) * 255)));
+      data[idx + 2] = Math.max(0, Math.min(255, Math.round((normalZ / len * 0.5 + 0.5) * 255)));
+      data[idx + 3] = 255;
+    }
   }
-  ctx.globalAlpha = 1;
-  // 微細なスペックル
-  for (let i = 0; i < 250; i++) {
-    const px = Math.random() * 512;
-    const py = Math.random() * 512;
-    const pr = 128 + (Math.random() - 0.5) * 8;
-    const pg = 128 + (Math.random() - 0.5) * 8;
-    ctx.fillStyle = `rgb(${pr}, ${pg}, 255)`;
-    ctx.fillRect(px, py, 1.5, 1.5);
-  }
+  ctx.putImageData(imageData, 0, 0);
 }
 
 function drawConcreteNormal(ctx: CanvasRenderingContext2D) {
-  // 大きなうねり（コンクリート表面の不均一性）
-  for (let i = 0; i < 20; i++) {
-    const cx = Math.random() * 512;
-    const cy = Math.random() * 512;
-    const radius = 20 + Math.random() * 60;
-    const angle = Math.random() * Math.PI * 2;
-    const strength = 15 + Math.random() * 10;
-    const r = Math.round(128 + Math.cos(angle) * strength);
-    const g = Math.round(128 + Math.sin(angle) * strength);
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    gradient.addColorStop(0, `rgb(${r}, ${g}, 255)`);
-    gradient.addColorStop(1, 'rgb(128, 128, 255)');
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+  const S = 512;
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const data = imageData.data;
+
+  // Perlinノイズベースの高さフィールド
+  const heightField = new Float32Array(S * S);
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 6;
+      const ny = py / S * 6;
+      // 大きなうねり
+      const lowFreq = fbm(nx, ny, 4, 0.5) * 0.5;
+      // 骨材のザラつき
+      const midFreq = fbm(nx * 3 + 100, ny * 3 + 100, 3, 0.45) * 0.25;
+      // 砂粒の微細な凹凸
+      const highFreq = perlin2d(nx * 12, ny * 12) * 0.1;
+      heightField[py * S + px] = 0.5 + lowFreq + midFreq + highFreq;
+    }
   }
-  ctx.globalAlpha = 1;
-  // 骨材の凸（小さな丸い凹凸）
-  for (let i = 0; i < 80; i++) {
-    const ax = Math.random() * 512;
-    const ay = Math.random() * 512;
-    const ar = 1 + Math.random() * 2.5;
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.round(128 + Math.cos(angle) * 20);
-    const g = Math.round(128 + Math.sin(angle) * 20);
-    ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
-    ctx.beginPath();
-    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
-    ctx.fill();
+
+  // ソーベルフィルタで法線ベクトルを算出
+  const strength = 2.0;
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const xp = (px + 1) % S;
+      const xm = (px - 1 + S) % S;
+      const yp = (py + 1) % S;
+      const ym = (py - 1 + S) % S;
+
+      const dxVal = heightField[py * S + xp] - heightField[py * S + xm];
+      const dyVal = heightField[yp * S + px] - heightField[ym * S + px];
+
+      const normalX = -dxVal * strength;
+      const normalY = -dyVal * strength;
+      const normalZ = 1.0;
+      const len = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+
+      const idx = (py * S + px) * 4;
+      data[idx]     = Math.max(0, Math.min(255, Math.round((normalX / len * 0.5 + 0.5) * 255)));
+      data[idx + 1] = Math.max(0, Math.min(255, Math.round((normalY / len * 0.5 + 0.5) * 255)));
+      data[idx + 2] = Math.max(0, Math.min(255, Math.round((normalZ / len * 0.5 + 0.5) * 255)));
+      data[idx + 3] = 255;
+    }
   }
-  // 細かいザラつき
-  for (let i = 0; i < 600; i++) {
-    const x = Math.random() * 512;
-    const y = Math.random() * 512;
-    const r = 128 + (Math.random() - 0.5) * 28;
-    const g = 128 + (Math.random() - 0.5) * 28;
-    ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
-    ctx.fillRect(x, y, 2, 2);
-  }
-  // ピンホールの凹み
-  for (let i = 0; i < 30; i++) {
-    const px = Math.random() * 512;
-    const py = Math.random() * 512;
-    const pr = 0.8 + Math.random() * 1.5;
-    ctx.fillStyle = '#6060FF'; // 深い凹み
+  ctx.putImageData(imageData, 0, 0);
+
+  // ピンホールの凹み（ノーマルマップ上でも表現）
+  for (let i = 0; i < 40; i++) {
+    const px = Math.random() * S;
+    const py = Math.random() * S;
+    const pr = 0.8 + Math.random() * 2;
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    grad.addColorStop(0, 'rgba(96, 96, 255, 0.6)');
+    grad.addColorStop(1, 'rgba(128, 128, 255, 0)');
+    ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(px, py, pr, 0, Math.PI * 2);
     ctx.fill();
@@ -1488,15 +1516,24 @@ function drawTileNormal(ctx: CanvasRenderingContext2D, tileSize: number) {
     ctx.lineTo(512, y + 3);
     ctx.stroke();
   }
-  // タイル面の微細なテクスチャ凹凸
-  for (let i = 0; i < 200; i++) {
-    const px = Math.random() * 512;
-    const py = Math.random() * 512;
-    const pr = 128 + (Math.random() - 0.5) * 6;
-    const pg = 128 + (Math.random() - 0.5) * 6;
-    ctx.fillStyle = `rgb(${pr}, ${pg}, 255)`;
-    ctx.fillRect(px, py, 2, 2);
+  // タイル面の微細なPerlinノイズベースの凹凸
+  const tS = 512;
+  const tileImgData = ctx.getImageData(0, 0, tS, tS);
+  const tileNData = tileImgData.data;
+  for (let py = 0; py < tS; py++) {
+    for (let px = 0; px < tS; px++) {
+      const idx = (py * tS + px) * 4;
+      // 既にグラウト線が描画されている場合はスキップ（青チャンネルが低い=溝部分）
+      if (tileNData[idx + 2] < 200) continue;
+      const nx = px / tS * 10;
+      const ny = py / tS * 10;
+      const surfaceNoise = perlin2d(nx, ny) * 4;
+      const fineNoise = perlin2d(nx * 5, ny * 5) * 2;
+      tileNData[idx]     = Math.max(0, Math.min(255, Math.round(128 + surfaceNoise + fineNoise * 0.5)));
+      tileNData[idx + 1] = Math.max(0, Math.min(255, Math.round(128 + surfaceNoise * 0.8 + fineNoise * 0.4)));
+    }
   }
+  ctx.putImageData(tileImgData, 0, 0);
 }
 
 function drawWoodNormal(ctx: CanvasRenderingContext2D) {
@@ -1538,27 +1575,66 @@ function drawWoodNormal(ctx: CanvasRenderingContext2D) {
       ctx.stroke();
     }
   }
-  // 木目のうねり（年輪パターンの凹凸）
-  for (let py = 0; py < 512; py += plankH) {
-    const grainPhase = Math.random() * Math.PI * 2;
-    const grainFreq = 0.12 + Math.random() * 0.08;
-    for (let ly = py + 2; ly < py + plankH - 2; ly += 2) {
-      const wave = Math.sin(grainPhase + ly * grainFreq);
-      const r = Math.round(128 + wave * 12);
-      const g = Math.round(128 + wave * 8);
-      ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
-      ctx.fillRect(0, ly, 512, 2);
+  // Perlinノイズベースの木目凹凸（ソーベルフィルタ方式）
+  const S = 512;
+  const heightField = new Float32Array(S * S);
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 8;
+      const ny = py / S * 8;
+      // 木目の波状凹凸
+      const grainHeight = perlin2d(nx * 0.5, ny * 2) * 0.3;
+      // 微細な表面テクスチャ
+      const fineHeight = perlin2d(nx * 4, ny * 4) * 0.08;
+      heightField[py * S + px] = 0.5 + grainHeight + fineHeight;
     }
   }
-  // 微細な表面ノイズ
-  for (let i = 0; i < 400; i++) {
-    const nx = Math.random() * 512;
-    const ny = Math.random() * 512;
-    const nr = 128 + (Math.random() - 0.5) * 10;
-    const ng = 128 + (Math.random() - 0.5) * 10;
-    ctx.fillStyle = `rgb(${nr}, ${ng}, 255)`;
-    ctx.fillRect(nx, ny, 2, 1);
+
+  // 溝部分の凹み（plank境界）
+  for (let py = 0; py < S; py += plankH) {
+    for (let px = 0; px < S; px++) {
+      // 横溝
+      if (py > 0) {
+        for (let gy = Math.max(0, py - 2); gy < Math.min(S, py + 2); gy++) {
+          heightField[gy * S + px] = 0.1;
+        }
+      }
+    }
+    // 縦溝
+    const offset = (Math.floor(py / plankH) % 2) * (plankW / 2);
+    for (let px = offset; px < S; px += plankW) {
+      for (let gy = py; gy < Math.min(S, py + plankH); gy++) {
+        for (let gx = Math.max(0, px - 1); gx < Math.min(S, px + 2); gx++) {
+          heightField[gy * S + gx] = 0.1;
+        }
+      }
+    }
   }
+
+  // ImageDataに変換（ソーベルフィルタ）
+  const imageData = ctx.getImageData(0, 0, S, S);
+  const data = imageData.data;
+  const strength = 1.8;
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const xp = (px + 1) % S;
+      const xm = (px - 1 + S) % S;
+      const yp = (py + 1) % S;
+      const ym = (py - 1 + S) % S;
+      const dxVal = heightField[py * S + xp] - heightField[py * S + xm];
+      const dyVal = heightField[yp * S + px] - heightField[ym * S + px];
+      const normalX = -dxVal * strength;
+      const normalY = -dyVal * strength;
+      const normalZ = 1.0;
+      const len = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+      const idx = (py * S + px) * 4;
+      data[idx]     = Math.max(0, Math.min(255, Math.round((normalX / len * 0.5 + 0.5) * 255)));
+      data[idx + 1] = Math.max(0, Math.min(255, Math.round((normalY / len * 0.5 + 0.5) * 255)));
+      data[idx + 2] = Math.max(0, Math.min(255, Math.round((normalZ / len * 0.5 + 0.5) * 255)));
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
 }
 
 function drawCheckerNormal(ctx: CanvasRenderingContext2D) {
@@ -1608,56 +1684,72 @@ function drawTatamiRoughness(ctx: CanvasRenderingContext2D) {
 }
 
 function drawMarbleRoughness(ctx: CanvasRenderingContext2D) {
-  // 磨かれた大理石 — 非常に低ラフネス（強い鏡面反射）
-  const baseVal = 35;
-  ctx.fillStyle = `rgb(${baseVal}, ${baseVal}, ${baseVal})`;
-  ctx.fillRect(0, 0, 256, 256);
-  // 脈に沿ったわずかなラフネス変化
-  for (let i = 0; i < 60; i++) {
-    const px = Math.random() * 256;
-    const py = Math.random() * 256;
-    const v = baseVal + (Math.random() - 0.5) * 15;
-    ctx.fillStyle = `rgb(${v}, ${v}, ${v})`;
-    ctx.fillRect(px, py, 3, 3);
+  // 磨かれた大理石 — Perlinノイズベースのラフネスマップ
+  const S = 256;
+  const imageData = ctx.createImageData(S, S);
+  const data = imageData.data;
+  const baseVal = 35; // 非常に低ラフネス（強い鏡面反射）
+
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 4;
+      const ny = py / S * 4;
+      // 脈に沿ったラフネス変化（脈部分はやや粗い）
+      const warpX = fbm(nx + 1.7, ny + 9.2, 3, 0.5) * 1.2;
+      const warpY = fbm(nx + 5.3, ny + 1.3, 3, 0.5) * 1.2;
+      const veinNoise = fbm(nx + warpX, ny + warpY, 3, 0.5);
+      const veinRoughness = Math.abs(veinNoise) < 0.15 ? 15 : 0; // 脈部分はラフ
+      // 磨きムラ
+      const polishNoise = perlin2d(nx * 2, ny * 2) * 8;
+      const v = Math.max(0, Math.min(255, Math.round(baseVal + veinRoughness + polishNoise)));
+      const idx = (py * S + px) * 4;
+      data[idx] = v;
+      data[idx + 1] = v;
+      data[idx + 2] = v;
+      data[idx + 3] = 255;
+    }
   }
-  // 磨きムラ（広い範囲の微妙な光沢差）
-  for (let i = 0; i < 6; i++) {
-    const cx = Math.random() * 256;
-    const cy = Math.random() * 256;
-    const radius = 20 + Math.random() * 40;
-    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    gradient.addColorStop(0, `rgb(${baseVal + 10}, ${baseVal + 10}, ${baseVal + 10})`);
-    gradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.3;
-    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-  }
-  ctx.globalAlpha = 1;
+  ctx.putImageData(imageData, 0, 0);
 }
 
 function drawConcreteRoughness(ctx: CanvasRenderingContext2D) {
-  const baseVal = 217;
-  ctx.fillStyle = `rgb(${baseVal}, ${baseVal}, ${baseVal})`;
-  ctx.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 300; i++) {
-    const px = Math.random() * 256;
-    const py = Math.random() * 256;
-    const v = baseVal + (Math.random() - 0.5) * 40;
-    const size = Math.random() * 6 + 2;
-    ctx.fillStyle = `rgb(${v}, ${v}, ${v})`;
-    ctx.fillRect(px, py, size, size);
+  // コンクリート — Perlinノイズベースのラフネスマップ
+  const S = 256;
+  const imageData = ctx.createImageData(S, S);
+  const data = imageData.data;
+  const baseVal = 217; // 高ラフネス（マット）
+
+  for (let py = 0; py < S; py++) {
+    for (let px = 0; px < S; px++) {
+      const nx = px / S * 6;
+      const ny = py / S * 6;
+      // 骨材部分のラフネス変化
+      const lowFreq = fbm(nx, ny, 3, 0.5) * 18;
+      // 砂粒感
+      const highFreq = perlin2d(nx * 8, ny * 8) * 8;
+      const v = Math.max(0, Math.min(255, Math.round(baseVal + lowFreq + highFreq * 0.5)));
+      const idx = (py * S + px) * 4;
+      data[idx] = v;
+      data[idx + 1] = v;
+      data[idx + 2] = v;
+      data[idx + 3] = 255;
+    }
   }
-  // 磨かれたスポット
-  for (let i = 0; i < 8; i++) {
-    const cx = Math.random() * 256;
-    const cy = Math.random() * 256;
+  ctx.putImageData(imageData, 0, 0);
+
+  // 磨かれたスポット（部分的に滑らかな箇所）
+  for (let i = 0; i < 6; i++) {
+    const cx = Math.random() * S;
+    const cy = Math.random() * S;
     const radius = 15 + Math.random() * 25;
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    gradient.addColorStop(0, `rgb(${baseVal - 50}, ${baseVal - 50}, ${baseVal - 50})`);
+    gradient.addColorStop(0, `rgb(${baseVal - 55}, ${baseVal - 55}, ${baseVal - 55})`);
     gradient.addColorStop(1, 'transparent');
     ctx.fillStyle = gradient;
-    ctx.globalAlpha = 0.4;
-    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
@@ -1744,6 +1836,12 @@ function drawLinoleumRoughness(ctx: CanvasRenderingContext2D) {
 // ===========================================================================
 // ユーティリティ
 // ===========================================================================
+
+/** HEXカラーをRGBタプルに変換 */
+function parseColor(hex: string): [number, number, number] {
+  const num = parseInt(hex.replace('#', ''), 16);
+  return [(num >> 16) & 0xff, (num >> 8) & 0xff, num & 0xff];
+}
 
 function adjustBrightness(hex: string, amount: number): string {
   const num = parseInt(hex.replace('#', ''), 16);
