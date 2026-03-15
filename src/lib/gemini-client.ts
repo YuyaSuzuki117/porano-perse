@@ -24,7 +24,7 @@ function getClient(): GoogleGenAI | null {
   return _client
 }
 
-/** 使用モデル: gemini-2.5-flash（高速・無料枠対応） */
+/** 使用モデル: gemini-2.5-flash（最新・無料枠対応） */
 const MODEL = 'gemini-2.5-flash'
 
 /** Gemini API が利用可能かチェック */
@@ -51,6 +51,7 @@ export async function generateText(params: {
       temperature: params.temperature ?? 0,
       topK: 1,
       responseMimeType: 'application/json',
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 
@@ -86,6 +87,7 @@ export async function generateWithImage(params: {
       temperature: params.temperature ?? 0,
       topK: 1,
       responseMimeType: 'application/json',
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 

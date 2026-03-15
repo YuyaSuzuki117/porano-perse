@@ -124,7 +124,7 @@ export async function suggestLayout(
     const rawText = await generateText({
       systemPrompt: buildSystemPrompt(params),
       userPrompt,
-      maxOutputTokens: 1500,
+      maxOutputTokens: 4000,
       temperature: 0.7,
     })
 
@@ -167,6 +167,6 @@ export async function suggestLayout(
     return validated
   } catch (error) {
     console.error('[LayoutSuggester] 提案エラー:', error)
-    return null
+    throw error
   }
 }

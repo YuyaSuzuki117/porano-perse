@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     if (!suggestions || suggestions.length === 0) {
       return NextResponse.json(
-        { error: 'レイアウト提案の生成に失敗しました。条件を変更して再試行してください。' },
+        { error: 'レイアウト提案の生成に失敗しました。条件を変更して再試行してください。', debug: 'suggestLayout returned null' },
         { status: 422 }
       )
     }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[API] suggest-layout エラー:', error)
     return NextResponse.json(
-      { error: 'サーバーエラーが発生しました。' },
+      { error: 'サーバーエラーが発生しました。', debug: String(error) },
       { status: 500 }
     )
   }
