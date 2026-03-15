@@ -528,12 +528,14 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     // blueprint モード: 紺背景・白シアン線・グリッド・寸法線風
     // ════════════════════════════════════════════════════════
 
-    // ── 背景: 非常に暗い紺色（元画像を完全に無視して紺色で上書き） ──
-    vec3 bgTop = vec3(0.02, 0.04, 0.10);    // ほぼ黒に近い紺
-    vec3 bgBot = vec3(0.04, 0.08, 0.18);    // 暗い紺
+    // ── 背景: 完全に暗い紺色で上書き（inputColorを無視） ──
+    // PostProcessingのバックバッファに元の背景色が残るため、
+    // outputColorで完全に上書きしなければ紺色にならない
+    vec3 bgTop = vec3(0.015, 0.03, 0.08);   // ほぼ黒
+    vec3 bgBot = vec3(0.03, 0.06, 0.14);    // 暗い紺
     vec3 bgColor = mix(bgBot, bgTop, uv.y * 0.7 + 0.15);
-    float bgNoise = noise2d(uv * resolution * 0.03) * 0.015;
-    bgColor += vec3(bgNoise * 0.2, bgNoise * 0.3, bgNoise * 0.5);
+    float bgNoise = noise2d(uv * resolution * 0.03) * 0.01;
+    bgColor += vec3(bgNoise * 0.1, bgNoise * 0.2, bgNoise * 0.4);
 
     // ── グリッドパターン（線幅を広げて視認性UP） ──
     vec2 gridUV = uv * resolution;
@@ -603,8 +605,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
       dimLine = max(dimMarkH, dimMarkV) * dimCheck * bpSilIntensity * 0.4;
     }
 
-    // ── 合成 ──
-    result = bgColor;
+    // ── 合成（元画像のRGBを完全に無視、紺色ベースから構築） ──
+    result = bgColor;  // inputColor ではなく紺色を起点
     // グリッド
     result = mix(result, gridColor, grid);
     // 寸法線
