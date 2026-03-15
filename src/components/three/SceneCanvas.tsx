@@ -333,7 +333,7 @@ export function SceneCanvas({
       onPointerMissed={handlePointerMissed}
       style={{ background: bgGradient ? `linear-gradient(to bottom, ${bgGradient.top}, ${bgGradient.bottom})` : bgColor }}
     >
-      <ToneMappingController renderStyle={renderStyle} />
+      <ToneMappingController renderStyle={renderStyle} qualityLevel={qualityLevel} brightness={effectiveBrightness} isNight={isNight} isWarmStyle={isWarmStyle} />
       <Suspense fallback={null}>
         {/* lowモード・スケッチモードではfog無効 */}
         {qualityLevel !== 'low' && !isSketchStyle && (

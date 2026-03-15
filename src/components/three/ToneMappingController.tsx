@@ -1,13 +1,15 @@
 'use client';
 
 /**
- * ToneMappingController — renderStyle に応じてトーンマッピングを動的に切り替え
+ * ToneMappingController — renderStyle/品質に応じてGL設定を動的に管理
  *
- * blueprintモードではACESトーンマッピングが暗色を持ち上げてしまうため、
- * NoToneMappingに切り替えてシェーダー出力をそのまま画面に反映する。
- * 他のモードではACESを維持。
+ * - blueprintモード: NoToneMapping（暗紺の正確な表示）
+ * - リアルモード: ACESFilmic + 適切な露出 + シャドウマップ有効化
+ * - NPRモード: ACESFilmic + シャドウマップ無効（軽量化）
  *
- * Canvas内に配置するReact Three Fiberコンポーネント。
+ * onCreatedは1回しか実行されないため、renderStyle切替時の
+ * シャドウマップ・ピクセルレシオ・トーンマッピング露出を
+ * このコンポーネントで動的に制御する。
  */
 
 import { useEffect } from 'react';
@@ -16,23 +18,52 @@ import * as THREE from 'three';
 
 interface ToneMappingControllerProps {
   renderStyle: 'realistic' | 'sketch' | 'colored-pencil' | 'watercolor' | 'blueprint';
+  qualityLevel?: 'high' | 'medium' | 'low';
+  brightness?: number;
+  isNight?: boolean;
+  isWarmStyle?: boolean;
 }
 
-export function ToneMappingController({ renderStyle }: ToneMappingControllerProps) {
+export function ToneMappingController({
+  renderStyle,
+  qualityLevel = 'medium',
+  brightness = 100,
+  isNight = false,
+  isWarmStyle = false,
+}: ToneMappingControllerProps) {
   const gl = useThree((s) => s.gl);
 
+  const isSketchStyle = renderStyle === 'sketch' || renderStyle === 'watercolor' || renderStyle === 'colored-pencil' || renderStyle === 'blueprint';
+
   useEffect(() => {
+    // ── トーンマッピング ──
     if (renderStyle === 'blueprint') {
-      // blueprintモード: トーンマッピング無効 + sRGB出力で正確な暗紺を表示
       gl.toneMapping = THREE.NoToneMapping;
       gl.toneMappingExposure = 1.0;
-      gl.outputColorSpace = THREE.SRGBColorSpace;
     } else {
-      // 他のモード: ACES復元 + sRGB出力
       gl.toneMapping = THREE.ACESFilmicToneMapping;
-      gl.outputColorSpace = THREE.SRGBColorSpace;
+      // 露出を動的に計算（onCreatedと同じロジック）
+      const warmBoost = isWarmStyle ? 0.10 : 0.02;
+      gl.toneMappingExposure = isNight
+        ? 0.80 + brightness / 450
+        : 1.25 + brightness / 250 + warmBoost;
     }
-  }, [gl, renderStyle]);
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+
+    // ── シャドウマップ・ピクセルレシオの動的切替 ──
+    if (isSketchStyle) {
+      gl.shadowMap.enabled = false;
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    } else if (qualityLevel === 'low') {
+      gl.shadowMap.enabled = false;
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+    } else {
+      gl.shadowMap.enabled = true;
+      gl.shadowMap.type = THREE.PCFSoftShadowMap;
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, qualityLevel === 'high' ? 2.5 : 1.5));
+    }
+    gl.shadowMap.needsUpdate = true;
+  }, [gl, renderStyle, isSketchStyle, qualityLevel, brightness, isNight, isWarmStyle]);
 
   return null;
 }
