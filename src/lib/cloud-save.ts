@@ -12,9 +12,17 @@ export async function saveProjectToCloud(name: string, data: string): Promise<st
   if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+  // data カラムは JSONB なので、文字列をパースしてオブジェクトとして送る
+  let parsedData: Record<string, unknown>;
+  try {
+    parsedData = JSON.parse(data);
+  } catch {
+    console.error('[CloudSave] Invalid JSON data');
+    return null;
+  }
   const { data: result, error } = await supabase
     .from('perse_projects')
-    .upsert({ user_id: user.id, name, data, updated_at: new Date().toISOString() }, { onConflict: 'user_id,name' })
+    .upsert({ user_id: user.id, name, data: parsedData, updated_at: new Date().toISOString() }, { onConflict: 'user_id,name' })
     .select('id')
     .single();
   if (error) { console.error('[CloudSave]', error); return null; }
@@ -38,7 +46,9 @@ export async function loadCloudProject(id: string): Promise<string | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.from('perse_projects').select('data').eq('id', id).single();
   if (error) { console.error('[CloudSave]', error); return null; }
-  return data?.data || null;
+  if (!data?.data) return null;
+  // data カラムは JSONB なのでオブジェクトとして返る — 文字列に変換
+  return typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
 }
 
 export async function deleteCloudProject(id: string): Promise<boolean> {

@@ -632,10 +632,10 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
                   role="radio"
                   aria-checked={wallDisplayMode === mode}
                   onClick={() => setWallDisplayMode(mode)}
-                  className={`flex-1 text-[10px] px-1 py-1 rounded-sm active:scale-95 ${
+                  className={`flex-1 text-[10px] px-1 py-1 rounded-sm active:scale-95 border ${
                     wallDisplayMode === mode
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 font-medium'
+                      : 'text-gray-600 border-gray-200 bg-white hover:bg-gray-50'
                   }`}
                 >
                   {label}
@@ -697,7 +697,7 @@ export function EditorControlPanel({ isMobile = false, isOpen = false, onClose }
             {/* ジオラマモードボタン */}
             <button
               onClick={activateDioramaMode}
-              className="mt-1.5 w-full text-[10px] px-2 py-1.5 rounded-sm bg-blue-600 text-white font-medium hover:bg-blue-700 active:scale-95"
+              className="mt-1 text-[10px] text-blue-600 underline hover:text-blue-700 active:scale-95"
             >
               ジオラマモード
             </button>

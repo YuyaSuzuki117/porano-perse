@@ -30,6 +30,11 @@ interface ExportPanelProps {
   onBatchExport?: (options?: ScreenshotOptions) => void;
   /** バッチ進捗 */
   batchProgress?: { current: number; total: number } | null;
+  /** 外部から開閉制御 */
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+  /** トリガーボタンを隠す */
+  hideTrigger?: boolean;
 }
 
 /** 坪数への変換 (1坪 = 3.305785 m2) */
@@ -264,8 +269,13 @@ function buildProposalHTML(
 </html>`;
 }
 
-export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchExport, batchProgress }: ExportPanelProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchExport, batchProgress, externalOpen, onExternalClose, hideTrigger }: ExportPanelProps) {
+  const [isModalOpenInternal, setIsModalOpenInternal] = useState(false);
+  const isModalOpen = externalOpen ?? isModalOpenInternal;
+  const setIsModalOpen = (v: boolean) => {
+    setIsModalOpenInternal(v);
+    if (!v && onExternalClose) onExternalClose();
+  };
   const [activeTab, setActiveTab] = useState<'proposal' | 'image' | 'data' | 'history' | 'erp'>('proposal');
   const [previewHtml, setPreviewHtml] = useState('');
 
@@ -483,7 +493,7 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
     </div>
   );
 
-  if (!isModalOpen) return triggerButton;
+  if (!isModalOpen) return hideTrigger ? null : triggerButton;
 
   // タブ定義
   const tabs: { key: typeof activeTab; label: string; icon: string }[] = [

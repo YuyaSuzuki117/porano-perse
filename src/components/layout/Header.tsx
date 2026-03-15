@@ -100,6 +100,7 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
   const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
+  const [advancedExportOpen, setAdvancedExportOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
@@ -537,12 +538,37 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
                   <span className="text-[10px] text-gray-400 ml-auto">Porano Plaza</span>
                 </label>
               </div>
+              <div className="border-t border-gray-100 mt-1">
+                <button
+                  onClick={() => { setAdvancedExportOpen(true); setExportDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4 text-gray-400">
+                    <rect x="2" y="2" width="5" height="5" rx="0.5" />
+                    <rect x="9" y="2" width="5" height="5" rx="0.5" />
+                    <rect x="2" y="9" width="5" height="5" rx="0.5" />
+                    <rect x="9" y="9" width="5" height="5" rx="0.5" />
+                  </svg>
+                  <div>
+                    <div>{locale === 'ja' ? '詳細出力...' : 'Advanced Export...'}</div>
+                    <div className="text-[10px] text-gray-400">{locale === 'ja' ? '提案書・バッチ・動画' : 'Proposal / Batch / Video'}</div>
+                  </div>
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Export panel (advanced) */}
-        <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} onBatchExport={onBatchExport} batchProgress={batchProgress} />
+        {/* Export panel (advanced) — triggered from dropdown */}
+        <ExportPanel
+          onCapture3D={onScreenshot || (() => {})}
+          canvasRef={canvasRef}
+          onBatchExport={onBatchExport}
+          batchProgress={batchProgress}
+          hideTrigger
+          externalOpen={advancedExportOpen}
+          onExternalClose={() => setAdvancedExportOpen(false)}
+        />
 
         <Sep />
 
@@ -691,9 +717,9 @@ export function Header({ onScreenshot, onHiResScreenshot, onExportPDF, onPrint, 
             />
             <span>{t('header.watermark')}</span>
           </label>
-          <div className="px-1 py-1">
-            <ExportPanel onCapture3D={onScreenshot || (() => {})} canvasRef={canvasRef} onBatchExport={onBatchExport} batchProgress={batchProgress} />
-          </div>
+          <button onClick={() => { setAdvancedExportOpen(true); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium active:bg-gray-100 rounded min-h-[44px]">
+            {locale === 'ja' ? '詳細出力...' : 'Advanced Export...'}
+          </button>
         </div>
       )}
       <ProjectListModal isOpen={showProjectList} onClose={() => setShowProjectList(false)} />

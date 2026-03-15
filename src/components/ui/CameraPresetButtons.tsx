@@ -97,13 +97,13 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
   const activeModeLabel = isAutoWalkthrough ? '巡回' : walkthroughPlaying ? 'ウォークスルー' : isFirstPersonMode ? '一人称' : null;
 
   return (
-    <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10 w-32">
+    <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 z-10 w-24">
       {/* View preset dropdown */}
       <div className="relative">
         <button
           onClick={() => { setViewOpen(!viewOpen); setModeOpen(false); }}
           className={cn(
-            'w-full flex items-center justify-between px-2.5 py-1.5 bg-white border border-gray-200 rounded-md text-xs text-gray-700 shadow-sm transition-colors',
+            'w-full flex items-center justify-between px-1.5 py-1 bg-white/90 border border-gray-200 rounded text-[10px] text-gray-700 shadow-sm transition-colors',
             viewOpen && 'border-blue-400 ring-1 ring-blue-100'
           )}
           aria-label="カメラビュー選択"
@@ -115,20 +115,20 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
           )}>
             {currentViewLabel}
           </span>
-          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3 h-3 text-gray-400" aria-hidden="true">
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-2.5 h-2.5 text-gray-400" aria-hidden="true">
             <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
         {viewOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-md z-50 py-1" role="listbox">
-            <div className="px-2 py-1 text-[10px] text-gray-400 font-medium uppercase tracking-wider">基本ビュー</div>
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 border border-gray-200 rounded shadow-md z-50 py-0.5" role="listbox">
+            <div className="px-2 py-0.5 text-[9px] text-gray-400 font-medium uppercase tracking-wider">基本ビュー</div>
             {VIEW_PRESETS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => handleViewSelect(p.id)}
                 className={cn(
-                  'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                  'w-full text-left px-2.5 py-1 text-[10px] transition-colors',
                   cameraPreset === p.id
                     ? 'text-blue-600 bg-blue-50 font-medium'
                     : 'text-gray-700 hover:bg-gray-50'
@@ -139,14 +139,14 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
                 {p.label}
               </button>
             ))}
-            <div className="border-t border-gray-100 my-1" />
-            <div className="px-2 py-1 text-[10px] text-gray-400 font-medium uppercase tracking-wider">プレゼン</div>
+            <div className="border-t border-gray-100 my-0.5" />
+            <div className="px-2 py-0.5 text-[9px] text-gray-400 font-medium uppercase tracking-wider">プレゼン</div>
             {PRESENTATION_PRESETS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => handleViewSelect(p.id)}
                 className={cn(
-                  'w-full text-left px-3 py-1.5 text-xs transition-colors',
+                  'w-full text-left px-2.5 py-1 text-[10px] transition-colors',
                   cameraPreset === p.id
                     ? 'text-blue-600 bg-blue-50 font-medium'
                     : 'text-gray-700 hover:bg-gray-50'
@@ -166,7 +166,7 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
         <button
           onClick={() => { setModeOpen(!modeOpen); setViewOpen(false); }}
           className={cn(
-            'w-full flex items-center justify-between px-2.5 py-1.5 bg-white border border-gray-200 rounded-md text-xs shadow-sm transition-colors',
+            'w-full flex items-center justify-between px-1.5 py-1 bg-white/90 border border-gray-200 rounded text-[10px] shadow-sm transition-colors',
             activeModeLabel ? 'text-blue-600 font-medium border-blue-200' : 'text-gray-700',
             modeOpen && 'border-blue-400 ring-1 ring-blue-100'
           )}
@@ -175,17 +175,17 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
           aria-haspopup="true"
         >
           <span>{activeModeLabel || 'モード'}</span>
-          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3 h-3 text-gray-400" aria-hidden="true">
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-2.5 h-2.5 text-gray-400" aria-hidden="true">
             <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
         {modeOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-md z-50 py-1">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 border border-gray-200 rounded shadow-md z-50 py-0.5">
             <button
               onClick={() => { toggleAutoWalkthrough(); setModeOpen(false); }}
               className={cn(
-                'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between',
+                'w-full text-left px-2.5 py-1 text-[10px] transition-colors flex items-center justify-between',
                 isAutoWalkthrough ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-50'
               )}
             >
@@ -197,7 +197,7 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
             <button
               onClick={() => { toggleWalkthrough(); setModeOpen(false); }}
               className={cn(
-                'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between',
+                'w-full text-left px-2.5 py-1 text-[10px] transition-colors flex items-center justify-between',
                 walkthroughPlaying && !isAutoWalkthrough ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-50'
               )}
             >
@@ -209,7 +209,7 @@ export function CameraPresetButtons({ canvasRef }: CameraPresetButtonsProps) {
             <button
               onClick={() => { toggleFirstPerson(); setModeOpen(false); }}
               className={cn(
-                'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between',
+                'w-full text-left px-2.5 py-1 text-[10px] transition-colors flex items-center justify-between',
                 isFirstPersonMode ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-50'
               )}
             >

@@ -122,11 +122,10 @@ export function CameraBookmarkPanel({ canvasRef }: CameraBookmarkPanelProps) {
       ) : (
         <button
           onClick={() => setShowInput(true)}
-          className="flex items-center gap-1.5 px-3 py-2 min-h-[36px] md:min-h-0 md:py-1 md:px-2 bg-blue-600/50 backdrop-blur-sm text-white text-xs md:text-[10px] rounded active:bg-blue-600/80 hover:bg-blue-600/70 transition-colors"
+          className="px-2 py-0.5 text-[9px] text-white/50 hover:text-white/80 transition-colors"
           title="現在のアングルを保存"
         >
-          <span>+</span>
-          <span>アングルを保存</span>
+          + 保存
         </button>
       )}
     </div>
