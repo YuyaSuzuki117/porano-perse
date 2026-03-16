@@ -1,9 +1,9 @@
-"""EEVEE render settings and execution.
+"""Cycles render settings and execution.
 
 Quality profiles:
-  - preview:    960x540,   16 samples
-  - draft:      1280x720,  32 samples
-  - production: 1920x1080, 128 samples
+  - preview:    960x540,   32 samples, denoiser ON
+  - draft:      1280x720,  64 samples, denoiser ON
+  - production: 1920x1080, 256 samples, denoiser ON
 """
 
 import bpy
@@ -18,17 +18,17 @@ QUALITY_PROFILES = {
     'preview': {
         'resolution_x': 960,
         'resolution_y': 540,
-        'samples': 16,
+        'samples': 32,
     },
     'draft': {
         'resolution_x': 1280,
         'resolution_y': 720,
-        'samples': 32,
+        'samples': 64,
     },
     'production': {
         'resolution_x': 1920,
         'resolution_y': 1080,
-        'samples': 128,
+        'samples': 256,
     },
 }
 
@@ -38,7 +38,7 @@ QUALITY_PROFILES = {
 # ---------------------------------------------------------------------------
 
 def setup_render(quality='preview', output_path=None):
-    """Configure EEVEE render settings.
+    """Configure Cycles render settings.
 
     Args:
         quality: One of 'preview', 'draft', 'production'.
@@ -48,66 +48,60 @@ def setup_render(quality='preview', output_path=None):
     res_x = profile['resolution_x']
     res_y = profile['resolution_y']
     samples = profile['samples']
-    is_production = (quality == 'production')
 
     scene = bpy.context.scene
 
     # --- Engine & resolution ---
-    scene.render.engine = 'BLENDER_EEVEE'
+    scene.render.engine = 'CYCLES'
     scene.render.resolution_x = res_x
     scene.render.resolution_y = res_y
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = False
 
-    # --- Samples ---
-    eevee = scene.eevee
-    try:
-        eevee.taa_render_samples = samples
-    except AttributeError:
-        pass
+    # --- Cycles samples & denoising ---
+    scene.cycles.device = 'CPU'  # safe default
+    scene.cycles.samples = samples
+    scene.cycles.use_denoising = True
+    scene.cycles.denoiser = 'OPENIMAGEDENOISE'
 
-    # --- Raytracing (Blender 4+) ---
+    # --- Try GPU ---
     try:
-        eevee.use_raytracing = True
-        eevee.ray_tracing_method = 'SCREEN'
-    except AttributeError:
-        pass
+        prefs = bpy.context.preferences.addons['cycles'].preferences
+        prefs.compute_device_type = 'CUDA'
+        prefs.get_devices()
+        for device in prefs.devices:
+            device.use = True
+        scene.cycles.device = 'GPU'
+    except Exception:
+        try:
+            prefs = bpy.context.preferences.addons['cycles'].preferences
+            prefs.compute_device_type = 'OPTIX'
+            prefs.get_devices()
+            for device in prefs.devices:
+                device.use = True
+            scene.cycles.device = 'GPU'
+        except Exception:
+            scene.cycles.device = 'CPU'
 
-    # --- Screen Space Reflections ---
+    # --- Performance ---
+    scene.cycles.use_adaptive_sampling = True
+    scene.cycles.adaptive_threshold = 0.01
     try:
-        eevee.use_ssr = True
-        eevee.use_ssr_refraction = True
-        if is_production:
-            eevee.ssr_quality = 1.0
-            eevee.ssr_max_roughness = 0.5
+        scene.render.tile_x = 256
+        scene.render.tile_y = 256
     except AttributeError:
-        pass
+        pass  # Blender 4.0+ handles tiles automatically
 
-    # --- Ambient Occlusion ---
-    try:
-        eevee.use_gtao = True
-        eevee.gtao_distance = 1.5
-        if is_production:
-            eevee.gtao_quality = 1.0
-    except AttributeError:
-        pass
+    # --- Light paths (interior scene needs more bounces) ---
+    scene.cycles.max_bounces = 8
+    scene.cycles.diffuse_bounces = 4
+    scene.cycles.glossy_bounces = 4
+    scene.cycles.transmission_bounces = 8
 
-    # --- Bloom ---
-    try:
-        eevee.use_bloom = True
-        eevee.bloom_threshold = 0.8
-        eevee.bloom_intensity = 0.04
-    except AttributeError:
-        pass
-
-    # --- Shadows ---
-    try:
-        eevee.shadow_cube_size = '2048'
-        eevee.shadow_cascade_size = '2048'
-        eevee.use_shadow_high_bitdepth = True
-        eevee.use_soft_shadows = True
-    except AttributeError:
-        pass
+    # --- Color management ---
+    scene.view_settings.view_transform = 'AgX'
+    scene.view_settings.look = 'AgX - Medium High Contrast'
+    scene.view_settings.exposure = 0.3
 
     # --- Output format ---
     scene.render.image_settings.file_format = 'PNG'
@@ -122,7 +116,7 @@ def setup_render(quality='preview', output_path=None):
     scene.unit_settings.scale_length = 1.0
 
     print(f"[render] Setup complete — {quality} ({res_x}x{res_y}, "
-          f"{samples} samples, EEVEE)")
+          f"{samples} samples, Cycles, device={scene.cycles.device})")
 
 
 # ---------------------------------------------------------------------------

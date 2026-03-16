@@ -13,6 +13,16 @@ import os
 from .core import to_blender, rot_to_blender, scale_to_blender, link_to_collection
 from .materials import create_wood_material, create_metal_material, create_fabric_material
 
+# Custom high-quality model generators
+_custom_generators = {}
+try:
+    from .models.cafe_chair import create_cafe_chair
+    from .models.cafe_table import create_cafe_table
+    _custom_generators['chair'] = create_cafe_chair
+    _custom_generators['table_round'] = create_cafe_table
+except ImportError:
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Material cache
@@ -132,6 +142,25 @@ def import_furniture(scene_data, collections):
         bl_scale = scale_to_blender(app_scale)
 
         glb_path = os.path.join(models_dir, f"{item_type}.glb") if models_dir else ""
+
+        # Check for custom Blender model generator
+        if item_type in _custom_generators:
+            try:
+                gen_func = _custom_generators[item_type]
+                custom_obj = gen_func(name=item_name, location=bl_pos)
+                custom_obj.rotation_euler = bl_rot
+                custom_obj.scale = bl_scale
+
+                # Link to furniture collection
+                if furniture_col:
+                    link_to_collection(custom_obj, furniture_col)
+                    for child in custom_obj.children:
+                        link_to_collection(child, furniture_col)
+
+                success_count += 1
+                continue  # Skip GLB import
+            except Exception as e:
+                print(f"[furniture] Custom model failed for {item_name}: {e}, falling back to GLB")
 
         try:
             if models_dir and os.path.isfile(glb_path):

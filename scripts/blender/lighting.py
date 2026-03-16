@@ -1,4 +1,4 @@
-"""5-layer lighting system driven by scene JSON.
+"""6-layer lighting system driven by scene JSON (Cycles).
 
 Layers:
   1. Ceiling main Area Light
@@ -6,6 +6,7 @@ Layers:
   3. Accent Spot Light
   4. Pendant Point Lights (per furniture item of type pendant_light)
   5. World environment background
+  6. Fill light (reduced energy — Cycles GI handles bounce lighting)
 """
 
 import bpy
@@ -182,48 +183,22 @@ def setup_lighting(scene_data, collections):
         wall_rgba[2] * 0.5 + sky_color[2] * 0.5,
         1.0
     )
-    bg_node.inputs['Strength'].default_value = 2.5
+    bg_node.inputs['Strength'].default_value = 0.5
 
     print("[lighting] Layer 5: World environment set")
 
     # -----------------------------------------------------------------------
-    # Layer 6: Fill light (shadow-less, illuminates walls evenly)
+    # Layer 6: Fill light (shadow-less, reduced for Cycles GI)
     # -----------------------------------------------------------------------
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.3))
     fill = bpy.context.active_object
     fill.name = "Light_Fill"
-    fill.data.energy = 200
+    fill.data.energy = 50
     fill.data.size = max(W, D) * 1.2
     fill.data.color = (1.0, 0.97, 0.93)
     fill.data.use_shadow = False
     if lighting_col:
         link_to_collection(fill, lighting_col)
-    print("[lighting] Layer 6: Fill light (no shadow)")
+    print("[lighting] Layer 6: Fill light (no shadow, reduced for Cycles GI)")
 
-    # -----------------------------------------------------------------------
-    # Layer 7: Wall wash lights (illuminate walls from center, no shadows)
-    # -----------------------------------------------------------------------
-    # Area Light default faces -Z. Rotations to aim at walls:
-    # North (+Y): rotate X by -pi/2 so -Z becomes +Y
-    # South (-Y): rotate X by +pi/2 so -Z becomes -Y
-    # East (+X): rotate Y by +pi/2 so -Z becomes +X
-    # West (-X): rotate Y by -pi/2 so -Z becomes -X
-    wall_wash_defs = [
-        ((0, D * 0.1, H * 0.5), (-math.pi / 2, 0, 0), "Light_WallWash_North"),
-        ((0, -D * 0.1, H * 0.5), (math.pi / 2, 0, 0), "Light_WallWash_South"),
-        ((W * 0.1, 0, H * 0.5), (0, math.pi / 2, 0), "Light_WallWash_East"),
-        ((-W * 0.1, 0, H * 0.5), (0, -math.pi / 2, 0), "Light_WallWash_West"),
-    ]
-    for loc, rot, name in wall_wash_defs:
-        bpy.ops.object.light_add(type='AREA', location=loc, rotation=rot)
-        ww = bpy.context.active_object
-        ww.name = name
-        ww.data.energy = 60
-        ww.data.size = max(W, D) * 0.5
-        ww.data.color = spot_color
-        ww.data.use_shadow = False
-        if lighting_col:
-            link_to_collection(ww, lighting_col)
-    print("[lighting] Layer 7: Wall wash — 4 lights")
-
-    print(f"[lighting] Setup complete — 7 layers configured")
+    print(f"[lighting] Setup complete — 6 layers configured")

@@ -219,13 +219,6 @@ def build_room(scene_data, collections):
     )
     ceiling_rgba = hex_to_rgba(ceiling_color_hex)
     ceiling_mat = make_material("M_Ceiling", ceiling_rgba, roughness=0.9)
-    # Add emission to ceiling for EEVEE interior lighting
-    bsdf = ceiling_mat.node_tree.nodes.get("Principled BSDF")
-    try:
-        bsdf.inputs['Emission Color'].default_value = ceiling_rgba
-        bsdf.inputs['Emission Strength'].default_value = 0.1
-    except KeyError:
-        pass
 
     # --- Floor ---------------------------------------------------------------
     print(f"[room_builder] Floor: {W}m x {D}m")

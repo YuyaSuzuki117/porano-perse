@@ -17,46 +17,38 @@ def hex_to_linear(h):
 
 
 def create_wall_material(color_hex='#FFFFFF', roughness=0.82):
-    """Create wall material using Diffuse + Emission mix for EEVEE interiors.
+    """Create wall material using Principled BSDF for Cycles with GI.
 
-    Uses Mix Shader: 70% Diffuse BSDF + 30% Emission to ensure walls
-    show their color even in enclosed EEVEE scenes without GI.
+    With Cycles global illumination, walls no longer need emission hacks.
+    Uses proper Principled BSDF with subtle noise bump for wall texture.
     """
     linear_color = hex_to_linear(color_hex)
 
     mat = bpy.data.materials.new(name=f"M_Wall_{color_hex.lstrip('#')}")
     mat.use_nodes = True
     mat.use_backface_culling = False
+
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs['Base Color'].default_value = linear_color
+    bsdf.inputs['Roughness'].default_value = roughness
+
+    # Subtle bump for wall texture
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
 
-    # Clear default nodes
-    for n in nodes:
-        nodes.remove(n)
+    tex_coord = nodes.new('ShaderNodeTexCoord')
+    mapping = nodes.new('ShaderNodeMapping')
+    links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
 
-    # Output
-    output = nodes.new('ShaderNodeOutputMaterial')
-    output.location = (400, 0)
+    noise = nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 100.0
+    noise.inputs['Detail'].default_value = 3.0
+    links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
 
-    # Diffuse BSDF (for light response)
-    diffuse = nodes.new('ShaderNodeBsdfDiffuse')
-    diffuse.location = (-200, 100)
-    diffuse.inputs['Color'].default_value = linear_color
-    diffuse.inputs['Roughness'].default_value = roughness
-
-    # Emission (for self-illumination in closed rooms)
-    emission = nodes.new('ShaderNodeEmission')
-    emission.location = (-200, -100)
-    emission.inputs['Color'].default_value = linear_color
-    emission.inputs['Strength'].default_value = 0.4
-
-    # Mix Shader: 70% diffuse + 30% emission
-    mix = nodes.new('ShaderNodeMixShader')
-    mix.location = (150, 0)
-    mix.inputs['Fac'].default_value = 0.3  # 30% emission
-
-    links.new(diffuse.outputs['BSDF'], mix.inputs[1])
-    links.new(emission.outputs['Emission'], mix.inputs[2])
-    links.new(mix.outputs['Shader'], output.inputs['Surface'])
+    bump = nodes.new('ShaderNodeBump')
+    bump.inputs['Strength'].default_value = 0.02
+    bump.inputs['Distance'].default_value = 0.001
+    links.new(noise.outputs['Fac'], bump.inputs['Height'])
+    links.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
 
     return mat
