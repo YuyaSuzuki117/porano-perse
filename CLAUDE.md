@@ -154,6 +154,13 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 - **品質:** preview(32samples ~40s) / draft(64) / production(256)
 - **Blender 5.0 API注意:** `handle_left_type`(非handle_type_left), 自動タイル(tile_x/y廃止)
 
+### 5.3 パース生成の優先順位
+初回パース生成は **建築の箱を先に固める**。家具は後から差し替え。
+1. **最優先:** 天井・壁・床・建具をしっかり作る（図面があれば寸法厳守）
+2. **後回し:** 家具はプレースホルダーでOK（後から単体モデリングして差替え）
+3. **禁止:** 余計な線や物を入れない（後から練る）
+詳細: `.claude/rules/perse-generation-priority.md`
+
 ## 6. Architecture Decisions
 - **2D/3D同期**: Zustand `useEditorStore` が Single Source of Truth。WallSegment[]を共有。
 - **座標系**: 2D (x,y) → 3D (x=横, y=高さ, z=奥行)。2DのyとzをSwap。
