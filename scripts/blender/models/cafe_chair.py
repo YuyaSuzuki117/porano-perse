@@ -23,8 +23,8 @@ def _get_ebony_material():
     mat = bpy.data.materials.new("M_BlackEbony")
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    bsdf.inputs['Base Color'].default_value = (0.02, 0.02, 0.02, 1.0)
-    bsdf.inputs['Roughness'].default_value = 0.38
+    bsdf.inputs['Base Color'].default_value = (0.01, 0.01, 0.012, 1.0)
+    bsdf.inputs['Roughness'].default_value = 0.35
     bsdf.inputs['Specular IOR Level'].default_value = 0.5
 
     # Add subtle wood grain via Noise
@@ -66,9 +66,9 @@ def _get_cane_material():
     links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
 
     checker = nodes.new('ShaderNodeTexChecker')
-    checker.inputs['Scale'].default_value = 30.0
-    checker.inputs['Color1'].default_value = (0.82, 0.72, 0.50, 1.0)  # Honey
-    checker.inputs['Color2'].default_value = (0.70, 0.58, 0.38, 1.0)  # Shadow
+    checker.inputs['Scale'].default_value = 40.0
+    checker.inputs['Color1'].default_value = (0.75, 0.60, 0.35, 1.0)  # Honey
+    checker.inputs['Color2'].default_value = (0.55, 0.42, 0.22, 1.0)  # Shadow
     links.new(mapping.outputs['Vector'], checker.inputs['Vector'])
     links.new(checker.outputs['Color'], bsdf.inputs['Base Color'])
 
@@ -102,7 +102,7 @@ def create_cafe_chair(name="CowHornChair", location=(0, 0, 0)):
 
     # --- SEAT FRAME (circle with slight D-shape) ---
     bpy.ops.mesh.primitive_cylinder_add(
-        radius=0.22, depth=0.025, vertices=32,
+        radius=0.23, depth=0.025, vertices=32,
         location=(0, 0, 0.45),
     )
     seat_frame = bpy.context.active_object
@@ -123,10 +123,10 @@ def create_cafe_chair(name="CowHornChair", location=(0, 0, 0)):
 
     # --- LEGS (4 tapered cylinders using cone) ---
     leg_positions = [
-        ((-0.16, -0.14, 0.225), 0.008, 0.016),  # back-left
-        ((0.16, -0.14, 0.225), 0.008, 0.016),    # back-right
-        ((-0.16, 0.12, 0.225), 0.008, 0.016),    # front-left
-        ((0.16, 0.12, 0.225), 0.008, 0.016),     # front-right
+        ((-0.16, -0.14, 0.225), 0.010, 0.018),  # back-left
+        ((0.16, -0.14, 0.225), 0.010, 0.018),    # back-right
+        ((-0.16, 0.12, 0.225), 0.010, 0.018),    # front-left
+        ((0.16, 0.12, 0.225), 0.010, 0.018),     # front-right
     ]
     for i, (pos, r_top, r_bot) in enumerate(leg_positions):
         bpy.ops.mesh.primitive_cone_add(
@@ -144,7 +144,7 @@ def create_cafe_chair(name="CowHornChair", location=(0, 0, 0)):
 
     curve_data = bpy.data.curves.new(f"{name}_HornCurve", type='CURVE')
     curve_data.dimensions = '3D'
-    curve_data.bevel_depth = 0.012  # Tube radius
+    curve_data.bevel_depth = 0.018  # Tube radius
     curve_data.bevel_resolution = 6  # Smooth tube cross-section
     curve_data.fill_mode = 'FULL'
 
@@ -200,7 +200,7 @@ def create_cafe_chair(name="CowHornChair", location=(0, 0, 0)):
     # --- BACK SUPPORT STRUTS (connect seat to horn) ---
     for x_pos in [-0.10, 0.10]:
         bpy.ops.mesh.primitive_cone_add(
-            radius1=0.008, radius2=0.012, depth=0.25,
+            radius1=0.010, radius2=0.014, depth=0.25,
             vertices=8, location=(x_pos, -0.16, 0.575),
         )
         strut = bpy.context.active_object

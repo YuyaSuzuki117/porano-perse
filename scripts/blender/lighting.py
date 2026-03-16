@@ -61,7 +61,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.05))
     ceiling_light = bpy.context.active_object
     ceiling_light.name = "Light_Ceiling_Main"
-    ceiling_light.data.energy = spot_intensity * 250
+    ceiling_light.data.energy = spot_intensity * 200
     ceiling_light.data.size = min(W, D) * 0.7
     ceiling_light.data.color = spot_color
     ceiling_light.data.use_shadow = True
@@ -105,7 +105,7 @@ def setup_lighting(scene_data, collections):
         bpy.ops.object.light_add(type='AREA', location=loc, rotation=rot)
         win_light = bpy.context.active_object
         win_light.name = f"Light_Window_{idx:02d}"
-        win_light.data.energy = 120
+        win_light.data.energy = 80
         win_light.data.size = ow
         win_light.data.color = (0.9, 0.95, 1.0)
         win_light.data.use_shadow = True
@@ -122,7 +122,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='SPOT', location=accent_loc)
     accent = bpy.context.active_object
     accent.name = "Light_Accent_Spot"
-    accent.data.energy = spot_intensity * 160
+    accent.data.energy = spot_intensity * 100
     accent.data.spot_size = 1.0
     accent.data.color = spot_color
     # Aim downward toward room center
@@ -193,7 +193,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.3))
     fill = bpy.context.active_object
     fill.name = "Light_Fill"
-    fill.data.energy = 50
+    fill.data.energy = 30
     fill.data.size = max(W, D) * 1.2
     fill.data.color = (1.0, 0.97, 0.93)
     fill.data.use_shadow = False

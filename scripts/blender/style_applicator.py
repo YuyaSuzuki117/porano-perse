@@ -65,7 +65,7 @@ def apply_style(scene_data):
         except Exception:
             print("[style] Color management: using defaults")
 
-    scene.view_settings.exposure = 0.3
+    scene.view_settings.exposure = 0.0
     scene.view_settings.gamma = 1.0
 
     print("[style] Style application complete")

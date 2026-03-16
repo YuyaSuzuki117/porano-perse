@@ -25,7 +25,7 @@ def _get_marble_material():
     bsdf = nodes.get("Principled BSDF")
 
     # White marble base
-    bsdf.inputs['Roughness'].default_value = 0.15
+    bsdf.inputs['Roughness'].default_value = 0.12
     bsdf.inputs['Specular IOR Level'].default_value = 0.5
 
     # Vein pattern: Voronoi + Wave mixed
@@ -58,11 +58,11 @@ def _get_marble_material():
     # Color ramp: white marble with grey veins
     ramp = nodes.new('ShaderNodeValToRGB')
     ramp.color_ramp.elements[0].position = 0.0
-    ramp.color_ramp.elements[0].color = (0.95, 0.93, 0.91, 1.0)  # White
+    ramp.color_ramp.elements[0].color = (0.90, 0.88, 0.86, 1.0)  # White
     mid = ramp.color_ramp.elements.new(0.4)
-    mid.color = (0.88, 0.86, 0.84, 1.0)  # Light grey
+    mid.color = (0.75, 0.72, 0.70, 1.0)  # Light grey
     ramp.color_ramp.elements[1].position = 0.8
-    ramp.color_ramp.elements[1].color = (0.55, 0.52, 0.50, 1.0)  # Vein grey
+    ramp.color_ramp.elements[1].color = (0.40, 0.38, 0.37, 1.0)  # Vein grey
     links.new(mix_veins.outputs[0], ramp.inputs['Fac'])
     links.new(ramp.outputs['Color'], bsdf.inputs['Base Color'])
 
@@ -90,8 +90,8 @@ def _get_matte_black_metal():
     mat = bpy.data.materials.new("M_MatteBlackMetal")
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    bsdf.inputs['Base Color'].default_value = (0.02, 0.02, 0.02, 1.0)
-    bsdf.inputs['Roughness'].default_value = 0.45
+    bsdf.inputs['Base Color'].default_value = (0.01, 0.01, 0.01, 1.0)
+    bsdf.inputs['Roughness'].default_value = 0.40
     bsdf.inputs['Metallic'].default_value = 0.9
 
     # Subtle surface texture
@@ -150,7 +150,7 @@ def create_cafe_table(name="MarbleCafeTable", location=(0, 0, 0)):
 
     # --- PEDESTAL COLUMN (tapered cylinder) ---
     bpy.ops.mesh.primitive_cone_add(
-        radius1=0.025, radius2=0.020, depth=0.62,
+        radius1=0.022, radius2=0.018, depth=0.62,
         vertices=16, location=(0, 0, 0.40)
     )
     pedestal = bpy.context.active_object
@@ -163,7 +163,7 @@ def create_cafe_table(name="MarbleCafeTable", location=(0, 0, 0)):
     # Build trumpet/tulip shape from stacked cone sections
     trumpet_sections = [
         # (radius, z_center, height)
-        (0.025, 0.095, 0.01),   # neck (narrow)
+        (0.030, 0.095, 0.01),   # neck (narrow)
         (0.04,  0.085, 0.01),   # flare start
         (0.06,  0.075, 0.01),   # flare
         (0.09,  0.065, 0.01),   # flare
@@ -191,7 +191,7 @@ def create_cafe_table(name="MarbleCafeTable", location=(0, 0, 0)):
 
     # Base bottom disc
     bpy.ops.mesh.primitive_cylinder_add(
-        radius=0.205, depth=0.005, vertices=32,
+        radius=0.21, depth=0.005, vertices=32,
         location=(0, 0, 0.022)
     )
     base_disc = bpy.context.active_object
