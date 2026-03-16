@@ -2,7 +2,7 @@ import bpy
 from .wood import create_wood_material
 
 
-def create_floor_material(texture_type='wood', color=None, roughness=None):
+def create_floor_material(texture_type='wood', color=None, roughness=None, wood_type='oak'):
     """Create a procedural floor PBR material.
 
     Args:
@@ -10,12 +10,15 @@ def create_floor_material(texture_type='wood', color=None, roughness=None):
                       'marble', 'checkerboard', 'linoleum'.
         color: Base color tuple (r, g, b, a) or None for defaults.
         roughness: Surface roughness override or None for type default.
+        wood_type: Wood type for 'wood' texture (oak, walnut, etc).
 
     Returns:
         bpy.types.Material
     """
+    if texture_type == 'wood':
+        return _build_wood_floor(color, roughness, wood_type)
+
     builders = {
-        'wood': _build_wood_floor,
         'tile': _build_tile_floor,
         'concrete': _build_concrete_floor,
         'tatami': _build_tatami_floor,
@@ -31,9 +34,30 @@ def create_floor_material(texture_type='wood', color=None, roughness=None):
 # Internal builders
 # ---------------------------------------------------------------------------
 
-def _build_wood_floor(color, roughness):
-    mat = create_wood_material('oak', roughness if roughness is not None else 0.45)
-    mat.name = "M_Floor_Wood"
+def _build_wood_floor(color, roughness, wood_type='oak'):
+    """Build a wood floor material, tinted to the style's floor color."""
+    rough = roughness if roughness is not None else 0.45
+    mat = create_wood_material(wood_type, rough)
+    mat.name = f"M_Floor_Wood_{wood_type}"
+
+    # If a color is provided, tint the wood's ColorRamp to match the style
+    if color and mat.use_nodes:
+        bsdf = mat.node_tree.nodes.get("Principled BSDF")
+        # Find the ColorRamp node and adjust its colors toward the target
+        for node in mat.node_tree.nodes:
+            if node.type == 'VALTORGB':
+                r, g, b = color[0], color[1], color[2]
+                for i, elem in enumerate(node.color_ramp.elements):
+                    # Blend original color with target (60% target, 40% original)
+                    orig = elem.color[:]
+                    factor = 0.6
+                    elem.color = (
+                        orig[0] * (1 - factor) + r * factor * (0.6 + i * 0.2),
+                        orig[1] * (1 - factor) + g * factor * (0.6 + i * 0.2),
+                        orig[2] * (1 - factor) + b * factor * (0.6 + i * 0.2),
+                        1.0,
+                    )
+                break
     return mat
 
 

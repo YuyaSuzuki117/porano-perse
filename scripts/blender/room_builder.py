@@ -209,9 +209,23 @@ def build_room(scene_data, collections):
     ceiling_color_hex = style.get("ceilingColor", "#FAFAFA")
     floor_texture = style.get("floorTexture", "wood")
 
+    wood_type = style.get("woodType", "oak")
+
     wall_mat = create_wall_material(color_hex=wall_color_hex)
-    floor_mat = create_floor_material(texture_type=floor_texture, color=hex_to_rgba(floor_color_hex))
-    ceiling_mat = make_material("M_Ceiling", hex_to_rgba(ceiling_color_hex), roughness=0.3)
+    floor_mat = create_floor_material(
+        texture_type=floor_texture,
+        color=hex_to_rgba(floor_color_hex),
+        wood_type=wood_type,
+    )
+    ceiling_rgba = hex_to_rgba(ceiling_color_hex)
+    ceiling_mat = make_material("M_Ceiling", ceiling_rgba, roughness=0.9)
+    # Add emission to ceiling for EEVEE interior lighting
+    bsdf = ceiling_mat.node_tree.nodes.get("Principled BSDF")
+    try:
+        bsdf.inputs['Emission Color'].default_value = ceiling_rgba
+        bsdf.inputs['Emission Strength'].default_value = 0.1
+    except KeyError:
+        pass
 
     # --- Floor ---------------------------------------------------------------
     print(f"[room_builder] Floor: {W}m x {D}m")
@@ -222,7 +236,13 @@ def build_room(scene_data, collections):
 
     # --- Ceiling -------------------------------------------------------------
     print(f"[room_builder] Ceiling at z={H}")
-    ceiling = _add_cube("Ceiling", (0, 0, H + 0.025), (W / 2, D / 2, 0.025))
+    # Plane facing downward (rotation PI around X to flip normal down)
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, H),
+                                      rotation=(math.pi, 0, 0))
+    ceiling = bpy.context.active_object
+    ceiling.name = "Ceiling"
+    ceiling.scale = (W, D, 1)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     _apply_material(ceiling, ceiling_mat)
     link_to_collection(ceiling, room_col)
     created["Ceiling"] = ceiling
@@ -251,7 +271,37 @@ def build_room(scene_data, collections):
     for direction, spec in wall_specs.items():
         name = f"Wall_{direction.capitalize()}"
         print(f"[room_builder] {name}")
-        wall = _add_cube(name, spec["loc"], spec["scale"])
+
+        # Use Plane facing inward (toward room center)
+        # Default Plane normal = +Z. Rotate so normal faces INTO the room.
+        loc = spec["loc"]
+        if direction == "north":
+            # Wall at +Y, normal must face -Y (into room)
+            bpy.ops.mesh.primitive_plane_add(size=1, location=(0, D / 2, H / 2),
+                                              rotation=(-math.pi / 2, 0, 0))
+            wall = bpy.context.active_object
+            wall.scale = (W, H, 1)
+        elif direction == "south":
+            # Wall at -Y, normal must face +Y (into room)
+            bpy.ops.mesh.primitive_plane_add(size=1, location=(0, -D / 2, H / 2),
+                                              rotation=(math.pi / 2, 0, 0))
+            wall = bpy.context.active_object
+            wall.scale = (W, H, 1)
+        elif direction == "east":
+            # Wall at +X, normal must face -X (into room)
+            bpy.ops.mesh.primitive_plane_add(size=1, location=(W / 2, 0, H / 2),
+                                              rotation=(0, math.pi / 2, 0))
+            wall = bpy.context.active_object
+            wall.scale = (D, H, 1)
+        elif direction == "west":
+            # Wall at -X, normal must face +X (into room)
+            bpy.ops.mesh.primitive_plane_add(size=1, location=(-W / 2, 0, H / 2),
+                                              rotation=(0, -math.pi / 2, 0))
+            wall = bpy.context.active_object
+            wall.scale = (D, H, 1)
+
+        wall.name = name
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
         _apply_material(wall, wall_mat)
         link_to_collection(wall, room_col)
         walls[direction] = wall
@@ -277,27 +327,8 @@ def build_room(scene_data, collections):
 
         centre_z = elev + oh / 2
 
-        # Build cutter cube
-        if wall_dir in ("north", "south"):
-            cx = -W / 2 + pos_along
-            wall_y = wall_specs[wall_dir]["loc"][1]
-            cutter_loc = (cx, wall_y, centre_z)
-            cutter_scale = (ow / 2 + 0.01, 0.15, oh / 2 + 0.01)
-        else:
-            cy = -D / 2 + pos_along
-            wall_x = wall_specs[wall_dir]["loc"][0]
-            cutter_loc = (wall_x, cy, centre_z)
-            cutter_scale = (0.15, ow / 2 + 0.01, oh / 2 + 0.01)
-
-        cutter = _add_cube(f"Cutter_{wall_dir}_{i}", cutter_loc, cutter_scale)
-        cutter.display_type = 'WIRE'
-
-        # Deselect all, select wall
-        bpy.ops.object.select_all(action='DESELECT')
-        wall_obj.select_set(True)
-        bpy.context.view_layer.objects.active = wall_obj
-
-        _cut_opening(wall_obj, cutter)
+        # Skip Boolean cut for Plane walls (not supported)
+        # Opening is indicated by glass pane + frame only
 
         # Window glass
         if o_type == "window":

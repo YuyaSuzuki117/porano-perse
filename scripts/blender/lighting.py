@@ -60,7 +60,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.05))
     ceiling_light = bpy.context.active_object
     ceiling_light.name = "Light_Ceiling_Main"
-    ceiling_light.data.energy = spot_intensity * 200
+    ceiling_light.data.energy = spot_intensity * 250
     ceiling_light.data.size = min(W, D) * 0.7
     ceiling_light.data.color = spot_color
     ceiling_light.data.use_shadow = True
@@ -104,7 +104,7 @@ def setup_lighting(scene_data, collections):
         bpy.ops.object.light_add(type='AREA', location=loc, rotation=rot)
         win_light = bpy.context.active_object
         win_light.name = f"Light_Window_{idx:02d}"
-        win_light.data.energy = 150
+        win_light.data.energy = 120
         win_light.data.size = ow
         win_light.data.color = (0.9, 0.95, 1.0)
         win_light.data.use_shadow = True
@@ -121,7 +121,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='SPOT', location=accent_loc)
     accent = bpy.context.active_object
     accent.name = "Light_Accent_Spot"
-    accent.data.energy = spot_intensity * 80
+    accent.data.energy = spot_intensity * 160
     accent.data.spot_size = 1.0
     accent.data.color = spot_color
     # Aim downward toward room center
@@ -172,8 +172,58 @@ def setup_lighting(scene_data, collections):
     bg_node = nodes.get("Background")
     if bg_node is None:
         bg_node = nodes.new('ShaderNodeBackground')
-    bg_node.inputs['Color'].default_value = (*sky_color, 1.0)
-    bg_node.inputs['Strength'].default_value = 0.3
+    # Use wall color for world background to illuminate walls correctly
+    wall_color_hex = scene_data.get("style", {}).get("wallColor", "#FFFFFF")
+    from .core import hex_to_rgba
+    wall_rgba = hex_to_rgba(wall_color_hex)
+    bg_node.inputs['Color'].default_value = (
+        wall_rgba[0] * 0.5 + sky_color[0] * 0.5,
+        wall_rgba[1] * 0.5 + sky_color[1] * 0.5,
+        wall_rgba[2] * 0.5 + sky_color[2] * 0.5,
+        1.0
+    )
+    bg_node.inputs['Strength'].default_value = 2.5
 
     print("[lighting] Layer 5: World environment set")
-    print(f"[lighting] Setup complete — 5 layers configured")
+
+    # -----------------------------------------------------------------------
+    # Layer 6: Fill light (shadow-less, illuminates walls evenly)
+    # -----------------------------------------------------------------------
+    bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.3))
+    fill = bpy.context.active_object
+    fill.name = "Light_Fill"
+    fill.data.energy = 200
+    fill.data.size = max(W, D) * 1.2
+    fill.data.color = (1.0, 0.97, 0.93)
+    fill.data.use_shadow = False
+    if lighting_col:
+        link_to_collection(fill, lighting_col)
+    print("[lighting] Layer 6: Fill light (no shadow)")
+
+    # -----------------------------------------------------------------------
+    # Layer 7: Wall wash lights (illuminate walls from center, no shadows)
+    # -----------------------------------------------------------------------
+    # Area Light default faces -Z. Rotations to aim at walls:
+    # North (+Y): rotate X by -pi/2 so -Z becomes +Y
+    # South (-Y): rotate X by +pi/2 so -Z becomes -Y
+    # East (+X): rotate Y by +pi/2 so -Z becomes +X
+    # West (-X): rotate Y by -pi/2 so -Z becomes -X
+    wall_wash_defs = [
+        ((0, D * 0.1, H * 0.5), (-math.pi / 2, 0, 0), "Light_WallWash_North"),
+        ((0, -D * 0.1, H * 0.5), (math.pi / 2, 0, 0), "Light_WallWash_South"),
+        ((W * 0.1, 0, H * 0.5), (0, math.pi / 2, 0), "Light_WallWash_East"),
+        ((-W * 0.1, 0, H * 0.5), (0, -math.pi / 2, 0), "Light_WallWash_West"),
+    ]
+    for loc, rot, name in wall_wash_defs:
+        bpy.ops.object.light_add(type='AREA', location=loc, rotation=rot)
+        ww = bpy.context.active_object
+        ww.name = name
+        ww.data.energy = 60
+        ww.data.size = max(W, D) * 0.5
+        ww.data.color = spot_color
+        ww.data.use_shadow = False
+        if lighting_col:
+            link_to_collection(ww, lighting_col)
+    print("[lighting] Layer 7: Wall wash — 4 lights")
+
+    print(f"[lighting] Setup complete — 7 layers configured")

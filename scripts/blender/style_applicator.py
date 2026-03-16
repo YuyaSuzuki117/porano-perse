@@ -54,20 +54,21 @@ def apply_style(scene_data):
     # 2. Color management
     # -------------------------------------------------------------------
     scene = bpy.context.scene
+    # Use Standard view transform for accurate color reproduction
+    # AgX/Filmic compress highlights and desaturate warm colors
     try:
-        scene.view_settings.view_transform = 'AgX'
-        scene.view_settings.look = 'AgX - Medium High Contrast'
-        print("[style] Color management: AgX + Medium High Contrast")
+        scene.view_settings.view_transform = 'Standard'
+        scene.view_settings.look = 'None'
+        print("[style] Color management: Standard")
     except Exception:
-        # Fall back to Filmic if AgX is not available (Blender < 4.0)
         try:
             scene.view_settings.view_transform = 'Filmic'
-            scene.view_settings.look = 'Medium High Contrast'
-            print("[style] Color management: Filmic + Medium High Contrast (fallback)")
+            scene.view_settings.look = 'None'
+            print("[style] Color management: Filmic (fallback)")
         except Exception:
             print("[style] Color management: using defaults")
 
-    scene.view_settings.exposure = 0.2
+    scene.view_settings.exposure = 0.0
     scene.view_settings.gamma = 1.0
 
     # -------------------------------------------------------------------

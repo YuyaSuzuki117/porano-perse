@@ -55,11 +55,16 @@ def _get_style_material(default_material, style):
     return None
 
 
-def _has_placeholder_material(obj):
-    """Check if an object has only default/placeholder materials.
+def _should_override_material(obj):
+    """Check if an object's materials should be overridden with style materials.
 
-    Returns True if the object has no material slots or all slots contain
-    materials with generic names (Material, Material.001, etc).
+    Returns True for objects with:
+    - No material slots
+    - Generic/placeholder materials (Material, Material.001, etc)
+    - Materials from gen-glb.mjs (ending in _mat, porano-gen generated)
+
+    Returns False only for materials with clearly custom names that indicate
+    hand-crafted shaders we should preserve.
     """
     if not obj.data or not hasattr(obj.data, 'materials'):
         return True
@@ -69,9 +74,12 @@ def _has_placeholder_material(obj):
         if mat is None:
             continue
         name = mat.name.lower()
-        # Keep custom materials — only override generic/placeholder ones
-        if not (name.startswith('material') or name == '' or name == 'default'):
-            return False
+        # gen-glb.mjs generates materials named like "seat_ring_mat", "top_mat"
+        # These should all be overridden by style materials
+        if name.endswith('_mat') or name.startswith('material') or name == '' or name == 'default':
+            continue
+        # Any other named material — keep it
+        return False
     return True
 
 
@@ -81,7 +89,7 @@ def _apply_material_to_hierarchy(parent_obj, material):
     Only overrides objects that have placeholder materials.
     """
     for child in parent_obj.children:
-        if child.type == 'MESH' and _has_placeholder_material(child):
+        if child.type == 'MESH' and _should_override_material(child):
             if len(child.data.materials) == 0:
                 child.data.materials.append(material)
             else:
