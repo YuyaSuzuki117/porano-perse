@@ -1,4 +1,5 @@
 import bpy
+import os
 from .wood import create_wood_material
 
 
@@ -25,6 +26,7 @@ def create_floor_material(texture_type='wood', color=None, roughness=None, wood_
         'marble': _build_marble_floor,
         'checkerboard': _build_checkerboard_floor,
         'linoleum': _build_linoleum_floor,
+        'terrazzo_art_deco': _build_terrazzo_art_deco_floor,
     }
     builder = builders.get(texture_type, _build_tile_floor)
     return builder(color, roughness)
@@ -401,4 +403,156 @@ def _build_linoleum_floor(color, roughness):
     links.new(mix.outputs[2], bsdf.inputs['Base Color'])
     bsdf.inputs['Roughness'].default_value = rough
 
+    return mat
+
+
+def _build_terrazzo_art_deco_floor(color, roughness):
+    """Art Deco geometric terrazzo floor.
+
+    Two terrazzo surfaces (cream + black) mixed by geometric pattern mask.
+    Aggregate is procedural Noise with sharp ColorRamp dots.
+    """
+    rough = roughness if roughness is not None else 0.25
+
+    mat = bpy.data.materials.new(name="M_Floor_Terrazzo_ArtDeco")
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    for n in list(nodes):
+        if n.name != "Material Output":
+            nodes.remove(n)
+    output = nodes["Material Output"]
+
+    # --- Texture Coordinates ---
+    tex_coord = nodes.new('ShaderNodeTexCoord')
+    tex_coord.location = (-1600, 300)
+    mapping = nodes.new('ShaderNodeMapping')
+    mapping.location = (-1400, 300)
+    links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
+
+    # --- Terrazzo Aggregate (shared procedural) ---
+    noise_agg = nodes.new('ShaderNodeTexNoise')
+    noise_agg.location = (-1100, 400)
+    noise_agg.inputs['Scale'].default_value = 500.0
+    noise_agg.inputs['Detail'].default_value = 10.0
+    noise_agg.inputs['Roughness'].default_value = 0.6
+    links.new(mapping.outputs['Vector'], noise_agg.inputs['Vector'])
+
+    dots_ramp = nodes.new('ShaderNodeValToRGB')
+    dots_ramp.location = (-850, 400)
+    dots_ramp.color_ramp.elements[0].position = 0.55
+    dots_ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+    dots_ramp.color_ramp.elements[1].position = 0.62
+    dots_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+    links.new(noise_agg.outputs['Fac'], dots_ramp.inputs['Fac'])
+
+    noise_fine = nodes.new('ShaderNodeTexNoise')
+    noise_fine.location = (-1100, 150)
+    noise_fine.inputs['Scale'].default_value = 1200.0
+    noise_fine.inputs['Detail'].default_value = 6.0
+    noise_fine.inputs['Roughness'].default_value = 0.5
+    links.new(mapping.outputs['Vector'], noise_fine.inputs['Vector'])
+
+    dots_fine = nodes.new('ShaderNodeValToRGB')
+    dots_fine.location = (-850, 150)
+    dots_fine.color_ramp.elements[0].position = 0.52
+    dots_fine.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+    dots_fine.color_ramp.elements[1].position = 0.58
+    dots_fine.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+    links.new(noise_fine.outputs['Fac'], dots_fine.inputs['Fac'])
+
+    agg_max = nodes.new('ShaderNodeMath')
+    agg_max.location = (-650, 300)
+    agg_max.operation = 'MAXIMUM'
+    links.new(dots_ramp.outputs['Color'], agg_max.inputs[0])
+    links.new(dots_fine.outputs['Color'], agg_max.inputs[1])
+
+    # --- Cream Terrazzo ---
+    cream_mix = nodes.new('ShaderNodeMixRGB')
+    cream_mix.location = (-450, 500)
+    cream_mix.inputs['Color1'].default_value = (1.0, 0.96, 0.91, 1.0)
+    cream_mix.inputs['Color2'].default_value = (0.35, 0.32, 0.28, 1.0)
+    links.new(agg_max.outputs['Value'], cream_mix.inputs['Fac'])
+
+    # --- Black Terrazzo ---
+    black_mix = nodes.new('ShaderNodeMixRGB')
+    black_mix.location = (-450, 250)
+    black_mix.inputs['Color1'].default_value = (0.12, 0.12, 0.12, 1.0)
+    black_mix.inputs['Color2'].default_value = (0.25, 0.24, 0.22, 1.0)
+
+    agg_reduce = nodes.new('ShaderNodeMath')
+    agg_reduce.location = (-500, 100)
+    agg_reduce.operation = 'MULTIPLY'
+    agg_reduce.inputs[1].default_value = 0.4
+    links.new(agg_max.outputs['Value'], agg_reduce.inputs[0])
+    links.new(agg_reduce.outputs['Value'], black_mix.inputs['Fac'])
+
+    # --- Pattern Mask (external image) ---
+    mask_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        '..', 'textures', 'floor_pattern_mask.png'
+    )
+    mask_path = os.path.normpath(mask_path)
+
+    img_tex = nodes.new('ShaderNodeTexImage')
+    img_tex.location = (-650, -100)
+    img_tex.projection = 'FLAT'
+    try:
+        img = bpy.data.images.load(mask_path, check_existing=True)
+        img_tex.image = img
+        img_tex.interpolation = 'Linear'
+        print(f"[terrazzo] Loaded mask: {mask_path}")
+    except Exception as e:
+        print(f"[terrazzo] WARNING: Could not load mask: {e}")
+    links.new(tex_coord.outputs['Generated'], img_tex.inputs['Vector'])
+
+    # --- Mix Cream + Black via Mask ---
+    color_mix = nodes.new('ShaderNodeMixRGB')
+    color_mix.location = (-200, 350)
+    links.new(img_tex.outputs['Color'], color_mix.inputs['Fac'])
+    links.new(black_mix.outputs['Color'], color_mix.inputs['Color1'])
+    links.new(cream_mix.outputs['Color'], color_mix.inputs['Color2'])
+
+    # --- Final Principled BSDF ---
+    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    bsdf.location = (200, 300)
+    bsdf.inputs['Roughness'].default_value = rough
+    try:
+        bsdf.inputs['Specular IOR Level'].default_value = 0.5
+    except KeyError:
+        pass
+    links.new(color_mix.outputs['Color'], bsdf.inputs['Base Color'])
+
+    # Roughness variation from aggregate
+    rough_var = nodes.new('ShaderNodeMath')
+    rough_var.location = (0, 0)
+    rough_var.operation = 'MULTIPLY_ADD'
+    rough_var.inputs[1].default_value = 0.08
+    rough_var.inputs[2].default_value = rough
+    links.new(agg_max.outputs['Value'], rough_var.inputs[0])
+
+    rough_clamp = nodes.new('ShaderNodeClamp')
+    rough_clamp.location = (150, 0)
+    rough_clamp.inputs['Min'].default_value = 0.15
+    rough_clamp.inputs['Max'].default_value = 0.45
+    links.new(rough_var.outputs['Value'], rough_clamp.inputs['Value'])
+    links.new(rough_clamp.outputs['Result'], bsdf.inputs['Roughness'])
+
+    # --- Bump (pattern edges + aggregate chips) ---
+    bump_pattern = nodes.new('ShaderNodeBump')
+    bump_pattern.location = (0, -200)
+    bump_pattern.inputs['Strength'].default_value = 0.02
+    bump_pattern.inputs['Distance'].default_value = 0.002
+    links.new(img_tex.outputs['Color'], bump_pattern.inputs['Height'])
+
+    bump_agg = nodes.new('ShaderNodeBump')
+    bump_agg.location = (100, -300)
+    bump_agg.inputs['Strength'].default_value = 0.04
+    bump_agg.inputs['Distance'].default_value = 0.001
+    links.new(agg_max.outputs['Value'], bump_agg.inputs['Height'])
+    links.new(bump_pattern.outputs['Normal'], bump_agg.inputs['Normal'])
+    links.new(bump_agg.outputs['Normal'], bsdf.inputs['Normal'])
+
+    links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
     return mat
