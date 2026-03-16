@@ -1,7 +1,8 @@
 """Room builder — constructs walls, floor, ceiling with openings in Blender.
 
 Builds axis-aligned room geometry centred at the origin, with the floor at z=0.
-Openings (doors/windows) are cut via Boolean DIFFERENCE modifiers.
+Includes architectural trim: baseboards, crown molding.
+Openings (doors/windows) are indicated by glass panes + frames.
 """
 
 import bpy
@@ -43,11 +44,7 @@ def _make_glass():
 
 
 def _add_cube(name, location, scale):
-    """Add a unit cube, set its location and scale, and return the object.
-
-    Uses bpy.ops.mesh.primitive_cube_add(size=1) so that scale values
-    correspond to half-extents.
-    """
+    """Add a unit cube, set its location and scale, and return the object."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=location)
     obj = bpy.context.active_object
     obj.name = name
@@ -69,10 +66,8 @@ def _cut_opening(wall_obj, cutter_obj):
     mod = wall_obj.modifiers.new(name="Opening", type='BOOLEAN')
     mod.operation = 'DIFFERENCE'
     mod.object = cutter_obj
-    # Set active and apply
     bpy.context.view_layer.objects.active = wall_obj
     bpy.ops.object.modifier_apply(modifier=mod.name)
-    # Delete cutter
     bpy.data.objects.remove(cutter_obj, do_unlink=True)
 
 
@@ -115,26 +110,22 @@ def _make_frame(opening, wall_name, W, D, t, collections):
     oh = opening["height"]
     elev = opening.get("elevation", 0.0)
     centre_z = elev + oh / 2
-    frame_w = 0.04  # frame profile width
-    frame_d = 0.06  # frame depth
+    frame_w = 0.04
+    frame_d = 0.06
 
     if wall in ("north", "south"):
         cx = -W / 2 + pos_along
         cy = D / 2 + t if wall == "north" else -D / 2 - t
         pieces = [
-            # Top
             (f"Frame_{wall}_top",
              (cx, cy, elev + oh + frame_w / 2),
              (ow / 2 + frame_w, frame_d / 2, frame_w / 2)),
-            # Bottom
             (f"Frame_{wall}_bot",
              (cx, cy, elev - frame_w / 2),
              (ow / 2 + frame_w, frame_d / 2, frame_w / 2)),
-            # Left
             (f"Frame_{wall}_left",
              (cx - ow / 2 - frame_w / 2, cy, centre_z),
              (frame_w / 2, frame_d / 2, oh / 2 + frame_w)),
-            # Right
             (f"Frame_{wall}_right",
              (cx + ow / 2 + frame_w / 2, cy, centre_z),
              (frame_w / 2, frame_d / 2, oh / 2 + frame_w)),
@@ -143,19 +134,15 @@ def _make_frame(opening, wall_name, W, D, t, collections):
         cy = -D / 2 + pos_along
         cx = W / 2 + t if wall == "east" else -W / 2 - t
         pieces = [
-            # Top
             (f"Frame_{wall}_top",
              (cx, cy, elev + oh + frame_w / 2),
              (frame_d / 2, ow / 2 + frame_w, frame_w / 2)),
-            # Bottom
             (f"Frame_{wall}_bot",
              (cx, cy, elev - frame_w / 2),
              (frame_d / 2, ow / 2 + frame_w, frame_w / 2)),
-            # Left
             (f"Frame_{wall}_left",
              (cx, cy - ow / 2 - frame_w / 2, centre_z),
              (frame_d / 2, frame_w / 2, oh / 2 + frame_w)),
-            # Right
             (f"Frame_{wall}_right",
              (cx, cy + ow / 2 + frame_w / 2, centre_z),
              (frame_d / 2, frame_w / 2, oh / 2 + frame_w)),
@@ -170,11 +157,107 @@ def _make_frame(opening, wall_name, W, D, t, collections):
 
 
 # ---------------------------------------------------------------------------
+# Architectural trim
+# ---------------------------------------------------------------------------
+
+def _make_trim_material(name, color_rgba, roughness=0.4):
+    """Create a material for baseboards and crown molding."""
+    mat = make_material(name, color_rgba, roughness=roughness)
+    return mat
+
+
+def _build_baseboards(W, D, H, wall_color_rgba, room_col):
+    """Add baseboards (巾木) along all 4 walls.
+
+    Height: 80mm, depth: 12mm, slight offset from wall.
+    """
+    baseboard_h = 0.08
+    baseboard_d = 0.012
+    # Slightly lighter than wall for contrast
+    r, g, b, a = wall_color_rgba
+    bb_color = (min(r * 1.15, 1.0), min(g * 1.15, 1.0), min(b * 1.15, 1.0), 1.0)
+    bb_mat = _make_trim_material("M_Baseboard", bb_color, roughness=0.35)
+
+    pieces = [
+        # North wall
+        ("Baseboard_N", (0, D / 2 - baseboard_d / 2, baseboard_h / 2),
+         (W / 2, baseboard_d / 2, baseboard_h / 2)),
+        # South wall
+        ("Baseboard_S", (0, -D / 2 + baseboard_d / 2, baseboard_h / 2),
+         (W / 2, baseboard_d / 2, baseboard_h / 2)),
+        # East wall
+        ("Baseboard_E", (W / 2 - baseboard_d / 2, 0, baseboard_h / 2),
+         (baseboard_d / 2, D / 2 - baseboard_d, baseboard_h / 2)),
+        # West wall
+        ("Baseboard_W", (-W / 2 + baseboard_d / 2, 0, baseboard_h / 2),
+         (baseboard_d / 2, D / 2 - baseboard_d, baseboard_h / 2)),
+    ]
+
+    created = []
+    for name, loc, scl in pieces:
+        obj = _add_cube(name, loc, scl)
+        _apply_material(obj, bb_mat)
+        # Add slight bevel for profile
+        mod = obj.modifiers.new("Bevel", "BEVEL")
+        mod.width = 0.003
+        mod.segments = 2
+        mod.limit_method = "ANGLE"
+        link_to_collection(obj, room_col)
+        created.append(obj)
+
+    print(f"[room_builder] Baseboards: 4 pieces")
+    return created
+
+
+def _build_crown_molding(W, D, H, ceiling_color_rgba, room_col):
+    """Add crown molding (廻り縁) at wall-ceiling junction.
+
+    Profile: 60mm drop, 40mm projection.
+    """
+    cm_drop = 0.06
+    cm_proj = 0.04
+    # Slightly different tone from ceiling
+    r, g, b, a = ceiling_color_rgba
+    cm_color = (min(r * 1.05, 1.0), min(g * 1.05, 1.0), min(b * 1.05, 1.0), 1.0)
+    cm_mat = _make_trim_material("M_CrownMolding", cm_color, roughness=0.3)
+
+    pieces = [
+        # North wall
+        ("Crown_N", (0, D / 2 - cm_proj / 2, H - cm_drop / 2),
+         (W / 2, cm_proj / 2, cm_drop / 2)),
+        # South wall
+        ("Crown_S", (0, -D / 2 + cm_proj / 2, H - cm_drop / 2),
+         (W / 2, cm_proj / 2, cm_drop / 2)),
+        # East wall
+        ("Crown_E", (W / 2 - cm_proj / 2, 0, H - cm_drop / 2),
+         (cm_proj / 2, D / 2 - cm_proj, cm_drop / 2)),
+        # West wall
+        ("Crown_W", (-W / 2 + cm_proj / 2, 0, H - cm_drop / 2),
+         (cm_proj / 2, D / 2 - cm_proj, cm_drop / 2)),
+    ]
+
+    created = []
+    for name, loc, scl in pieces:
+        obj = _add_cube(name, loc, scl)
+        _apply_material(obj, cm_mat)
+        # Bevel for molding profile
+        mod = obj.modifiers.new("Bevel", "BEVEL")
+        mod.width = 0.008
+        mod.segments = 3
+        mod.limit_method = "ANGLE"
+        link_to_collection(obj, room_col)
+        created.append(obj)
+
+    print(f"[room_builder] Crown molding: 4 pieces")
+    return created
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 def build_room(scene_data, collections):
-    """Build room geometry (floor, ceiling, walls) with openings.
+    """Build room geometry (floor, ceiling, walls) with openings and trim.
 
     Args:
         scene_data: dict with keys:
@@ -198,7 +281,7 @@ def build_room(scene_data, collections):
     D = room.get("depth", 4.0)
     H = room.get("height", 2.7)
     wall_thickness = room.get("wallThickness", 0.12)
-    t = wall_thickness / 2  # half-thickness
+    t = wall_thickness / 2
 
     room_col = collections["01_Room"]
     created = {}
@@ -211,14 +294,16 @@ def build_room(scene_data, collections):
 
     wood_type = style.get("woodType", "oak")
 
+    wall_color_rgba = hex_to_rgba(wall_color_hex)
+    ceiling_color_rgba = hex_to_rgba(ceiling_color_hex)
+
     wall_mat = create_wall_material(color_hex=wall_color_hex)
     floor_mat = create_floor_material(
         texture_type=floor_texture,
         color=hex_to_rgba(floor_color_hex),
         wood_type=wood_type,
     )
-    ceiling_rgba = hex_to_rgba(ceiling_color_hex)
-    ceiling_mat = make_material("M_Ceiling", ceiling_rgba, roughness=0.9)
+    ceiling_mat = make_material("M_Ceiling", ceiling_color_rgba, roughness=0.9)
 
     # --- Floor ---------------------------------------------------------------
     print(f"[room_builder] Floor: {W}m x {D}m")
@@ -233,7 +318,6 @@ def build_room(scene_data, collections):
 
     # --- Ceiling -------------------------------------------------------------
     print(f"[room_builder] Ceiling at z={H}")
-    # Plane facing downward (rotation PI around X to flip normal down)
     bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, H),
                                       rotation=(math.pi, 0, 0))
     ceiling = bpy.context.active_object
@@ -245,67 +329,35 @@ def build_room(scene_data, collections):
     created["Ceiling"] = ceiling
 
     # --- Walls ---------------------------------------------------------------
-    wall_specs = {
-        "north": {
-            "loc": (0, D / 2 + t, H / 2),
-            "scale": (W / 2 + t * 2, t, H / 2),
-        },
-        "south": {
-            "loc": (0, -D / 2 - t, H / 2),
-            "scale": (W / 2 + t * 2, t, H / 2),
-        },
-        "east": {
-            "loc": (W / 2 + t, 0, H / 2),
-            "scale": (t, D / 2, H / 2),
-        },
-        "west": {
-            "loc": (-W / 2 - t, 0, H / 2),
-            "scale": (t, D / 2, H / 2),
-        },
-    }
-
     walls = {}
-    for direction, spec in wall_specs.items():
+    wall_builds = [
+        ("north", (0, D / 2, H / 2), (-math.pi / 2, 0, 0), (W, H, 1)),
+        ("south", (0, -D / 2, H / 2), (math.pi / 2, 0, 0), (W, H, 1)),
+        ("east", (W / 2, 0, H / 2), (0, math.pi / 2, 0), (D, H, 1)),
+        ("west", (-W / 2, 0, H / 2), (0, -math.pi / 2, 0), (D, H, 1)),
+    ]
+
+    for direction, loc, rot, scl in wall_builds:
         name = f"Wall_{direction.capitalize()}"
         print(f"[room_builder] {name}")
-
-        # Use Plane facing inward (toward room center)
-        # Default Plane normal = +Z. Rotate so normal faces INTO the room.
-        loc = spec["loc"]
-        if direction == "north":
-            # Wall at +Y, normal must face -Y (into room)
-            bpy.ops.mesh.primitive_plane_add(size=1, location=(0, D / 2, H / 2),
-                                              rotation=(-math.pi / 2, 0, 0))
-            wall = bpy.context.active_object
-            wall.scale = (W, H, 1)
-        elif direction == "south":
-            # Wall at -Y, normal must face +Y (into room)
-            bpy.ops.mesh.primitive_plane_add(size=1, location=(0, -D / 2, H / 2),
-                                              rotation=(math.pi / 2, 0, 0))
-            wall = bpy.context.active_object
-            wall.scale = (W, H, 1)
-        elif direction == "east":
-            # Wall at +X, normal must face -X (into room)
-            bpy.ops.mesh.primitive_plane_add(size=1, location=(W / 2, 0, H / 2),
-                                              rotation=(0, math.pi / 2, 0))
-            wall = bpy.context.active_object
-            wall.scale = (D, H, 1)
-        elif direction == "west":
-            # Wall at -X, normal must face +X (into room)
-            bpy.ops.mesh.primitive_plane_add(size=1, location=(-W / 2, 0, H / 2),
-                                              rotation=(0, -math.pi / 2, 0))
-            wall = bpy.context.active_object
-            wall.scale = (D, H, 1)
-
+        bpy.ops.mesh.primitive_plane_add(size=1, location=loc, rotation=rot)
+        wall = bpy.context.active_object
         wall.name = name
+        wall.scale = scl
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
         _apply_material(wall, wall_mat)
         link_to_collection(wall, room_col)
         walls[direction] = wall
         created[name] = wall
 
+    # --- Baseboards (巾木) ---------------------------------------------------
+    _build_baseboards(W, D, H, wall_color_rgba, room_col)
+
+    # --- Crown Molding (廻り縁) ----------------------------------------------
+    _build_crown_molding(W, D, H, ceiling_color_rgba, room_col)
+
     # --- Openings ------------------------------------------------------------
-    glass_mat = None  # lazy-init
+    glass_mat = None
 
     for i, opening in enumerate(openings):
         wall_dir = opening.get("wall", "north")
@@ -322,19 +374,12 @@ def build_room(scene_data, collections):
 
         print(f"[room_builder] Opening {i}: {o_type} on {wall_dir} wall")
 
-        centre_z = elev + oh / 2
-
-        # Skip Boolean cut for Plane walls (not supported)
-        # Opening is indicated by glass pane + frame only
-
-        # Window glass
         if o_type == "window":
             if glass_mat is None:
                 glass_mat = _make_glass()
             _make_window_glass(opening, wall_dir, W, D, glass_mat, collections)
 
-        # Frame
         _make_frame(opening, wall_dir, W, D, t, collections)
 
-    print(f"[room_builder] Room complete: {len(created)} objects, {len(openings)} openings.")
+    print(f"[room_builder] Room complete: {len(created)} objects, {len(openings)} openings, baseboards + crown molding.")
     return created

@@ -49,7 +49,7 @@ def _get_velvet_material(color_name='blue'):
     principled.inputs["Roughness"].default_value = 0.85
     try:
         principled.inputs["Sheen Weight"].default_value = 0.8
-        principled.inputs["Sheen Tint"].default_value = 0.5
+        principled.inputs["Sheen Tint"].default_value = (1.0, 1.0, 1.0, 1.0)
     except KeyError:
         pass
 
