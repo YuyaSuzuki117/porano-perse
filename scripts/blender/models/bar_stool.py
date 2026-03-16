@@ -355,35 +355,57 @@ def create_bar_stool(name="BarStool", location=(0, 0, 0)):
     _smooth_object(backrest)
     backrest.select_set(False)
 
-    # --- LEGS (4 tapered, splayed outward) ---
+    # --- SEAT MOUNT RING (connects legs to seat underside) ---
+    bpy.ops.mesh.primitive_cylinder_add(
+        radius=0.13, depth=0.012, vertices=48,
+        location=(0, 0, 0.638),
+    )
+    mount = bpy.context.active_object
+    mount.name = f"{name}_SeatMount"
+    _assign_material(mount, metal)
+    _smooth_object(mount)
+    mount.parent = parent
+
+    # --- LEGS (4 tapered, penetrate into seat mount) ---
     seat_h = 0.65
-    leg_spread = 0.16
-    leg_base_spread = 0.22
+    leg_spread = 0.12       # Under seat, inside seat radius
+    leg_base_spread = 0.20  # Wider at floor
 
     leg_positions = [
-        (Vector((leg_spread, leg_spread, seat_h - 0.01)),
-         Vector((leg_base_spread, leg_base_spread, 0.01))),
-        (Vector((-leg_spread, leg_spread, seat_h - 0.01)),
-         Vector((-leg_base_spread, leg_base_spread, 0.01))),
-        (Vector((-leg_spread, -leg_spread, seat_h - 0.01)),
-         Vector((-leg_base_spread, -leg_base_spread, 0.01))),
-        (Vector((leg_spread, -leg_spread, seat_h - 0.01)),
-         Vector((leg_base_spread, -leg_base_spread, 0.01))),
+        (Vector((leg_spread, leg_spread, seat_h)),        # Top INTO seat
+         Vector((leg_base_spread, leg_base_spread, 0.0))),
+        (Vector((-leg_spread, leg_spread, seat_h)),
+         Vector((-leg_base_spread, leg_base_spread, 0.0))),
+        (Vector((-leg_spread, -leg_spread, seat_h)),
+         Vector((-leg_base_spread, -leg_base_spread, 0.0))),
+        (Vector((leg_spread, -leg_spread, seat_h)),
+         Vector((leg_base_spread, -leg_base_spread, 0.0))),
     ]
 
     for i, (top, bottom) in enumerate(leg_positions):
         _create_leg(
             f"{name}_Leg_{i}", top, bottom,
-            top_radius=0.009, bottom_radius=0.007,
+            top_radius=0.010, bottom_radius=0.007,
             material=metal, parent=parent,
         )
 
     # --- FOOTREST RING (circular tube between legs) ---
     _create_curve_ring(
         f"{name}_Footrest",
-        radius=0.19, height=0.25,
+        radius=0.17, height=0.22,
         bevel_depth=0.007,
         material=metal, parent=parent,
     )
+
+    # --- CROSS STRETCHERS (X-brace for structural integrity) ---
+    for start, end in [
+        (Vector((-0.15, -0.15, 0.12)), Vector((0.15, 0.15, 0.12))),
+        (Vector((0.15, -0.15, 0.12)), Vector((-0.15, 0.15, 0.12))),
+    ]:
+        _create_leg(
+            f"{name}_Stretcher", start, end,
+            top_radius=0.005, bottom_radius=0.005,
+            material=metal, parent=parent,
+        )
 
     return parent
