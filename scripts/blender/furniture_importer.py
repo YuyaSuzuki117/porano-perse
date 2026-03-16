@@ -18,8 +18,10 @@ _custom_generators = {}
 try:
     from .models.cafe_chair import create_cafe_chair
     from .models.cafe_table import create_cafe_table
+    from .models.bar_stool import create_bar_stool
     _custom_generators['chair'] = create_cafe_chair
     _custom_generators['table_round'] = create_cafe_table
+    _custom_generators['stool'] = create_bar_stool
 except ImportError:
     pass
 
@@ -149,7 +151,9 @@ def import_furniture(scene_data, collections):
                 gen_func = _custom_generators[item_type]
                 custom_obj = gen_func(name=item_name, location=bl_pos)
                 custom_obj.rotation_euler = bl_rot
-                custom_obj.scale = bl_scale
+                # Custom models are built at real-world scale — don't apply
+                # the GLB-intended scale which would distort them
+                custom_obj.scale = (1.0, 1.0, 1.0)
 
                 # Link to furniture collection
                 if furniture_col:
