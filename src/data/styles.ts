@@ -46,8 +46,8 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     name: 'cafe',
     nameJa: 'カフェ',
     wallColor: '#FFF0E0',       // 暖かいベージュ
-    floorColor: '#7A5A28',      // 濃い木目
-    floorTexture: 'wood',
+    floorColor: '#7A5A28',      // テラゾー（マスク画像で色決定）
+    floorTexture: 'terrazzo_art_deco',
     ceilingColor: '#FFF5E6',
     accentColor: '#C87941',     // レンガ色アクセント
     ambientIntensity: 0.6,

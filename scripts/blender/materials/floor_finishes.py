@@ -427,9 +427,17 @@ def _build_terrazzo_art_deco_floor(color, roughness):
     # --- Texture Coordinates ---
     tex_coord = nodes.new('ShaderNodeTexCoord')
     tex_coord.location = (-1600, 300)
+
+    # Mapping for terrazzo aggregate (high freq, independent of tile repeat)
     mapping = nodes.new('ShaderNodeMapping')
     mapping.location = (-1400, 300)
     links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
+
+    # Mapping for pattern mask — tiled ~8x across the floor
+    mapping_mask = nodes.new('ShaderNodeMapping')
+    mapping_mask.location = (-1400, -100)
+    mapping_mask.inputs['Scale'].default_value = (3.0, 4.0, 1.0)  # 3×4 = 12 tiles
+    links.new(tex_coord.outputs['Generated'], mapping_mask.inputs['Vector'])
 
     # --- Terrazzo Aggregate (shared procedural) ---
     noise_agg = nodes.new('ShaderNodeTexNoise')
@@ -502,10 +510,11 @@ def _build_terrazzo_art_deco_floor(color, roughness):
         img = bpy.data.images.load(mask_path, check_existing=True)
         img_tex.image = img
         img_tex.interpolation = 'Linear'
+        img_tex.extension = 'REPEAT'  # Tile the pattern
         print(f"[terrazzo] Loaded mask: {mask_path}")
     except Exception as e:
         print(f"[terrazzo] WARNING: Could not load mask: {e}")
-    links.new(tex_coord.outputs['Generated'], img_tex.inputs['Vector'])
+    links.new(mapping_mask.outputs['Vector'], img_tex.inputs['Vector'])
 
     # --- Mix Cream + Black via Mask ---
     color_mix = nodes.new('ShaderNodeMixRGB')
