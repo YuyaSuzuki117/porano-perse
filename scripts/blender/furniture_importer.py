@@ -19,10 +19,15 @@ try:
     from .models.cafe_chair import create_cafe_chair
     from .models.cafe_table import create_cafe_table
     from .models.bar_stool import create_bar_stool
+    from .models.club_chair import create_club_chair
+    from .models.brass_table import create_brass_table
     _custom_generators['chair'] = create_cafe_chair
     _custom_generators['table_round'] = create_cafe_table
     _custom_generators['stool'] = create_bar_stool
-except ImportError:
+    _custom_generators['club_chair'] = create_club_chair
+    _custom_generators['brass_table'] = create_brass_table
+except ImportError as e:
+    print(f"[furniture] Custom model import warning: {e}")
     pass
 
 

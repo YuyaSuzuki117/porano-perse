@@ -182,4 +182,24 @@ export const STYLE_PRESETS: Record<StylePreset, StyleConfig> = {
     fabricType: 'linen',
     metalFinish: 'matte',
   },
+  art_deco_bar: {
+    name: 'art_deco_bar',
+    nameJa: 'アール・デコバー',
+    wallColor: '#3D2B1F',       // ダークウォルナット
+    floorColor: '#1A1A1A',      // テラゾー（マスクで決定）
+    floorTexture: 'terrazzo_art_deco',
+    ceilingColor: '#2A1F15',    // ダーク天井
+    accentColor: '#C9A84C',     // ゴールドアクセント
+    ambientIntensity: 0.3,      // 暗めのラウンジ
+    spotlightIntensity: 0.8,
+    spotlightColor: '#FFD080',  // 暖かい黄金色
+    hemisphereSkyColor: '#3A2A1A',
+    hemisphereGroundColor: '#1A1008',
+    furniturePalette: { primary: '#2A1810', secondary: '#C9A84C', accent: '#0D1538', metal: '#C89B30', fabric: '#0A1230' },
+    furnitureRoughness: 0.35,
+    furnitureMetalness: 0.1,
+    woodType: 'walnut',
+    fabricType: 'velvet',
+    metalFinish: 'brass',
+  },
 };

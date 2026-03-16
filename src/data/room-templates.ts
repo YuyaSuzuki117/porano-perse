@@ -493,6 +493,69 @@ function createApparelShopTemplate(): RoomTemplate {
   return { id: 'rt_apparel', name: 'アパレルショップ', description: '8m×10m ディスプレイ6+ハンガー5+マネキン4+フィッティング2', icon: '👗', style: 'luxury', roomHeight: h, walls, openings, furniture };
 }
 
+// ============================
+// アール・デコ・ラウンジバー (10m x 12m)
+// ============================
+function createArtDecoBarTemplate(): RoomTemplate {
+  _rtIdCounter = 900;
+  const w = 10, d = 12, h = 3.5;
+  const walls = createRectRoom(w, d, h);
+  const hw = w / 2, hd = d / 2;
+
+  const openings: Opening[] = [
+    { id: rid('door'), wallId: walls[2].id, type: 'door', positionAlongWall: 5.0, width: 1.4, height: 2.4, elevation: 0 },
+  ];
+
+  const furniture: FurnitureItem[] = [
+    // === バーカウンター（北壁沿い） ===
+    rf('counter', 'バーカウンター', [0, 0, -hd + 0.5], [0, 0, 0], [4.0, 1.1, 0.6]),
+
+    // === バースツール6脚 ===
+    ...Array.from({ length: 6 }, (_, i) =>
+      rf('stool', 'バースツール', [-2.0 + i * 0.8, 0, -hd + 1.5], [0, 0, 0], [0.4, 0.75, 0.4])
+    ),
+
+    // === 前景: クラブチェア + 真鍮テーブル（4セット） ===
+    // セット1（左前）
+    rf('club_chair', 'クラブチェア青', [-2.5, 0, 1.5], [0, Math.PI * 0.2, 0]),
+    rf('club_chair', 'クラブチェア緑', [-1.5, 0, 2.2], [0, -Math.PI * 0.3, 0]),
+    rf('brass_table', '真鍮テーブル', [-2.0, 0, 1.8]),
+
+    // セット2（左中）
+    rf('club_chair', 'クラブチェア緑', [-2.8, 0, -0.2], [0, Math.PI * 0.4, 0]),
+    rf('club_chair', 'クラブチェア青', [-1.8, 0, 0.3], [0, -Math.PI * 0.2, 0]),
+    rf('brass_table', '真鍮テーブル', [-2.3, 0, 0.0]),
+
+    // セット3（右前）
+    rf('club_chair', 'クラブチェア青', [1.5, 0, 2.0], [0, -Math.PI * 0.2, 0]),
+    rf('club_chair', 'クラブチェア緑', [2.5, 0, 1.3], [0, Math.PI * 0.3, 0]),
+    rf('brass_table', '真鍮テーブル', [2.0, 0, 1.6]),
+
+    // セット4（右中）
+    rf('club_chair', 'クラブチェア緑', [1.8, 0, -0.5], [0, -Math.PI * 0.4, 0]),
+    rf('club_chair', 'クラブチェア青', [2.8, 0, 0.2], [0, Math.PI * 0.2, 0]),
+    rf('brass_table', '真鍮テーブル', [2.3, 0, -0.2]),
+
+    // === ペンダントライト（アール・デコ球形）===
+    ...Array.from({ length: 4 }, (_, i) =>
+      rf('pendant_light', 'ペンダントライト', [-1.5 + i * 1.0, h - 0.5, -1.0], [0, 0, 0], [0.35, 0.45, 0.35])
+    ),
+    ...Array.from({ length: 3 }, (_, i) =>
+      rf('pendant_light', 'ペンダントライト', [-1.0 + i * 1.0, h - 0.5, 1.5], [0, 0, 0], [0.35, 0.45, 0.35])
+    ),
+
+    // === 植物 ===
+    rf('plant_small', '小型植物', [-1.0, 1.1, -hd + 0.3]),
+    rf('plant_small', '小型植物', [1.0, 1.1, -hd + 0.3]),
+
+    // === 空調（隠し） ===
+    rf('air_conditioner', 'エアコン', [-hw + 0.08, 2.8, 0], [0, Math.PI / 2, 0], [0.9, 0.3, 0.25]),
+    rf('air_conditioner', 'エアコン', [hw - 0.08, 2.8, 0], [0, -Math.PI / 2, 0], [0.9, 0.3, 0.25]),
+  ];
+
+  return { id: 'rt_art_deco_bar', name: 'アール・デコバー', description: '10m×12m 高級ラウンジバー クラブチェア8+バースツール6+真鍮テーブル4', icon: '🥃', style: 'art_deco_bar', roomHeight: h, walls, openings, furniture };
+}
+
 // テンプレート一覧（エクスポート）
 export const ROOM_TEMPLATES: RoomTemplate[] = [
   createSmallCafeTemplate(),
@@ -503,6 +566,7 @@ export const ROOM_TEMPLATES: RoomTemplate[] = [
   createBarTemplate(),
   createClinicTemplate(),
   createApparelShopTemplate(),
+  createArtDecoBarTemplate(),
 ];
 
 // IDで取得するヘルパー
