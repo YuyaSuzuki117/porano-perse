@@ -5,3 +5,4 @@ from .bar_stool import create_bar_stool
 from .club_chair import create_club_chair
 from .brass_table import create_brass_table
 from .bar_counter import create_bar_counter
+from .door_panel import create_door
