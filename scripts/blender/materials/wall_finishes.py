@@ -17,10 +17,12 @@ def hex_to_linear(h):
 
 
 def create_wall_material(color_hex='#FFFFFF', roughness=0.82):
-    """Create wall material using Principled BSDF for Cycles with GI.
+    """Create wall material with subtle plaster texture for realistic interior.
 
-    With Cycles global illumination, walls no longer need emission hacks.
-    Uses proper Principled BSDF with subtle noise bump for wall texture.
+    Features:
+    - Subtle color variation (avoids flat CG look)
+    - Micro-bump for plaster texture
+    - Slight roughness variation
     """
     linear_color = hex_to_linear(color_hex)
 
@@ -28,27 +30,78 @@ def create_wall_material(color_hex='#FFFFFF', roughness=0.82):
     mat.use_nodes = True
     mat.use_backface_culling = False
 
-    bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    bsdf.inputs['Base Color'].default_value = linear_color
-    bsdf.inputs['Roughness'].default_value = roughness
-
-    # Subtle bump for wall texture
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    bsdf.inputs['Roughness'].default_value = roughness
 
+    # Texture coordinates
     tex_coord = nodes.new('ShaderNodeTexCoord')
+    tex_coord.location = (-1100, 300)
     mapping = nodes.new('ShaderNodeMapping')
-    links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
+    mapping.location = (-900, 300)
+    links.new(tex_coord.outputs['Object'], mapping.inputs['Vector'])
 
-    noise = nodes.new('ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 100.0
-    noise.inputs['Detail'].default_value = 3.0
-    links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
+    # Large-scale color variation (plaster patches)
+    noise_large = nodes.new('ShaderNodeTexNoise')
+    noise_large.location = (-650, 400)
+    noise_large.inputs['Scale'].default_value = 2.0
+    noise_large.inputs['Detail'].default_value = 3.0
+    noise_large.inputs['Roughness'].default_value = 0.6
+    links.new(mapping.outputs['Vector'], noise_large.inputs['Vector'])
+
+    # Mix base color with slightly darker variant
+    r, g, b, a = linear_color
+    dark_color = (r * 0.92, g * 0.92, b * 0.92, 1.0)
+
+    mix_color = nodes.new('ShaderNodeMix')
+    mix_color.location = (-350, 350)
+    mix_color.data_type = 'RGBA'
+    mix_color.inputs[6].default_value = linear_color  # A
+    mix_color.inputs[7].default_value = dark_color     # B
+    links.new(noise_large.outputs['Fac'], mix_color.inputs['Factor'])
+    # Clamp variation to subtle range
+    mix_color.inputs['Factor'].default_value = 0.0  # overridden by link
+    mix_color.clamp_factor = True
+
+    # Remap noise to narrow range for subtlety
+    ramp = nodes.new('ShaderNodeValToRGB')
+    ramp.location = (-500, 400)
+    ramp.color_ramp.elements[0].position = 0.35
+    ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+    ramp.color_ramp.elements[1].position = 0.65
+    ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+    links.new(noise_large.outputs['Fac'], ramp.inputs['Fac'])
+    links.new(ramp.outputs['Color'], mix_color.inputs['Factor'])
+
+    links.new(mix_color.outputs[2], bsdf.inputs['Base Color'])
+
+    # Micro-bump for plaster texture
+    noise_fine = nodes.new('ShaderNodeTexNoise')
+    noise_fine.location = (-650, -50)
+    noise_fine.inputs['Scale'].default_value = 150.0
+    noise_fine.inputs['Detail'].default_value = 4.0
+    links.new(mapping.outputs['Vector'], noise_fine.inputs['Vector'])
 
     bump = nodes.new('ShaderNodeBump')
-    bump.inputs['Strength'].default_value = 0.02
+    bump.location = (-350, -50)
+    bump.inputs['Strength'].default_value = 0.03
     bump.inputs['Distance'].default_value = 0.001
-    links.new(noise.outputs['Fac'], bump.inputs['Height'])
+    links.new(noise_fine.outputs['Fac'], bump.inputs['Height'])
     links.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
+
+    # Roughness variation
+    roughness_mix = nodes.new('ShaderNodeMath')
+    roughness_mix.location = (-350, -200)
+    roughness_mix.operation = 'ADD'
+    roughness_mix.inputs[0].default_value = roughness
+    links.new(noise_large.outputs['Fac'], roughness_mix.inputs[1])
+
+    roughness_clamp = nodes.new('ShaderNodeClamp')
+    roughness_clamp.location = (-200, -200)
+    roughness_clamp.inputs['Min'].default_value = roughness - 0.05
+    roughness_clamp.inputs['Max'].default_value = roughness + 0.05
+    links.new(roughness_mix.outputs['Value'], roughness_clamp.inputs['Value'])
+    links.new(roughness_clamp.outputs['Result'], bsdf.inputs['Roughness'])
 
     return mat

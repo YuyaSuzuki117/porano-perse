@@ -35,29 +35,98 @@ def create_floor_material(texture_type='wood', color=None, roughness=None, wood_
 # ---------------------------------------------------------------------------
 
 def _build_wood_floor(color, roughness, wood_type='oak'):
-    """Build a wood floor material, tinted to the style's floor color."""
-    rough = roughness if roughness is not None else 0.45
-    mat = create_wood_material(wood_type, rough)
-    mat.name = f"M_Floor_Wood_{wood_type}"
+    """Build a hardwood plank floor — direct color approach.
 
-    # If a color is provided, tint the wood's ColorRamp to match the style
-    if color and mat.use_nodes:
-        bsdf = mat.node_tree.nodes.get("Principled BSDF")
-        # Find the ColorRamp node and adjust its colors toward the target
-        for node in mat.node_tree.nodes:
-            if node.type == 'VALTORGB':
-                r, g, b = color[0], color[1], color[2]
-                for i, elem in enumerate(node.color_ramp.elements):
-                    # Blend original color with target (60% target, 40% original)
-                    orig = elem.color[:]
-                    factor = 0.6
-                    elem.color = (
-                        orig[0] * (1 - factor) + r * factor * (0.6 + i * 0.2),
-                        orig[1] * (1 - factor) + g * factor * (0.6 + i * 0.2),
-                        orig[2] * (1 - factor) + b * factor * (0.6 + i * 0.2),
-                        1.0,
-                    )
-                break
+    Uses Principled BSDF with Wave+Noise for grain, Brick for plank seams (bump only).
+    """
+    from .wood import WOOD_PALETTES
+
+    rough = roughness if roughness is not None else 0.38
+    palette = WOOD_PALETTES.get(wood_type, WOOD_PALETTES['oak'])
+    dark, mid, light = palette
+
+    # Tint palette toward the style floor color
+    if color:
+        r, g, b = color[0], color[1], color[2]
+        f = 0.5
+        dark = tuple(d * (1 - f) + c * f for d, c in zip(dark, (r, g, b)))
+        mid = tuple(m * (1 - f) + c * f for m, c in zip(mid, (r, g, b)))
+        light = tuple(l * (1 - f) + c * f for l, c in zip(light, (r, g, b)))
+
+    mat = bpy.data.materials.new(name=f"M_Floor_Wood_{wood_type}")
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    # Remove default nodes except Output
+    for n in list(nodes):
+        if n.name != "Material Output":
+            nodes.remove(n)
+    output = nodes["Material Output"]
+
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (400, 300)
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+    bsdf.inputs['Roughness'].default_value = rough
+    bsdf.inputs['Specular IOR Level'].default_value = 0.4
+
+    # Texture coordinates — Generated (maps 0-1 over object bounds)
+    tex_coord = nodes.new('ShaderNodeTexCoord')
+    tex_coord.location = (-1200, 300)
+    mapping = nodes.new('ShaderNodeMapping')
+    mapping.location = (-1000, 300)
+    # Stretched along X for lengthwise plank grain
+    mapping.inputs['Scale'].default_value = (3.0, 25.0, 1.0)
+    links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
+
+    # Wave — wood grain bands
+    wave = nodes.new('ShaderNodeTexWave')
+    wave.location = (-700, 450)
+    wave.wave_type = 'BANDS'
+    wave.bands_direction = 'X'
+    wave.wave_profile = 'SAW'
+    wave.inputs['Scale'].default_value = 10.0
+    wave.inputs['Distortion'].default_value = 2.0
+    wave.inputs['Detail'].default_value = 5.0
+    links.new(mapping.outputs['Vector'], wave.inputs['Vector'])
+
+    # Noise — organic variation
+    noise = nodes.new('ShaderNodeTexNoise')
+    noise.location = (-700, 200)
+    noise.inputs['Scale'].default_value = 20.0
+    noise.inputs['Detail'].default_value = 8.0
+    noise.inputs['Roughness'].default_value = 0.5
+    links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
+
+    # Mix grain = Wave 65% + Noise 35%
+    mix = nodes.new('ShaderNodeMix')
+    mix.location = (-450, 350)
+    mix.data_type = 'RGBA'
+    mix.inputs['Factor'].default_value = 0.35
+    links.new(wave.outputs['Fac'], mix.inputs[6])
+    links.new(noise.outputs['Fac'], mix.inputs[7])
+
+    # ColorRamp — map to wood tones (tighter range for visible contrast)
+    ramp = nodes.new('ShaderNodeValToRGB')
+    ramp.location = (-150, 350)
+    cr = ramp.color_ramp
+    cr.elements[0].position = 0.30
+    cr.elements[0].color = (*dark, 1.0)
+    cr.elements[1].position = 0.70
+    cr.elements[1].color = (*light, 1.0)
+    mid_elem = cr.elements.new(0.48)
+    mid_elem.color = (*mid, 1.0)
+    links.new(mix.outputs[2], ramp.inputs['Fac'])
+    links.new(ramp.outputs['Color'], bsdf.inputs['Base Color'])
+
+    # Bump from grain
+    bump = nodes.new('ShaderNodeBump')
+    bump.location = (100, 0)
+    bump.inputs['Strength'].default_value = 0.06
+    bump.inputs['Distance'].default_value = 0.008
+    links.new(mix.outputs[2], bump.inputs['Height'])
+    links.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
+
     return mat
 
 

@@ -20,6 +20,16 @@
             "timeout": 15000
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.py$'; then cd C:/Users/LENOVO/.gemini/porano-perse && python -m py_compile \"$FILE\" 2>&1 | head -10; fi",
+            "timeout": 10000
+          }
+        ]
       }
     ]
   }

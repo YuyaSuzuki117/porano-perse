@@ -38,8 +38,8 @@ def create_wood_material(wood_type='oak', roughness=0.45):
 
     mapping = nodes.new('ShaderNodeMapping')
     mapping.location = (-1000, 300)
-    mapping.inputs['Scale'].default_value = (8.0, 2.0, 1.0)
-    links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
+    mapping.inputs['Scale'].default_value = (1.0, 8.0, 1.0)
+    links.new(tex_coord.outputs['Object'], mapping.inputs['Vector'])
 
     # --- Wave Texture (wood grain bands) ---
     wave = nodes.new('ShaderNodeTexWave')
@@ -47,16 +47,16 @@ def create_wood_material(wood_type='oak', roughness=0.45):
     wave.wave_type = 'BANDS'
     wave.bands_direction = 'X'
     wave.wave_profile = 'SAW'
-    wave.inputs['Scale'].default_value = 3.0
-    wave.inputs['Distortion'].default_value = 5.0
+    wave.inputs['Scale'].default_value = 6.0
+    wave.inputs['Distortion'].default_value = 3.5
     links.new(mapping.outputs['Vector'], wave.inputs['Vector'])
 
     # --- Noise Texture (grain variation) ---
     noise_grain = nodes.new('ShaderNodeTexNoise')
     noise_grain.location = (-750, 100)
-    noise_grain.inputs['Scale'].default_value = 15.0
-    noise_grain.inputs['Detail'].default_value = 6.0
-    noise_grain.inputs['Distortion'].default_value = 2.5
+    noise_grain.inputs['Scale'].default_value = 25.0
+    noise_grain.inputs['Detail'].default_value = 8.0
+    noise_grain.inputs['Distortion'].default_value = 1.5
     links.new(mapping.outputs['Vector'], noise_grain.inputs['Vector'])
 
     # --- Mix Wave + Noise ---

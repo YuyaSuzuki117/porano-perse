@@ -222,7 +222,11 @@ def build_room(scene_data, collections):
 
     # --- Floor ---------------------------------------------------------------
     print(f"[room_builder] Floor: {W}m x {D}m")
-    floor = _add_cube("Floor", (0, 0, -0.025), (W / 2, D / 2, 0.025))
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, 0))
+    floor = bpy.context.active_object
+    floor.name = "Floor"
+    floor.scale = (W, D, 1)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     _apply_material(floor, floor_mat)
     link_to_collection(floor, room_col)
     created["Floor"] = floor

@@ -93,15 +93,16 @@ def setup_render(quality='preview', output_path=None):
         pass  # Blender 4.0+ handles tiles automatically
 
     # --- Light paths (interior scene needs more bounces) ---
-    scene.cycles.max_bounces = 8
-    scene.cycles.diffuse_bounces = 4
-    scene.cycles.glossy_bounces = 4
-    scene.cycles.transmission_bounces = 8
+    scene.cycles.max_bounces = 12
+    scene.cycles.diffuse_bounces = 6
+    scene.cycles.glossy_bounces = 6
+    scene.cycles.transmission_bounces = 12
+    scene.cycles.transparent_max_bounces = 8
 
     # --- Color management ---
     scene.view_settings.view_transform = 'AgX'
-    scene.view_settings.look = 'AgX - Medium High Contrast'
-    scene.view_settings.exposure = 0.3
+    scene.view_settings.look = 'AgX - Punchy'
+    scene.view_settings.exposure = -0.5
 
     # --- Output format ---
     scene.render.image_settings.file_format = 'PNG'

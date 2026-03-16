@@ -53,19 +53,8 @@ def apply_style(scene_data):
     # 2. Color management (AgX works well with Cycles)
     # -------------------------------------------------------------------
     scene = bpy.context.scene
-    try:
-        scene.view_settings.view_transform = 'AgX'
-        scene.view_settings.look = 'AgX - Medium High Contrast'
-        print("[style] Color management: AgX - Medium High Contrast")
-    except Exception:
-        try:
-            scene.view_settings.view_transform = 'Filmic'
-            scene.view_settings.look = 'None'
-            print("[style] Color management: Filmic (fallback)")
-        except Exception:
-            print("[style] Color management: using defaults")
-
-    scene.view_settings.exposure = 0.0
+    # Don't override renderer's color management settings
+    # renderer.py already sets AgX with proper exposure
     scene.view_settings.gamma = 1.0
 
     print("[style] Style application complete")

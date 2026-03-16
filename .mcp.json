@@ -3,17 +3,20 @@
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-playwright@latest"]
+      "args": ["-y", "@anthropic-ai/mcp-server-playwright@latest"],
+      "description": "ビジュアルテスト・デプロイ後検証・3Dシーン確認"
     },
     "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Three.js/R3F/Drei/Zustand/Next.js/Blender API ドキュメント参照"
     },
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"]
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"],
+      "description": "複雑な3D数学・座標変換・レンダリングパイプライン設計の段階的推論"
     }
   }
 }

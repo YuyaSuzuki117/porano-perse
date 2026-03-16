@@ -83,27 +83,27 @@ def setup_cameras(scene_data, collections):
     camera_defs = [
         (
             "Cam_Main",
-            (W * 0.35, -D * 0.35, H * 0.6),
-            (0, D * 0.1, H * 0.35),
-            22,
+            (W * 0.38, -D * 0.38, H * 0.52),
+            (-W * 0.05, D * 0.08, H * 0.3),
+            30,  # 30mm — natural perspective for interior
         ),
         (
             "Cam_Counter",
-            (0, -D * 0.25, H * 0.5),
-            (0, D * 0.4, H * 0.35),
-            24,
+            (0, -D * 0.28, H * 0.48),
+            (0, D * 0.35, H * 0.32),
+            28,
         ),
         (
             "Cam_Window",
-            (-W * 0.35, D * 0.15, H * 0.55),
-            (W * 0.1, -D * 0.1, H * 0.3),
-            26,
+            (-W * 0.35, D * 0.15, H * 0.50),
+            (W * 0.1, -D * 0.1, H * 0.28),
+            28,
         ),
         (
             "Cam_TopDown",
-            (0, 0, H * 1.8),
+            (0, 0, H - 0.15),  # Just below ceiling
             (0, 0, 0),
-            18,
+            14,  # Wider to capture full room from inside
         ),
     ]
 

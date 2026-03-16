@@ -19,6 +19,9 @@ import os
 import json
 import time
 
+# Disable Python bytecode caching to avoid stale .pyc issues
+sys.dont_write_bytecode = True
+
 # Add scripts dir to path so blender module can be found
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
