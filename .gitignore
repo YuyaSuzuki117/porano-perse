@@ -42,3 +42,8 @@ next-env.d.ts
 
 .vercel
 .claude/worktrees/
+
+# Blender output
+output/
+
+__pycache__/
