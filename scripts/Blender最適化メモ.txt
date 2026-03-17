@@ -1,0 +1,39 @@
+Blender 5.0 最適化メモ
+
+対象PC
+- C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
+- 家具モデリング案件を Blender_Codex で進める前提
+
+追加したもの
+- scripts\apply-blender-optimization.ps1
+- scripts\apply-blender-optimization.py
+
+プロファイル
+- safe
+  - バランス重視
+  - undo 24
+  - texture clamp 4096
+- modeling
+  - 通常の家具モデリング向け
+  - undo 16
+  - texture clamp 2048
+  - GPU subdivision off
+- preview
+  - とにかく軽く確認したい時
+  - undo 12
+  - viewport AA off
+  - texture clamp 1024
+
+適用コマンド
+pwsh -File .\01_共通資料\scripts\apply-blender-optimization.ps1 -Profile modeling
+
+考え方
+- ビューポートAAを落とす
+- テクスチャ上限を絞る
+- Undoを適正化する
+- GPU subdivisionを切って不安定要因を減らす
+- オートセーブと圧縮は維持する
+
+背景実行
+- 既存の scripts\run-blender-background.ps1 を使う
+- 必要なら軽量起動寄りで案件を回す

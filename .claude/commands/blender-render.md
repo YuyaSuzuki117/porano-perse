@@ -8,7 +8,7 @@ Blenderパイプラインでパースをレンダリングする。
 
 ### 2. JSON生成
 ```bash
-cd C:/Users/LENOVO/.gemini/porano-perse
+cd C:/Users/LENOVO/Projects/porano-perse
 npx tsx scripts/template-to-json.ts --template=$TEMPLATE_ID --style=$STYLE
 ```
 - `output/scene-json/` にJSONが生成されることを確認

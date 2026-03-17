@@ -77,3 +77,16 @@ bpy.ops.mesh.primitive_cube_add()  # 避ける
 - 長時間レンダリングはバックグラウンド実行
 - エラー時は stderr の Python traceback を確認
 - GLBインポートエラー → `public/models/` のファイル存在確認
+
+## 案件制作ワークフロー（旧Blender_Codexから統合）
+1. `output/projects/<案件名>/` に案件フォルダを作る
+2. 参照画像は `references/` に、出力は直下に配置
+3. スクリプト名は `render-<案件名>.py` (scripts/直下) or `generate_<asset>_scene.py` (案件内)
+4. `bpy` で first pass → 背景レンダーでプレビュー → シルエット比較 → 寸法 → 材質の順
+5. 形が合うまで高コスト材質に逃げない
+6. 残作業がカーブ微調整・最終材質だけになったらBlender手作業へ
+
+## ヘルパースクリプト (scripts/)
+- `run-blender-background.ps1` — Blender背景実行ラッパー
+- `new-blender-job.ps1` — 案件フォルダ雛形作成
+- `apply-blender-optimization.ps1` / `.py` — Blender最適化適用

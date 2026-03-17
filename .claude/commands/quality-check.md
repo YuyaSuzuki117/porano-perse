@@ -4,17 +4,17 @@
 
 1. **TypeScript型チェック**
    ```bash
-   cd C:/Users/LENOVO/.gemini/porano-perse && npx tsc --noEmit --pretty 2>&1
+   cd C:/Users/LENOVO/Projects/porano-perse && npx tsc --noEmit --pretty 2>&1
    ```
 
 2. **ESLint**
    ```bash
-   cd C:/Users/LENOVO/.gemini/porano-perse && npm run lint 2>&1
+   cd C:/Users/LENOVO/Projects/porano-perse && npm run lint 2>&1
    ```
 
 3. **ビルド**
    ```bash
-   cd C:/Users/LENOVO/.gemini/porano-perse && npm run build 2>&1
+   cd C:/Users/LENOVO/Projects/porano-perse && npm run build 2>&1
    ```
 
 4. **結果報告**

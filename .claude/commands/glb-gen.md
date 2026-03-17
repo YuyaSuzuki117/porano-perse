@@ -13,7 +13,7 @@ GLBモデルを生成/更新: $ARGUMENTS
 
 3. **生成実行**
    ```bash
-   cd C:/Users/LENOVO/.gemini/porano-perse && node scripts/gen-glb.mjs
+   cd C:/Users/LENOVO/Projects/porano-perse && node scripts/gen-glb.mjs
    ```
 
 4. **カタログ連携**

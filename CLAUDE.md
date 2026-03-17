@@ -95,6 +95,14 @@ scripts/                     -- Blender パイプライン
     └── models/              -- カスタムモデル (cafe_chair/cafe_table)
 
 output/                      -- Blenderレンダリング出力 (.blend/.png)
+├── hostclub/                -- ホストクラブ案件
+├── projects/                -- 統合済み案件
+│   ├── daikanyama_null_bar/ -- 代官山NULLバー (.blend/.py/参考)
+│   ├── restaurant_4zone/    -- 飲食店4区画線画
+│   └── store_line_assets/   -- 店舗アセット集
+├── backups/                 -- Blender設定/過去試作バックアップ
+├── blueprint-analysis/      -- 図面分析結果 (Gemini)
+└── scene-json/              -- テンプレートJSON
 public/models/               -- GLBモデル (107ファイル)
 e2e/                         -- Playwright E2Eテスト (6ファイル)
 supabase/migrations/         -- DBマイグレーション
@@ -184,15 +192,50 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | `/refactor` | 安全なリファクタリング |
 | `/glb-gen` | GLBモデル生成/更新 |
 | `/blender-render` | Blenderレンダリング実行 |
+| `/blueprint-analyze` | 設計図面をGemini Visionで分析→構造化JSON生成 |
+| `/gemini-prompt-gen` | Gemini図面分析→Claude Code制作指示プロンプト生成（--autoで一気通貫） |
+| `/perse-from-blueprint` | 図面分析JSONからBlenderパーススクリプト生成+レンダリング |
+| `/perse-iterate` | 既存パースの品質改善反復ループ（差分分析→修正→再レンダリング） |
+| `/perse-quality-check` | パースレンダリング結果の品質チェック（100点採点） |
 | `/context-save` | セッション状態をメモリに保存 |
 | `/store-inspect` | ストアの指定セクションだけ安全に読む |
 
 ## 8. MCP Servers
 | MCP | 用途 |
 |-----|------|
-| **Playwright** | ビジュアルテスト・デプロイ後検証 |
+| **Playwright** | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
 | **Context7** | Three.js/R3F/Drei/Zustand/Blender ドキュメント参照 |
-| **Sequential Thinking** | 複雑な3D数学・座標変換の段階的推論 |
+| **Sequential Thinking** | 複雑な3D数学・座標変換・図面寸法計算の段階的推論 |
+
+### 8.1 図面→パース制作パイプライン
+```
+設計図面(画像/PDF)
+  ↓ /blueprint-analyze (Gemini Vision)
+構造化JSON (output/blueprint-analysis/*.json)
+  ↓ /gemini-prompt-gen
+Claude Code制作指示プロンプト (*_prompt.md)
+  ↓ /perse-from-blueprint
+Blender Pythonスクリプト (scripts/render-*.py)
+  ↓ Blender 5.0 --background
+.blend + .png (output/)
+  ↓ /perse-quality-check
+品質チェック→ /perse-iterate で反復改善
+```
+
+### 8.2 Blender標準モジュール (scripts/blender/)
+| モジュール | 責務 |
+|-----------|------|
+| `presets.py` | **品質/カメラ/照明/マテリアル標準プリセット** |
+| `blueprint_converter.py` | **図面JSON→Blenderシーン変換器** |
+| `core.py` | シーン初期化・基本メッシュ作成 |
+| `room_builder.py` | 部屋ジオメトリ（壁・床・天井・開口部） |
+| `furniture_importer.py` | GLBインポート・配置 |
+| `lighting.py` | 3点照明 + 環境光 |
+| `cameras.py` | カメラプリセット |
+| `renderer.py` | Cycles設定・画像出力 |
+| `style_applicator.py` | カラーパレット・AgXトーンマッピング |
+| `materials/*.py` | PBRマテリアル6種 |
+| `models/*.py` | カスタム高品質モデル |
 
 ## 9. Design Rules (.claude/rules/)
 | ルール | 対象 |
@@ -205,8 +248,13 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | `data-catalog.md` | 家具/テンプレート/スタイルの追加手順 |
 | `ai-api.md` | Gemini API無料枠ルール |
 | `blender-pipeline.md` | Blender Pythonスクリプト規約 |
+| `blueprint-to-perse.md` | 図面→パース変換ワークフロー・Gemini分析ルール |
+| `perse-generation-priority.md` | パース生成優先順位（箱優先・余計なもの禁止） |
+| `furniture-modeling.md` | 家具モデリング規約 |
+| `iteration-checklist.md` | 修正反復チェックリスト |
+| `material-recipes.md` | マテリアルレシピ集 |
 
 ## 10. 関連プロジェクト
-- **Porano ERP**: `C:/Users/LENOVO/.gemini/Porano/` — 将来API連携予定
+- **Porano ERP**: `C:/Users/LENOVO/Projects/Porano/` — 将来API連携予定
 - **GitHub**: `YuyaSuzuki117/porano-perse`
 - **本番**: https://porano-perse.vercel.app
