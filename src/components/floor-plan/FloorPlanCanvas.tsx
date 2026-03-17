@@ -150,6 +150,11 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
   const roomLabels = useEditorStore((s) => s.roomLabels);
   const equipmentItems = useEditorStore((s) => s.equipmentItems);
   const routes = useEditorStore((s) => s.routes);
+  const copyFurniture = useEditorStore((s) => s.copyFurniture);
+  const pasteFurniture = useEditorStore((s) => s.pasteFurniture);
+  const clipboard = useEditorStore((s) => s.clipboard);
+  const rotateFurniture = useEditorStore((s) => s.rotateFurniture);
+  const duplicateFurniture = useEditorStore((s) => s.duplicateFurniture);
 
   // ビュー状態
   const [view, setView] = useState<ViewState>({
@@ -184,6 +189,8 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
 
   // クイック家具ピッカーポップアップ
   const [quickPickerPos, setQuickPickerPos] = useState<{ screen: { x: number; y: number }; world: Point2D } | null>(null);
+  // 右クリックコンテキストメニュー
+  const [ctxMenuPos, setCtxMenuPos] = useState<{ screen: { x: number; y: number }; world: Point2D } | null>(null);
   const lastClickTime = useRef<number>(0);
   const lastClickPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -1993,6 +2000,8 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
+      // コンテキストメニューを閉じる
+      if (ctxMenuPos) setCtxMenuPos(null);
       // 中ボタン or Shift+左ボタン → パン
       if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
         e.preventDefault();
@@ -2262,6 +2271,7 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
       measuringStart,
       selectedFurnitureId,
       quickPickerPos,
+      ctxMenuPos,
       worldToScreen,
       pxPerM,
       addFurniture,
@@ -2629,7 +2639,19 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const rect = canvas.getBoundingClientRect();
+          const sp = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          const world = screenToWorld(sp.x, sp.y);
+          setCtxMenuPos({
+            screen: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+            world: { x: world.x, y: world.y },
+          });
+          setQuickPickerPos(null);
+        }}
       />
       {/* クイック家具ピッカーポップアップ */}
       {quickPickerPos && (
@@ -2654,6 +2676,66 @@ export default function FloorPlanCanvas({ canvasRef2D }: FloorPlanCanvasProps = 
                 <span className="text-[8px] text-gray-500 mt-0.5 leading-tight truncate w-full">{item.name}</span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+      {/* 右クリックコンテキストメニュー */}
+      {ctxMenuPos && (
+        <div
+          className="absolute z-50"
+          style={{
+            left: Math.min(ctxMenuPos.screen.x, (containerRef.current?.clientWidth || 400) - 160),
+            top: Math.min(ctxMenuPos.screen.y, (containerRef.current?.clientHeight || 400) - 200),
+          }}
+        >
+          <div
+            className="bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-xl overflow-hidden"
+            style={{ minWidth: 140 }}
+          >
+            {selectedFurnitureId && (
+              <>
+                <button
+                  className="block w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors"
+                  onClick={() => { copyFurniture(); setCtxMenuPos(null); }}
+                >
+                  コピー
+                </button>
+                <button
+                  className="block w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors border-t border-white/10"
+                  onClick={() => {
+                    const item = furniture.find(f => f.id === selectedFurnitureId);
+                    if (item) {
+                      const currentRot = item.rotation[1] ?? 0;
+                      rotateFurniture(selectedFurnitureId, currentRot + Math.PI / 2);
+                    }
+                    setCtxMenuPos(null);
+                  }}
+                >
+                  回転
+                </button>
+                <button
+                  className="block w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors border-t border-white/10"
+                  onClick={() => { duplicateFurniture(selectedFurnitureId); setCtxMenuPos(null); }}
+                >
+                  複製
+                </button>
+              </>
+            )}
+            <button
+              className={`block w-full px-4 py-2.5 text-left text-sm transition-colors ${selectedFurnitureId ? 'border-t border-white/10' : ''} ${clipboard ? 'text-white hover:bg-white/10' : 'text-gray-500 cursor-not-allowed'}`}
+              disabled={!clipboard}
+              onClick={() => { pasteFurniture(); setCtxMenuPos(null); }}
+            >
+              貼り付け
+            </button>
+            {selectedFurnitureId && (
+              <button
+                className="block w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/10 transition-colors border-t border-white/10"
+                onClick={() => { deleteFurniture(selectedFurnitureId); setCtxMenuPos(null); }}
+              >
+                削除
+              </button>
+            )}
           </div>
         </div>
       )}

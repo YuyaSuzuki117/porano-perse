@@ -2,21 +2,27 @@
   "mcpServers": {
     "playwright": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-playwright@latest"],
+      "command": "node",
+      "args": ["C:/Users/y-suz/AppData/Roaming/npm/node_modules/@playwright/mcp/cli.js"],
       "description": "ビジュアルテスト・デプロイ後検証・3Dシーン確認"
     },
     "context7": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "command": "node",
+      "args": ["C:/Users/y-suz/AppData/Roaming/npm/node_modules/@upstash/context7-mcp/dist/index.js"],
       "description": "Three.js/R3F/Drei/Zustand/Next.js/Blender API ドキュメント参照"
     },
     "sequential-thinking": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"],
+      "command": "node",
+      "args": ["C:/Users/y-suz/AppData/Roaming/npm/node_modules/@modelcontextprotocol/server-sequential-thinking/dist/index.js"],
       "description": "複雑な3D数学・座標変換・レンダリングパイプライン設計の段階的推論"
+    },
+    "mcp-three": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:/Users/y-suz/AppData/Roaming/npm/node_modules/mcp-three/stdio.js"],
+      "description": "GLB/GLTF→R3F JSXコンポーネント変換・3Dモデル構造分析・メッシュ最適化"
     }
   }
 }

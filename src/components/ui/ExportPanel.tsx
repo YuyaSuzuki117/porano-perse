@@ -427,6 +427,40 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
     setIsModalOpen(false);
   }, [exportProject, projectName]);
 
+  /** DXF図面エクスポート */
+  const [dxfExporting, setDxfExporting] = useState(false);
+  const handleExportDXF = useCallback(async () => {
+    setDxfExporting(true);
+    try {
+      const { walls, openings, furniture: furn } = useEditorStore.getState();
+      const res = await fetch('/api/export-dxf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walls,
+          openings,
+          furniture: furn,
+          projectName: projectName,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'DXF生成失敗' }));
+        throw new Error(err.error || 'DXF生成失敗');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${projectName.replace(/\s+/g, '_')}.dxf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'DXFエクスポートに失敗しました');
+    } finally {
+      setDxfExporting(false);
+    }
+  }, [projectName]);
+
   // 画像出力オプション state
   const [imgResolution, setImgResolution] = useState<ResolutionPreset>('2x');
   const [imgFormat, setImgFormat] = useState<ScreenshotFormat>('png');
@@ -962,6 +996,24 @@ export function ExportPanel({ onCapture3D, canvasRef, onPanoramaExport, onBatchE
                     <div className="text-left">
                       <div className="text-sm font-medium text-gray-800">仕様書をクリップボードにコピー</div>
                       <div className="text-[11px] text-gray-400">メール・チャットに貼り付け可能</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={handleExportDXF}
+                    disabled={dxfExporting}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 transition-all disabled:opacity-50"
+                  >
+                    <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth={1.5} className="w-5 h-5">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-gray-800">
+                        {dxfExporting ? 'DXF生成中...' : 'DXF図面エクスポート'}
+                      </div>
+                      <div className="text-[11px] text-gray-400">JW_CAD / AutoCAD 互換の図面ファイル</div>
                     </div>
                   </button>
                 </div>

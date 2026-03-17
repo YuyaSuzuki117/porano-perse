@@ -55,7 +55,26 @@ export const FurnitureContextMenu = React.memo(function FurnitureContextMenu({
     zIndex: 9999,
   };
 
-  const actions: { label: string; onClick: () => void }[] = [
+  const copyFurniture = useEditorStore((s) => s.copyFurniture);
+  const pasteFurniture = useEditorStore((s) => s.pasteFurniture);
+  const clipboard = useEditorStore((s) => s.clipboard);
+
+  const actions: { label: string; onClick: () => void; disabled?: boolean }[] = [
+    {
+      label: 'コピー',
+      onClick: () => {
+        copyFurniture();
+        onClose();
+      },
+    },
+    {
+      label: '貼り付け',
+      onClick: () => {
+        pasteFurniture();
+        onClose();
+      },
+      disabled: !clipboard,
+    },
     {
       label: '回転',
       onClick: () => {
@@ -104,13 +123,15 @@ export const FurnitureContextMenu = React.memo(function FurnitureContextMenu({
           <button
             key={action.label}
             onClick={action.onClick}
+            disabled={action.disabled}
             style={{
               display: 'block',
               width: '100%',
               padding: '10px 16px',
               background: 'transparent',
               border: 'none',
-              color: action.label === '削除' ? '#ef4444' : '#fff',
+              color: action.disabled ? '#666' : action.label === '削除' ? '#ef4444' : '#fff',
+              opacity: action.disabled ? 0.5 : 1,
               fontSize: '14px',
               textAlign: 'left',
               cursor: 'pointer',

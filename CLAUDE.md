@@ -119,8 +119,46 @@ supabase/migrations/         -- DBマイグレーション
 | `npm run lint` | ESLint |
 | `npx vercel --prod` | デプロイ（ユーザー確認必須） |
 | `node scripts/gen-glb.mjs` | GLBモデル生成 |
+| `python scripts/gen-dxf.py --sample` | サンプルDXF図面生成 |
+| `python scripts/gen-dxf.py --json <path>` | blueprint JSON→DXF |
+| `python scripts/gen-dxf.py --store-json <path>` | Webアプリ JSON→DXF |
 
-### 4.1 Blender パイプライン
+### 4.1 DXF 図面パイプライン (ezdxf)
+```bash
+# サンプル生成
+python scripts/gen-dxf.py --sample -o output/drawings/sample.dxf
+
+# blueprint-analysis JSON → DXF
+python scripts/gen-dxf.py --json output/blueprint-analysis/project.json -o output/drawings/project.dxf
+
+# 矩形部屋を直接指定
+python scripts/gen-dxf.py --width 5000 --depth 4000 --name "店舗A" -o output/drawings/shop_a.dxf
+```
+- 出力DXFはJW_CAD / AutoCADで開ける
+- WebアプリからはExportPanel「DXF図面エクスポート」→ API `/api/export-dxf` 経由
+- レイヤー: 壁/壁芯/建具/什器/寸法/仕上げ/室名/設備/補助
+
+### 4.2 DXF → Blender 連携パイプライン
+```bash
+# 1コマンドで図面→パース（サンプル）
+python scripts/gen-dxf.py --sample -o output/drawings/shop.dxf && \
+"/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
+  --background --python scripts/render-from-dxf.py \
+  -- output/drawings/shop.dxf --quality preview --camera eye_level
+
+# DXF → シーンJSON 変換のみ（Blender不要）
+python scripts/dxf-to-scene.py input.dxf -o scene.json --pretty
+
+# JW_CADで編集したDXFからパース生成
+"/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
+  --background --python scripts/render-from-dxf.py \
+  -- edited.dxf --quality draft --camera overview
+```
+- DXFが唯一の正（Single Source of Truth）
+- gen-dxf.py が .dxf + .meta.json を同時生成
+- JW_CADで編集後もDXF解析でBlenderに反映
+
+### 4.3 Blender パイプライン（従来）
 ```bash
 # JSON生成
 npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
@@ -180,23 +218,43 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 - **3D→2D禁止**: 変更は常に2D図面 → 3Dシーンの一方向。
 - **Blenderパイプライン**: template-to-json.ts → scene.json → render-template.py → Blender → .blend/.png
 
-## 7. Slash Commands (カスタム)
+## 7. Slash Commands (カスタム 22コマンド)
+
+### 7.1 案件管理
 | コマンド | 用途 |
 |---------|------|
-| `/3d-component` | 新規3Dコンポーネント作成 |
-| `/style-add` | 新インテリアスタイル追加 |
-| `/deploy` | Vercelデプロイ（プリフライト付き） |
-| `/perf-check` | 3Dパフォーマンス診断 |
-| `/visual-test` | Playwright ビジュアルテスト |
-| `/quality-check` | 全品質チェック（型+lint+build） |
-| `/refactor` | 安全なリファクタリング |
-| `/glb-gen` | GLBモデル生成/更新 |
-| `/blender-render` | Blenderレンダリング実行 |
+| `/project-init` | 案件フォルダ雛形作成（入力→分析→DXF→Blender→レンダー→納品） |
+| `/project-status` | 案件進捗ダッシュボード（パイプライン各段階のチェック） |
+| `/deliverable-pack` | 納品パッケージ作成（folder/pdf/zip） |
+
+### 7.2 図面→パースパイプライン
+| コマンド | 用途 |
+|---------|------|
 | `/blueprint-analyze` | 設計図面をGemini Visionで分析→構造化JSON生成 |
+| `/blueprint-to-dxf` | 図面→JSON→DXF一気通貫変換（Gemini + ezdxf） |
+| `/dxf-validate` | DXF品質検証（構造・寸法・Blenderインポート互換性） |
 | `/gemini-prompt-gen` | Gemini図面分析→Claude Code制作指示プロンプト生成（--autoで一気通貫） |
 | `/perse-from-blueprint` | 図面分析JSONからBlenderパーススクリプト生成+レンダリング |
-| `/perse-iterate` | 既存パースの品質改善反復ループ（差分分析→修正→再レンダリング） |
+
+### 7.3 3D・レンダリング
+| コマンド | 用途 |
+|---------|------|
+| `/blender-render` | Blenderレンダリング実行 |
+| `/batch-render` | 案件内全シーン一括レンダリング（品質プリセット対応） |
+| `/glb-gen` | GLBモデル生成/更新 |
+| `/3d-component` | 新規3Dコンポーネント作成 |
+| `/style-add` | 新インテリアスタイル追加 |
+| `/perse-iterate` | 既存パースの品質改善反復ループ |
 | `/perse-quality-check` | パースレンダリング結果の品質チェック（100点採点） |
+
+### 7.4 品質・運用
+| コマンド | 用途 |
+|---------|------|
+| `/quality-check` | 全品質チェック（型+lint+build） |
+| `/perf-check` | 3Dパフォーマンス診断 |
+| `/visual-test` | Playwright ビジュアルテスト |
+| `/deploy` | Vercelデプロイ（プリフライト付き） |
+| `/refactor` | 安全なリファクタリング |
 | `/context-save` | セッション状態をメモリに保存 |
 | `/store-inspect` | ストアの指定セクションだけ安全に読む |
 
@@ -206,6 +264,7 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | **Playwright** | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
 | **Context7** | Three.js/R3F/Drei/Zustand/Blender ドキュメント参照 |
 | **Sequential Thinking** | 複雑な3D数学・座標変換・図面寸法計算の段階的推論 |
+| **mcp-three** | GLB/GLTF→R3F JSXコンポーネント変換・3Dモデル構造分析 |
 
 ### 8.1 図面→パース制作パイプライン
 ```
