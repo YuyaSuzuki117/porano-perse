@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF-DXF Pipeline Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#0d1117;color:#c9d1d9}
+.header{background:#161b22;padding:12px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:12px}
+.header h1{font-size:18px;color:#58a6ff}
+.badge{background:#238636;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px}
+.tabs{display:flex;background:#161b22;border-bottom:1px solid #30363d;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 16px;cursor:pointer;color:#8b949e;border-bottom:2px solid transparent;white-space:nowrap;font-size:14px;user-select:none}
+.tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
+.content{padding:12px;max-width:1200px;margin:0 auto}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.card-header{padding:10px 14px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px}
+.card-body{padding:12px}
+.img-box{overflow:auto;-webkit-overflow-scrolling:touch;max-height:75vh;border:1px solid #30363d;border-radius:4px;background:#000}
+.img-box img{width:100%;display:block;cursor:zoom-in}
+.img-box img.zoomed{width:auto;max-width:none}
+.view-btns{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.vbtn{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.vbtn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.grid-item{text-align:center;padding:12px 4px;background:#21262d;border-radius:8px}
+.grid-item .num{font-size:24px;font-weight:700;color:#58a6ff}
+.grid-item .lbl{font-size:11px;color:#8b949e;margin-top:2px}
+.warn{background:#f8514915;border-left:3px solid #f85149;padding:6px 10px;margin:4px 0;font-size:12px;border-radius:0 4px 4px 0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #21262d}
+th{color:#8b949e}
+.done{color:#3fb950}.issue{color:#f85149}.wip{color:#d29922}
+.phase{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.P{background:#1f6feb20;color:#58a6ff}
+.D{background:#23863620;color:#3fb950}
+.C{background:#f8514920;color:#f85149}
+.A{background:#d2992220;color:#d29922}
+.room-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.room-tag{background:#21262d;padding:3px 8px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>PDF-DXF Pipeline</h1>
+  <span class="badge">ChloeBY</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('compare')">比較検証</div>
+  <div class="tab" onclick="showTab('summary')">抽出結果</div>
+  <div class="tab" onclick="showTab('pdca')">PDCA</div>
+  <div class="tab" onclick="showTab('perse')">パース</div>
+  <div class="tab" onclick="showTab('dxf')">DXF詳細</div>
+</div>
+
+<div class="content">
+
+<!-- 比較検証 -->
+<div id="tab-compare">
+  <div class="card">
+    <div class="card-header">元PDF vs DXF出力</div>
+    <div class="card-body">
+      <div class="view-btns">
+        <div class="vbtn active" onclick="setView('overlay',this)">重ね合わせ</div>
+        <div class="vbtn" onclick="setView('sidebyside',this)">並列比較</div>
+        <div class="vbtn" onclick="setView('original',this)">元PDF</div>
+        <div class="vbtn" onclick="setView('dxf',this)">DXF出力</div>
+        <div class="vbtn" onclick="setView('svg',this)">SVG</div>
+      </div>
+      <div class="img-box" id="mainView">
+        <img src="ChloeBY_compare_overlay.png" onclick="this.classList.toggle('zoomed')">
+      </div>
+      <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 抽出結果 -->
+<div id="tab-summary" style="display:none">
+  <div class="card">
+    <div class="card-header">抽出サマリー</div>
+    <div class="card-body">
+      <div class="grid" id="summaryGrid"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">検出した室名</div>
+    <div class="card-body">
+      <div class="room-list" id="roomList"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">警告</div>
+    <div class="card-body" id="warnings"></div>
+  </div>
+</div>
+
+<!-- PDCA -->
+<div id="tab-pdca" style="display:none">
+  <div class="card">
+    <div class="card-header">改善トラッカー</div>
+    <div class="card-body">
+      <table id="pdcaTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- パース -->
+<div id="tab-perse" style="display:none">
+  <div class="card">
+    <div class="card-header">パースレンダリング</div>
+    <div class="card-body">
+      <div class="img-box">
+        <img src="ChloeBY_perse.png" onclick="this.classList.toggle('zoomed')" onerror="this.parentElement.innerHTML='<p style=padding:30px;text-align:center;color:#8b949e>パース画像なし</p>'">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DXF詳細 -->
+<div id="tab-dxf" style="display:none">
+  <div class="card">
+    <div class="card-header">壁データ</div>
+    <div class="card-body" style="overflow-x:auto">
+      <table id="wallTable">
+        <thead><tr><th>ID</th><th>種別</th><th>始点</th><th>終点</th><th>厚み</th><th>長さ</th><th>開口</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">什器データ</div>
+    <div class="card-body" style="overflow-x:auto">
+      <table id="fixtureTable">
+        <thead><tr><th>名前</th><th>X</th><th>Y</th><th>幅</th><th>奥行</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="data.js"></script>
+<script>
+const D = ANALYSIS_DATA;
+const S = D.pass1_summary || {};
+
+// タブ
+function showTab(id) {
+  document.querySelectorAll('[id^="tab-"]').forEach(e => e.style.display = 'none');
+  document.getElementById('tab-' + id).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// 比較ビュー
+const viewMap = {
+  overlay: 'ChloeBY_compare_overlay.png',
+  sidebyside: 'ChloeBY_compare_sidebyside.png',
+  original: 'ChloeBY_original_page0.png',
+  dxf: 'ChloeBY_test4_preview.png',
+  svg: 'ChloeBY_test4.svg',
+};
+function setView(v, el) {
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const src = viewMap[v];
+  if (v === 'svg') {
+    document.getElementById('mainView').innerHTML = `<object data="${src}" type="image/svg+xml" style="width:100%;min-height:50vh"></object>`;
+  } else {
+    document.getElementById('mainView').innerHTML = `<img src="${src}" onclick="this.classList.toggle('zoomed')">`;
+  }
+}
+
+// サマリー
+document.getElementById('summaryGrid').innerHTML = [
+  ['壁', S.total_walls], ['ドア', S.total_doors], ['引戸', S.total_sliding_doors],
+  ['窓', S.total_windows], ['開口', S.total_openings], ['什器', S.total_fixtures],
+  ['部屋', S.total_rooms], ['寸法', S.total_dimensions_total],
+  ['信頼度', ((D.confidence||0)*100).toFixed(0)+'%'],
+].map(([l,n]) => `<div class="grid-item"><div class="num">${n||0}</div><div class="lbl">${l}</div></div>`).join('');
+
+// 室名
+document.getElementById('roomList').innerHTML = (D.rooms||[]).map(r =>
+  `<span class="room-tag">${r.name}</span>`
+).join('');
+
+// 警告
+document.getElementById('warnings').innerHTML = (D.warnings||[]).map(w =>
+  `<div class="warn">${w}</div>`
+).join('') || '<p style="color:#3fb950">警告なし</p>';
+
+// PDCA
+const pdca = [
+  ['Plan','寸法線の端点ペアリング','done'],
+  ['Plan','CAD色ベースレイヤー分類','done'],
+  ['Plan','壁端点スナップ+接続グラフ','done'],
+  ['Plan','引戸・折戸・開口検出','done'],
+  ['Plan','部屋ポリゴン構築','done'],
+  ['Plan','JW_CAD重複テキスト除去','done'],
+  ['Do','比較ツール構築','done'],
+  ['Do','ダッシュボード構築','done'],
+  ['Check','外壁形状の精度','issue'],
+  ['Check','内壁位置ずれ','issue'],
+  ['Check','カウンター什器検出','issue'],
+  ['Check','斜め壁の対応','issue'],
+  ['Check','線幅ベース壁判定の最適化','issue'],
+  ['Check','寸法チェーン不整合(8件)','issue'],
+  ['Act','線幅閾値の見直し (0.25/0.34mm境界)','todo'],
+  ['Act','外壁輪郭トレーシング','todo'],
+  ['Act','斜め壁の角度対応','todo'],
+  ['Act','什器ラベルのマッチング改善','todo'],
+];
+document.getElementById('pdcaTable').innerHTML =
+  '<thead><tr><th>Phase</th><th>項目</th><th>状態</th></tr></thead><tbody>' +
+  pdca.map(([p,item,st]) => {
+    const sc = st==='done'?'done':st==='issue'?'issue':'wip';
+    const sl = st==='done'?'完了':st==='issue'?'要対応':'未着手';
+    return `<tr><td><span class="phase ${p[0]}">${p}</span></td><td>${item}</td><td class="${sc}">${sl}</td></tr>`;
+  }).join('') + '</tbody>';
+
+// 壁テーブル
+const wtb = document.querySelector('#wallTable tbody');
+(D.walls||[]).forEach(w => {
+  const dx=w.end_x_mm-w.start_x_mm, dy=w.end_y_mm-w.start_y_mm;
+  const len = Math.round(Math.sqrt(dx*dx+dy*dy));
+  const ops = (w.openings||[]).length;
+  wtb.innerHTML += `<tr>
+    <td>${w.id}</td><td>${w.type==='exterior'?'外壁':'内壁'}</td>
+    <td>${w.start_x_mm},${w.start_y_mm}</td><td>${w.end_x_mm},${w.end_y_mm}</td>
+    <td>${w.thickness_mm}mm</td><td>${len}mm</td><td>${ops}</td></tr>`;
+});
+
+// 什器テーブル
+const ftb = document.querySelector('#fixtureTable tbody');
+(D.fixtures||[]).forEach(f => {
+  ftb.innerHTML += `<tr><td>${f.name||'(無名)'}</td><td>${f.x_mm}</td><td>${f.y_mm}</td><td>${f.width_mm}</td><td>${f.depth_mm}</td></tr>`;
+});
+</script>
+</body>
+</html>
