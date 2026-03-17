@@ -16,13 +16,16 @@ def hex_to_linear(h):
     return (srgb_to_linear(r), srgb_to_linear(g), srgb_to_linear(b), 1.0)
 
 
-def create_wall_material(color_hex='#FFFFFF', roughness=0.82):
+def create_wall_material(color_hex='#FFFFFF', roughness=0.45):
     """Create wall material with subtle plaster texture for realistic interior.
 
     Features:
     - Subtle color variation (avoids flat CG look)
     - Micro-bump for plaster texture
     - Slight roughness variation
+
+    Note: roughness=0.45 is standard for painted interior walls.
+          0.82 was too high (looked like raw concrete).
     """
     linear_color = hex_to_linear(color_hex)
 

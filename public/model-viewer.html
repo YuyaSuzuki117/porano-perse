@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>内装モデルビューア</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; }
+  h1 { text-align: center; padding: 16px; font-size: 20px; background: #16213e; }
+  .tabs { display: flex; gap: 4px; padding: 8px 16px; background: #0f3460; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; cursor: pointer; border-radius: 6px 6px 0 0; background: #1a1a2e; font-size: 13px; }
+  .tab.active { background: #e94560; color: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; padding: 16px; }
+  .card { background: #16213e; border-radius: 8px; overflow: hidden; }
+  .card h3 { padding: 8px 12px; font-size: 13px; background: #0f3460; display: flex; justify-content: space-between; }
+  .card h3 span { color: #aaa; font-weight: normal; font-size: 11px; }
+  .viewer { width: 100%; height: 220px; }
+  model-viewer { width: 100%; height: 100%; --poster-color: #1a1a2e; }
+  .info { padding: 6px 12px; font-size: 11px; color: #aaa; }
+</style>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+</head>
+<body>
+
+<h1>ポラーノプラザ 内装モデルライブラリ (141モデル)</h1>
+
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const categories = {
+  "建具・開口部": [
+    { id: "flush_door", name: "フラッシュドア", size: "W800×H2100" },
+    { id: "glass_door", name: "ガラスドア", size: "W900×H2200" },
+    { id: "sliding_door", name: "片引戸", size: "W900×H2100" },
+    { id: "double_sliding_door", name: "引違い戸", size: "W1800×H2100" },
+    { id: "door_frame", name: "ドア枠", size: "W850×H2150" },
+    { id: "window_single", name: "単窓", size: "W900×H1200" },
+    { id: "window_fix", name: "FIX窓", size: "W1200×H600" },
+    { id: "window_double", name: "引違い窓", size: "W1800×H1200" },
+    { id: "shopfront_glass", name: "ショップフロント", size: "W3000×H2500" },
+    { id: "auto_door", name: "自動ドア", size: "W1800×H2200" },
+  ],
+  "内装部材・造作": [
+    { id: "baseboard", name: "巾木（白）", size: "1mセグメント" },
+    { id: "baseboard_wood", name: "巾木（木）", size: "1mセグメント" },
+    { id: "crown_molding", name: "廻縁", size: "1mセグメント" },
+    { id: "trim_reveal", name: "見切り材", size: "1mセグメント" },
+    { id: "counter_straight", name: "カウンター", size: "W2000×D600" },
+    { id: "counter_l_shape", name: "L型カウンター", size: "2000×1500" },
+    { id: "bar_counter", name: "バーカウンター", size: "W2500×H1050" },
+    { id: "glass_partition", name: "ガラスパーティション", size: "W1000×H2100" },
+    { id: "decorative_column", name: "化粧柱", size: "300×300×H2700" },
+    { id: "dropped_ceiling_frame", name: "下がり天井", size: "1mセグメント" },
+    { id: "niche_alcove", name: "壁ニッチ", size: "W600×H800" },
+    { id: "wainscoting", name: "腰壁パネル", size: "1mセグメント" },
+    { id: "louver_screen", name: "ルーバースクリーン", size: "W1000×H2400" },
+    { id: "curtain_box", name: "カーテンボックス", size: "1mセグメント" },
+    { id: "entrance_step", name: "上がり框", size: "W1200×H150" },
+    { id: "overhead_cabinet", name: "吊戸棚", size: "W900×D350×H700" },
+  ],
+  "照明器具": [
+    { id: "downlight_recessed", name: "ダウンライト", size: "φ110" },
+    { id: "spot_light", name: "スポットライト", size: "φ80×H150" },
+    { id: "track_light_rail", name: "ライティングレール", size: "1m" },
+    { id: "wall_sconce", name: "ブラケット照明", size: "100×100" },
+    { id: "indirect_light_cove", name: "間接照明コーブ", size: "1m" },
+    { id: "pendant_light_simple", name: "ペンダントライト", size: "φ250" },
+    { id: "pendant_light", name: "ペンダント（既存）", size: "" },
+    { id: "indirect_light", name: "間接照明（既存）", size: "" },
+    { id: "ceiling_fan", name: "シーリングファン", size: "" },
+  ],
+  "設備器具": [
+    { id: "air_diffuser", name: "空調吹出口", size: "300×300" },
+    { id: "access_panel", name: "点検口", size: "450×450" },
+    { id: "exit_sign", name: "非常口サイン", size: "300×150" },
+    { id: "sprinkler_head", name: "スプリンクラ", size: "φ60" },
+    { id: "smoke_detector", name: "煙感知器", size: "φ100" },
+    { id: "outlet_plate", name: "コンセント", size: "70×120" },
+    { id: "switch_plate", name: "スイッチ", size: "70×120" },
+    { id: "air_conditioner", name: "エアコン（既存）", size: "" },
+    { id: "fire_extinguisher", name: "消火器（既存）", size: "" },
+    { id: "handrail_wall", name: "壁付き手すり", size: "1mセグメント" },
+    { id: "handrail_free", name: "自立手すり", size: "1mセグメント" },
+  ],
+  "家具（既存100モデルから抜粋）": [
+    { id: "chair", name: "椅子", size: "" },
+    { id: "sofa", name: "ソファ", size: "" },
+    { id: "armchair", name: "アームチェア", size: "" },
+    { id: "table_square", name: "テーブル（角）", size: "" },
+    { id: "table_round", name: "テーブル（丸）", size: "" },
+    { id: "desk", name: "デスク", size: "" },
+    { id: "counter", name: "カウンター（既存）", size: "" },
+    { id: "bookcase", name: "本棚", size: "" },
+    { id: "shelf", name: "棚", size: "" },
+    { id: "bed_double", name: "ダブルベッド", size: "" },
+    { id: "toilet", name: "トイレ", size: "" },
+    { id: "washbasin", name: "洗面台", size: "" },
+    { id: "sink", name: "シンク", size: "" },
+    { id: "refrigerator", name: "冷蔵庫", size: "" },
+    { id: "bar_stool", name: "バースツール", size: "" },
+    { id: "booth_sofa", name: "ブースソファ", size: "" },
+    { id: "reception_desk", name: "受付カウンター", size: "" },
+    { id: "display_shelf", name: "ディスプレイ棚", size: "" },
+  ],
+};
+
+let activeCategory = Object.keys(categories)[0];
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  for (const cat of Object.keys(categories)) {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (cat === activeCategory ? " active" : "");
+    tab.textContent = cat + ` (${categories[cat].length})`;
+    tab.onclick = () => { activeCategory = cat; renderTabs(); renderGrid(); };
+    tabs.appendChild(tab);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  for (const model of categories[activeCategory]) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${model.name} <span>${model.size}</span></h3>
+      <div class="viewer">
+        <model-viewer
+          src="models/${model.id}.glb"
+          camera-controls
+          auto-rotate
+          shadow-intensity="0.5"
+          environment-image="neutral"
+          exposure="1.2"
+          style="background-color: #e8e8e8;"
+        ></model-viewer>
+      </div>
+      <div class="info">${model.id}.glb</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+renderTabs();
+renderGrid();
+</script>
+</body>
+</html>

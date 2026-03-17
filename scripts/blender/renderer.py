@@ -1,36 +1,12 @@
 """Cycles render settings and execution.
 
-Quality profiles:
-  - preview:    960x540,   32 samples, denoiser ON
-  - draft:      1280x720,  64 samples, denoiser ON
-  - production: 1920x1080, 256 samples, denoiser ON
+Quality profiles are defined in presets.py (RENDER_QUALITY) — single source of truth.
+This module delegates to apply_render_quality() and adds output path handling.
 """
 
 import bpy
-import math
 
-
-# ---------------------------------------------------------------------------
-# Quality profiles
-# ---------------------------------------------------------------------------
-
-QUALITY_PROFILES = {
-    'preview': {
-        'resolution_x': 960,
-        'resolution_y': 540,
-        'samples': 32,
-    },
-    'draft': {
-        'resolution_x': 1280,
-        'resolution_y': 720,
-        'samples': 64,
-    },
-    'production': {
-        'resolution_x': 1920,
-        'resolution_y': 1080,
-        'samples': 256,
-    },
-}
+from .presets import apply_render_quality
 
 
 # ---------------------------------------------------------------------------
@@ -40,84 +16,17 @@ QUALITY_PROFILES = {
 def setup_render(quality='preview', output_path=None):
     """Configure Cycles render settings.
 
+    Delegates to presets.apply_render_quality() for resolution, samples,
+    color management, and GPU detection.
+
     Args:
-        quality: One of 'preview', 'draft', 'production'.
+        quality: One of 'preview', 'draft', 'production', 'ultra'.
         output_path: Output file path (optional, can be set later).
     """
-    profile = QUALITY_PROFILES.get(quality, QUALITY_PROFILES['preview'])
-    res_x = profile['resolution_x']
-    res_y = profile['resolution_y']
-    samples = profile['samples']
-
-    scene = bpy.context.scene
-
-    # --- Engine & resolution ---
-    scene.render.engine = 'CYCLES'
-    scene.render.resolution_x = res_x
-    scene.render.resolution_y = res_y
-    scene.render.resolution_percentage = 100
-    scene.render.film_transparent = False
-
-    # --- Cycles samples & denoising ---
-    scene.cycles.device = 'CPU'  # safe default
-    scene.cycles.samples = samples
-    scene.cycles.use_denoising = True
-    scene.cycles.denoiser = 'OPENIMAGEDENOISE'
-
-    # --- Try GPU ---
-    try:
-        prefs = bpy.context.preferences.addons['cycles'].preferences
-        prefs.compute_device_type = 'CUDA'
-        prefs.get_devices()
-        for device in prefs.devices:
-            device.use = True
-        scene.cycles.device = 'GPU'
-    except Exception:
-        try:
-            prefs = bpy.context.preferences.addons['cycles'].preferences
-            prefs.compute_device_type = 'OPTIX'
-            prefs.get_devices()
-            for device in prefs.devices:
-                device.use = True
-            scene.cycles.device = 'GPU'
-        except Exception:
-            scene.cycles.device = 'CPU'
-
-    # --- Performance ---
-    scene.cycles.use_adaptive_sampling = True
-    scene.cycles.adaptive_threshold = 0.01
-    try:
-        scene.render.tile_x = 256
-        scene.render.tile_y = 256
-    except AttributeError:
-        pass  # Blender 4.0+ handles tiles automatically
-
-    # --- Light paths (interior scene needs more bounces) ---
-    scene.cycles.max_bounces = 12
-    scene.cycles.diffuse_bounces = 6
-    scene.cycles.glossy_bounces = 6
-    scene.cycles.transmission_bounces = 12
-    scene.cycles.transparent_max_bounces = 8
-
-    # --- Color management ---
-    scene.view_settings.view_transform = 'AgX'
-    scene.view_settings.look = 'AgX - Punchy'
-    scene.view_settings.exposure = -0.5
-
-    # --- Output format ---
-    scene.render.image_settings.file_format = 'PNG'
-    scene.render.image_settings.color_depth = '16'
-    scene.render.image_settings.compression = 15
+    apply_render_quality(quality)
 
     if output_path:
-        scene.render.filepath = output_path
-
-    # --- Units ---
-    scene.unit_settings.system = 'METRIC'
-    scene.unit_settings.scale_length = 1.0
-
-    print(f"[render] Setup complete — {quality} ({res_x}x{res_y}, "
-          f"{samples} samples, Cycles, device={scene.cycles.device})")
+        bpy.context.scene.render.filepath = output_path
 
 
 # ---------------------------------------------------------------------------

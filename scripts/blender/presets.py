@@ -49,11 +49,11 @@ RENDER_QUALITY = {
 # カメラプリセット（建築パース用）
 # ============================================================
 CAMERA_PRESETS = {
-    # 人の目線高さからの標準アングル
+    # 人の目線高さからの標準アングル（室内パースは広角が基本）
     'eye_level': {
         'height_m': 1.5,
-        'fov_deg': 50,
-        'description': '人の目線高さ。最も自然な印象',
+        'fov_deg': 65,
+        'description': '人の目線高さ。室内パース標準の広角',
     },
     # カウンター越しの視点
     'counter_view': {
@@ -138,7 +138,7 @@ MATERIAL_PRESETS = {
     # --- 壁 ---
     'wall_white': {
         'base_color': (0.9, 0.9, 0.88, 1.0),
-        'roughness': 0.85,
+        'roughness': 0.45,
         'metallic': 0.0,
     },
     'wall_concrete': {
@@ -283,14 +283,40 @@ def apply_render_quality(quality='preview'):
     scene.render.resolution_y = preset['resolution_y']
     scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGBA'
+    scene.render.image_settings.color_depth = '16'
+    scene.render.image_settings.compression = 15
 
     # デノイザー
     if preset['use_denoiser']:
         scene.cycles.use_denoising = True
         scene.cycles.denoiser = preset['denoiser']
 
+    # パフォーマンス
+    scene.cycles.use_adaptive_sampling = True
+    scene.cycles.adaptive_threshold = 0.01
+
+    # ライトパス（室内シーンはバウンス多め）
+    scene.cycles.max_bounces = 12
+    scene.cycles.diffuse_bounces = 6
+    scene.cycles.glossy_bounces = 6
+    scene.cycles.transmission_bounces = 12
+    scene.cycles.transparent_max_bounces = 8
+
+    # カラーマネジメント
+    scene.view_settings.view_transform = 'AgX'
+    scene.view_settings.look = 'AgX - Punchy'
+    scene.view_settings.exposure = -0.2
+
+    # 単位
+    scene.unit_settings.system = 'METRIC'
+    scene.unit_settings.scale_length = 1.0
+
     # GPU自動検出
     _detect_gpu()
+
+    print(f"[presets] Render quality: {quality} "
+          f"({preset['resolution_x']}x{preset['resolution_y']}, "
+          f"{preset['samples']} samples)")
 
     return preset
 
@@ -323,39 +349,61 @@ def apply_material_preset(obj, preset_name):
     return mat
 
 
-def setup_camera_from_preset(preset_name, room_center, room_width, room_depth):
-    """カメラプリセットを適用してカメラを配置"""
+def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
+                              wall_thickness=0.12):
+    """カメラプリセットを適用してカメラを配置
+
+    TrackTo制約でターゲット（部屋中心）を安定追従する。
+    マージンは部屋サイズに応じて自動計算。
+
+    Args:
+        preset_name: CAMERA_PRESETS のキー名
+        room_center: 部屋中心座標 (x, y) in Blender coords
+        room_width: 部屋の幅 (m)
+        room_depth: 部屋の奥行き (m)
+        wall_thickness: 壁厚 (m)
+    """
     preset = CAMERA_PRESETS.get(preset_name)
     if not preset:
-        print(f"Warning: Unknown camera preset '{preset_name}'")
-        return None
+        print(f"[presets] Unknown camera preset '{preset_name}', using eye_level")
+        preset = CAMERA_PRESETS['eye_level']
 
     cam_data = bpy.data.cameras.new(name=f"Camera_{preset_name}")
     cam_data.lens = _fov_to_focal_length(preset['fov_deg'])
-    cam_data.clip_start = 0.1
+    cam_data.clip_start = 0.05
     cam_data.clip_end = 100
+    cam_data.sensor_width = 36
 
     cam_obj = bpy.data.objects.new(f"Camera_{preset_name}", cam_data)
     bpy.context.collection.objects.link(cam_obj)
 
-    # 位置はコーナーから対角線方向をデフォルトに
-    margin = 0.3  # 壁からの距離(m)
+    # マージン: 壁厚+余裕。大きい部屋ほど中央寄りに配置（障害物回避）
+    min_dim = min(room_width, room_depth)
+    margin = max(wall_thickness + 0.5, min_dim * 0.2, (room_width + room_depth) / 8)
+
+    # コーナーに配置（部屋の(-x, -y)角からmargin内側）
     cam_x = room_center[0] - room_width / 2 + margin
-    cam_z = room_center[1] - room_depth / 2 + margin
-    cam_y = preset['height_m']
+    cam_y = room_center[1] - room_depth / 2 + margin
+    cam_z = preset['height_m']
 
-    cam_obj.location = (cam_x, cam_z, cam_y)
+    cam_obj.location = (cam_x, cam_y, cam_z)
 
-    # 部屋中心を向く
-    direction = (
-        room_center[0] - cam_x,
-        room_center[1] - cam_z,
-        preset.get('height_m', 1.5) * 0.7 - cam_y
-    )
+    # ターゲット: 部屋中心、目線よりやや下
+    target_z = preset['height_m'] * 0.7
+    target_empty = bpy.data.objects.new(f"Camera_{preset_name}_Target", None)
+    bpy.context.collection.objects.link(target_empty)
+    target_empty.location = (room_center[0], room_center[1], target_z)
+    target_empty.empty_display_size = 0.1
 
-    import mathutils
-    rot = mathutils.Vector(direction).to_track_quat('-Z', 'Y')
-    cam_obj.rotation_euler = rot.to_euler()
+    # TrackTo制約で安定したカメラ追従
+    constraint = cam_obj.constraints.new('TRACK_TO')
+    constraint.target = target_empty
+    constraint.track_axis = 'TRACK_NEGATIVE_Z'
+    constraint.up_axis = 'UP_Y'
+
+    print(f"[presets] Camera '{preset_name}': loc=({cam_x:.2f}, {cam_y:.2f}, {cam_z:.2f}), "
+          f"target=({room_center[0]:.2f}, {room_center[1]:.2f}, {target_z:.2f}), "
+          f"lens={cam_data.lens:.1f}mm, margin={margin:.2f}m")
 
     return cam_obj
 

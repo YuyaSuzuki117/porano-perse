@@ -140,7 +140,10 @@ if scripts_dir not in sys.path:
     sys.path.insert(0, scripts_dir)
 sys.dont_write_bytecode = True
 
-from blender.core import clear_scene, setup_collections, hex_to_rgba, make_material, link_to_collection
+from blender.core import (
+    clear_scene, setup_collections, hex_to_rgba, make_material,
+    link_to_collection, to_blender, scale_to_blender, rot_to_blender,
+)
 from blender.room_builder import build_room
 from blender.lighting import setup_lighting
 from blender.presets import apply_render_quality, setup_camera_from_preset, apply_material_preset
@@ -167,10 +170,11 @@ for furn in scene_data.get("furniture", []):
     scale = furn.get("scale", [0.6, 0.75, 0.6])
     rot = furn.get("rotation", [0, 0, 0])
 
-    # Blender座標系: x=右, z=上, y=奥 (アプリ: x=右, y=上, z=奥)
-    bl_x = pos[0] - W / 2  # 中心原点に変換
-    bl_y = -(pos[2] - D / 2)  # z→-y
-    bl_z = pos[1]  # y→z
+    # 座標変換: アプリ(x,y,z) → Blender(x,-z,y) + 中心原点オフセット
+    bl_pos = to_blender(pos)
+    bl_x = bl_pos[0] - W / 2
+    bl_y = bl_pos[1] + D / 2
+    bl_z = bl_pos[2]
 
     import bmesh
     mesh = bpy.data.meshes.new(f"Mesh_{name}")
@@ -181,8 +185,8 @@ for furn in scene_data.get("furniture", []):
 
     obj = bpy.data.objects.new(name, mesh)
     obj.location = (bl_x, bl_y, bl_z)
-    obj.scale = (scale[0], scale[2], scale[1])  # swap y/z
-    obj.rotation_euler = (rot[0], rot[2], rot[1])
+    obj.scale = scale_to_blender(scale)
+    obj.rotation_euler = rot_to_blender(rot)
 
     # マテリアル
     ftype = furn.get("type", "")

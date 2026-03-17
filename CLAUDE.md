@@ -122,6 +122,7 @@ supabase/migrations/         -- DBマイグレーション
 | `python scripts/gen-dxf.py --sample` | サンプルDXF図面生成 |
 | `python scripts/gen-dxf.py --json <path>` | blueprint JSON→DXF |
 | `python scripts/gen-dxf.py --store-json <path>` | Webアプリ JSON→DXF |
+| `python scripts/validate-dxf.py <dxf>` | DXF品質検証（レイヤー/壁閉合/建具/什器） |
 
 ### 4.1 DXF 図面パイプライン (ezdxf)
 ```bash
@@ -309,6 +310,7 @@ Blender Pythonスクリプト (scripts/render-*.py)
 | `blender-pipeline.md` | Blender Pythonスクリプト規約 |
 | `blueprint-to-perse.md` | 図面→パース変換ワークフロー・Gemini分析ルール |
 | `perse-generation-priority.md` | パース生成優先順位（箱優先・余計なもの禁止） |
+| `pdf-to-dxf-extraction.md` | PDF→DXF読み取りプロトコル（2パス・概算禁止・全数カウント） |
 | `furniture-modeling.md` | 家具モデリング規約 |
 | `iteration-checklist.md` | 修正反復チェックリスト |
 | `material-recipes.md` | マテリアルレシピ集 |

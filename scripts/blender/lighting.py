@@ -50,18 +50,22 @@ def setup_lighting(scene_data, collections):
     lighting_col = collections.get("04_Lighting")
 
     # -----------------------------------------------------------------------
-    # Layer 1: Ceiling main Area Light — warm, moderate energy
+    # Layer 1: Ceiling main Area Light — warm, energy scaled by room area
     # -----------------------------------------------------------------------
+    room_area = W * D
+    area_scale = math.sqrt(room_area / 20.0)  # 20m²を基準(1.0)
+    ceiling_energy = spot_intensity * 80 * area_scale
+
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.05))
     ceiling_light = bpy.context.active_object
     ceiling_light.name = "Light_Ceiling_Main"
-    ceiling_light.data.energy = spot_intensity * 80
-    ceiling_light.data.size = min(W, D) * 0.5
+    ceiling_light.data.energy = ceiling_energy
+    ceiling_light.data.size = min(W, D) * 0.6
     ceiling_light.data.color = spot_color
     ceiling_light.data.use_shadow = True
     if lighting_col:
         link_to_collection(ceiling_light, lighting_col)
-    print(f"[lighting] Layer 1: Ceiling main — energy={ceiling_light.data.energy:.0f}")
+    print(f"[lighting] Layer 1: Ceiling main — energy={ceiling_energy:.0f} (area_scale={area_scale:.2f})")
 
     # -----------------------------------------------------------------------
     # Layer 2: Window natural lights — controlled to avoid overexposure
@@ -99,7 +103,7 @@ def setup_lighting(scene_data, collections):
         bpy.ops.object.light_add(type='AREA', location=loc, rotation=rot)
         win_light = bpy.context.active_object
         win_light.name = f"Light_Window_{idx:02d}"
-        win_light.data.energy = 15  # Controlled daylight
+        win_light.data.energy = 15 * area_scale  # Scaled by room area
         win_light.data.size = ow * 0.8
         win_light.data.color = (0.95, 0.97, 1.0)  # Slightly cool daylight
         win_light.data.use_shadow = True
@@ -116,7 +120,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='SPOT', location=accent_loc)
     accent = bpy.context.active_object
     accent.name = "Light_Accent_Spot"
-    accent.data.energy = spot_intensity * 50
+    accent.data.energy = spot_intensity * 50 * area_scale
     accent.data.spot_size = 1.2
     accent.data.spot_blend = 0.5
     accent.data.color = spot_color
@@ -185,7 +189,7 @@ def setup_lighting(scene_data, collections):
     bpy.ops.object.light_add(type='AREA', location=(0, 0, H - 0.3))
     fill = bpy.context.active_object
     fill.name = "Light_Fill"
-    fill.data.energy = 15
+    fill.data.energy = 15 * area_scale
     fill.data.size = max(W, D) * 1.0
     fill.data.color = (1.0, 0.97, 0.93)
     fill.data.use_shadow = False
