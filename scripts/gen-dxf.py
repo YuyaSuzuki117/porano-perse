@@ -74,6 +74,7 @@ class DXFGenerator:
             "walls": [],       # {"start": [x,y], "end": [x,y], "thickness_mm": N, "height_mm": N}
             "openings": [],    # {"wall_index": N, "type": "door/window", "position_mm": N, "width_mm": N, "height_mm": N, "elevation_mm": N}
             "furniture": [],   # {"name": "", "center_mm": [x,y], "width_mm": N, "depth_mm": N, "height_mm": N, "rotation_deg": N}
+            "rooms": [],       # {"name": str, "polygon_mm": [[x,y],...], "area_m2": float}
             "materials": {"floor": "floor_oak", "wall": "wall_white", "ceiling": "ceiling_white"},
             "camera": "eye_level",
             "render_quality": "preview",
@@ -102,6 +103,116 @@ class DXFGenerator:
         ds.dxf.dimgap = 20        # 文字ギャップ
         ds.dxf.dimtad = 1         # 文字位置: 上
         ds.dxf.dimscale = 1       # スケール
+
+    # =================== ジオメトリユーティリティ ===================
+
+    @staticmethod
+    def offset_polygon(polygon, offset_mm):
+        """ポリゴンを内側/外側にオフセット
+
+        正のoffset_mm = 外側へ拡張、負のoffset_mm = 内側へ縮小
+        polygon: [(x, y), ...] の閉じたポリゴン（時計回り前提）
+
+        各辺を平行移動し、隣接辺の交点を求める。
+        鋭角のコーナーではmiter制限を適用。
+
+        Returns: list of (x, y) points
+        """
+        n = len(polygon)
+        if n < 3:
+            return list(polygon)
+
+        # 各辺の法線方向にオフセットした直線を計算
+        offset_edges = []
+        for i in range(n):
+            p0 = polygon[i]
+            p1 = polygon[(i + 1) % n]
+            dx = p1[0] - p0[0]
+            dy = p1[1] - p0[1]
+            length = math.sqrt(dx * dx + dy * dy)
+            if length < 0.001:
+                # 長さゼロの辺はスキップ（前の辺を再利用）
+                if offset_edges:
+                    offset_edges.append(offset_edges[-1])
+                else:
+                    offset_edges.append(((0, 0), (1, 0)))
+                continue
+            # 法線ベクトル（左手系: 時計回りポリゴンの外側方向）
+            nx = -dy / length
+            ny = dx / length
+            # オフセット辺の2点
+            op0 = (p0[0] + nx * offset_mm, p0[1] + ny * offset_mm)
+            op1 = (p1[0] + nx * offset_mm, p1[1] + ny * offset_mm)
+            offset_edges.append((op0, op1))
+
+        # 隣接するオフセット辺の交点を求める
+        result = []
+        for i in range(n):
+            edge_a = offset_edges[i]
+            edge_b = offset_edges[(i + 1) % n]
+            pt = DXFGenerator._line_intersection(
+                edge_a[0], edge_a[1], edge_b[0], edge_b[1]
+            )
+            if pt is None:
+                # 平行な辺の場合は端点を使用
+                pt = edge_a[1]
+            # miter制限: 元の頂点からの距離がoffsetの4倍を超えたら制限
+            orig = polygon[(i + 1) % n]
+            dist = math.sqrt((pt[0] - orig[0]) ** 2 + (pt[1] - orig[1]) ** 2)
+            max_dist = abs(offset_mm) * 4
+            if dist > max_dist and abs(offset_mm) > 0.001:
+                # miter制限 — 元頂点方向に制限距離でクリップ
+                scale = max_dist / dist
+                pt = (
+                    orig[0] + (pt[0] - orig[0]) * scale,
+                    orig[1] + (pt[1] - orig[1]) * scale,
+                )
+            result.append(pt)
+
+        return result
+
+    @staticmethod
+    def _line_intersection(p1, p2, p3, p4):
+        """2つの直線（p1-p2, p3-p4）の交点を求める
+
+        Returns: (x, y) または None（平行の場合）
+        """
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        x4, y4 = p4
+
+        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if abs(denom) < 1e-10:
+            return None  # 平行
+
+        t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
+        ix = x1 + t * (x2 - x1)
+        iy = y1 + t * (y2 - y1)
+        return (ix, iy)
+
+    @staticmethod
+    def _polygon_centroid(polygon):
+        """ポリゴンの重心を計算"""
+        n = len(polygon)
+        if n == 0:
+            return (0, 0)
+        cx = sum(p[0] for p in polygon) / n
+        cy = sum(p[1] for p in polygon) / n
+        return (cx, cy)
+
+    @staticmethod
+    def _polygon_area(polygon):
+        """ポリゴンの面積を計算（Shoelace公式）"""
+        n = len(polygon)
+        if n < 3:
+            return 0.0
+        area = 0.0
+        for i in range(n):
+            j = (i + 1) % n
+            area += polygon[i][0] * polygon[j][1]
+            area -= polygon[j][0] * polygon[i][1]
+        return abs(area) / 2.0
 
     # =================== 壁 ===================
 
@@ -166,6 +277,95 @@ class DXFGenerator:
         ]
         for i in range(4):
             self.draw_wall(corners[i], corners[(i + 1) % 4], thickness_mm)
+
+    def draw_polygon_walls(self, wall_segments):
+        """任意形状の壁を描画（L字型・凸字型・不整形対応）
+
+        wall_segments: list of dicts with:
+          - start_x_mm, start_y_mm, end_x_mm, end_y_mm
+          - thickness_mm (optional, default 120)
+          - type: "exterior" | "interior" | "partition"
+        """
+        for seg in wall_segments:
+            start = (seg["start_x_mm"], seg["start_y_mm"])
+            end = (seg["end_x_mm"], seg["end_y_mm"])
+            thickness = seg.get("thickness_mm", WALL_THICKNESS_MM)
+            wall_type = seg.get("type", "exterior")
+
+            # 壁タイプに応じた高さ
+            if wall_type == "partition":
+                height = self.meta["ceiling_height_mm"] - 300  # 間仕切りは天井まで届かない
+            else:
+                height = self.meta["ceiling_height_mm"]
+
+            self.draw_wall(start, end, thickness, height)
+
+    def draw_room_outline(self, polygon_mm, thickness_mm=WALL_THICKNESS_MM, room_name=""):
+        """部屋の外形をオフセットポリラインで描画
+
+        polygon_mm: list of (x, y) tuples forming closed polygon (時計回り)
+
+        1. 壁芯をLWPOLYLINEで描画（壁芯レイヤー）
+        2. 内側オフセットポリゴン → 壁レイヤー
+        3. 外側オフセットポリゴン → 壁レイヤー
+        4. 重心に室名ラベルを配置
+        """
+        if len(polygon_mm) < 3:
+            return
+
+        half_t = thickness_mm / 2.0
+
+        # 壁芯を個別LINEとして描画（バリデーター/dxf-to-scene.py互換）
+        n = len(polygon_mm)
+        for i in range(n):
+            p0 = polygon_mm[i]
+            p1 = polygon_mm[(i + 1) % n]
+            self.msp.add_line(
+                p0, p1,
+                dxfattribs={"layer": "壁芯"}
+            )
+
+        # 内側オフセットポリゴン（負のオフセット = 内側）
+        inner = self.offset_polygon(polygon_mm, -half_t)
+        inner_pts = inner + [inner[0]]
+        self.msp.add_lwpolyline(
+            inner_pts,
+            dxfattribs={"layer": "壁"}
+        )
+
+        # 外側オフセットポリゴン（正のオフセット = 外側）
+        outer = self.offset_polygon(polygon_mm, half_t)
+        outer_pts = outer + [outer[0]]
+        self.msp.add_lwpolyline(
+            outer_pts,
+            dxfattribs={"layer": "壁"}
+        )
+
+        # メタデータに壁セグメントを記録
+        n = len(polygon_mm)
+        for i in range(n):
+            p0 = polygon_mm[i]
+            p1 = polygon_mm[(i + 1) % n]
+            self.meta["walls"].append({
+                "start": list(p0),
+                "end": list(p1),
+                "thickness_mm": thickness_mm,
+                "height_mm": self.meta["ceiling_height_mm"],
+            })
+
+        # 部屋のメタデータを記録
+        centroid = self._polygon_centroid(polygon_mm)
+        area_mm2 = self._polygon_area(polygon_mm)
+        area_m2 = area_mm2 / 1_000_000.0
+        self.meta["rooms"].append({
+            "name": room_name,
+            "polygon_mm": [list(p) for p in polygon_mm],
+            "area_m2": round(area_m2, 2),
+        })
+
+        # 室名ラベル
+        if room_name:
+            self.add_room_label(centroid, room_name, area_m2)
 
     # =================== 建具 ===================
 
@@ -239,6 +439,242 @@ class DXFGenerator:
                 end_angle=normal_angle,
                 dxfattribs={"layer": "建具"}
             )
+
+    def draw_sliding_door(self, wall_start_mm, wall_end_mm, position_mm,
+                          width_mm=900, panels=1, wall_thickness_mm=WALL_THICKNESS_MM):
+        """引戸を描画（片引き/両引き）
+
+        panels=1: 片引き戸（1枚パネルがスライド）
+        panels=2: 両引き戸（2枚パネルが中央から左右に開く）
+        """
+        sx, sy = wall_start_mm
+        ex, ey = wall_end_mm
+        dx, dy = ex - sx, ey - sy
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 1:
+            return
+
+        # メタデータに記録
+        wall_idx = self._find_wall_index(wall_start_mm, wall_end_mm)
+        self.meta["openings"].append({
+            "wall_index": wall_idx,
+            "type": "sliding_door",
+            "position_mm": position_mm,
+            "width_mm": width_mm,
+            "height_mm": DOOR_HEIGHT_MM,
+            "elevation_mm": 0,
+            "panels": panels,
+        })
+
+        # 壁に沿った単位ベクトル・法線ベクトル
+        ux, uy = dx / length, dy / length
+        nx, ny = -uy, ux
+        half_t = wall_thickness_mm / 2
+
+        # 開口開始位置
+        ox = sx + ux * position_mm
+        oy = sy + uy * position_mm
+
+        # 枠線（開口の両端）
+        p1 = (ox - nx * half_t, oy - ny * half_t)
+        p2 = (ox + nx * half_t, oy + ny * half_t)
+        p3 = (ox + ux * width_mm - nx * half_t, oy + uy * width_mm - ny * half_t)
+        p4 = (ox + ux * width_mm + nx * half_t, oy + uy * width_mm + ny * half_t)
+        self.msp.add_line(p1, p2, dxfattribs={"layer": "建具"})
+        self.msp.add_line(p3, p4, dxfattribs={"layer": "建具"})
+
+        if panels == 1:
+            # 片引き戸: 1枚のパネル矩形 + スライド方向矢印
+            panel_thickness = wall_thickness_mm * 0.3  # パネル厚み表現
+            # パネル（壁の中心線上に少しオフセット）
+            panel_offset = panel_thickness / 2
+            ps1 = (ox + nx * panel_offset, oy + ny * panel_offset)
+            ps2 = (ox + ux * width_mm + nx * panel_offset, oy + uy * width_mm + ny * panel_offset)
+            ps3 = (ox + ux * width_mm + nx * (panel_offset + panel_thickness),
+                   oy + uy * width_mm + ny * (panel_offset + panel_thickness))
+            ps4 = (ox + nx * (panel_offset + panel_thickness),
+                   oy + ny * (panel_offset + panel_thickness))
+            self.msp.add_lwpolyline(
+                [ps1, ps2, ps3, ps4, ps1],
+                dxfattribs={"layer": "建具"}
+            )
+
+            # スライド方向矢印（壁に沿った方向）
+            arrow_y_offset = -panel_thickness * 2
+            arrow_start = (ox + ux * (width_mm * 0.3) + nx * arrow_y_offset,
+                           oy + uy * (width_mm * 0.3) + ny * arrow_y_offset)
+            arrow_end = (ox + ux * (width_mm * 0.8) + nx * arrow_y_offset,
+                         oy + uy * (width_mm * 0.8) + ny * arrow_y_offset)
+            self.msp.add_line(arrow_start, arrow_end, dxfattribs={"layer": "建具"})
+            # 矢先
+            arrow_size = width_mm * 0.08
+            ah1 = (arrow_end[0] - ux * arrow_size + nx * arrow_size * 0.5,
+                   arrow_end[1] - uy * arrow_size + ny * arrow_size * 0.5)
+            ah2 = (arrow_end[0] - ux * arrow_size - nx * arrow_size * 0.5,
+                   arrow_end[1] - uy * arrow_size - ny * arrow_size * 0.5)
+            self.msp.add_line(arrow_end, ah1, dxfattribs={"layer": "建具"})
+            self.msp.add_line(arrow_end, ah2, dxfattribs={"layer": "建具"})
+
+        elif panels == 2:
+            # 両引き戸: 2枚のパネルが中央から左右に開く
+            panel_thickness = wall_thickness_mm * 0.3
+            half_w = width_mm / 2
+            # 左パネル（中心線の上側）
+            po1 = panel_thickness * 0.3
+            for side, sign in [(1, 1), (-1, -1)]:
+                # 各パネル
+                panel_start_offset = 0 if sign == -1 else half_w
+                panel_end_offset = half_w if sign == -1 else width_mm
+                po = po1 * sign
+                pp1 = (ox + ux * panel_start_offset + nx * po,
+                       oy + uy * panel_start_offset + ny * po)
+                pp2 = (ox + ux * panel_end_offset + nx * po,
+                       oy + uy * panel_end_offset + ny * po)
+                pp3 = (ox + ux * panel_end_offset + nx * (po + panel_thickness * sign),
+                       oy + uy * panel_end_offset + ny * (po + panel_thickness * sign))
+                pp4 = (ox + ux * panel_start_offset + nx * (po + panel_thickness * sign),
+                       oy + uy * panel_start_offset + ny * (po + panel_thickness * sign))
+                self.msp.add_lwpolyline(
+                    [pp1, pp2, pp3, pp4, pp1],
+                    dxfattribs={"layer": "建具"}
+                )
+
+            # 中央の合わせ線
+            center_pt1 = (ox + ux * half_w - nx * half_t,
+                          oy + uy * half_w - ny * half_t)
+            center_pt2 = (ox + ux * half_w + nx * half_t,
+                          oy + uy * half_w + ny * half_t)
+            self.msp.add_line(center_pt1, center_pt2,
+                              dxfattribs={"layer": "建具", "linetype": "DASHED"})
+
+    def draw_opening(self, wall_start_mm, wall_end_mm, position_mm,
+                     width_mm=900, wall_thickness_mm=WALL_THICKNESS_MM):
+        """壁開口（ドアなし）を描画
+
+        壁にドアや窓のない単なる開口部を描く。
+        枠線のみで、扉パネルや円弧は描かない。
+        """
+        sx, sy = wall_start_mm
+        ex, ey = wall_end_mm
+        dx, dy = ex - sx, ey - sy
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 1:
+            return
+
+        # メタデータに記録
+        wall_idx = self._find_wall_index(wall_start_mm, wall_end_mm)
+        self.meta["openings"].append({
+            "wall_index": wall_idx,
+            "type": "opening",
+            "position_mm": position_mm,
+            "width_mm": width_mm,
+            "height_mm": self.meta["ceiling_height_mm"],
+            "elevation_mm": 0,
+        })
+
+        # 壁に沿った単位ベクトル・法線ベクトル
+        ux, uy = dx / length, dy / length
+        nx, ny = -uy, ux
+        half_t = wall_thickness_mm / 2
+
+        # 開口開始位置
+        ox = sx + ux * position_mm
+        oy = sy + uy * position_mm
+
+        # 枠線（開口の両端に壁厚方向の線を描画）
+        p1 = (ox - nx * half_t, oy - ny * half_t)
+        p2 = (ox + nx * half_t, oy + ny * half_t)
+        p3 = (ox + ux * width_mm - nx * half_t, oy + uy * width_mm - ny * half_t)
+        p4 = (ox + ux * width_mm + nx * half_t, oy + uy * width_mm + ny * half_t)
+
+        self.msp.add_line(p1, p2, dxfattribs={"layer": "建具"})
+        self.msp.add_line(p3, p4, dxfattribs={"layer": "建具"})
+
+        # 開口部の破線表現（壁がないことを示す）
+        # 壁の内側・外側ラインに沿って破線を描画
+        inner1 = (ox + nx * half_t, oy + ny * half_t)
+        inner2 = (ox + ux * width_mm + nx * half_t, oy + uy * width_mm + ny * half_t)
+        outer1 = (ox - nx * half_t, oy - ny * half_t)
+        outer2 = (ox + ux * width_mm - nx * half_t, oy + uy * width_mm - ny * half_t)
+        self.msp.add_line(inner1, inner2,
+                          dxfattribs={"layer": "建具", "linetype": "DASHED"})
+        self.msp.add_line(outer1, outer2,
+                          dxfattribs={"layer": "建具", "linetype": "DASHED"})
+
+    def draw_folding_door(self, wall_start_mm, wall_end_mm, position_mm,
+                          width_mm=1800, panels=4, wall_thickness_mm=WALL_THICKNESS_MM):
+        """折戸を描画
+
+        折戸はジグザグに折りたたまれるパネルで表現。
+        panels: パネル枚数（偶数推奨、2/4/6が一般的）
+        """
+        sx, sy = wall_start_mm
+        ex, ey = wall_end_mm
+        dx, dy = ex - sx, ey - sy
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 1:
+            return
+
+        # メタデータに記録
+        wall_idx = self._find_wall_index(wall_start_mm, wall_end_mm)
+        self.meta["openings"].append({
+            "wall_index": wall_idx,
+            "type": "folding_door",
+            "position_mm": position_mm,
+            "width_mm": width_mm,
+            "height_mm": DOOR_HEIGHT_MM,
+            "elevation_mm": 0,
+            "panels": panels,
+        })
+
+        # 壁に沿った単位ベクトル・法線ベクトル
+        ux, uy = dx / length, dy / length
+        nx, ny = -uy, ux
+        half_t = wall_thickness_mm / 2
+
+        # 開口開始位置
+        ox = sx + ux * position_mm
+        oy = sy + uy * position_mm
+
+        # 枠線（開口の両端）
+        p1 = (ox - nx * half_t, oy - ny * half_t)
+        p2 = (ox + nx * half_t, oy + ny * half_t)
+        p3 = (ox + ux * width_mm - nx * half_t, oy + uy * width_mm - ny * half_t)
+        p4 = (ox + ux * width_mm + nx * half_t, oy + uy * width_mm + ny * half_t)
+        self.msp.add_line(p1, p2, dxfattribs={"layer": "建具"})
+        self.msp.add_line(p3, p4, dxfattribs={"layer": "建具"})
+
+        # 折戸パネルをジグザグで描画
+        panel_width = width_mm / panels
+        fold_depth = wall_thickness_mm * 0.8  # 折り畳み時の奥行き表現
+
+        points = []
+        for i in range(panels + 1):
+            along = panel_width * i
+            # 偶数頂点は壁面上、奇数頂点は壁面から突出
+            if i % 2 == 0:
+                pt = (ox + ux * along, oy + uy * along)
+            else:
+                pt = (ox + ux * along + nx * fold_depth,
+                      oy + uy * along + ny * fold_depth)
+            points.append(pt)
+
+        # ジグザグ線を描画
+        for i in range(len(points) - 1):
+            self.msp.add_line(points[i], points[i + 1],
+                              dxfattribs={"layer": "建具"})
+
+        # パネル境界の丸印（ヒンジ位置）
+        hinge_radius = 15  # ヒンジ記号の半径
+        for i in range(1, panels):
+            along = panel_width * i
+            if i % 2 == 0:
+                hinge_center = (ox + ux * along, oy + uy * along)
+            else:
+                hinge_center = (ox + ux * along + nx * fold_depth,
+                                oy + uy * along + ny * fold_depth)
+            self.msp.add_circle(hinge_center, hinge_radius,
+                                dxfattribs={"layer": "建具"})
 
     def draw_window(self, wall_start_mm, wall_end_mm, position_mm,
                     width_mm=WINDOW_WIDTH_MM, height_mm=WINDOW_HEIGHT_MM,
@@ -355,13 +791,34 @@ class DXFGenerator:
         )
         dim.render()
 
+    def add_chain_dimensions(self, points_mm, offset_mm=300, direction="horizontal"):
+        """連続寸法線（区間寸法 + 全体寸法）
+
+        points_mm: list of (x, y) breakpoints along a dimension chain
+        offset_mm: 寸法線の壁からのオフセット距離
+        direction: "horizontal" | "vertical"
+
+        区間寸法を第1列に、全体寸法を第2列（さらにオフセット）に描画。
+        """
+        if len(points_mm) < 2:
+            return
+
+        # 区間寸法（隣接する点のペア）
+        for i in range(len(points_mm) - 1):
+            self.add_dimension(points_mm[i], points_mm[i + 1], offset_mm)
+
+        # 全体寸法（始点〜終点、さらに外側にオフセット）
+        if len(points_mm) > 2:
+            overall_offset = offset_mm + (400 if offset_mm > 0 else -400)
+            self.add_dimension(points_mm[0], points_mm[-1], overall_offset)
+
     # =================== 室名 ===================
 
     def add_room_label(self, position_mm, name, area_m2=None):
         """室名ラベルを追加"""
         text = name
         if area_m2 is not None:
-            text += f"\n{area_m2:.1f}m²"
+            text += f"\n{area_m2:.1f}m\u00B2"
 
         self.msp.add_text(
             name,
@@ -493,11 +950,143 @@ class DXFGenerator:
     # =================== JSON読み込み ===================
 
     def from_blueprint_json(self, json_path):
-        """blueprint-analysis JSON から図面を生成"""
+        """blueprint-analysis JSON から図面を生成
+
+        新旧両方のJSON形式に対応:
+        - 旧形式: room.width_mm/depth_mm ベースの矩形部屋
+        - 新形式: walls配列 + rooms配列による任意形状対応
+        """
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         project_name = data.get("project_name", "無題")
+        self.meta["project_name"] = project_name
+
+        # 新形式の判定: walls配列にidがあるか、roomsにwall_idsがあるか
+        walls_data = data.get("walls", [])
+        rooms_data = data.get("rooms", [])
+        has_new_format = (
+            len(walls_data) > 0 and
+            isinstance(walls_data[0], dict) and
+            "id" in walls_data[0]
+        )
+
+        if has_new_format:
+            # --- 新形式: walls + rooms による複雑レイアウト ---
+            self._from_blueprint_new_format(data, walls_data, rooms_data, project_name)
+        else:
+            # --- 旧形式: 矩形部屋ベース（後方互換） ---
+            self._from_blueprint_legacy_format(data, project_name)
+
+        return self
+
+    def _from_blueprint_new_format(self, data, walls_data, rooms_data, project_name):
+        """新形式のblueprint JSONを処理
+
+        walls配列の各壁を描画し、openingsから建具を配置。
+        rooms配列から室名ラベルを配置。
+        """
+        # 壁IDから壁データへのマップ
+        wall_map = {}
+        for wall_data in walls_data:
+            wid = wall_data.get("id", "")
+            wall_map[wid] = wall_data
+
+            wall_start = (wall_data.get("start_x_mm", 0), wall_data.get("start_y_mm", 0))
+            wall_end = (wall_data.get("end_x_mm", 0), wall_data.get("end_y_mm", 0))
+            thickness = wall_data.get("thickness_mm", WALL_THICKNESS_MM)
+            wall_type = wall_data.get("type", "exterior")
+
+            # 壁タイプに応じた高さ
+            if wall_type == "partition":
+                height = self.meta["ceiling_height_mm"] - 300
+            else:
+                height = self.meta["ceiling_height_mm"]
+
+            # 壁を描画
+            self.draw_wall(wall_start, wall_end, thickness, height)
+
+            # 壁上の開口部（建具）を描画
+            for opening in wall_data.get("openings", []):
+                self._draw_opening_from_data(
+                    wall_start, wall_end, opening, thickness
+                )
+
+        # 部屋の室名ラベル
+        for room in rooms_data:
+            room_name = room.get("name", "")
+            center = room.get("center_mm")
+            area = room.get("area_m2")
+
+            # centerが指定されていない場合、wall_idsからポリゴンを構築して重心を計算
+            if center is None and "wall_ids" in room:
+                polygon = self._build_room_polygon(room["wall_ids"], wall_map)
+                if polygon:
+                    center = list(self._polygon_centroid(polygon))
+                    if area is None:
+                        area = self._polygon_area(polygon) / 1_000_000.0
+
+                    # 部屋メタデータを記録
+                    self.meta["rooms"].append({
+                        "name": room_name,
+                        "polygon_mm": [list(p) for p in polygon],
+                        "area_m2": round(area, 2) if area else None,
+                    })
+
+            if center and room_name:
+                self.add_room_label(tuple(center), room_name, area)
+
+        # 什器
+        for furn in data.get("fixtures", []) + data.get("furniture_suggestions", []):
+            cx = furn.get("x_mm", furn.get("position_x_mm", furn.get("center_x_mm", 0)))
+            cy = furn.get("y_mm", furn.get("position_y_mm", furn.get("center_y_mm", 0)))
+            # center_mmフィールドにも対応
+            if "center_mm" in furn:
+                cx, cy = furn["center_mm"][0], furn["center_mm"][1]
+            fw = furn.get("width_mm", 600)
+            fd = furn.get("depth_mm", 600)
+            rot = furn.get("rotation_deg", 0)
+            name = furn.get("name", furn.get("type", ""))
+            self.draw_furniture((cx, cy), fw, fd, rot, name)
+
+        # 寸法線（全壁のバウンディングボックス）
+        all_x = []
+        all_y = []
+        for w in walls_data:
+            all_x.extend([w.get("start_x_mm", 0), w.get("end_x_mm", 0)])
+            all_y.extend([w.get("start_y_mm", 0), w.get("end_y_mm", 0)])
+
+        if all_x and all_y:
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            self.add_dimension((min_x, min_y), (max_x, min_y), -400)
+            self.add_dimension((max_x, min_y), (max_x, max_y), 400)
+            self.add_dimension((min_x, max_y), (min_x, min_y), -400)
+            self.add_dimension((min_x, max_y), (max_x, max_y), 400)
+
+        # dimensions_extracted があれば追加の寸法線を描画
+        for dim_data in data.get("dimensions_extracted", []):
+            p1 = dim_data.get("p1_mm")
+            p2 = dim_data.get("p2_mm")
+            if p1 and p2:
+                self.add_dimension(tuple(p1), tuple(p2), 300)
+
+        # 仕上げ表
+        finishes = data.get("finishes", [])
+        if finishes and all_x:
+            self.add_finish_table((max(all_x) + 500, max(all_y)), finishes)
+
+        # 図枠
+        if all_x:
+            self.add_title_block(
+                (max(all_x) + 500, min(all_y) - 200),
+                project_name,
+                scale="1:50",
+                date=data.get("date", ""),
+            )
+
+    def _from_blueprint_legacy_format(self, data, project_name):
+        """旧形式のblueprint JSONを処理（後方互換）"""
         room = data.get("room", {})
         width = room.get("width_mm", 5000)
         depth = room.get("depth_mm", 4000)
@@ -542,6 +1131,13 @@ class DXFGenerator:
         area_m2 = (width / 1000) * (depth / 1000)
         self.add_room_label((width / 2, depth / 2), project_name, area_m2)
 
+        # 部屋メタデータ
+        self.meta["rooms"].append({
+            "name": project_name,
+            "polygon_mm": [[0, 0], [width, 0], [width, depth], [0, depth]],
+            "area_m2": round(area_m2, 2),
+        })
+
         # 仕上げ表
         finishes = data.get("finishes", [])
         if finishes:
@@ -555,7 +1151,52 @@ class DXFGenerator:
             date=data.get("date", ""),
         )
 
-        return self
+    def _draw_opening_from_data(self, wall_start, wall_end, opening, wall_thickness):
+        """開口部データから適切な建具描画メソッドを呼び出す"""
+        o_type = opening.get("type", "door")
+        pos = opening.get("position_mm", 0)
+        width = opening.get("width_mm", DOOR_WIDTH_MM)
+
+        if o_type == "door":
+            swing = opening.get("swing", "left")
+            height = opening.get("height_mm", DOOR_HEIGHT_MM)
+            self.draw_door(wall_start, wall_end, pos, width, height, swing, wall_thickness)
+
+        elif o_type == "sliding_door":
+            panels = opening.get("panels", 1)
+            self.draw_sliding_door(wall_start, wall_end, pos, width, panels, wall_thickness)
+
+        elif o_type == "folding_door":
+            panels = opening.get("panels", 4)
+            self.draw_folding_door(wall_start, wall_end, pos, width, panels, wall_thickness)
+
+        elif o_type == "opening":
+            self.draw_opening(wall_start, wall_end, pos, width, wall_thickness)
+
+        elif o_type == "window":
+            w_width = opening.get("width_mm", WINDOW_WIDTH_MM)
+            w_height = opening.get("height_mm", WINDOW_HEIGHT_MM)
+            sill = opening.get("sill_mm", WINDOW_SILL_MM)
+            self.draw_window(wall_start, wall_end, pos, w_width, w_height, sill, wall_thickness)
+
+    def _build_room_polygon(self, wall_ids, wall_map):
+        """wall_idsのリストから部屋のポリゴン（頂点リスト）を構築
+
+        壁の始点→終点を順番に辿ってポリゴンを作る。
+        wall_idsの順番が正しい前提で、各壁の始点を頂点として収集。
+        """
+        if not wall_ids:
+            return []
+
+        polygon = []
+        for wid in wall_ids:
+            wall = wall_map.get(wid)
+            if wall is None:
+                continue
+            start = (wall.get("start_x_mm", 0), wall.get("start_y_mm", 0))
+            polygon.append(start)
+
+        return polygon if len(polygon) >= 3 else []
 
     def from_store_json(self, json_path):
         """Webアプリのエクスポート JSON (useEditorStore形式) から図面を生成"""
@@ -589,6 +1230,14 @@ class DXFGenerator:
 
             if op["type"] == "door":
                 self.draw_door(ws, we, pos, w)
+            elif op["type"] == "sliding_door":
+                panels = op.get("panels", 1)
+                self.draw_sliding_door(ws, we, pos, w, panels)
+            elif op["type"] == "folding_door":
+                panels = op.get("panels", 4)
+                self.draw_folding_door(ws, we, pos, w, panels)
+            elif op["type"] == "opening":
+                self.draw_opening(ws, we, pos, w)
             else:
                 self.draw_window(ws, we, pos, w)
 
@@ -654,11 +1303,65 @@ class DXFGenerator:
             return 800
         return 750  # デフォルト
 
+    # =================== ビュー設定 ===================
+
+    def _set_view_extents(self):
+        """DXFのヘッダーにLIMITSとビュー範囲を設定。
+        JW_CADで開いた時に全体表示されるようにする。
+        """
+        # 壁メタデータから範囲を計算
+        if not self.meta["walls"]:
+            return
+
+        xs, ys = [], []
+        for w in self.meta["walls"]:
+            s, e = w["start"], w["end"]
+            xs.extend([s[0], e[0]])
+            ys.extend([s[1], e[1]])
+
+        if not xs:
+            return
+
+        margin = 500  # 500mm余白
+        min_x = min(xs) - margin
+        min_y = min(ys) - margin
+        max_x = max(xs) + margin
+        max_y = max(ys) + margin
+
+        # HEADER変数でLIMITSを設定
+        self.doc.header["$LIMMIN"] = (min_x, min_y)
+        self.doc.header["$LIMMAX"] = (max_x, max_y)
+        self.doc.header["$EXTMIN"] = (min_x, min_y, 0)
+        self.doc.header["$EXTMAX"] = (max_x, max_y, 0)
+
+        # アクティブビューポートの中心とサイズ
+        center_x = (min_x + max_x) / 2
+        center_y = (min_y + max_y) / 2
+        width = max_x - min_x
+        height = max_y - min_y
+        view_size = max(width, height)
+
+        # *Active ビューポート設定
+        try:
+            vp_table = self.doc.viewports
+            for vp in vp_table:
+                if vp.dxf.name == "*Active":
+                    vp.dxf.center = (center_x, center_y)
+                    vp.dxf.height = view_size
+                    vp.dxf.width = view_size
+                    break
+        except Exception:
+            pass  # ビューポートテーブルがない場合はスキップ
+
     # =================== 保存 ===================
 
     def save(self, filepath, save_meta=True):
         """DXF ファイルを保存（+ メタJSON）"""
         os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
+
+        # 全エンティティのバウンディングボックスを計算してビュー設定
+        self._set_view_extents()
+
         self.doc.saveas(filepath)
         print(f"DXF saved: {filepath}")
 
