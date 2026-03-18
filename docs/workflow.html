@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF→パース 制作フロー</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;max-width:960px;margin:0 auto}
+h1{color:#58a6ff;margin-bottom:4px;font-size:22px}
+h2{color:#e6edf3;margin:24px 0 12px;font-size:17px;border-bottom:1px solid #30363d;padding-bottom:6px}
+h3{color:#58a6ff;margin:16px 0 8px;font-size:14px}
+.subtitle{color:#8b949e;margin-bottom:24px;font-size:13px}
+p,li{font-size:13px;line-height:1.7}
+ul,ol{margin-left:20px;margin-bottom:12px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:16px;overflow:hidden}
+.card-header{background:#1c2128;padding:10px 16px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+.flow{display:flex;flex-direction:column;gap:2px}
+.flow-step{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start}
+.flow-step .num{background:#238636;color:#fff;border-radius:50%;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.flow-step .num.ai{background:#8b5cf6}
+.flow-step .num.human{background:#d29922}
+.flow-step .num.auto{background:#1f6feb}
+.flow-step .content{flex:1}
+.flow-step .title{font-weight:600;font-size:13px;margin-bottom:2px}
+.flow-step .detail{font-size:12px;color:#8b949e}
+.flow-step .time{font-size:11px;color:#3fb950;margin-top:2px}
+.flow-arrow{text-align:center;color:#484f58;font-size:16px;padding:2px 0}
+.tag{display:inline-block;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600;margin-right:4px}
+.tag-ai{background:#8b5cf633;color:#a78bfa}
+.tag-human{background:#d2992233;color:#d29922}
+.tag-auto{background:#1f6feb33;color:#58a6ff}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.compare>div{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px}
+.compare .label{font-size:12px;font-weight:600;margin-bottom:6px}
+.score{font-size:24px;font-weight:700}
+.score.good{color:#3fb950}
+.score.bad{color:#f85149}
+code{background:#0d1117;padding:2px 6px;border-radius:3px;font-size:12px;color:#e6edf3}
+a{color:#58a6ff;text-decoration:none}
+.back{margin-bottom:16px;font-size:13px}
+.key-insight{background:#d2992215;border-left:3px solid #d29922;padding:10px 14px;margin:12px 0;font-size:12px;border-radius:0 6px 6px 0}
+.cmd{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px 14px;font-family:Consolas,Monaco,monospace;font-size:12px;margin:8px 0;white-space:pre-wrap;overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="back"><a href="index.html">&larr; ダッシュボード</a> | <a href="gemini-prompt.html">Geminiプロンプト</a></div>
+
+<h1>PDF → パース 制作フロー</h1>
+<p class="subtitle">実戦で検証済みの最適ワークフロー — 2026-03-18時点</p>
+
+<!-- 結論 -->
+<div class="card">
+<div class="card-header">結論: 何が一番効くか</div>
+<div class="card-body">
+
+<div class="compare">
+<div>
+<div class="label">自動抽出 (pdf-extract-vectors.py)</div>
+<div class="score bad">44点</div>
+<p style="font-size:11px;color:#8b949e;margin-top:4px">13イテレーション後。壁の分類ヒューリスティックに限界。右側40%が欠落。部屋ポリゴンが壁と不一致。</p>
+</div>
+<div>
+<div class="label">Gemini Vision + 手修正</div>
+<div class="score good">65点</div>
+<p style="font-size:11px;color:#8b949e;margin-top:4px">1回目で壁6本・部屋9室。寸法線の手修正で24本・11室に。Blenderパースまで一気通貫。</p>
+</div>
+</div>
+
+<div class="key-insight">
+<strong>最大の発見:</strong> ボトルネックは「JSON抽出の品質」だけ。gen-dxf.py（JSON→DXF）もrender-from-dxf.py（DXF→Blender）も十分に動く。JSONさえ正確なら、パースは自動生成される。
+</div>
+</div>
+</div>
+
+<!-- 推奨フロー -->
+<h2>推奨フロー（所要時間: 30〜60分）</h2>
+
+<div class="flow">
+
+<div class="flow-step">
+<div class="num human">1</div>
+<div class="content">
+<div class="title"><span class="tag tag-human">手動</span> PDFを用意</div>
+<div class="detail">平面図ページを特定。縮尺・外形寸法・室名を自分の目で確認。</div>
+<div class="time">1分</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num ai">2</div>
+<div class="content">
+<div class="title"><span class="tag tag-ai">AI</span> Gemini Visionで初回JSON生成</div>
+<div class="detail">
+<a href="gemini-prompt.html">gemini-prompt.html</a> からプロンプトをコピー → PDFと一緒にGeminiに送信。<br>
+返ってきたJSONを「GitHub経由で共有」ボタンでIssueに投稿。
+</div>
+<div class="time">3〜5分</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num auto">3</div>
+<div class="content">
+<div class="title"><span class="tag tag-auto">自動</span> DXF生成 + 重ね合わせ検証</div>
+<div class="detail">
+Claude Codeに「Issue見て」と伝えるだけ。以下を自動実行:<br>
+<code>gen-dxf.py</code> → <code>compare-pdf-dxf.py</code> → 重ね合わせ画像を検証サイトにアップ
+</div>
+<div class="time">2分</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num human">4</div>
+<div class="content">
+<div class="title"><span class="tag tag-human">検証</span> 重ね合わせを目視チェック</div>
+<div class="detail">
+検証サイトでオーバーレイ画像を確認。壁のずれ・欠落・部屋の不一致をチェック。<br>
+<strong>チェックポイント:</strong>
+<ul style="margin-top:4px">
+<li>赤い壁線がPDFの壁と重なっているか</li>
+<li>青い部屋ポリゴンが正しい形をしているか</li>
+<li>緑の什器が正しい位置にあるか</li>
+<li>壁が閉じた部屋を形成しているか</li>
+</ul>
+</div>
+<div class="time">2分</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num human">5</div>
+<div class="content">
+<div class="title"><span class="tag tag-human">手修正</span> Claude CodeまたはGeminiで修正</div>
+<div class="detail">
+<strong>パターンA（推奨）:</strong> Claude Codeに「W5の位置を○○に修正して」「内壁を追加して」と指示。PDFの寸法線を読んで正確な座標を計算してくれる。<br>
+<strong>パターンB:</strong> Geminiに修正プロンプトを送って再生成。<br>
+<strong>パターンC:</strong> JSONを直接編集（上級者向け）。
+</div>
+<div class="time">10〜20分（1〜3回繰り返し）</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num auto">6</div>
+<div class="content">
+<div class="title"><span class="tag tag-auto">自動</span> Blenderパース生成</div>
+<div class="detail">
+Claude Codeに「パース生成して」と伝える。<br>
+<code>render-from-dxf.py</code> が壁・床・天井・照明・什器を自動構築してレンダリング。
+</div>
+<div class="time">3〜5分</div>
+</div>
+</div>
+<div class="flow-arrow">▼</div>
+
+<div class="flow-step">
+<div class="num human">7</div>
+<div class="content">
+<div class="title"><span class="tag tag-human">仕上げ</span> Blenderで手作業仕上げ</div>
+<div class="detail">
+.blendファイルをBlenderで開いて最終調整。<br>
+カメラ位置、マテリアル色味、什器の差し替え（GLBモデル）、照明調整。<br>
+<strong>ここだけは手作業が必要</strong> — 提案書品質にするための最後の仕上げ。
+</div>
+<div class="time">10〜30分</div>
+</div>
+</div>
+
+</div>
+
+<!-- 各ステップの詳細 -->
+<h2>ステップ別のコツ</h2>
+
+<div class="card">
+<div class="card-header">Step 2: Gemini初回JSON — 品質を上げるコツ</div>
+<div class="card-body">
+<ul>
+<li><strong>平面図のみ送る</strong> — 天伏図・展開図は混乱の元。平面図ページだけスクショして送る</li>
+<li><strong>縮尺を明記</strong> — 「この図面は1:70です」と添えると精度が上がる</li>
+<li><strong>外壁から攻める</strong> — Geminiは外形→内壁→建具→什器の順で読み取る。これは正しい</li>
+<li><strong>検証プロンプトを必ず送る</strong> — 1回目のJSONは必ず不完全。「壁の閉合チェック」「寸法検算」の検証プロンプトをセットで送る</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Step 4-5: 重ね合わせ検証 — 見るべきポイント</div>
+<div class="card-body">
+<h3>致命的な問題（必ず修正）</h3>
+<ul>
+<li><strong>壁の欠落</strong> — 部屋が壁で囲まれていない → Blenderで壁が足りず空間が繋がってしまう</li>
+<li><strong>外形のずれ</strong> — 外壁が図面と大きくずれている → 全体の座標系が間違っている</li>
+<li><strong>部屋の形状が違う</strong> — 矩形の部屋がL字になっている等 → polygon_mmを修正</li>
+</ul>
+<h3>許容できる問題（後で修正可能）</h3>
+<ul>
+<li>什器の位置が数百mmずれている → Blenderで微調整</li>
+<li>壁厚の誤差（100mm vs 92mm等） → パースには影響小</li>
+<li>建具の位置が少しずれている → パースで目立たなければOK</li>
+</ul>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">Step 6-7: Blenderパース — 現実的な期待値</div>
+<div class="card-body">
+<h3>自動生成で得られるもの（Step 6）</h3>
+<ul>
+<li>正確な寸法の壁・床・天井の箱</li>
+<li>ドア開口、窓の位置</li>
+<li>什器のプレースホルダー配置（キューブ or GLBモデル）</li>
+<li>基本照明（7層照明システム）</li>
+<li>プロシージャル床テクスチャ</li>
+</ul>
+<h3>手作業が必要なもの（Step 7）</h3>
+<ul>
+<li>カメラアングルの調整（提案書に映える構図）</li>
+<li>壁・天井の色味・マテリアル調整</li>
+<li>什器の差し替え（プレースホルダー → 高品質GLBモデル）</li>
+<li>照明の色温度・強度調整</li>
+<li>装飾要素の追加（ミラー、アート、観葉植物等）</li>
+</ul>
+
+<div class="key-insight">
+<strong>重要:</strong> Step 6の自動パースは「提案書の叩き台」であり「完成品」ではない。建築の箱と什器配置が正しければ、Step 7の仕上げで品質は劇的に上がる。
+</div>
+</div>
+</div>
+
+<!-- コマンド一覧 -->
+<h2>コマンドチートシート</h2>
+<div class="card">
+<div class="card-body">
+<div class="cmd"># === Step 3: DXF生成 + 比較 ===
+python scripts/gen-dxf.py --json output/blueprint-analysis/&lt;案件名&gt;.json \
+  -o output/drawings/&lt;案件名&gt;.dxf
+
+python scripts/compare-pdf-dxf.py &lt;元PDF&gt; output/drawings/&lt;案件名&gt;.dxf \
+  -o output/drawings/comparison_&lt;案件名&gt;.png --page &lt;平面図ページ番号&gt;
+
+# === Step 6: Blenderパース ===
+"/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
+  --background --python scripts/render-from-dxf.py \
+  -- output/drawings/&lt;案件名&gt;.dxf --quality preview --camera eye_level
+
+# === 品質オプション ===
+# --quality: preview(32samples) / draft(64) / production(256)
+# --camera: eye_level / overview / counter</div>
+</div>
+</div>
+
+<!-- 今後の改善 -->
+<h2>今後の改善ロードマップ</h2>
+<div class="card">
+<div class="card-body">
+<h3>短期（すぐやれる）</h3>
+<ul>
+<li><strong>Gemini APIキー設定</strong> → Step 2を自動化（モバイルから「/blueprint-to-dxf」一発で実行）</li>
+<li><strong>カメラプリセット追加</strong> → ホストクラブ/バー/レストランに最適なアングル</li>
+<li><strong>GLBモデル拡充</strong> → ソファ、VIPテーブル、カウンター等の高品質モデル</li>
+</ul>
+<h3>中期（効果大）</h3>
+<ul>
+<li><strong>JW_CAD中間編集</strong> → DXF生成後にJW_CADで壁位置を微調整 → 再レンダリング</li>
+<li><strong>スタイルプリセット</strong> → 「ホストクラブ」「バー」「レストラン」のマテリアル・照明一括適用</li>
+<li><strong>複数カメラ一括レンダリング</strong> → 1コマンドで4視点のパースを同時生成</li>
+</ul>
+<h3>長期（ゲームチェンジャー）</h3>
+<ul>
+<li><strong>Gemini API + pdf-extract-vectors.pyハイブリッド</strong> → AIの意味理解 + ベクターの座標精度を融合</li>
+<li><strong>Gemini画像生成</strong> → パースの完成イメージを先に生成 → Blenderでマッチング</li>
+</ul>
+</div>
+</div>
+
+</body>
+</html>
