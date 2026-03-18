@@ -22,12 +22,16 @@ try:
     from .models.club_chair import create_club_chair
     from .models.brass_table import create_brass_table
     from .models.bar_counter import create_bar_counter
+    from .models.hostclub_sofa import create_hostclub_sofa
+    from .models.vip_table import create_vip_table
     _custom_generators['chair'] = create_cafe_chair
     _custom_generators['table_round'] = create_cafe_table
     _custom_generators['stool'] = create_bar_stool
     _custom_generators['club_chair'] = create_club_chair
     _custom_generators['brass_table'] = create_brass_table
     _custom_generators['counter'] = create_bar_counter
+    _custom_generators['sofa'] = create_hostclub_sofa
+    _custom_generators['vip_table'] = create_vip_table
 except ImportError as e:
     print(f"[furniture] Custom model import warning: {e}")
     pass

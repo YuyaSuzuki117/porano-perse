@@ -15,7 +15,7 @@ from .core import (
     link_to_collection,
 )
 from .materials.floor_finishes import create_floor_material
-from .materials.wall_finishes import create_wall_material
+from .materials.wall_finishes import create_wall_material, create_mirror_wall_material
 
 
 # ---------------------------------------------------------------------------
@@ -741,6 +741,24 @@ def build_room(scene_data, collections):
     ceiling_color_rgba = hex_to_rgba(ceiling_color_hex)
 
     wall_mat = create_wall_material(color_hex=wall_color_hex)
+
+    # --- ミラーウォール設定 ---------------------------------------------------
+    mirror_walls_cfg = style.get("mirrorWalls", None)
+    mirror_wall_set = set()
+    if mirror_walls_cfg == "all":
+        mirror_wall_set = {"north", "south", "east", "west"}
+    elif isinstance(mirror_walls_cfg, list):
+        mirror_wall_set = set(mirror_walls_cfg)
+
+    mirror_mat = None
+    if mirror_wall_set:
+        mirror_tint = style.get("mirrorTint", "#1A1A2A")
+        mirror_roughness = style.get("mirrorRoughness", 0.05)
+        mirror_mat = create_mirror_wall_material(
+            tint_hex=mirror_tint, roughness=mirror_roughness
+        )
+        print(f"[room_builder] ミラーウォール: {mirror_wall_set}")
+
     floor_mat = create_floor_material(
         texture_type=floor_texture,
         color=hex_to_rgba(floor_color_hex),
@@ -788,7 +806,10 @@ def build_room(scene_data, collections):
 
         wall_obj = _create_box_mesh(name, sx, sy, sz)
         wall_obj.location = loc
-        _apply_material(wall_obj, wall_mat)
+        if direction in mirror_wall_set and mirror_mat is not None:
+            _apply_material(wall_obj, mirror_mat)
+        else:
+            _apply_material(wall_obj, wall_mat)
         link_to_collection(wall_obj, room_col)
         walls[direction] = wall_obj
         created[name] = wall_obj

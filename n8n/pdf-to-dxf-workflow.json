@@ -1,0 +1,232 @@
+{
+  "name": "PDF→DXF ハイブリッド変換パイプライン",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-1",
+      "name": "手動トリガー",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// PDF入力パラメータの設定\n// n8n UIの「Test Workflow」実行前に以下を編集:\nconst pdf_path = 'C:/Users/y-suz/OneDrive/デスクトップ/ChloeBY展開図‗見積用20251202 2.pdf';\nconst project_name = 'chloe_by';\nconst page = 0;\n\nreturn [{\n  json: {\n    pdf_path,\n    project_name,\n    page,\n    output_dir: 'C:/Users/y-suz/porano-perse/output',\n    scripts_dir: 'C:/Users/y-suz/porano-perse/scripts',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "params-1",
+      "name": "入力パラメータ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "=python \"{{ $json.scripts_dir }}/pdf-extract-vectors.py\" \"{{ $json.pdf_path }}\" -o \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_rule.json\" --page {{ $json.page }} --pretty 2>&1"
+      },
+      "id": "rule-extract-1",
+      "name": "ルールベース抽出",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [700, 180],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "=set GEMINI_API_KEY=AIzaSyDM72iBLf6MPuPcwLiCDjQpNR8qZnqOMFc && python \"{{ $json.scripts_dir }}/pdf-to-json-gemini.py\" \"{{ $json.pdf_path }}\" -o \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_ai.json\" --page {{ $json.page }} 2>&1"
+      },
+      "id": "ai-extract-1",
+      "name": "AI抽出 (Gemini)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [700, 420],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "passthrough",
+        "output": "main"
+      },
+      "id": "merge-wait-1",
+      "name": "並列完了待ち",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "command": "=python \"{{ $json.scripts_dir }}/merge-extractions.py\" \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_rule.json\" \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_ai.json\" -o \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_merged.json\" --pretty 2>&1"
+      },
+      "id": "merge-1",
+      "name": "結果マージ",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "=python \"{{ $json.scripts_dir }}/gen-dxf.py\" --json \"{{ $json.output_dir }}/blueprint-analysis/{{ $json.project_name }}_merged.json\" -o \"{{ $json.output_dir }}/drawings/{{ $json.project_name }}_merged.dxf\" 2>&1"
+      },
+      "id": "gen-dxf-1",
+      "name": "DXF生成",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1440, 300],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "=python \"{{ $json.scripts_dir }}/compare-pdf-dxf.py\" \"{{ $json.pdf_path }}\" \"{{ $json.output_dir }}/drawings/{{ $json.project_name }}_merged.dxf\" -o \"{{ $json.output_dir }}/drawings/{{ $json.project_name }}_merged_comparison.png\" --page {{ $json.page }} 2>&1"
+      },
+      "id": "compare-1",
+      "name": "比較画像生成",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1680, 300],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// マージ済みJSONを読み込んで品質スコアを集計\nconst fs = require('fs');\nconst path = require('path');\n\nconst input = $input.first().json;\nconst mergedPath = `${input.output_dir}/blueprint-analysis/${input.project_name}_merged.json`;\n\nlet merged;\ntry {\n  merged = JSON.parse(fs.readFileSync(mergedPath, 'utf-8'));\n} catch (e) {\n  return [{ json: { error: `マージJSONの読み込み失敗: ${e.message}` } }];\n}\n\nconst score = merged.quality_score || {};\nconst summary = merged.summary || {};\n\nreturn [{\n  json: {\n    ...input,\n    quality_score: score,\n    summary: summary,\n    warnings: merged.warnings || [],\n    merged_file: mergedPath,\n    dxf_file: `${input.output_dir}/drawings/${input.project_name}_merged.dxf`,\n    comparison_file: `${input.output_dir}/drawings/${input.project_name}_merged_comparison.png`,\n    status: score.total >= 60 ? 'PASS' : 'NEEDS_REVIEW',\n    completed_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "score-1",
+      "name": "品質スコア集計",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ダッシュボード docs/data.js の更新\n// 注意: 現在のdata.jsはANALYSIS_DATAのみ。マージ結果で上書きする場合は以下を使用。\n// 安全のため、別ファイルに最新結果を書き出す方式を採用。\nconst fs = require('fs');\nconst input = $input.first().json;\n\nconst dashboardDir = 'C:/Users/y-suz/porano-perse/docs';\nconst historyFile = `${dashboardDir}/pipeline-history.json`;\n\n// 履歴読み込み (なければ空配列)\nlet history = [];\ntry {\n  history = JSON.parse(fs.readFileSync(historyFile, 'utf-8'));\n} catch (e) {\n  history = [];\n}\n\n// 今回の結果を追加\nhistory.push({\n  project_name: input.project_name,\n  pdf_path: input.pdf_path,\n  timestamp: input.completed_at,\n  quality_score: input.quality_score,\n  summary: input.summary,\n  warnings: input.warnings,\n  status: input.status,\n  files: {\n    merged_json: input.merged_file,\n    dxf: input.dxf_file,\n    comparison: input.comparison_file\n  }\n});\n\n// 最新100件に制限\nif (history.length > 100) {\n  history = history.slice(-100);\n}\n\nfs.writeFileSync(historyFile, JSON.stringify(history, null, 2), 'utf-8');\n\nreturn [{\n  json: {\n    ...input,\n    dashboard_updated: true,\n    history_count: history.length,\n    message: `パイプライン完了: ${input.project_name} / スコア: ${input.quality_score.total}/100 / ステータス: ${input.status}`\n  }\n}];"
+      },
+      "id": "dashboard-1",
+      "name": "ダッシュボード更新",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 300]
+    }
+  ],
+  "connections": {
+    "手動トリガー": {
+      "main": [
+        [
+          {
+            "node": "入力パラメータ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "入力パラメータ": {
+      "main": [
+        [
+          {
+            "node": "ルールベース抽出",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI抽出 (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ルールベース抽出": {
+      "main": [
+        [
+          {
+            "node": "並列完了待ち",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI抽出 (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "並列完了待ち",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "並列完了待ち": {
+      "main": [
+        [
+          {
+            "node": "結果マージ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "結果マージ": {
+      "main": [
+        [
+          {
+            "node": "DXF生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DXF生成": {
+      "main": [
+        [
+          {
+            "node": "比較画像生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "比較画像生成": {
+      "main": [
+        [
+          {
+            "node": "品質スコア集計",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "品質スコア集計": {
+      "main": [
+        [
+          {
+            "node": "ダッシュボード更新",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "pdf-to-dxf",
+      "createdAt": "2026-03-19T00:00:00.000Z",
+      "updatedAt": "2026-03-19T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2026-03-19T00:00:00.000Z",
+  "versionId": "1"
+}

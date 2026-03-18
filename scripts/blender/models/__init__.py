@@ -6,3 +6,5 @@ from .club_chair import create_club_chair
 from .brass_table import create_brass_table
 from .bar_counter import create_bar_counter
 from .door_panel import create_door
+from .hostclub_sofa import create_hostclub_sofa
+from .vip_table import create_vip_table

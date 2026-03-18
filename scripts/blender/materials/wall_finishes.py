@@ -108,3 +108,78 @@ def create_wall_material(color_hex='#FFFFFF', roughness=0.45):
     links.new(roughness_clamp.outputs['Result'], bsdf.inputs['Roughness'])
 
     return mat
+
+
+def create_mirror_wall_material(tint_hex='#1A1A2A', roughness=0.05):
+    """Create mirror wall material with realistic reflective surface.
+
+    Features:
+    - Metallic: 1.0 (full metallic reflection)
+    - Very low roughness for near-perfect mirror
+    - Dark tint for realistic mirror appearance
+    - Subtle noise for micro-roughness variation (±0.02)
+    - Very weak bump for micro-distortion of real mirrors
+
+    Args:
+        tint_hex: Base tint color hex (default: dark blue/purple)
+        roughness: Base roughness (default: 0.05, near-mirror)
+
+    Returns:
+        bpy.types.Material
+    """
+    linear_color = hex_to_linear(tint_hex)
+
+    mat = bpy.data.materials.new(name=f"M_Mirror_{tint_hex.lstrip('#')}")
+    mat.use_nodes = True
+    mat.use_backface_culling = False
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+
+    # Core mirror properties
+    bsdf.inputs['Base Color'].default_value = linear_color
+    bsdf.inputs['Metallic'].default_value = 1.0
+    bsdf.inputs['Roughness'].default_value = roughness
+
+    # Texture coordinates
+    tex_coord = nodes.new('ShaderNodeTexCoord')
+    tex_coord.location = (-900, 300)
+    mapping = nodes.new('ShaderNodeMapping')
+    mapping.location = (-700, 300)
+    links.new(tex_coord.outputs['Object'], mapping.inputs['Vector'])
+
+    # Micro-roughness variation via noise (±0.02)
+    noise = nodes.new('ShaderNodeTexNoise')
+    noise.location = (-500, 200)
+    noise.inputs['Scale'].default_value = 80.0
+    noise.inputs['Detail'].default_value = 4.0
+    noise.inputs['Roughness'].default_value = 0.5
+    links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
+
+    # Map noise to roughness ± 0.02 range
+    roughness_remap = nodes.new('ShaderNodeMapRange')
+    roughness_remap.location = (-300, 200)
+    roughness_remap.inputs['From Min'].default_value = 0.0
+    roughness_remap.inputs['From Max'].default_value = 1.0
+    roughness_remap.inputs['To Min'].default_value = max(roughness - 0.02, 0.0)
+    roughness_remap.inputs['To Max'].default_value = roughness + 0.02
+    links.new(noise.outputs['Fac'], roughness_remap.inputs['Value'])
+    links.new(roughness_remap.outputs['Result'], bsdf.inputs['Roughness'])
+
+    # Very weak bump for micro-distortion (real mirrors are not perfectly flat)
+    noise_bump = nodes.new('ShaderNodeTexNoise')
+    noise_bump.location = (-500, -50)
+    noise_bump.inputs['Scale'].default_value = 200.0
+    noise_bump.inputs['Detail'].default_value = 6.0
+    noise_bump.inputs['Roughness'].default_value = 0.4
+    links.new(mapping.outputs['Vector'], noise_bump.inputs['Vector'])
+
+    bump = nodes.new('ShaderNodeBump')
+    bump.location = (-300, -50)
+    bump.inputs['Strength'].default_value = 0.005
+    bump.inputs['Distance'].default_value = 0.0005
+    links.new(noise_bump.outputs['Fac'], bump.inputs['Height'])
+    links.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
+
+    return mat
