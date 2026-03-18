@@ -2886,7 +2886,33 @@ class PDFVectorExtractor:
         dpi = self._raster_dpi
         page_h_pt = self._raster_page_height_pt
 
-        # モルフォロジーでドア開口（900mm@1:50 ≈ 18mm_pdf ≈ 7.5px@300DPI）を閉じる
+        # 検出済み壁をラスターマスクに描画 → ドア開口を確実に閉じる
+        # (モルフォロジー閉じだけでは900mm開口@1:50@300DPI=213pxを閉じられない)
+        if self.walls:
+            augmented = mask.copy()
+            for wall in self.walls:
+                # 実寸mm → ラスターpx 変換
+                sx_mm, sy_mm = wall["start_x_mm"] / sf, wall["start_y_mm"] / sf
+                ex_mm, ey_mm = wall["end_x_mm"] / sf, wall["end_y_mm"] / sf
+                # paper_mm → pt → px
+                sx_pt = sx_mm / PT_TO_MM
+                sy_pt = page_h_pt - sy_mm / PT_TO_MM  # flip_y逆変換
+                ex_pt = ex_mm / PT_TO_MM
+                ey_pt = page_h_pt - ey_mm / PT_TO_MM
+                sx_px = int(sx_pt * dpi / 72.0)
+                sy_px = int(sy_pt * dpi / 72.0)
+                ex_px = int(ex_pt * dpi / 72.0)
+                ey_px = int(ey_pt * dpi / 72.0)
+                # 壁厚をpx単位に変換 (最低4px)
+                thick_mm = wall.get("thickness_mm", 120)
+                thick_px = max(4, int(thick_mm / sf / PT_TO_MM * dpi / 72.0))
+                cv2.line(augmented, (sx_px, sy_px), (ex_px, ey_px), 255, thick_px)
+            wall_drawn = int(np.count_nonzero(augmented)) - int(np.count_nonzero(mask))
+            if self.debug:
+                print(f"[DEBUG] 壁マスク増強: {len(self.walls)}本描画, +{wall_drawn}px")
+            mask = augmented
+
+        # モルフォロジーで小さな隙間を閉じる (壁描画で大きな開口は対処済み)
         close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
         closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
 
