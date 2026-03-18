@@ -18,6 +18,7 @@
 | 500行超ファイル | `limit` パラメータで必要行のみ |
 | `useEditorStore.ts` (~1,275行) | **絶対に全読み禁止** → `/store-inspect` コマンド使用 |
 | `gen-glb.mjs` (~1,500行) | 必要セクションのみ |
+| `pdf-extract-vectors.py` (~3,700行) | **全読み禁止** → 必要セクションのみ `limit` で |
 | `node_modules/`, `.next/`, `.claude/worktrees/` | 読まない |
 
 ### 1.2 エージェント委任（大量操作は必ず委任）
@@ -78,6 +79,8 @@ src/                         -- Next.js アプリ (216ファイル)
 
 scripts/                     -- Blender パイプライン
 ├── gen-glb.mjs              -- GLBモデル生成 (~1,500行)
+├── pdf-extract-vectors.py   -- PDF→blueprint JSON (PyMuPDF+OpenCV, ~3700行)
+├── compare-pdf-dxf.py       -- 重ね合わせ比較ツール (PIL直接描画)
 ├── template-to-json.ts      -- TS→JSON変換
 ├── render-template.py       -- 個別テンプレートレンダリング
 ├── render-batch.py          -- バッチレンダリング (19×9)
@@ -159,7 +162,22 @@ python scripts/dxf-to-scene.py input.dxf -o scene.json --pretty
 - gen-dxf.py が .dxf + .meta.json を同時生成
 - JW_CADで編集後もDXF解析でBlenderに反映
 
-### 4.3 Blender パイプライン（従来）
+### 4.3 PDF→DXF 改善PDCA
+```bash
+# PDCAサイクル1回 (スキルで自動化)
+/pdf-dxf-pdca
+
+# 手動実行
+python scripts/pdf-extract-vectors.py <pdf> -o output/blueprint-analysis/<name>.json --page 0 --pretty
+python scripts/gen-dxf.py --json <json> -o output/drawings/<name>.dxf
+python scripts/compare-pdf-dxf.py <pdf> <dxf> -o output/drawings/comparison.png --page 0
+```
+- ダッシュボード: https://yuyasuzuki117.github.io/porano-perse/
+- テストPDF: `C:\Users\y-suz\OneDrive\デスクトップ\ChloeBY展開図‗見積用20251202 2.pdf`
+- 現在: test10 (壁31本, 部屋47室, 名前あり25)
+- 座標系: PyMuPDF(Y-down) → flip_y → paper_mm → ×scale → real_mm(Y-up)
+
+### 4.4 Blender パイプライン（従来）
 ```bash
 # JSON生成
 npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
@@ -182,6 +200,7 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 - **状態:** Zustand 5
 - **出力:** jsPDF + html2canvas + QRCode
 - **DB:** Supabase（DB + Storage + Auth）
+- **PDF解析:** PyMuPDF (fitz) + OpenCV (opencv-python-headless) + scikit-image
 - **テスト:** Vitest (unit) + Playwright (E2E)
 - **ホスティング:** Vercel
 - **PWA:** Service Worker + manifest.json

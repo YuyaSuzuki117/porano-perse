@@ -95,3 +95,28 @@
 - 「このドアは重要じゃないから省略」→ 禁止。全建具を含める
 - 「概算で十分」→ 禁止。PDFから正確に読み取る
 - 「展開図は後で見る」→ 禁止。平面図と展開図を同時に読む
+
+## 座標系変換チェーン (compare-pdf-dxf.py / pdf-extract-vectors.py)
+
+### 5段階変換パイプライン
+1. **PyMuPDF原点** (左上, Y-down): `page.get_text()`, `page.get_drawings()` の座標
+2. **flip_y** → 内部mm (左下, Y-up): `y_new = (page_height_pt - y_pt) * PT_TO_MM`
+3. **×scale_factor** → 実寸mm: `x_real = x_paper * sf`, `y_real = y_paper * sf`
+4. **JSON/DXF出力**: 実寸mm座標 (Y-up, 原点=左下)
+5. **overlay描画** (逆変換): `real_mm ÷scale → paper_mm ÷PT_TO_MM → pt, page_h-y → pixel(×dpi/72)`
+
+### 座標系まとめ表
+| 段階 | 原点 | X方向 | Y方向 | 単位 |
+|------|------|-------|-------|------|
+| PyMuPDF | 左上 | → | ↓ | pt (72dpi) |
+| 内部mm (flip_y後) | 左下 | → | ↑ | mm (用紙) |
+| 実寸mm (×sf後) | 左下 | → | ↑ | mm (実寸) |
+| DXF (ezdxf) | 左下 | → | ↑ | mm (実寸) |
+| ラスター/PNG | 左上 | → | ↓ | px |
+
+### 注意点
+- `flip_y(y, page_height)` のコメントは**間違い** — "PDF座標系(原点=左下)"と書いてあるがPyMuPDFは原点=左上
+- OpenCVの `raster_to_mm()` は `×sf` 込みで実寸mmを返す
+- `_pdf_to_raster_coords()` は内部mm (sf未適用) を受け取る — sf適用済み座標は渡さないこと
+- compare-pdf-dxf.py はmatplotlib不使用、blueprint JSONから直接PIL描画
+- DXF座標がPDFページ範囲外になる場合がある (OpenCV検出のページ端ノイズ)
