@@ -1532,8 +1532,8 @@ class PDFVectorExtractor:
         for rect in self.rects:
             w_mm = rect.w * sf
             h_mm = rect.h * sf
-            # 什器サイズの範囲 (200mm-5000mm)
-            if 200 < w_mm < 5000 and 200 < h_mm < 5000:
+            # 什器サイズの範囲 (80mm-5000mm — 狭い棚やカウンターも検出)
+            if 80 < w_mm < 5000 and 80 < h_mm < 5000:
                 # 壁と重ならないか確認 (壁は除外)
                 center = (rect.x + rect.w / 2, rect.y + rect.h / 2)
 
