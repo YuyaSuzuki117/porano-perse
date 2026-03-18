@@ -242,6 +242,27 @@ JSONのみ出力してください。説明文は不要です。</div>
 </div>
 </div>
 
+<!-- PDF共有 -->
+<div class="card">
+<div class="card-header"><span class="tag">PDF</span> 図面PDFをPC-Bに共有</div>
+<div class="card-body">
+<p style="font-size:13px;color:#8b949e;margin-bottom:10px">PDFをアップロードすると、GitHub Issue経由でPC-BのClaude Codeに共有できます。</p>
+<div style="margin-bottom:10px">
+<input type="text" id="pdfProjectName" placeholder="案件名（例: 三経59）" style="background:#0d1117;border:1px solid #30363d;border-radius:4px;padding:8px 12px;color:#e6edf3;font-size:14px;width:100%">
+</div>
+<div id="pdfDropZone" style="background:#0d1117;border:2px dashed #30363d;border-radius:6px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s" onclick="document.getElementById('pdfFileInput').click()">
+<div style="font-size:14px;margin-bottom:4px">PDFをタップして選択 または ドラッグ&ドロップ</div>
+<div style="font-size:12px;color:#484f58">最大10MB</div>
+<input type="file" id="pdfFileInput" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="handlePdfSelect(event)">
+</div>
+<div id="pdfInfo" style="margin-top:8px;font-size:12px;color:#8b949e"></div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+<button onclick="sharePdfViaGitHub()" id="pdfShareBtn" style="background:#f0883e;color:#000;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:13px;opacity:0.5" disabled>GitHub経由でPDF共有</button>
+</div>
+<div id="pdfStatus" style="margin-top:10px;font-size:12px;min-height:20px"></div>
+</div>
+</div>
+
 <!-- コマンド -->
 <div class="card">
 <div class="card-header"><span class="tag">CMD</span> JSON保存後のコマンド</div>
@@ -392,6 +413,77 @@ function deleteSaved(key) {
     refreshSavedList();
     setStatus('削除しました', '#8b949e');
   }
+}
+
+// --- PDF共有 ---
+let pdfBase64 = null;
+let pdfFileName = '';
+
+function handlePdfSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  pdfFileName = file.name;
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    document.getElementById('pdfStatus').textContent = 'ファイルが大きすぎます（10MB以下にしてください）';
+    document.getElementById('pdfStatus').style.color = '#f85149';
+    return;
+  }
+  document.getElementById('pdfInfo').textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    pdfBase64 = e.target.result.split(',')[1];
+    document.getElementById('pdfShareBtn').disabled = false;
+    document.getElementById('pdfShareBtn').style.opacity = '1';
+    document.getElementById('pdfDropZone').style.borderColor = '#238636';
+    document.getElementById('pdfStatus').textContent = 'PDF読み込み完了。「GitHub経由でPDF共有」を押してください。';
+    document.getElementById('pdfStatus').style.color = '#3fb950';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ドラッグ&ドロップ
+(function() {
+  const dz = document.getElementById('pdfDropZone');
+  if (!dz) return;
+  dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.style.borderColor = '#58a6ff'; });
+  dz.addEventListener('dragleave', function() { dz.style.borderColor = '#30363d'; });
+  dz.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dz.style.borderColor = '#30363d';
+    if (e.dataTransfer.files.length > 0) {
+      document.getElementById('pdfFileInput').files = e.dataTransfer.files;
+      handlePdfSelect({ target: { files: e.dataTransfer.files } });
+    }
+  });
+})();
+
+function sharePdfViaGitHub() {
+  if (!pdfBase64) {
+    document.getElementById('pdfStatus').textContent = 'PDFを先に選択してください';
+    document.getElementById('pdfStatus').style.color = '#f85149';
+    return;
+  }
+  const projectName = document.getElementById('pdfProjectName').value.trim() || 'unnamed';
+  const title = encodeURIComponent('PDF共有: ' + projectName + ' - ' + pdfFileName);
+  // Base64は長すぎてURLに入らない場合があるので、手動添付の指示を出す
+  const body = encodeURIComponent(
+    '## PDF図面共有\n' +
+    '- 案件名: `' + projectName + '`\n' +
+    '- ファイル名: `' + pdfFileName + '`\n\n' +
+    '## 処理指示\n' +
+    'このIssueに添付されたPDFを使って比較検証してください。\n' +
+    '```\n' +
+    'gh issue view <番号> でPDFのURLを取得\n' +
+    'curl -L <PDF_URL> -o output/blueprint-analysis/' + projectName + '.pdf\n' +
+    'python scripts/compare-pdf-dxf.py output/blueprint-analysis/' + projectName + '.pdf output/drawings/' + projectName + '_gemini.dxf -o output/drawings/comparison_' + projectName + '.png --page 0\n' +
+    '```\n\n' +
+    '**↓ PDFファイルをこのテキストエリアにドラッグ&ドロップして添付してから Submit ↓**'
+  );
+  const url = 'https://github.com/YuyaSuzuki117/porano-perse/issues/new?title=' + title + '&body=' + body + '&labels=pdf-share';
+  window.open(url, '_blank');
+  document.getElementById('pdfStatus').innerHTML = 'GitHubのIssue作成ページを開きました。<br><strong style="color:#d29922">PDFファイルをIssueのテキスト欄にドラッグ&ドロップしてからSubmit</strong>';
+  document.getElementById('pdfStatus').style.color = '#f0883e';
 }
 
 function shareViaGitHub() {
