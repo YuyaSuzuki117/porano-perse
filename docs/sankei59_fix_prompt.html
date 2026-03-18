@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三経59 JSON修正プロンプト</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#58a6ff;margin-bottom:8px;font-size:20px}
+.subtitle{color:#8b949e;margin-bottom:20px;font-size:13px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:16px;overflow:hidden}
+.card-header{background:#1c2128;padding:10px 16px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px}
+.card-body{padding:16px;position:relative}
+.prompt-box{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:#e6edf3;max-height:none;overflow-y:auto}
+.copy-btn{position:absolute;top:24px;right:24px;background:#238636;color:#fff;border:none;border-radius:4px;padding:6px 16px;cursor:pointer;font-size:13px;z-index:1}
+.copy-btn:hover{background:#2ea043}
+.copy-btn.copied{background:#1f6feb}
+a{color:#58a6ff;text-decoration:none}
+.back{margin-bottom:16px;font-size:13px}
+.img-box{margin:12px 0;text-align:center}
+.img-box img{max-width:100%;border:1px solid #30363d;border-radius:4px;cursor:pointer}
+.img-box img.zoomed{max-width:200%;position:relative;z-index:10}
+</style>
+</head>
+<body>
+
+<div class="back"><a href="index.html">&larr; ダッシュボード</a> | <a href="gemini-prompt.html">Geminiプロンプト</a></div>
+
+<h1>三経59 ホストクラブ — JSON修正依頼</h1>
+<p class="subtitle">重ね合わせ検証で見つかった問題をGeminiに修正依頼するプロンプト</p>
+
+<!-- 重ね合わせ画像 -->
+<div class="card">
+<div class="card-header">現在の重ね合わせ（赤=壁, 青=部屋, 緑=什器）</div>
+<div class="card-body">
+<div class="img-box">
+<img src="comparison_sankei59_overlay.png" onclick="this.classList.toggle('zoomed')">
+</div>
+<p style="font-size:11px;color:#8b949e">タップでズーム</p>
+</div>
+</div>
+
+<!-- 修正プロンプト -->
+<div class="card">
+<div class="card-header">修正プロンプト（Geminiに送信）</div>
+<div class="card-body">
+<button class="copy-btn" onclick="copyPrompt(this)">コピー</button>
+<div class="prompt-box" id="fixPrompt">先ほどのJSONを重ね合わせ検証した結果、以下の問題が見つかりました。
+図面を再度確認して修正したJSONを出力してください。
+
+## 修正が必要な項目
+
+### 1. 内壁が大幅に不足（現在W5,W6の2本のみ → 推定15本以上必要）
+
+以下の壁を追加してください。図面の寸法線から正確に座標を読み取ること。
+
+**カウンター・更衣室・従業員用トイレ周り:**
+- カウンターエリアの北側壁（「カウンター、更衣室、従業員用トイレ FL±0/CH2400」の上辺）
+- カウンターエリアの東側壁
+- カウンターエリアの南側壁
+- 更衣室とトイレの間仕切り壁
+
+**中央設備エリア（製氷機・冷凍庫・コールドテーブル等が並ぶ列）:**
+- 設備列の東西の壁
+
+**各ブース間の壁:**
+- Dブースの北壁・東壁・南壁・西壁
+- Cブースの北壁・東壁・南壁
+- Bブースの北壁・西壁・南壁
+- Aブースの南壁・西壁・東壁
+
+**トイレA,B:**
+- トイレA,Bを囲む壁（北・東・南・西）
+
+**トイレC:**
+- トイレCを囲む壁（北・東・南・西）
+
+**PS・EV・ENTエリア（右側）:**
+- PSの壁
+- EVの壁（2基分）
+- ENT（エントランス）の壁
+
+### 2. 部屋ポリゴンの座標が不正確
+
+図面の寸法線を使って各部屋の正確な座標を再計算してください。
+
+**読み取りヒント（図面の寸法線から）:**
+- 全体外形: 上辺の合計 = 1515+80+650+80+2858+92+1800+92+908+80+650+80 = 8885mm（左半分）+ 8873mm（右半分）
+- 左辺: 840+80+4645+3835+308+92+1900+4560+80+2100+80+4960+410+80 = 合計で15415mm前後
+- 下辺: 6556 + 1284 + 8843 = 16683mm
+- 縮尺 1:70 で実寸mm
+
+**各部屋の寸法（図面から読める値）:**
+- 個室VIP: CH2100、幅は寸法線5183mm付近、高さは4645+3835mm付近
+- Aブース: FL-400/CH2500.3000、幅6220mm、奥行3400mm
+- Bブース: FL±0/CH2170.2400.2750、下辺の1720mm+5285mm付近
+- Cブース: FL±0/CH2170.2400.2750、下辺の1040+718mm付近から
+- Dブース: FL±0/CH2170.2400.2750、幅4306mm、下辺3393+194mm付近
+- カウンター・更衣室: FL±0/CH2400、左辺の2100mm高さ、寸法線808+810+410+960+858+92+1200mm
+- トイレA,B: FL±0/CH2400、上部中央、幅2984mm
+- トイレC: FL±0/CH2400、下部中央、幅630+830+630mm
+- ENT: 右下角、幅1200mm、高さ242.5mm+80mm付近
+
+### 3. 什器の追加
+
+以下の什器が図面に見えるが未検出:
+- 各ブース（A,B,C,D）内のソファ/ベンチ（2m+2m, 1.5m+2m+1.5m等の表記あり）
+- 各ブース内のテーブル
+- カウンター（カウンターエリア内の客席側カウンター）
+- 更衣室内のロッカー
+- SW①〜SW⑥（スイッチ？の位置）
+- CH①〜CH③（照明?の位置）
+
+### 4. 建具（ドア・窓）の追加
+
+- 各ブースの入口ドア
+- トイレA,B,Cのドア
+- カウンターエリアのドア
+- ENT（エントランス）のドア（W2上のposition_mm=7000は合っているか再確認）
+
+## 出力形式
+
+前回と同じJSON形式で、修正後の完全なJSONを出力してください。
+壁のidは W1〜W4（外壁）はそのまま、追加壁は W7 から連番で。
+JSONのみ出力。説明文不要。</div>
+</div>
+</div>
+
+<script>
+function copyPrompt(btn) {
+  const text = document.getElementById('fixPrompt').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'コピー済み';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
