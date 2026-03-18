@@ -2732,19 +2732,7 @@ class PDFVectorExtractor:
             center_mm = (round(center[0]), round(center[1]))
 
             # 室名テキストをマッチング
-            room_name = None
-            for idx, rn in enumerate(self.room_names):
-                if idx in used_room_names:
-                    continue
-                rn_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
-                # 室名がこの部屋のバウンディングボックス内にあるか
-                rn_px_x = int(rn["origin"][0] / PT_TO_MM * dpi / 72.0)
-                rn_px_y = int((page_h_pt - rn["origin"][1] / PT_TO_MM) * dpi / 72.0)
-                if 0 <= rn_px_x < w and 0 <= rn_px_y < h:
-                    if labels[rn_px_y, rn_px_x] == label_id:
-                        room_name = rn["name"]
-                        used_room_names.add(idx)
-                        break
+            # 室名テキストとのマッチングは後でまとめて行う (下のループ)
 
             # 近くの壁を検出
             nearby_walls: list[str] = []
@@ -2756,13 +2744,32 @@ class PDFVectorExtractor:
                     nearby_walls.append(wall["id"])
 
             self.rooms.append({
-                "name": room_name or "不明",
+                "name": "不明",
                 "wall_ids": nearby_walls,
                 "area_m2": round(area_m2, 1),
                 "center_mm": list(center_mm),
                 "polygon_mm": [[p[0], p[1]] for p in polygon],
             })
             room_count += 1
+
+        # 室名マッチング: 各室名テキストの最近傍部屋ポリゴンに割り当て
+        for idx, rn in enumerate(self.room_names):
+            rn_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
+            best_room = None
+            best_dist = float("inf")
+            for room in self.rooms:
+                if room["name"] != "不明":
+                    continue  # 既に名前がある部屋はスキップ
+                if not room.get("polygon_mm") or len(room["polygon_mm"]) < 3:
+                    continue
+                d = distance(rn_mm, tuple(room["center_mm"]))
+                if d < best_dist:
+                    best_dist = d
+                    best_room = room
+            # 最近傍が5000mm以内なら割り当て
+            if best_room and best_dist < 5000:
+                best_room["name"] = rn["name"]
+                used_room_names.add(idx)
 
         # フォールバック: ポリゴンに含まれなかった室名
         for idx, rn in enumerate(self.room_names):
