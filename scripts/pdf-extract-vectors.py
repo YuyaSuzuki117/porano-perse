@@ -58,6 +58,12 @@ WALL_THICKNESS_DEFAULT_MM = 120
 # 壁端点スナップ距離 (mm) — この距離以内の端点は同一点に統合
 SNAP_THRESHOLD_MM = 50
 
+# 線幅分類: 3段階 (tier1=外壁, tier2=内壁, tier3=細線/寸法)
+# 動的クラスタリングで決定するが、フォールバック閾値
+LINE_WIDTH_TIER1_MIN = 0.30   # これ以上 = 外壁候補 (最太線)
+LINE_WIDTH_TIER2_MIN = 0.15   # これ以上 = 内壁候補
+# tier2_min 未満 = 細線/寸法線
+
 # 引戸検出: 壁線上の平行線ペア間距離 (mm)
 SLIDING_DOOR_GAP_MIN_MM = 20
 SLIDING_DOOR_GAP_MAX_MM = 100
@@ -369,6 +375,8 @@ class PDFVectorExtractor:
         # 壁接続グラフ
         self.wall_graph: dict[int, list[str]] = {}  # 端点ハッシュ → [壁ID]
         self.wall_endpoint_map: dict[str, tuple] = {}  # 壁ID → (snapped_start, snapped_end)
+        self.exterior_wall_lines: list[RawLine] = []  # tier1最太線
+        self.exterior_polygon: Optional[list[tuple]] = None  # 外壁輪郭ポリゴン (mm)
 
         # 出力
         self.walls: list[dict] = []
@@ -751,36 +759,78 @@ class PDFVectorExtractor:
         return self
 
     def _classify_lines(self) -> None:
-        """線を太さ + 色で壁線/寸法線に分類"""
+        """線を太さ + 色で壁線/寸法線に3段階分類
+
+        tier1: 外壁候補 (最太線) → self.exterior_wall_lines
+        tier2: 内壁候補 (中太線) → self.wall_lines (+ tier1も含む)
+        tier3: 細線/寸法線 → self.dim_lines
+        """
         if not self.lines:
             return
 
-        # 線幅のヒストグラム
-        widths = sorted(set(round(l.width, 2) for l in self.lines))
+        # 線幅のヒストグラム (本数付き)
+        width_counts: dict[float, int] = defaultdict(int)
+        for l in self.lines:
+            width_counts[round(l.width, 2)] += 1
+        widths = sorted(width_counts.keys())
 
         if self.debug:
-            print(f"[DEBUG] 線幅分布: {widths[:10]}")
-            # 色分布のデバッグ出力
+            print(f"[DEBUG] 線幅分布: {[(w, width_counts[w]) for w in widths[:15]]}")
             color_counts: dict[str, int] = defaultdict(int)
             for l in self.lines:
                 clabel = classify_color(l.color)
                 color_counts[clabel or "unknown"] += 1
             print(f"[DEBUG] 色分類分布: {dict(color_counts)}")
 
-        # 閾値: 太い線 = 壁候補
-        # 一般的にCAD-PDFでは壁線が太く (0.5-1.5mm)、寸法線が細い (0.1-0.3mm)
-        width_threshold = 0.3  # mm (PDF上の線幅)
-        if len(widths) >= 2:
-            # 2グループに分離できる場合はギャップを探す
-            max_gap = 0.0
-            gap_threshold = width_threshold
-            for i in range(len(widths) - 1):
-                gap = widths[i + 1] - widths[i]
-                if gap > max_gap:
-                    max_gap = gap
-                    gap_threshold = (widths[i] + widths[i + 1]) / 2
-            if max_gap > 0.1:
-                width_threshold = gap_threshold
+        # 3段階クラスタリング: 厚い方から積み上げ法
+        # 建築図面では外壁(最太)→内壁(中太)→細線(寸法等)の順
+        # 太い方から線数を積み上げ、有意なギャップで区切る
+        tier1_threshold = LINE_WIDTH_TIER1_MIN
+        tier2_threshold = LINE_WIDTH_TIER2_MIN
+
+        if len(widths) >= 3:
+            # 太い方から積み上げ: 十分な線数が溜まったギャップで区切る
+            cumul = 0
+            found_tier1 = False
+            for i in range(len(widths) - 1, -1, -1):
+                cumul += width_counts[widths[i]]
+                if i > 0:
+                    gap = widths[i] - widths[i - 1]
+                    if gap > 0.04 and cumul >= 20 and not found_tier1:
+                        # tier1境界: 外壁グループが確定
+                        tier1_threshold = (widths[i - 1] + widths[i]) / 2
+                        found_tier1 = True
+                        # tier2を探す: tier1未満で内壁グループを確定
+                        cumul2 = 0
+                        for j in range(i - 1, -1, -1):
+                            cumul2 += width_counts[widths[j]]
+                            if j > 0:
+                                gap2 = widths[j] - widths[j - 1]
+                                if gap2 > 0.04 and cumul2 >= 50:
+                                    tier2_threshold = (widths[j - 1] + widths[j]) / 2
+                                    break
+                        if not found_tier1:
+                            tier2_threshold = tier1_threshold
+                        break
+
+            if not found_tier1:
+                # ギャップが見つからない場合: 最大ギャップで2分割
+                all_gaps = [(widths[i + 1] - widths[i], i) for i in range(len(widths) - 1)]
+                if all_gaps:
+                    best_gap = max(all_gaps, key=lambda x: x[0])
+                    if best_gap[0] > 0.05:
+                        tier1_threshold = (widths[best_gap[1]] + widths[best_gap[1] + 1]) / 2
+                        tier2_threshold = tier1_threshold
+        elif len(widths) == 2 and widths[1] - widths[0] > 0.05:
+            tier1_threshold = (widths[0] + widths[1]) / 2
+            tier2_threshold = tier1_threshold
+
+        if self.debug:
+            print(f"[DEBUG] 線幅閾値: tier1(外壁)>={tier1_threshold:.3f}mm, "
+                  f"tier2(内壁)>={tier2_threshold:.3f}mm")
+
+        # 外壁候補線 (tier1) を別途保持
+        self.exterior_wall_lines: list[RawLine] = []
 
         for line in self.lines:
             if line.length < 2.0:  # 極小線を除外
@@ -794,23 +844,29 @@ class PDFVectorExtractor:
                 self.dim_lines.append(line)
                 continue
 
-            # 色が明確に壁線を示す場合
-            if color_label == "wall" and line.width >= width_threshold * 0.5:
-                self.wall_lines.append(line)
-                continue
-
             # 色が建具/什器/仕上げの場合は寸法線にも壁線にも入れない
             if color_label in ("fixture", "furniture", "finish", "room_name"):
                 continue
 
-            # 線幅ベースの分類 (従来ロジック)
-            if line.width >= width_threshold:
+            # 3段階線幅分類
+            if line.width >= tier1_threshold:
+                # tier1: 外壁候補 (最太線)
+                self.exterior_wall_lines.append(line)
+                self.wall_lines.append(line)
+            elif line.width >= tier2_threshold:
+                # tier2: 内壁候補
                 self.wall_lines.append(line)
             else:
-                self.dim_lines.append(line)
+                # tier3: 細線/寸法線
+                # 色が壁を示す場合は内壁に昇格
+                if color_label == "wall" and line.width >= tier2_threshold * 0.5:
+                    self.wall_lines.append(line)
+                else:
+                    self.dim_lines.append(line)
 
         if self.debug:
-            print(f"[DEBUG] 壁線候補: {len(self.wall_lines)}, 寸法線候補: {len(self.dim_lines)}")
+            print(f"[DEBUG] 外壁候補線(tier1): {len(self.exterior_wall_lines)}, "
+                  f"壁線候補(全): {len(self.wall_lines)}, 寸法線候補: {len(self.dim_lines)}")
 
     # 什器キーワード (これが含まれるテキストは室名ではなく什器扱い)
     FIXTURE_KEYWORDS = [
@@ -1442,31 +1498,251 @@ class PDFVectorExtractor:
             print(f"[DEBUG] 壁ギャップ開口: {len(self.openings)}個")
 
     def _classify_exterior_walls(self) -> None:
-        """最外周の壁を外壁とマーク"""
+        """外壁輪郭トレーシング: tier1最太線から閉じた外壁ポリゴンを構築し、
+        そのポリゴンに近い壁を外壁とマーク。
+
+        フォールバック: tier1線が不足する場合は従来のバウンディングボックス法。
+        """
         if not self.walls:
             return
 
-        all_x: list[float] = []
-        all_y: list[float] = []
-        for w in self.walls:
-            all_x.extend([w["start_x_mm"], w["end_x_mm"]])
-            all_y.extend([w["start_y_mm"], w["end_y_mm"]])
+        sf = self.scale_factor
+        exterior_contour = self._trace_exterior_contour()
 
-        min_x, max_x = min(all_x), max(all_x)
-        min_y, max_y = min(all_y), max(all_y)
-        margin = 200  # 200mm以内なら外壁
+        if exterior_contour and len(exterior_contour) >= 3:
+            # 外壁ポリゴンが構築できた場合: 各壁の中点がポリゴン辺に近いかチェック
+            contour_margin = 300  # mm: 壁中点がポリゴン辺からこの距離以内なら外壁
+            for w in self.walls:
+                mid_x = (w["start_x_mm"] + w["end_x_mm"]) / 2
+                mid_y = (w["start_y_mm"] + w["end_y_mm"]) / 2
+                min_dist = self._point_to_polygon_edge_dist(
+                    (mid_x, mid_y), exterior_contour
+                )
+                if min_dist < contour_margin:
+                    w["type"] = "exterior"
 
-        for w in self.walls:
-            sx, sy = w["start_x_mm"], w["start_y_mm"]
-            ex, ey = w["end_x_mm"], w["end_y_mm"]
-            on_boundary = (
-                min(sx, ex) <= min_x + margin or
-                max(sx, ex) >= max_x - margin or
-                min(sy, ey) <= min_y + margin or
-                max(sy, ey) >= max_y - margin
+            # 外壁ポリゴンを保存 (部屋ポリゴン構築で使用)
+            self.exterior_polygon = exterior_contour
+            if self.debug:
+                area = shoelace_area(exterior_contour) / 1e6  # mm2 -> m2
+                print(f"[DEBUG] 外壁ポリゴン: {len(exterior_contour)}頂点, "
+                      f"面積={area:.1f}m2")
+        else:
+            # フォールバック: バウンディングボックス法
+            self.exterior_polygon = None
+            all_x: list[float] = []
+            all_y: list[float] = []
+            for w in self.walls:
+                all_x.extend([w["start_x_mm"], w["end_x_mm"]])
+                all_y.extend([w["start_y_mm"], w["end_y_mm"]])
+
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            margin = 200
+
+            for w in self.walls:
+                sx, sy = w["start_x_mm"], w["start_y_mm"]
+                ex, ey = w["end_x_mm"], w["end_y_mm"]
+                on_boundary = (
+                    min(sx, ex) <= min_x + margin or
+                    max(sx, ex) >= max_x - margin or
+                    min(sy, ey) <= min_y + margin or
+                    max(sy, ey) >= max_y - margin
+                )
+                if on_boundary:
+                    w["type"] = "exterior"
+
+            if self.debug:
+                print("[DEBUG] 外壁ポリゴン: tier1線不足 → バウンディングボックス法にフォールバック")
+
+    def _trace_exterior_contour(self) -> list[tuple]:
+        """tier1(最太)線を連結して閉じた外壁輪郭ポリゴンを構築。
+
+        アルゴリズム:
+        1. tier1線の端点をスナップしてグラフ構築
+        2. 凸包の最左下点から開始
+        3. 左回り (反時計回り) に次の辺を選択して輪郭をトレース
+        4. 閉じたループを返す
+
+        Returns:
+            閉じたポリゴンの頂点リスト (mm座標)。構築失敗時は空リスト。
+        """
+        sf = self.scale_factor
+        ext_lines = getattr(self, "exterior_wall_lines", [])
+
+        if len(ext_lines) < 3:
+            return []
+
+        # 端点をスナップ距離で統合
+        snap_thresh = SNAP_THRESHOLD_MM / sf if sf > 0 else 50
+        points: list[tuple] = []
+        edges: list[tuple[int, int]] = []
+
+        # 全端点を収集
+        raw_pts: list[tuple] = []
+        for line in ext_lines:
+            raw_pts.append(line.p1)
+            raw_pts.append(line.p2)
+
+        # スナップ: 近い端点をグループ化 → 代表点
+        n_pts = len(raw_pts)
+        parent = list(range(n_pts))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        for i in range(n_pts):
+            for j in range(i + 1, n_pts):
+                if distance(raw_pts[i], raw_pts[j]) < snap_thresh:
+                    union(i, j)
+
+        # グループの代表点を計算
+        groups: dict[int, list[int]] = defaultdict(list)
+        for i in range(n_pts):
+            groups[find(i)].append(i)
+
+        representative: dict[int, tuple] = {}
+        pt_index: dict[int, int] = {}  # raw_pt index → snapped point index
+        snapped_pts: list[tuple] = []
+
+        for grp_id, indices in groups.items():
+            cx = sum(raw_pts[i][0] for i in indices) / len(indices)
+            cy = sum(raw_pts[i][1] for i in indices) / len(indices)
+            snap_idx = len(snapped_pts)
+            snapped_pts.append((cx, cy))
+            for i in indices:
+                pt_index[i] = snap_idx
+
+        # エッジリスト構築 (スナップ後の端点インデックス)
+        adjacency: dict[int, set[int]] = defaultdict(set)
+        for i, line in enumerate(ext_lines):
+            a = pt_index[i * 2]
+            b = pt_index[i * 2 + 1]
+            if a != b:  # 自己ループ除去
+                adjacency[a].add(b)
+                adjacency[b].add(a)
+
+        if self.debug:
+            print(f"[DEBUG] 外壁トレース: {len(snapped_pts)}頂点, "
+                  f"{sum(len(v) for v in adjacency.values()) // 2}辺")
+
+        # 開始点: 最左下の点
+        if not snapped_pts:
+            return []
+
+        start = min(range(len(snapped_pts)),
+                     key=lambda i: (snapped_pts[i][0], snapped_pts[i][1]))
+
+        # 外壁トレース: 右手法則 (各ノードで最も反時計回り方向の辺を選択)
+        contour_indices = self._trace_contour_righthand(
+            start, snapped_pts, adjacency
+        )
+
+        if len(contour_indices) < 3:
+            return []
+
+        # mm座標に変換
+        contour_mm = [(round(snapped_pts[i][0] * sf), round(snapped_pts[i][1] * sf))
+                      for i in contour_indices]
+
+        return contour_mm
+
+    def _trace_contour_righthand(self, start: int, points: list[tuple],
+                                  adjacency: dict[int, set[int]],
+                                  max_steps: int = 100) -> list[int]:
+        """右手法則で外壁輪郭をトレース。
+
+        各ノードで、現在の進行方向から見て最も右回り（時計回り）の辺を選択。
+        これにより最外周の輪郭を得る。
+        """
+        if start not in adjacency or not adjacency[start]:
+            return []
+
+        # 開始: startから最も上方向(Y減少)に向かう隣接点を選択
+        # (左下開始なので、上に向かうのが外壁の左辺)
+        first_neighbor = min(
+            adjacency[start],
+            key=lambda n: math.atan2(
+                points[n][1] - points[start][1],
+                points[n][0] - points[start][0]
             )
-            if on_boundary:
-                w["type"] = "exterior"
+        )
+
+        contour = [start]
+        prev = start
+        curr = first_neighbor
+
+        for _ in range(max_steps):
+            contour.append(curr)
+
+            if curr == start and len(contour) > 2:
+                # 閉じたループ完成
+                return contour[:-1]  # 最後の重複を除く
+
+            neighbors = adjacency.get(curr, set())
+            if not neighbors:
+                break
+
+            # 進入方向の角度
+            incoming_angle = math.atan2(
+                points[curr][1] - points[prev][1],
+                points[curr][0] - points[prev][0]
+            )
+
+            # 各隣接点への角度を計算し、進入方向からの右回り角度でソート
+            best_next = None
+            best_turn = -float("inf")
+
+            for n in neighbors:
+                if n == prev and len(neighbors) > 1:
+                    continue  # Uターン回避 (他に選択肢がある場合)
+
+                outgoing_angle = math.atan2(
+                    points[n][1] - points[curr][1],
+                    points[n][0] - points[curr][0]
+                )
+
+                # 右回り角度 = 進入方向の反対からの反時計回り角度
+                # (外壁を左手に見ながら進む = 最も外側を回る)
+                turn = (incoming_angle - outgoing_angle + math.pi) % (2 * math.pi) - math.pi
+                # 最小turn角 = 最も右に曲がる
+                if best_next is None or turn > best_turn:
+                    best_turn = turn
+                    best_next = n
+
+            if best_next is None:
+                break
+
+            prev = curr
+            curr = best_next
+
+        # 閉じなかった場合: 開いた輪郭は使わない
+        if self.debug:
+            print(f"[DEBUG] 外壁トレース: ループが閉じなかった ({len(contour)}点)")
+        return []
+
+    def _point_to_polygon_edge_dist(self, point: tuple,
+                                     polygon: list[tuple]) -> float:
+        """点からポリゴンの最近辺までの距離 (mm)"""
+        min_d = float("inf")
+        n = len(polygon)
+        for i in range(n):
+            j = (i + 1) % n
+            d = perpendicular_distance(point, polygon[i], polygon[j])
+            # 投影が辺の範囲内かチェック
+            proj = project_point_on_line(point, polygon[i], polygon[j])
+            d_actual = distance(point, proj)
+            if d_actual < min_d:
+                min_d = d_actual
+        return min_d
 
     def _snap_wall_endpoints(self) -> None:
         """壁の端点をスナップ距離以内で統合し、接続グラフを構築"""
@@ -1984,6 +2260,12 @@ class PDFVectorExtractor:
                     d["p2_mm"][0] -= min_x
                     d["p2_mm"][1] -= min_y
 
+            # 外壁ポリゴンもシフト
+            if self.exterior_polygon:
+                self.exterior_polygon = [
+                    (pt[0] - min_x, pt[1] - min_y) for pt in self.exterior_polygon
+                ]
+
             # L字/凸字判定 (壁が6本以上で直交する場合)
             exterior_count = sum(1 for w in self.walls if w["type"] == "exterior")
             if exterior_count > 4:
@@ -2033,6 +2315,9 @@ class PDFVectorExtractor:
                 }
                 for o in self.openings
             ],
+
+            "exterior_polygon": [list(pt) for pt in self.exterior_polygon]
+                if self.exterior_polygon else None,
 
             "warnings": self.warnings,
 

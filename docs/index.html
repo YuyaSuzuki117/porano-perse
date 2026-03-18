@@ -10,12 +10,13 @@ body{font-family:-apple-system,sans-serif;background:#0d1117;color:#c9d1d9}
 .header{background:#161b22;padding:12px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:12px}
 .header h1{font-size:18px;color:#58a6ff}
 .badge{background:#238636;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px}
+.badge-iter{background:#1f6feb;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px}
 .tabs{display:flex;background:#161b22;border-bottom:1px solid #30363d;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{padding:10px 16px;cursor:pointer;color:#8b949e;border-bottom:2px solid transparent;white-space:nowrap;font-size:14px;user-select:none}
 .tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
 .content{padding:12px;max-width:1200px;margin:0 auto}
 .card{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:12px;overflow:hidden}
-.card-header{padding:10px 14px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px}
+.card-header{padding:10px 14px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
 .card-body{padding:12px}
 .img-box{overflow:auto;-webkit-overflow-scrolling:touch;max-height:75vh;border:1px solid #30363d;border-radius:4px;background:#000}
 .img-box img{width:100%;display:block;cursor:zoom-in}
@@ -28,6 +29,7 @@ body{font-family:-apple-system,sans-serif;background:#0d1117;color:#c9d1d9}
 .grid-item .num{font-size:24px;font-weight:700;color:#58a6ff}
 .grid-item .lbl{font-size:11px;color:#8b949e;margin-top:2px}
 .warn{background:#f8514915;border-left:3px solid #f85149;padding:6px 10px;margin:4px 0;font-size:12px;border-radius:0 4px 4px 0}
+.improve{background:#23863615;border-left:3px solid #3fb950;padding:6px 10px;margin:4px 0;font-size:12px;border-radius:0 4px 4px 0}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #21262d}
 th{color:#8b949e}
@@ -39,6 +41,15 @@ th{color:#8b949e}
 .A{background:#d2992220;color:#d29922}
 .room-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .room-tag{background:#21262d;padding:3px 8px;border-radius:4px;font-size:11px}
+.iter-section{margin-bottom:16px}
+.iter-header{font-size:15px;font-weight:700;color:#58a6ff;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #30363d}
+.iter-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+.iter-stat{background:#21262d;padding:8px 10px;border-radius:6px;font-size:12px}
+.iter-stat .label{color:#8b949e;font-size:11px}
+.iter-stat .value{color:#c9d1d9;font-weight:600;margin-top:2px}
+.iter-stat .change{color:#3fb950;font-size:11px}
+.iter-desc{font-size:13px;color:#c9d1d9;line-height:1.6;margin:8px 0}
+.iter-desc li{margin:3px 0 3px 16px}
 </style>
 </head>
 <body>
@@ -46,10 +57,12 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
+  <span class="badge-iter">test5</span>
 </div>
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('compare')">比較検証</div>
+  <div class="tab" onclick="showTab('iterations')">改善履歴</div>
   <div class="tab" onclick="showTab('summary')">抽出結果</div>
   <div class="tab" onclick="showTab('pdca')">PDCA</div>
   <div class="tab" onclick="showTab('perse')">パース</div>
@@ -61,21 +74,111 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">元PDF vs DXF出力</div>
+    <div class="card-header">最新 (test5) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay',this)">重ね合わせ</div>
-        <div class="vbtn" onclick="setView('sidebyside',this)">並列比較</div>
+        <div class="vbtn active" onclick="setView('overlay5',this)">重ね合わせ (test5)</div>
+        <div class="vbtn" onclick="setView('sidebyside5',this)">並列比較 (test5)</div>
+        <div class="vbtn" onclick="setView('overlay4',this)">重ね合わせ (test4)</div>
+        <div class="vbtn" onclick="setView('sidebyside4',this)">並列比較 (test4)</div>
         <div class="vbtn" onclick="setView('original',this)">元PDF</div>
         <div class="vbtn" onclick="setView('dxf',this)">DXF出力</div>
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="ChloeBY_compare_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="compare_test5_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
     </div>
   </div>
+</div>
+
+<!-- 改善履歴 -->
+<div id="tab-iterations" style="display:none">
+
+  <div class="card">
+    <div class="card-header">Iteration 5 (test5) -- 線幅3段階分類 + 外壁輪郭トレーシング <span class="badge-iter">最新</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>改善内容:</strong>
+        <ul>
+          <li>線幅を3段階に分類 (外壁>=0.295mm / 内壁>=0.210mm / 細線)</li>
+          <li>0.17mm線(387本)の壁誤分類を解消</li>
+          <li>外壁輪郭トレーシング: tier1最太線から72頂点の閉ポリゴン構築</li>
+          <li>右手法則による外壁輪郭のグラフトレース</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁線数</div>
+          <div class="value">624</div>
+          <div class="change">1401 -> 624 (55%削減)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">壁ペア</div>
+          <div class="value">103組</div>
+          <div class="change">238 -> 103組</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">DXF壁セグメント</div>
+          <div class="value">116本</div>
+          <div class="change">238 -> 116本</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">外壁/内壁分類</div>
+          <div class="value">32外壁 + 84内壁</div>
+          <div class="change">分類精度向上</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">座標範囲</div>
+          <div class="value">12.4m x 14.5m</div>
+          <div class="change">妥当な範囲</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <strong style="font-size:13px;color:#f85149">残課題:</strong>
+        <div class="warn">外壁ポリゴン面積が0.1m2 (座標変換精査必要)</div>
+        <div class="warn">一部壁の位置ずれ</div>
+        <div class="warn">左下斜め壁エリアの精度</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg('compare_test5_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg('compare_test5_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView5">
+          <img src="compare_test5_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 4 (test4) -- 線幅ベース壁判定</div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>寸法線端点ペアリング</li>
+          <li>CAD色ベースレイヤー分類</li>
+          <li>壁端点スナップ+接続グラフ</li>
+          <li>引戸・折戸・開口検出</li>
+          <li>部屋ポリゴン構築</li>
+          <li>JW_CAD重複テキスト除去</li>
+        </ul>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg4('ChloeBY_compare_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg4('ChloeBY_compare_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView4">
+          <img src="ChloeBY_compare_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 抽出結果 -->
@@ -151,29 +254,43 @@ const S = D.pass1_summary || {};
 
 // タブ
 function showTab(id) {
-  document.querySelectorAll('[id^="tab-"]').forEach(e => e.style.display = 'none');
+  document.querySelectorAll('[id^="tab-"]').forEach(function(e) { e.style.display = 'none'; });
   document.getElementById('tab-' + id).style.display = 'block';
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   event.target.classList.add('active');
 }
 
 // 比較ビュー
-const viewMap = {
-  overlay: 'ChloeBY_compare_overlay.png',
-  sidebyside: 'ChloeBY_compare_sidebyside.png',
+var viewMap = {
+  overlay5: 'compare_test5_overlay.png',
+  sidebyside5: 'compare_test5_sidebyside.png',
+  overlay4: 'ChloeBY_compare_overlay.png',
+  sidebyside4: 'ChloeBY_compare_sidebyside.png',
   original: 'ChloeBY_original_page0.png',
   dxf: 'ChloeBY_test4_preview.png',
-  svg: 'ChloeBY_test4.svg',
+  svg: 'ChloeBY_test4.svg'
 };
 function setView(v, el) {
-  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
-  const src = viewMap[v];
+  var src = viewMap[v];
   if (v === 'svg') {
-    document.getElementById('mainView').innerHTML = `<object data="${src}" type="image/svg+xml" style="width:100%;min-height:50vh"></object>`;
+    document.getElementById('mainView').innerHTML = '<object data="' + src + '" type="image/svg+xml" style="width:100%;min-height:50vh"></object>';
   } else {
-    document.getElementById('mainView').innerHTML = `<img src="${src}" onclick="this.classList.toggle('zoomed')">`;
+    document.getElementById('mainView').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
   }
+}
+
+// 改善履歴の画像切替
+function showIterImg(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView5').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
+}
+function showIterImg4(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView4').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 
 // サマリー
@@ -182,20 +299,20 @@ document.getElementById('summaryGrid').innerHTML = [
   ['窓', S.total_windows], ['開口', S.total_openings], ['什器', S.total_fixtures],
   ['部屋', S.total_rooms], ['寸法', S.total_dimensions_total],
   ['信頼度', ((D.confidence||0)*100).toFixed(0)+'%'],
-].map(([l,n]) => `<div class="grid-item"><div class="num">${n||0}</div><div class="lbl">${l}</div></div>`).join('');
+].map(function(a) { return '<div class="grid-item"><div class="num">' + (a[1]||0) + '</div><div class="lbl">' + a[0] + '</div></div>'; }).join('');
 
 // 室名
-document.getElementById('roomList').innerHTML = (D.rooms||[]).map(r =>
-  `<span class="room-tag">${r.name}</span>`
-).join('');
+document.getElementById('roomList').innerHTML = (D.rooms||[]).map(function(r) {
+  return '<span class="room-tag">' + r.name + '</span>';
+}).join('');
 
 // 警告
-document.getElementById('warnings').innerHTML = (D.warnings||[]).map(w =>
-  `<div class="warn">${w}</div>`
-).join('') || '<p style="color:#3fb950">警告なし</p>';
+document.getElementById('warnings').innerHTML = (D.warnings||[]).map(function(w) {
+  return '<div class="warn">' + w + '</div>';
+}).join('') || '<p style="color:#3fb950">警告なし</p>';
 
 // PDCA
-const pdca = [
+var pdca = [
   ['Plan','寸法線の端点ペアリング','done'],
   ['Plan','CAD色ベースレイヤー分類','done'],
   ['Plan','壁端点スナップ+接続グラフ','done'],
@@ -204,41 +321,40 @@ const pdca = [
   ['Plan','JW_CAD重複テキスト除去','done'],
   ['Do','比較ツール構築','done'],
   ['Do','ダッシュボード構築','done'],
-  ['Check','外壁形状の精度','issue'],
-  ['Check','内壁位置ずれ','issue'],
+  ['Do','線幅3段階分類 (外壁/内壁/細線)','done'],
+  ['Do','外壁輪郭トレーシング (72頂点閉ポリゴン)','done'],
+  ['Do','0.17mm線の壁誤分類解消 (387本除外)','done'],
+  ['Check','外壁ポリゴン面積が過小 (0.1m2)','issue'],
+  ['Check','一部壁の位置ずれ','issue'],
+  ['Check','左下斜め壁エリアの精度','issue'],
   ['Check','カウンター什器検出','issue'],
-  ['Check','斜め壁の対応','issue'],
-  ['Check','線幅ベース壁判定の最適化','issue'],
   ['Check','寸法チェーン不整合(8件)','issue'],
-  ['Act','線幅閾値の見直し (0.25/0.34mm境界)','todo'],
-  ['Act','外壁輪郭トレーシング','todo'],
+  ['Act','外壁ポリゴン座標変換の精査','todo'],
   ['Act','斜め壁の角度対応','todo'],
   ['Act','什器ラベルのマッチング改善','todo'],
 ];
 document.getElementById('pdcaTable').innerHTML =
   '<thead><tr><th>Phase</th><th>項目</th><th>状態</th></tr></thead><tbody>' +
-  pdca.map(([p,item,st]) => {
-    const sc = st==='done'?'done':st==='issue'?'issue':'wip';
-    const sl = st==='done'?'完了':st==='issue'?'要対応':'未着手';
-    return `<tr><td><span class="phase ${p[0]}">${p}</span></td><td>${item}</td><td class="${sc}">${sl}</td></tr>`;
+  pdca.map(function(row) {
+    var p = row[0], item = row[1], st = row[2];
+    var sc = st==='done'?'done':st==='issue'?'issue':'wip';
+    var sl = st==='done'?'完了':st==='issue'?'要対応':'未着手';
+    return '<tr><td><span class="phase ' + p[0] + '">' + p + '</span></td><td>' + item + '</td><td class="' + sc + '">' + sl + '</td></tr>';
   }).join('') + '</tbody>';
 
 // 壁テーブル
-const wtb = document.querySelector('#wallTable tbody');
-(D.walls||[]).forEach(w => {
-  const dx=w.end_x_mm-w.start_x_mm, dy=w.end_y_mm-w.start_y_mm;
-  const len = Math.round(Math.sqrt(dx*dx+dy*dy));
-  const ops = (w.openings||[]).length;
-  wtb.innerHTML += `<tr>
-    <td>${w.id}</td><td>${w.type==='exterior'?'外壁':'内壁'}</td>
-    <td>${w.start_x_mm},${w.start_y_mm}</td><td>${w.end_x_mm},${w.end_y_mm}</td>
-    <td>${w.thickness_mm}mm</td><td>${len}mm</td><td>${ops}</td></tr>`;
+var wtb = document.querySelector('#wallTable tbody');
+(D.walls||[]).forEach(function(w) {
+  var dx=w.end_x_mm-w.start_x_mm, dy=w.end_y_mm-w.start_y_mm;
+  var len = Math.round(Math.sqrt(dx*dx+dy*dy));
+  var ops = (w.openings||[]).length;
+  wtb.innerHTML += '<tr><td>' + w.id + '</td><td>' + (w.type==='exterior'?'外壁':'内壁') + '</td><td>' + w.start_x_mm + ',' + w.start_y_mm + '</td><td>' + w.end_x_mm + ',' + w.end_y_mm + '</td><td>' + w.thickness_mm + 'mm</td><td>' + len + 'mm</td><td>' + ops + '</td></tr>';
 });
 
 // 什器テーブル
-const ftb = document.querySelector('#fixtureTable tbody');
-(D.fixtures||[]).forEach(f => {
-  ftb.innerHTML += `<tr><td>${f.name||'(無名)'}</td><td>${f.x_mm}</td><td>${f.y_mm}</td><td>${f.width_mm}</td><td>${f.depth_mm}</td></tr>`;
+var ftb = document.querySelector('#fixtureTable tbody');
+(D.fixtures||[]).forEach(function(f) {
+  ftb.innerHTML += '<tr><td>' + (f.name||'(無名)') + '</td><td>' + f.x_mm + '</td><td>' + f.y_mm + '</td><td>' + f.width_mm + '</td><td>' + f.depth_mm + '</td></tr>';
 });
 </script>
 </body>
