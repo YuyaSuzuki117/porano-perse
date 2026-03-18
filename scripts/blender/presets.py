@@ -425,7 +425,6 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
 
     # 鳥瞰カメラ — 建物全体を上から見下ろす
     if preset_name == 'bird_eye':
-        import math
         max_dim = max(room_width, room_depth)
         # 建物サイズに基づいて高さ自動計算（FOV 50°で全体が収まる距離）
         half_fov = math.radians(preset['fov_deg'] / 2)

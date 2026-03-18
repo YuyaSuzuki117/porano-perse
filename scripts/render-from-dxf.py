@@ -37,6 +37,7 @@ quality = "preview"
 camera_preset = "eye_level"
 output_dir = None
 meta_path = None
+style_json = None
 
 i = 0
 while i < len(argv):
@@ -51,6 +52,9 @@ while i < len(argv):
         i += 2
     elif argv[i] == "--meta" and i + 1 < len(argv):
         meta_path = argv[i + 1]
+        i += 2
+    elif argv[i] == "--style" and i + 1 < len(argv):
+        style_json = argv[i + 1]
         i += 2
     elif not argv[i].startswith("--"):
         dxf_path = argv[i]
@@ -134,6 +138,18 @@ print(f"{'='*60}\n")
 
 with open(scene_json_path, "r", encoding="utf-8") as f:
     scene_data = json.load(f)
+
+# --style オーバーライド（JSON文字列 or ファイルパス）
+if style_json:
+    if os.path.isfile(style_json):
+        with open(style_json, "r", encoding="utf-8") as f:
+            style_override = json.load(f)
+    else:
+        style_override = json.loads(style_json)
+    if "style" not in scene_data:
+        scene_data["style"] = {}
+    scene_data["style"].update(style_override)
+    print(f"Style override: {scene_data['style']}")
 
 # Blenderモジュールのインポート（scripts/ をパスに追加 → blender.xxx でインポート）
 if scripts_dir not in sys.path:
@@ -249,15 +265,63 @@ if not _furniture_import_success:
 setup_lighting(scene_data, collections)
 
 # 2.5 カメラ
-camera_name = camera_preset  # CLI引数を優先（scene JSONのデフォルトより）
-cam_obj = setup_camera_from_preset(
-    camera_name,
-    room_center=(0, 0),
-    room_width=W,
-    room_depth=D,
-)
-bpy.context.scene.camera = cam_obj
-print(f"Camera: {camera_name}")
+style = scene_data.get("style", {})
+custom_cam_pos = style.get("cameraPosition")  # [x_dxf_mm, y_dxf_mm, z_m]
+custom_cam_target = style.get("cameraTarget")  # [x_dxf_mm, y_dxf_mm, z_m]
+custom_cam_fov = style.get("cameraFov", 65)
+
+if custom_cam_pos and custom_cam_target:
+    # DXF mm座標をBlender座標に変換（建物中心=原点）
+    cam_data = bpy.data.cameras.new(name="Camera_Custom")
+    cam_data.lens = 36 / (2 * __import__('math').tan(__import__('math').radians(custom_cam_fov / 2)))
+    cam_data.clip_start = 0.05
+    cam_data.clip_end = 100
+    cam_data.sensor_width = 36
+    cam_data.dof.use_dof = True
+    cam_data.dof.aperture_fstop = 5.6
+
+    cam_obj = bpy.data.objects.new("Camera_Custom", cam_data)
+    bpy.context.collection.objects.link(cam_obj)
+
+    # DXF mm → Blender m (中心原点)
+    cx = custom_cam_pos[0] / 1000 - W / 2
+    cy = -(custom_cam_pos[1] / 1000 - D / 2)
+    cz = custom_cam_pos[2] if len(custom_cam_pos) > 2 else 1.5
+    cam_obj.location = (cx, cy, cz)
+
+    tx = custom_cam_target[0] / 1000 - W / 2
+    ty = -(custom_cam_target[1] / 1000 - D / 2)
+    tz = custom_cam_target[2] if len(custom_cam_target) > 2 else 1.0
+
+    target_empty = bpy.data.objects.new("Camera_Custom_Target", None)
+    bpy.context.collection.objects.link(target_empty)
+    target_empty.location = (tx, ty, tz)
+    target_empty.empty_display_size = 0.1
+
+    constraint = cam_obj.constraints.new('TRACK_TO')
+    constraint.target = target_empty
+    constraint.track_axis = 'TRACK_NEGATIVE_Z'
+    constraint.up_axis = 'UP_Y'
+
+    # DOF
+    import math as _m
+    dx, dy, dz = tx - cx, ty - cy, tz - cz
+    dist = _m.sqrt(dx*dx + dy*dy + dz*dz)
+    cam_data.dof.focus_distance = dist * 0.8
+
+    bpy.context.scene.camera = cam_obj
+    print(f"Camera: custom pos=({cx:.1f},{cy:.1f},{cz:.1f}) "
+          f"target=({tx:.1f},{ty:.1f},{tz:.1f}) fov={custom_cam_fov}")
+else:
+    camera_name = camera_preset
+    cam_obj = setup_camera_from_preset(
+        camera_name,
+        room_center=(0, 0),
+        room_width=W,
+        room_depth=D,
+    )
+    bpy.context.scene.camera = cam_obj
+    print(f"Camera: {camera_name}")
 
 # 2.6 レンダリング設定
 render_quality = scene_data.get("render_quality", quality)

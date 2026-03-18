@@ -305,4 +305,83 @@ def setup_lighting(scene_data, collections):
         link_to_collection(fill, lighting_col)
     print("[lighting] レイヤー6: フィルライト (影なし、energy増加)")
 
-    print("[lighting] セットアップ完了 — 7層照明構成")
+    # -----------------------------------------------------------------------
+    # レイヤー7: LED間接照明 — 壁際の床付近カラーストリップ
+    # style.ledStripColor で有効化（未指定ならスキップ）
+    # -----------------------------------------------------------------------
+    led_color_hex = style.get("ledStripColor")
+    if led_color_hex:
+        led_color = hex_to_linear(led_color_hex)
+        led_energy = float(style.get("ledStripEnergy", 15)) * area_scale
+        led_height = 0.05  # 床上5cm
+        strip_count = 0
+
+        # 4辺の壁際にLEDストリップ配置
+        positions = [
+            # (位置, サイズ幅, サイズ奥行, 回転)
+            ((0, -D/2 + 0.1, led_height), W * 0.8, 0.05, (0, 0, 0)),       # south
+            ((0, D/2 - 0.1, led_height), W * 0.8, 0.05, (0, 0, 0)),        # north
+            ((-W/2 + 0.1, 0, led_height), 0.05, D * 0.8, (0, 0, 0)),       # west
+            ((W/2 - 0.1, 0, led_height), 0.05, D * 0.8, (0, 0, 0)),        # east
+        ]
+
+        for idx, (loc, sx, sy, rot) in enumerate(positions):
+            led = _create_light_data(
+                'AREA', f"Light_LED_Strip_{idx:02d}",
+                energy=led_energy,
+                color=led_color,
+                size=max(sx, sy),
+                use_shadow=False,
+            )
+            led.location = loc
+            led.rotation_euler = rot
+            # エリアライト上向き
+            led.rotation_euler = (0, 0, 0)
+            if lighting_col:
+                link_to_collection(led, lighting_col)
+            strip_count += 1
+
+        print(f"[lighting] レイヤー7: LED間接照明 — {strip_count}本, "
+              f"color={led_color_hex}, energy={led_energy:.0f}")
+    else:
+        print("[lighting] レイヤー7: LED間接照明 — スキップ (ledStripColor未設定)")
+
+    # -----------------------------------------------------------------------
+    # レイヤー8: マルチダウンライト — 複数スポットで天井を演出
+    # style.downlightCount で有効化（未指定ならスキップ）
+    # -----------------------------------------------------------------------
+    dl_count = int(style.get("downlightCount", 0))
+    if dl_count > 0:
+        dl_color_hex = style.get("downlightColor", spot_color_hex)
+        dl_color = hex_to_linear(dl_color_hex)
+        dl_energy = float(style.get("downlightEnergy", 30)) * area_scale
+
+        # グリッド配置
+        cols = max(2, int(math.sqrt(dl_count * W / D)))
+        rows = max(2, dl_count // cols)
+        actual = 0
+        for r in range(rows):
+            for c in range(cols):
+                x = -W/2 + W * (c + 0.5) / cols
+                y = -D/2 + D * (r + 0.5) / rows
+                dl = _create_light_data(
+                    'SPOT', f"Light_Downlight_{actual:02d}",
+                    energy=dl_energy,
+                    color=dl_color,
+                    spot_size=0.8,
+                    spot_blend=0.6,
+                )
+                dl.location = (x, y, H - 0.05)
+                dl.rotation_euler = (0, 0, 0)
+                if lighting_col:
+                    link_to_collection(dl, lighting_col)
+                actual += 1
+                if actual >= dl_count:
+                    break
+            if actual >= dl_count:
+                break
+
+        print(f"[lighting] レイヤー8: マルチダウンライト — {actual}個, "
+              f"color={dl_color_hex}, energy={dl_energy:.0f}")
+
+    print(f"[lighting] セットアップ完了 — 拡張照明構成")
