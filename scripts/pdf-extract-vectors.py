@@ -39,6 +39,14 @@ except ImportError:
     print("エラー: PyMuPDF が必要です。  pip install PyMuPDF", file=sys.stderr)
     sys.exit(1)
 
+# OpenCV + NumPy (ラスター壁検証用、オプショナル)
+try:
+    import cv2
+    import numpy as np
+    _HAS_CV2 = True
+except ImportError:
+    _HAS_CV2 = False
+
 # ---------------------------------------------------------------------------
 # 定数
 # ---------------------------------------------------------------------------
@@ -50,13 +58,13 @@ DOOR_WIDTH_REF_MM = 900
 DOOR_HEIGHT_REF_MM = 2100
 WINDOW_WIDTH_REF_MM = 1800
 
-# 壁厚判定 (スケール後mm)
-WALL_THICKNESS_MIN_MM = 80
-WALL_THICKNESS_MAX_MM = 250
+# 壁厚判定 (スケール後mm) — 日本の一般的な壁: 100-150mm
+WALL_THICKNESS_MIN_MM = 70
+WALL_THICKNESS_MAX_MM = 180
 WALL_THICKNESS_DEFAULT_MM = 120
 
 # 壁端点スナップ距離 (mm) — この距離以内の端点は同一点に統合
-SNAP_THRESHOLD_MM = 150
+SNAP_THRESHOLD_MM = 80
 
 # 線幅分類: 3段階 (tier1=外壁, tier2=内壁, tier3=細線/寸法)
 # 動的クラスタリングで決定するが、フォールバック閾値
@@ -185,15 +193,16 @@ def perpendicular_distance(point: tuple, line_p1: tuple, line_p2: tuple) -> floa
     return abs(dy * point[0] - dx * point[1] + line_p2[0] * line_p1[1] - line_p2[1] * line_p1[0]) / length
 
 
-def project_point_on_line(point: tuple, line_p1: tuple, line_p2: tuple) -> tuple:
-    """点を直線上に投影した座標を返す"""
+def project_point_on_line(point: tuple, line_p1: tuple, line_p2: tuple, *, clamp: bool = True) -> tuple:
+    """点を直線上に投影した座標を返す。clamp=Falseで無限直線への投影"""
     dx = line_p2[0] - line_p1[0]
     dy = line_p2[1] - line_p1[1]
     length_sq = dx * dx + dy * dy
     if length_sq < 1e-18:
         return line_p1
     t = ((point[0] - line_p1[0]) * dx + (point[1] - line_p1[1]) * dy) / length_sq
-    t = max(0.0, min(1.0, t))
+    if clamp:
+        t = max(0.0, min(1.0, t))
     return (line_p1[0] + t * dx, line_p1[1] + t * dy)
 
 
@@ -767,13 +776,160 @@ class PDFVectorExtractor:
 
     def classify_elements(self) -> "PDFVectorExtractor":
         """抽出した生データを建築要素に分類する"""
+        self._classify_texts()  # 先にテキスト分類（寸法テキスト位置を線分類で使う）
         self._classify_lines()
-        self._classify_texts()
         self._detect_wall_pairs()
         self._detect_openings()
         self._detect_windows()
         self._classify_rects_as_furniture()
         return self
+
+    # -------------------------------------------------------------------
+    # ラスターベース壁検証 (OpenCV)
+    # -------------------------------------------------------------------
+
+    def _raster_wall_mask(self) -> bool:
+        """PDFページを300DPIでラスタライズし、太線(壁)だけ残すマスクを生成
+
+        Returns:
+            True: マスク生成成功 (self._wall_raster_mask にnumpy配列を保持)
+            False: 生成失敗 (cv2未インストール等)
+        """
+        if not _HAS_CV2:
+            if self.debug:
+                print("[DEBUG] cv2未インストール — ラスター壁検証をスキップ")
+            return False
+
+        self._wall_raster_mask = None
+        self._raster_dpi = 300
+        self._raster_page_height_pt = 0.0
+
+        try:
+            doc = fitz.open(self.pdf_path)
+            page = doc[self.page_num]
+            self._raster_page_height_pt = page.rect.height  # ページ高さ(pt)
+            # 300DPIでラスタライズ
+            pix = page.get_pixmap(dpi=self._raster_dpi)
+            doc.close()
+
+            # PyMuPDF pixmap → numpy array
+            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
+                pix.height, pix.width, pix.n
+            )
+            # グレースケール変換
+            if pix.n >= 3:
+                gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            else:
+                gray = img.copy()
+
+            # 適応的二値化 (暗い線が白=255になるように反転)
+            binary = cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY_INV, blockSize=15, C=10
+            )
+
+            # erode/dilateなし — 二値画像をそのままマスクとして使う
+            # 線の太さの判定は _validate_wall_line_with_raster() で行う
+            self._wall_raster_mask = binary
+            self._wall_raster_gray = gray  # 太さ測定用にグレースケールも保持
+
+            if self.debug:
+                wall_pixels = int(np.count_nonzero(binary))
+                total_pixels = binary.shape[0] * binary.shape[1]
+                print(f"[DEBUG] ラスター壁マスク生成: {binary.shape[1]}x{binary.shape[0]}px, "
+                      f"壁ピクセル: {wall_pixels} ({wall_pixels * 100.0 / total_pixels:.2f}%)")
+
+            return True
+
+        except Exception as e:
+            if self.debug:
+                print(f"[DEBUG] ラスター壁マスク生成失敗: {e}")
+            return False
+
+    def _pdf_to_raster_coords(self, x_mm: float, y_mm: float) -> tuple[int, int]:
+        """内部座標(mm, flip_y済み) → ラスター座標(px) に変換
+
+        内部座標: pt_to_mm(x_pt), pt_to_mm(flip_y(y_pt, page_height))
+        つまり x_mm = x_pt * PT_TO_MM, y_mm = (page_height - y_pt) * PT_TO_MM
+        ラスター座標: 原点=左上, Y下向き = PyMuPDFのget_pixmapと同じ座標系
+
+        内部Y_mmは flip_y 済み = 原点が左上に変換済みなので、
+        mm → pt → px の変換でそのまま使える。
+        """
+        dpi = self._raster_dpi
+        # mm → pt
+        x_pt = x_mm / PT_TO_MM
+        y_flipped_pt = y_mm / PT_TO_MM  # = page_h - original_y (flip_y済み)
+        # un-flip: 元のPyMuPDF Y座標に戻す (原点=左上, Y下向き)
+        original_y_pt = self._raster_page_height_pt - y_flipped_pt
+        # pt → px
+        px_x = int(x_pt * dpi / 72.0)
+        px_y = int(original_y_pt * dpi / 72.0)
+        return px_x, px_y
+
+    def _measure_raster_thickness(self, line: "RawLine", sample_count: int = 5) -> float:
+        """ラスターマスクで壁線の太さ(px)を測定。中央値を返す。"""
+        if self._wall_raster_mask is None:
+            return 99.0  # マスクなし=最大厚
+
+        mask = self._wall_raster_mask
+        h, w = mask.shape
+
+        dx = line.p2[0] - line.p1[0]
+        dy = line.p2[1] - line.p1[1]
+        length = math.hypot(dx, dy)
+        if length < 0.5:
+            return 99.0
+
+        # 法線方向 (線に垂直、ラスター空間で正規化)
+        rscale = self._raster_dpi / 72.0
+        nx_dir = (-dy / length) * rscale
+        ny_dir = (dx / length) * rscale
+        rnorm = math.hypot(nx_dir, ny_dir)
+        if rnorm > 0:
+            nx_dir, ny_dir = nx_dir / rnorm, ny_dir / rnorm
+
+        thicknesses = []
+        for i in range(sample_count):
+            t = (i + 0.5) / sample_count
+            sx = line.p1[0] + t * dx
+            sy = line.p1[1] + t * dy
+            cx, cy = self._pdf_to_raster_coords(sx, sy)
+
+            if not (0 <= cx < w and 0 <= cy < h):
+                thicknesses.append(5.0)
+                continue
+
+            # 法線方向に±10pxスキャンして最大連続ピクセル数を計測
+            max_run = 0
+            current_run = 0
+            for offset in range(-10, 11):
+                px = int(cx + nx_dir * offset)
+                py = int(cy + ny_dir * offset)
+                if 0 <= px < w and 0 <= py < h and mask[py, px] > 0:
+                    current_run += 1
+                    max_run = max(max_run, current_run)
+                else:
+                    current_run = 0
+            thicknesses.append(max_run)
+
+        if not thicknesses:
+            return 99.0
+        thicknesses.sort()
+        return thicknesses[len(thicknesses) // 2]
+
+    def _validate_wall_line_with_raster(self, line: "RawLine",
+                                         min_thickness_px: float = 2.0) -> bool:
+        """ラスターマスクで壁として十分太いか検証"""
+        return self._measure_raster_thickness(line) >= min_thickness_px
+
+    def _is_near_dim_text(self, line: "RawLine", radius_pt: float = 20.0) -> bool:
+        """寸法テキストの近くにある線か判定 — 黒い寸法線を検出するため"""
+        mid = ((line.p1[0] + line.p2[0]) / 2, (line.p1[1] + line.p2[1]) / 2)
+        for dt in self.dim_texts:
+            if distance(mid, dt["origin"]) < radius_pt:
+                return True
+        return False
 
     def _classify_lines(self) -> None:
         """線を太さ + 色で壁線/寸法線に3段階分類
@@ -865,6 +1021,11 @@ class PDFVectorExtractor:
             if color_label in ("fixture", "furniture", "finish", "room_name"):
                 continue
 
+            # 寸法線の追加フィルタ: 近くに寸法テキストがある線は除外
+            if self._is_near_dim_text(line):
+                self.dim_lines.append(line)
+                continue
+
             # 3段階線幅分類
             if line.width >= tier1_threshold:
                 # tier1: 外壁候補 (最太線)
@@ -884,6 +1045,29 @@ class PDFVectorExtractor:
         if self.debug:
             print(f"[DEBUG] 外壁候補線(tier1): {len(self.exterior_wall_lines)}, "
                   f"壁線候補(全): {len(self.wall_lines)}, 寸法線候補: {len(self.dim_lines)}")
+
+        # --- ラスターベース壁検証 (OpenCV) ---
+        # 現在は無効化 — 壁と寸法線の太さ差が300DPIでは1-2px程度で信頼性が低い
+        # OpenCVは代わりに _build_room_polygons_raster() で部屋検出に使用
+        if False and _HAS_CV2 and self._raster_wall_mask():
+            pre_count = len(self.wall_lines)
+            verified_walls: list[RawLine] = []
+            rejected: list[RawLine] = []
+
+            # 検証に失敗した線はdim_linesに移動
+            self.wall_lines = verified_walls
+            self.dim_lines.extend(rejected)
+
+            # exterior_wall_linesも同様にフィルタ
+            self.exterior_wall_lines = [
+                wl for wl in self.exterior_wall_lines
+                if wl in verified_walls
+            ]
+
+            if self.debug:
+                filtered = pre_count - len(self.wall_lines)
+                print(f"[DEBUG] ラスター壁検証: {pre_count}本中 {filtered}本を除外 "
+                      f"→ 壁線: {len(self.wall_lines)}, 除外→寸法線へ: {filtered}")
 
     # 什器キーワード (これが含まれるテキストは室名ではなく什器扱い)
     FIXTURE_KEYWORDS = [
@@ -1013,30 +1197,55 @@ class PDFVectorExtractor:
         return max(0.0, overlap_end - overlap_start)
 
     def _centerline(self, l1: RawLine, l2: RawLine) -> dict:
-        """二重線の中心線を算出 — l2端点をl1に投影し最近接ペアで対応付け"""
-        # l1の向きを正規化
+        """二重線の中心線を算出 — 投影ベースで重なり区間の中心線を返す"""
         p1a, p1b = normalize_line_direction(l1.p1, l1.p2)
 
-        # l2の各端点をl1直線上に投影し、l1端点との対応を決定
-        proj_l2p1 = project_point_on_line(l2.p1, p1a, p1b)
-        proj_l2p2 = project_point_on_line(l2.p2, p1a, p1b)
+        # l2端点をl1直線上に投影 (clamp=Falseで無限直線)
+        proj_l2p1 = project_point_on_line(l2.p1, p1a, p1b, clamp=False)
+        proj_l2p2 = project_point_on_line(l2.p2, p1a, p1b, clamp=False)
 
-        # l2.p1がl1の始点側、l2.p2がl1の終点側に近いか判定
-        d_p1_start = distance(proj_l2p1, p1a)
-        d_p1_end = distance(proj_l2p1, p1b)
-        d_p2_start = distance(proj_l2p2, p1a)
-        d_p2_end = distance(proj_l2p2, p1b)
+        # l1方向のt値を計算 (投影位置)
+        dx = p1b[0] - p1a[0]
+        dy = p1b[1] - p1a[1]
+        l1_len_sq = dx * dx + dy * dy
+        if l1_len_sq < 1e-18:
+            return {"p1": midpoint(p1a, l2.p1), "p2": midpoint(p1b, l2.p2)}
 
-        # 総距離が小さい方の対応を採用
-        cost_direct = d_p1_start + d_p2_end    # l2.p1↔l1.start, l2.p2↔l1.end
-        cost_cross = d_p1_end + d_p2_start     # l2.p1↔l1.end, l2.p2↔l1.start
-
-        if cost_direct <= cost_cross:
-            cp1 = midpoint(p1a, l2.p1)
-            cp2 = midpoint(p1b, l2.p2)
+        t_l2p1 = ((proj_l2p1[0] - p1a[0]) * dx + (proj_l2p1[1] - p1a[1]) * dy) / l1_len_sq
+        t_l2p2 = ((proj_l2p2[0] - p1a[0]) * dx + (proj_l2p2[1] - p1a[1]) * dy) / l1_len_sq
+        if t_l2p1 > t_l2p2:
+            t_l2p1, t_l2p2 = t_l2p2, t_l2p1
+            proj_l2p1, proj_l2p2 = proj_l2p2, proj_l2p1
+            l2_p1, l2_p2 = l2.p2, l2.p1
         else:
-            cp1 = midpoint(p1a, l2.p2)
-            cp2 = midpoint(p1b, l2.p1)
+            l2_p1, l2_p2 = l2.p1, l2.p2
+
+        # 重なり区間: l1の[0,1]とl2の投影[t_l2p1, t_l2p2]の交差
+        t_start = max(0.0, t_l2p1)
+        t_end = min(1.0, t_l2p2)
+
+        if t_start >= t_end:
+            # 重なりなし — 全体平均でフォールバック
+            cp1 = midpoint(p1a, l2_p1)
+            cp2 = midpoint(p1b, l2_p2)
+        else:
+            # 重なり区間の始点・終点でl1上の点とl2上の対応点の中点を取る
+            l1_start = (p1a[0] + dx * t_start, p1a[1] + dy * t_start)
+            l1_end = (p1a[0] + dx * t_end, p1a[1] + dy * t_end)
+            # l2上の対応点: t_startとt_endに対応するl2の点を逆投影
+            l2_dx = l2_p2[0] - l2_p1[0]
+            l2_dy = l2_p2[1] - l2_p1[1]
+            l2_range = t_l2p2 - t_l2p1
+            if l2_range > 1e-9:
+                s_start = (t_start - t_l2p1) / l2_range
+                s_end = (t_end - t_l2p1) / l2_range
+            else:
+                s_start, s_end = 0.0, 1.0
+            l2_start = (l2_p1[0] + l2_dx * s_start, l2_p1[1] + l2_dy * s_start)
+            l2_end = (l2_p1[0] + l2_dx * s_end, l2_p1[1] + l2_dy * s_end)
+
+            cp1 = midpoint(l1_start, l2_start)
+            cp2 = midpoint(l1_end, l2_end)
 
         return {"p1": cp1, "p2": cp2}
 
@@ -1419,10 +1628,10 @@ class PDFVectorExtractor:
         self._extend_walls_to_intersections()
         self._merge_collinear_walls()
         self._split_walls_at_t_junctions()
-        # 短すぎる壁・0長壁を除去
+        # 短すぎる壁を除去 (300mm未満は家具/什器の誤検出の可能性が高い)
         self.walls = [w for w in self.walls
                       if distance((w["start_x_mm"], w["start_y_mm"]),
-                                  (w["end_x_mm"], w["end_y_mm"])) >= 50]
+                                  (w["end_x_mm"], w["end_y_mm"])) >= 300]
         self._snap_wall_endpoints()
 
         # 什器の構築
@@ -2429,25 +2638,178 @@ class PDFVectorExtractor:
                         f"(差: {int(diff)}mm)"
                     )
 
-    def _build_room_polygons(self) -> None:
-        """ラスタライズ+フラッドフィル方式で部屋ポリゴンを検出。
+    def _build_room_polygons_cv2(self) -> bool:
+        """OpenCVでPDFラスター画像から直接部屋を検出。
 
-        壁線をグリッドにラスタライズし、外部からフラッドフィルで塗りつぶし、
-        残った未塗りつぶし領域を部屋として検出する。
-        トポロジー完全接続が不要で、壁線の小さなギャップにも頑健。
+        PDFのレンダリング画像を使うので、壁の位置が正確で
+        ベクター抽出の誤差に影響されない。
         """
-        if not self.wall_lines:
+        if not _HAS_CV2:
+            return False
+
+        if not self._raster_wall_mask():
+            return False
+
+        mask = self._wall_raster_mask
+        h, w = mask.shape
+        sf = self.scale_factor
+        cell_mm = 100
+        dpi = self._raster_dpi
+        page_h_pt = self._raster_page_height_pt
+
+        # モルフォロジーでドア開口（900mm@1:50 ≈ 18mm_pdf ≈ 7.5px@300DPI）を閉じる
+        close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+        closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
+
+        # 外部からフラッドフィル (OpenCV floodFill)
+        # maskをコピーして外枠をシードに
+        flood_mask = closed.copy()
+        fill_h, fill_w = flood_mask.shape
+        # 4辺から外部を塗りつぶす (値=2で塗る → 128)
+        fill_val = 128
+        # floodFillには+2のマスクが必要
+        ff_mask = np.zeros((fill_h + 2, fill_w + 2), np.uint8)
+        # 4隅から開始
+        for seed in [(0, 0), (fill_w - 1, 0), (0, fill_h - 1), (fill_w - 1, fill_h - 1)]:
+            if flood_mask[seed[1], seed[0]] == 0:
+                cv2.floodFill(flood_mask, ff_mask, seed, fill_val)
+
+        # 外部でも壁でもない領域 = 室内 (値=0のまま)
+        interior = np.zeros_like(flood_mask)
+        interior[flood_mask == 0] = 255
+
+        # 連結成分ラベリング
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+            interior, connectivity=4
+        )
+
+        if self.debug:
+            print(f"[DEBUG] CV2部屋検出: {num_labels - 1}個の連結成分")
+
+        # ラスター座標→mm座標の変換関数
+        def raster_to_mm(px_x: int, px_y: int) -> tuple[float, float]:
+            x_pt = px_x * 72.0 / dpi
+            y_pt_orig = px_y * 72.0 / dpi
+            # un-flip → 内部mm座標
+            y_flipped_pt = page_h_pt - y_pt_orig
+            x_mm = x_pt * PT_TO_MM
+            y_mm = y_flipped_pt * PT_TO_MM
+            return x_mm * sf, y_mm * sf
+
+        used_room_names: set[int] = set()
+        room_count = 0
+
+        for label_id in range(1, num_labels):  # 0=背景
+            area_px = stats[label_id, cv2.CC_STAT_AREA]
+            # 面積フィルタ (mm²)
+            px_to_mm = 72.0 / dpi * PT_TO_MM * sf
+            area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
+
+            if area_m2 < 1.5 or area_m2 > 300.0:
+                continue
+
+            # バウンディングボックス (ラスター座標)
+            rx = stats[label_id, cv2.CC_STAT_LEFT]
+            ry = stats[label_id, cv2.CC_STAT_TOP]
+            rw = stats[label_id, cv2.CC_STAT_WIDTH]
+            rh = stats[label_id, cv2.CC_STAT_HEIGHT]
+
+            # 4隅をmm座標に変換
+            tl = raster_to_mm(rx, ry)
+            tr = raster_to_mm(rx + rw, ry)
+            br = raster_to_mm(rx + rw, ry + rh)
+            bl = raster_to_mm(rx, ry + rh)
+            polygon = [
+                (round(tl[0]), round(tl[1])),
+                (round(tr[0]), round(tr[1])),
+                (round(br[0]), round(br[1])),
+                (round(bl[0]), round(bl[1])),
+            ]
+
+            # 中心点
+            cx_px, cy_px = centroids[label_id]
+            center = raster_to_mm(int(cx_px), int(cy_px))
+            center_mm = (round(center[0]), round(center[1]))
+
+            # 室名テキストをマッチング
+            room_name = None
+            for idx, rn in enumerate(self.room_names):
+                if idx in used_room_names:
+                    continue
+                rn_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
+                # 室名がこの部屋のバウンディングボックス内にあるか
+                rn_px_x = int(rn["origin"][0] / PT_TO_MM * dpi / 72.0)
+                rn_px_y = int((page_h_pt - rn["origin"][1] / PT_TO_MM) * dpi / 72.0)
+                if 0 <= rn_px_x < w and 0 <= rn_px_y < h:
+                    if labels[rn_px_y, rn_px_x] == label_id:
+                        room_name = rn["name"]
+                        used_room_names.add(idx)
+                        break
+
+            # 近くの壁を検出
+            nearby_walls: list[str] = []
+            for wall in self.walls:
+                wc = ((wall["start_x_mm"] + wall["end_x_mm"]) / 2,
+                      (wall["start_y_mm"] + wall["end_y_mm"]) / 2)
+                max_dim = max(rw, rh) * px_to_mm + 500
+                if distance(center_mm, wc) < max_dim:
+                    nearby_walls.append(wall["id"])
+
+            self.rooms.append({
+                "name": room_name or "不明",
+                "wall_ids": nearby_walls,
+                "area_m2": round(area_m2, 1),
+                "center_mm": list(center_mm),
+                "polygon_mm": [[p[0], p[1]] for p in polygon],
+            })
+            room_count += 1
+
+        # フォールバック: ポリゴンに含まれなかった室名
+        for idx, rn in enumerate(self.room_names):
+            if idx in used_room_names:
+                continue
+            center_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
+            nearby_walls: list[str] = []
+            for wall in self.walls:
+                wc = ((wall["start_x_mm"] + wall["end_x_mm"]) / 2,
+                      (wall["start_y_mm"] + wall["end_y_mm"]) / 2)
+                if distance(center_mm, wc) < 10000:
+                    nearby_walls.append(wall["id"])
+            self.rooms.append({
+                "name": rn["name"],
+                "wall_ids": nearby_walls,
+                "area_m2": 0,
+                "center_mm": list(center_mm),
+                "polygon_mm": [],
+            })
+
+        if self.debug:
+            print(f"[DEBUG] CV2部屋検出結果: {room_count}室 (ポリゴン付き)")
+
+        return room_count > 0
+
+    def _build_room_polygons(self) -> None:
+        """部屋ポリゴンを検出。OpenCV版を優先、失敗時はベクター版にフォールバック。"""
+        # OpenCV版を試行
+        if _HAS_CV2 and self._build_room_polygons_cv2():
+            return
+
+        # フォールバック: ベクターベースの部屋検出
+        if not self.wall_lines and not self.walls:
             return
 
         sf = self.scale_factor
         cell_mm = 100  # グリッドセルサイズ (mm)
 
-        # 生の壁線のバウンディングボックス (mm単位)
+        # 生壁線 + 処理済み壁のバウンディングボックス (mm単位)
         all_x = []
         all_y = []
         for line in self.wall_lines:
             all_x.extend([line.p1[0] * sf, line.p2[0] * sf])
             all_y.extend([line.p1[1] * sf, line.p2[1] * sf])
+        for w in self.walls:
+            all_x.extend([w["start_x_mm"], w["end_x_mm"]])
+            all_y.extend([w["start_y_mm"], w["end_y_mm"]])
 
         min_x, max_x = min(all_x) - 500, max(all_x) + 500
         min_y, max_y = min(all_y) - 500, max(all_y) + 500
@@ -2473,38 +2835,97 @@ class PDFVectorExtractor:
             return (min_x + gx * cell_mm + cell_mm / 2,
                     min_y + gy * cell_mm + cell_mm / 2)
 
-        # 生の壁線をラスタライズ (Bresenham)
-        # wall_lines (tier1+tier2) を使い、ドア開口もギャップなしで描画
-        for line in self.wall_lines:
-            gx1, gy1 = mm_to_grid(line.p1[0] * sf, line.p1[1] * sf)
-            gx2, gy2 = mm_to_grid(line.p2[0] * sf, line.p2[1] * sf)
-
-            # Bresenham's line algorithm
-            dx = abs(gx2 - gx1)
-            dy = abs(gy2 - gy1)
+        def _bresenham_draw(gx1, gy1, gx2, gy2, dilate: int = 2):
+            """Bresenhamで線をグリッドに描画 (dilate=膨張半径, 5x5=±2)"""
+            ddx = abs(gx2 - gx1)
+            ddy = abs(gy2 - gy1)
             sx = 1 if gx1 < gx2 else -1
             sy = 1 if gy1 < gy2 else -1
-            err = dx - dy
+            err = ddx - ddy
             x, y = gx1, gy1
-
             while True:
                 if 0 <= x < grid_w and 0 <= y < grid_h:
                     grid[y][x] = 1
-                    # 壁の厚みを表現するために隣接セルも塗る
-                    for ddx in range(-1, 2):
-                        for ddy in range(-1, 2):
-                            nx, ny = x + ddx, y + ddy
-                            if 0 <= nx < grid_w and 0 <= ny < grid_h:
-                                grid[ny][nx] = 1
+                    for dddx in range(-dilate, dilate + 1):
+                        for dddy in range(-dilate, dilate + 1):
+                            nnx, nny = x + dddx, y + dddy
+                            if 0 <= nnx < grid_w and 0 <= nny < grid_h:
+                                grid[nny][nnx] = 1
                 if x == gx2 and y == gy2:
                     break
                 e2 = 2 * err
-                if e2 > -dy:
-                    err -= dy
+                if e2 > -ddy:
+                    err -= ddy
                     x += sx
-                if e2 < dx:
-                    err += dx
+                if e2 < ddx:
+                    err += ddx
                     y += sy
+
+        # 生壁線をラスタライズ (3x3膨張 = ±1)
+        for line in self.wall_lines:
+            gx1, gy1 = mm_to_grid(line.p1[0] * sf, line.p1[1] * sf)
+            gx2, gy2 = mm_to_grid(line.p2[0] * sf, line.p2[1] * sf)
+            _bresenham_draw(gx1, gy1, gx2, gy2, dilate=1)
+
+        # 処理済み壁も追加ラスタライズ (5x5膨張 = ±2, 中心線なので太めに描画)
+        for w in self.walls:
+            gx1, gy1 = mm_to_grid(w["start_x_mm"], w["start_y_mm"])
+            gx2, gy2 = mm_to_grid(w["end_x_mm"], w["end_y_mm"])
+            _bresenham_draw(gx1, gy1, gx2, gy2, dilate=2)
+
+        # ドア開口を仮壁で埋める — 生の検出データから直接描画
+        door_count = 0
+        all_doors = []
+        for d in self.door_arcs:
+            cx, cy = d["center"][0] * sf, d["center"][1] * sf
+            w_mm = d.get("width_mm", 900)
+            all_doors.append((cx, cy, w_mm))
+        for d in self.sliding_doors:
+            cx, cy = d["center"][0] * sf, d["center"][1] * sf
+            w_mm = d.get("width_mm", 900)
+            all_doors.append((cx, cy, w_mm))
+        for d in self.folding_doors:
+            cx, cy = d["center"][0] * sf, d["center"][1] * sf
+            w_mm = d.get("width_mm", 900)
+            all_doors.append((cx, cy, w_mm))
+        # 壁のギャップ開口も追加
+        for w in self.walls:
+            for op in w.get("openings", []):
+                ws = (w["start_x_mm"], w["start_y_mm"])
+                we = (w["end_x_mm"], w["end_y_mm"])
+                wl = distance(ws, we)
+                if wl < 1:
+                    continue
+                pos = op.get("position_mm", 0)
+                cx = ws[0] + (we[0] - ws[0]) * pos / wl
+                cy = ws[1] + (we[1] - ws[1]) * pos / wl
+                all_doors.append((cx, cy, op.get("width_mm", 900)))
+
+        for cx, cy, w_mm in all_doors:
+            gcx, gcy = mm_to_grid(cx, cy)
+            # ドア中心を中心に十字に仮壁を描画 (方向不明なので両方向)
+            half_cells = max(1, int(w_mm / cell_mm / 2)) + 1
+            for offset in range(-half_cells, half_cells + 1):
+                # 水平方向
+                nx = gcx + offset
+                if 0 <= nx < grid_w and 0 <= gcy < grid_h:
+                    grid[gcy][nx] = 1
+                    for ddy in range(-1, 2):
+                        ny = gcy + ddy
+                        if 0 <= ny < grid_h:
+                            grid[ny][nx] = 1
+                # 垂直方向
+                ny = gcy + offset
+                if 0 <= gcx < grid_w and 0 <= ny < grid_h:
+                    grid[ny][gcx] = 1
+                    for ddx in range(-1, 2):
+                        nnx = gcx + ddx
+                        if 0 <= nnx < grid_w:
+                            grid[ny][nnx] = 1
+            door_count += 1
+
+        if self.debug:
+            print(f"[DEBUG] ドアギャップ閉鎖: {door_count}個のドア/開口を仮壁で埋めた")
 
         # 外部からフラッドフィル (端からのBFS)
         from collections import deque
@@ -2567,8 +2988,8 @@ class PDFVectorExtractor:
         for lid, cells in label_cells.items():
             area_m2 = len(cells) * (cell_mm ** 2) / 1_000_000.0
 
-            # 極端に小さい領域は除外 (< 2m²)
-            if area_m2 < 2.0:
+            # 極端に小さい領域は除外 (< 1.5m², トイレ等の小部屋は残す)
+            if area_m2 < 1.5:
                 continue
             # 極端に大きい領域は除外 (> 300m²)
             if area_m2 > 300.0:
