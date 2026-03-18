@@ -399,6 +399,7 @@ class PDFVectorExtractor:
         self.openings: list[dict] = []  # 開口
         self.window_groups: list[dict] = []
         self.furniture_rects: list[dict] = []
+        self._fixture_texts: list[dict] = []  # テキストベース什器
         self.room_names: list[dict] = []
 
         # 壁接続グラフ
@@ -1081,7 +1082,23 @@ class PDFVectorExtractor:
         # 設備 (室名ではなく什器/設備)
         "消火栓", "分電盤", "ﾛｯｶｰ", "ロッカー",
         "キャッシャー", "ｷｬｯｼｬｰ", "レジ",
+        # 追加什器キーワード
+        "ソファ", "ｿﾌｧ", "椅子", "ｲｽ", "カウンター", "ｶｳﾝﾀｰ",
+        "ボトル", "ﾎﾞﾄﾙ", "什器", "厨房", "食洗", "製氷",
+        "ガス", "ｶﾞｽ", "手洗", "鏡", "ﾐﾗｰ", "ミラー",
+        "パントリー", "ﾊﾟﾝﾄﾘｰ", "電話", "ｲﾝﾀｰﾎﾝ",
     ]
+
+    # 什器テキストのデフォルトサイズ推定 (テキストラベルだけの場合)
+    FIXTURE_DEFAULT_SIZES = {
+        "テーブル": (900, 600), "ﾃｰﾌﾞﾙ": (900, 600),
+        "椅子": (450, 450), "ｲｽ": (450, 450),
+        "ソファ": (1800, 800), "ｿﾌｧ": (1800, 800),
+        "カウンター": (2000, 600), "ｶｳﾝﾀｰ": (2000, 600),
+        "棚": (900, 400), "ボトル棚": (1200, 400),
+        "消火栓": (500, 300), "分電盤": (600, 400),
+        "レジ": (600, 500), "キャッシャー": (600, 500),
+    }
 
     def _classify_texts(self) -> None:
         """テキストを室名/寸法値に分類"""
@@ -1114,7 +1131,11 @@ class PDFVectorExtractor:
                     break
 
             if is_fixture_text:
-                # 什器テキストとして保持 (後で矩形と紐付け)
+                # 什器テキストとして保持 → 後で什器エントリ生成
+                self._fixture_texts.append({
+                    "text": text,
+                    "origin": t.origin,
+                })
                 continue
 
             # 室名判定
@@ -1678,7 +1699,7 @@ class PDFVectorExtractor:
         self._snap_wall_endpoints()
         self._straighten_walls()
 
-        # 什器の構築
+        # 什器の構築 (矩形ベース)
         for fr in self.furniture_rects:
             self.fixtures.append({
                 "name": fr["label"],
@@ -1689,6 +1710,35 @@ class PDFVectorExtractor:
                 "rotation_deg": 0,
                 "estimated": False,
             })
+
+        # 什器の構築 (テキストベース — 矩形が見つからなかった什器テキスト)
+        rect_fixture_positions = set()
+        for f in self.fixtures:
+            rect_fixture_positions.add((f["x_mm"] // 500, f["y_mm"] // 500))
+        sf = self.scale_factor
+        for ft in self._fixture_texts:
+            fx_mm = round(ft["origin"][0] * sf)
+            fy_mm = round(ft["origin"][1] * sf)
+            grid_key = (fx_mm // 500, fy_mm // 500)
+            # 既存の矩形什器と重複しない場合のみ追加
+            if grid_key not in rect_fixture_positions:
+                # デフォルトサイズを推定
+                text = ft["text"]
+                default_w, default_d = 600, 400
+                for kw, (dw, dd) in self.FIXTURE_DEFAULT_SIZES.items():
+                    if kw in text:
+                        default_w, default_d = dw, dd
+                        break
+                self.fixtures.append({
+                    "name": text,
+                    "x_mm": fx_mm,
+                    "y_mm": fy_mm,
+                    "width_mm": default_w,
+                    "depth_mm": default_d,
+                    "rotation_deg": 0,
+                    "estimated": True,
+                })
+                rect_fixture_positions.add(grid_key)
 
         # 寸法データ — 端点ペアリング付き
         self._pair_dimension_endpoints()
