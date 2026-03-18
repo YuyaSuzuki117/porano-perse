@@ -102,6 +102,15 @@ CAMERA_PRESETS = {
         'dof_fstop': 8.0,
         'description': '入口に立った時の第一印象',
     },
+    # 鳥瞰 — 大型物件の全体レイアウト確認用
+    'bird_eye': {
+        'height_m': None,         # 自動計算 (建物サイズに基づく)
+        'fov_deg': 50,
+        'pitch_deg': -60,         # 斜め上から見下ろし
+        'dof_fstop': 16.0,        # f/16 — 全域ピント
+        'description': '鳥瞰。大型物件の全体レイアウト把握用',
+        'no_ceiling': True,       # 天井非表示フラグ
+    },
 }
 
 
@@ -414,26 +423,49 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
     cam_obj = bpy.data.objects.new(f"Camera_{preset_name}", cam_data)
     bpy.context.collection.objects.link(cam_obj)
 
-    # マージン: 壁厚+余裕。壁から最低0.3m離す
-    min_dim = min(room_width, room_depth)
-    margin = max(
-        wall_thickness + 0.5,
-        min_dim * 0.2,
-        (room_width + room_depth) / 8,
-        0.3,  # 最低0.3m保証
-    )
+    # 鳥瞰カメラ — 建物全体を上から見下ろす
+    if preset_name == 'bird_eye':
+        import math
+        max_dim = max(room_width, room_depth)
+        # 建物サイズに基づいて高さ自動計算（FOV 50°で全体が収まる距離）
+        half_fov = math.radians(preset['fov_deg'] / 2)
+        cam_z = max_dim / (2 * math.tan(half_fov)) * 1.3
+        # 中心からやや手前にオフセット（斜め俯瞰）
+        cam_x = room_center[0] - room_width * 0.1
+        cam_y = room_center[1] - room_depth * 0.25
+        cam_obj.location = (cam_x, cam_y, cam_z)
+        target_x = room_center[0]
+        target_y = room_center[1]
+        target_z = 0
 
-    # コーナーに配置（部屋の(-x, -y)角からmargin内側）
-    cam_x = room_center[0] - room_width / 2 + margin
-    cam_y = room_center[1] - room_depth / 2 + margin
-    cam_z = preset['height_m']
+        # 天井を非表示
+        if preset.get('no_ceiling'):
+            for obj in bpy.data.objects:
+                if 'ceiling' in obj.name.lower() or '天井' in obj.name:
+                    obj.hide_render = True
 
-    cam_obj.location = (cam_x, cam_y, cam_z)
+        print(f"[presets] 鳥瞰カメラ: z={cam_z:.1f}m, offset=({cam_x:.1f}, {cam_y:.1f})")
+    else:
+        # マージン: 壁厚+余裕。壁から最低0.3m離す
+        min_dim = min(room_width, room_depth)
+        margin = max(
+            wall_thickness + 0.5,
+            min_dim * 0.2,
+            (room_width + room_depth) / 8,
+            0.3,  # 最低0.3m保証
+        )
 
-    # ターゲット: 部屋中心よりやや奥（奥行き感を出す）
-    target_x = room_center[0] + room_width * 0.05  # 中心よりやや奥
-    target_y = room_center[1] + room_depth * 0.1   # 中心よりやや奥
-    target_z = preset['height_m'] * 0.7
+        # コーナーに配置（部屋の(-x, -y)角からmargin内側）
+        cam_x = room_center[0] - room_width / 2 + margin
+        cam_y = room_center[1] - room_depth / 2 + margin
+        cam_z = preset['height_m']
+
+        cam_obj.location = (cam_x, cam_y, cam_z)
+
+        # ターゲット: 部屋中心よりやや奥（奥行き感を出す）
+        target_x = room_center[0] + room_width * 0.05  # 中心よりやや奥
+        target_y = room_center[1] + room_depth * 0.1   # 中心よりやや奥
+        target_z = preset['height_m'] * 0.7
 
     target_empty = bpy.data.objects.new(f"Camera_{preset_name}_Target", None)
     bpy.context.collection.objects.link(target_empty)
@@ -457,10 +489,11 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
         cam_data.dof.focus_distance = dist * 0.8
         cam_data.dof.aperture_fstop = dof_fstop
 
+    margin_str = f", margin={margin:.2f}m" if 'margin' in dir() else ""
     print(f"[presets] カメラ '{preset_name}': "
           f"loc=({cam_x:.2f}, {cam_y:.2f}, {cam_z:.2f}), "
           f"target=({target_x:.2f}, {target_y:.2f}, {target_z:.2f}), "
-          f"lens={cam_data.lens:.1f}mm, margin={margin:.2f}m"
+          f"lens={cam_data.lens:.1f}mm{margin_str}"
           + (f", DOF f/{dof_fstop}" if dof_fstop else ""))
 
     return cam_obj

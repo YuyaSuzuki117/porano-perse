@@ -249,7 +249,7 @@ if not _furniture_import_success:
 setup_lighting(scene_data, collections)
 
 # 2.5 カメラ
-camera_name = scene_data.get("camera", camera_preset)
+camera_name = camera_preset  # CLI引数を優先（scene JSONのデフォルトより）
 cam_obj = setup_camera_from_preset(
     camera_name,
     room_center=(0, 0),
