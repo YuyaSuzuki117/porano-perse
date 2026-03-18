@@ -58,6 +58,7 @@ th{color:#8b949e}
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
   <span class="badge-iter">test5</span>
+  <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
 <div class="tabs">
@@ -97,15 +98,15 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 5 (test5) -- 線幅3段階分類 + 外壁輪郭トレーシング <span class="badge-iter">最新</span></div>
+    <div class="card-header">Iteration 5 (test5) -- 線幅3段階分類 + 凸包外壁ポリゴン <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>改善内容:</strong>
         <ul>
-          <li>線幅を3段階に分類 (外壁>=0.295mm / 内壁>=0.210mm / 細線)</li>
+          <li>線幅を3段階に分類 (外壁>=0.295mm / 内壁>=0.210mm / 細線) -- 厚い方から積み上げ法</li>
           <li>0.17mm線(387本)の壁誤分類を解消</li>
-          <li>外壁輪郭トレーシング: tier1最太線から72頂点の閉ポリゴン構築</li>
-          <li>右手法則による外壁輪郭のグラフトレース</li>
+          <li>凸包ベース外壁ポリゴン: 16頂点, 198.8m2 (Andrew's monotone chain)</li>
+          <li>ハイブリッド外壁判定: 凸包辺距離 + バウンディングボックス境界</li>
         </ul>
       </div>
       <div class="iter-stats">
@@ -126,8 +127,13 @@ th{color:#8b949e}
         </div>
         <div class="iter-stat">
           <div class="label">外壁/内壁分類</div>
-          <div class="value">32外壁 + 84内壁</div>
-          <div class="change">分類精度向上</div>
+          <div class="value">30外壁 + 86内壁</div>
+          <div class="change">凸包+BBox判定</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">外壁ポリゴン</div>
+          <div class="value">198.8m2</div>
+          <div class="change">16頂点凸包</div>
         </div>
         <div class="iter-stat">
           <div class="label">座標範囲</div>
@@ -137,9 +143,10 @@ th{color:#8b949e}
       </div>
       <div style="margin-top:10px">
         <strong style="font-size:13px;color:#f85149">残課題:</strong>
-        <div class="warn">外壁ポリゴン面積が0.1m2 (座標変換精査必要)</div>
         <div class="warn">一部壁の位置ずれ</div>
-        <div class="warn">左下斜め壁エリアの精度</div>
+        <div class="warn">左下斜め壁エリアの精度 (L字凹み未対応)</div>
+        <div class="warn">カウンター什器検出</div>
+        <div class="warn">部屋ポリゴン 0室 (壁接続グラフ改善必要)</div>
       </div>
       <div style="margin-top:12px">
         <div class="view-btns">
@@ -252,6 +259,9 @@ th{color:#8b949e}
 const D = ANALYSIS_DATA;
 const S = D.pass1_summary || {};
 
+// 更新日時表示
+document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test5 + convex hull)';
+
 // タブ
 function showTab(id) {
   document.querySelectorAll('[id^="tab-"]').forEach(function(e) { e.style.display = 'none'; });
@@ -322,16 +332,18 @@ var pdca = [
   ['Do','比較ツール構築','done'],
   ['Do','ダッシュボード構築','done'],
   ['Do','線幅3段階分類 (外壁/内壁/細線)','done'],
-  ['Do','外壁輪郭トレーシング (72頂点閉ポリゴン)','done'],
+  ['Do','外壁輪郭トレーシング (右手法則->凸包に変更)','done'],
   ['Do','0.17mm線の壁誤分類解消 (387本除外)','done'],
-  ['Check','外壁ポリゴン面積が過小 (0.1m2)','issue'],
+  ['Do','凸包外壁ポリゴン (16頂点, 198.8m2)','done'],
+  ['Do','ハイブリッド外壁判定 (凸包+BBox)','done'],
   ['Check','一部壁の位置ずれ','issue'],
-  ['Check','左下斜め壁エリアの精度','issue'],
+  ['Check','左下斜め壁エリアの精度 (L字凹み未対応)','issue'],
   ['Check','カウンター什器検出','issue'],
-  ['Check','寸法チェーン不整合(8件)','issue'],
-  ['Act','外壁ポリゴン座標変換の精査','todo'],
-  ['Act','斜め壁の角度対応','todo'],
+  ['Check','部屋ポリゴン 0室','issue'],
+  ['Check','寸法チェーン不整合','issue'],
+  ['Act','L字凹み検出でポリゴン精度向上','todo'],
   ['Act','什器ラベルのマッチング改善','todo'],
+  ['Act','壁接続グラフの改善','todo'],
 ];
 document.getElementById('pdcaTable').innerHTML =
   '<thead><tr><th>Phase</th><th>項目</th><th>状態</th></tr></thead><tbody>' +

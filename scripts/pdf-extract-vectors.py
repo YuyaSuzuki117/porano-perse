@@ -1510,23 +1510,37 @@ class PDFVectorExtractor:
         exterior_contour = self._trace_exterior_contour()
 
         if exterior_contour and len(exterior_contour) >= 3:
-            # 外壁ポリゴンが構築できた場合: 各壁の中点がポリゴン辺に近いかチェック
-            contour_margin = 300  # mm: 壁中点がポリゴン辺からこの距離以内なら外壁
+            # ハイブリッド判定: 凸包辺からの距離 OR バウンディングボックス境界付近
+            all_x = [w["start_x_mm"] for w in self.walls] + [w["end_x_mm"] for w in self.walls]
+            all_y = [w["start_y_mm"] for w in self.walls] + [w["end_y_mm"] for w in self.walls]
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            bbox_margin = 300  # バウンディングボックス境界からのマージン
+            hull_margin = 600  # 凸包辺からのマージン（凸包は壁より外に出る）
+
             for w in self.walls:
                 mid_x = (w["start_x_mm"] + w["end_x_mm"]) / 2
                 mid_y = (w["start_y_mm"] + w["end_y_mm"]) / 2
-                min_dist = self._point_to_polygon_edge_dist(
+
+                # 判定1: バウンディングボックス境界付近
+                near_bbox = (
+                    min(w["start_x_mm"], w["end_x_mm"]) <= min_x + bbox_margin or
+                    max(w["start_x_mm"], w["end_x_mm"]) >= max_x - bbox_margin or
+                    min(w["start_y_mm"], w["end_y_mm"]) <= min_y + bbox_margin or
+                    max(w["start_y_mm"], w["end_y_mm"]) >= max_y - bbox_margin
+                )
+
+                # 判定2: 凸包辺からの距離
+                hull_dist = self._point_to_polygon_edge_dist(
                     (mid_x, mid_y), exterior_contour
                 )
-                if min_dist < contour_margin:
+                near_hull = hull_dist < hull_margin
+
+                if near_bbox or near_hull:
                     w["type"] = "exterior"
 
-            # 外壁ポリゴンを保存 (部屋ポリゴン構築で使用)
+            # 外壁ポリゴンを保存
             self.exterior_polygon = exterior_contour
-            if self.debug:
-                area = shoelace_area(exterior_contour) / 1e6  # mm2 -> m2
-                print(f"[DEBUG] 外壁ポリゴン: {len(exterior_contour)}頂点, "
-                      f"面積={area:.1f}m2")
         else:
             # フォールバック: バウンディングボックス法
             self.exterior_polygon = None
@@ -1556,178 +1570,139 @@ class PDFVectorExtractor:
                 print("[DEBUG] 外壁ポリゴン: tier1線不足 → バウンディングボックス法にフォールバック")
 
     def _trace_exterior_contour(self) -> list[tuple]:
-        """tier1(最太)線を連結して閉じた外壁輪郭ポリゴンを構築。
+        """外壁輪郭ポリゴンを構築。
 
-        アルゴリズム:
-        1. tier1線の端点をスナップしてグラフ構築
-        2. 凸包の最左下点から開始
-        3. 左回り (反時計回り) に次の辺を選択して輪郭をトレース
-        4. 閉じたループを返す
+        2段階アプローチ:
+        1. tier1(最太)線 + tier2外周壁からの全壁端点を収集
+        2. 凸包を構築して外壁ポリゴンとする
+        3. 壁セグメントに沿った凹み(L字等)を検出して凹ポリゴンに改善
 
         Returns:
             閉じたポリゴンの頂点リスト (mm座標)。構築失敗時は空リスト。
         """
         sf = self.scale_factor
+        if sf <= 0:
+            return []
+
+        # 外壁候補の端点を収集 (tier1線 + 全壁のバウンディングボックス付近)
         ext_lines = getattr(self, "exterior_wall_lines", [])
 
-        if len(ext_lines) < 3:
+        # 全壁端点からバウンディングボックスを計算
+        all_wall_pts: list[tuple] = []
+        for line in self.wall_lines:
+            all_wall_pts.append(line.p1)
+            all_wall_pts.append(line.p2)
+
+        if len(all_wall_pts) < 6:
             return []
 
-        # 端点をスナップ距離で統合
-        snap_thresh = SNAP_THRESHOLD_MM / sf if sf > 0 else 50
-        points: list[tuple] = []
-        edges: list[tuple[int, int]] = []
+        # バウンディングボックス
+        all_x = [p[0] for p in all_wall_pts]
+        all_y = [p[1] for p in all_wall_pts]
+        bbox_min_x, bbox_max_x = min(all_x), max(all_x)
+        bbox_min_y, bbox_max_y = min(all_y), max(all_y)
+        bbox_w = bbox_max_x - bbox_min_x
+        bbox_h = bbox_max_y - bbox_min_y
 
-        # 全端点を収集
-        raw_pts: list[tuple] = []
+        # 外周候補点: tier1線端点 + バウンディングボックス付近の壁端点
+        margin = max(bbox_w, bbox_h) * 0.05  # 5%マージン
+        perimeter_pts: list[tuple] = []
+
+        # tier1線の端点を全追加
         for line in ext_lines:
-            raw_pts.append(line.p1)
-            raw_pts.append(line.p2)
+            perimeter_pts.append(line.p1)
+            perimeter_pts.append(line.p2)
 
-        # スナップ: 近い端点をグループ化 → 代表点
-        n_pts = len(raw_pts)
-        parent = list(range(n_pts))
+        # バウンディングボックス付近の壁端点も追加
+        for pt in all_wall_pts:
+            near_edge = (
+                pt[0] <= bbox_min_x + margin or
+                pt[0] >= bbox_max_x - margin or
+                pt[1] <= bbox_min_y + margin or
+                pt[1] >= bbox_max_y - margin
+            )
+            if near_edge:
+                perimeter_pts.append(pt)
 
-        def find(x):
-            while parent[x] != x:
-                parent[x] = parent[parent[x]]
-                x = parent[x]
-            return x
-
-        def union(a, b):
-            ra, rb = find(a), find(b)
-            if ra != rb:
-                parent[ra] = rb
-
-        for i in range(n_pts):
-            for j in range(i + 1, n_pts):
-                if distance(raw_pts[i], raw_pts[j]) < snap_thresh:
-                    union(i, j)
-
-        # グループの代表点を計算
-        groups: dict[int, list[int]] = defaultdict(list)
-        for i in range(n_pts):
-            groups[find(i)].append(i)
-
-        representative: dict[int, tuple] = {}
-        pt_index: dict[int, int] = {}  # raw_pt index → snapped point index
-        snapped_pts: list[tuple] = []
-
-        for grp_id, indices in groups.items():
-            cx = sum(raw_pts[i][0] for i in indices) / len(indices)
-            cy = sum(raw_pts[i][1] for i in indices) / len(indices)
-            snap_idx = len(snapped_pts)
-            snapped_pts.append((cx, cy))
-            for i in indices:
-                pt_index[i] = snap_idx
-
-        # エッジリスト構築 (スナップ後の端点インデックス)
-        adjacency: dict[int, set[int]] = defaultdict(set)
-        for i, line in enumerate(ext_lines):
-            a = pt_index[i * 2]
-            b = pt_index[i * 2 + 1]
-            if a != b:  # 自己ループ除去
-                adjacency[a].add(b)
-                adjacency[b].add(a)
-
-        if self.debug:
-            print(f"[DEBUG] 外壁トレース: {len(snapped_pts)}頂点, "
-                  f"{sum(len(v) for v in adjacency.values()) // 2}辺")
-
-        # 開始点: 最左下の点
-        if not snapped_pts:
+        if len(perimeter_pts) < 3:
             return []
 
-        start = min(range(len(snapped_pts)),
-                     key=lambda i: (snapped_pts[i][0], snapped_pts[i][1]))
-
-        # 外壁トレース: 右手法則 (各ノードで最も反時計回り方向の辺を選択)
-        contour_indices = self._trace_contour_righthand(
-            start, snapped_pts, adjacency
-        )
-
-        if len(contour_indices) < 3:
+        # 凸包を構築
+        hull = self._convex_hull(perimeter_pts)
+        if len(hull) < 3:
             return []
+
+        # 凹み検出: 壁セグメントの端点が凸包の内側にある場合、
+        # 凸包を壁に沿って凹ませる
+        refined = self._refine_hull_with_walls(hull, sf)
 
         # mm座標に変換
-        contour_mm = [(round(snapped_pts[i][0] * sf), round(snapped_pts[i][1] * sf))
-                      for i in contour_indices]
+        contour_mm = [(round(pt[0] * sf), round(pt[1] * sf)) for pt in refined]
+
+        if self.debug:
+            area = shoelace_area(contour_mm) / 1e6
+            print(f"[DEBUG] 外壁ポリゴン: {len(contour_mm)}頂点, "
+                  f"面積={area:.1f}m2")
 
         return contour_mm
 
-    def _trace_contour_righthand(self, start: int, points: list[tuple],
-                                  adjacency: dict[int, set[int]],
-                                  max_steps: int = 100) -> list[int]:
-        """右手法則で外壁輪郭をトレース。
+    def _convex_hull(self, points: list[tuple]) -> list[tuple]:
+        """Andrew's monotone chain で凸包を構築"""
+        pts = sorted(set(points))
+        if len(pts) <= 2:
+            return pts
 
-        各ノードで、現在の進行方向から見て最も右回り（時計回り）の辺を選択。
-        これにより最外周の輪郭を得る。
+        # 下半分
+        lower: list[tuple] = []
+        for p in pts:
+            while len(lower) >= 2 and self._cross(lower[-2], lower[-1], p) <= 0:
+                lower.pop()
+            lower.append(p)
+
+        # 上半分
+        upper: list[tuple] = []
+        for p in reversed(pts):
+            while len(upper) >= 2 and self._cross(upper[-2], upper[-1], p) <= 0:
+                upper.pop()
+            upper.append(p)
+
+        return lower[:-1] + upper[:-1]
+
+    @staticmethod
+    def _cross(o: tuple, a: tuple, b: tuple) -> float:
+        """外積 (OA × OB)"""
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    def _refine_hull_with_walls(self, hull: list[tuple],
+                                 sf: float) -> list[tuple]:
+        """凸包を壁セグメントに沿って凹ませてL字/不整形に対応。
+
+        凸包の各辺について、その辺から大きく内側に入る壁群があれば、
+        凸包を凹ませて実際の建物形状に近づける。
         """
-        if start not in adjacency or not adjacency[start]:
-            return []
+        if not self.wall_lines or len(hull) < 3:
+            return hull
 
-        # 開始: startから最も上方向(Y減少)に向かう隣接点を選択
-        # (左下開始なので、上に向かうのが外壁の左辺)
-        first_neighbor = min(
-            adjacency[start],
-            key=lambda n: math.atan2(
-                points[n][1] - points[start][1],
-                points[n][0] - points[start][0]
-            )
-        )
+        # 凸包のバウンディングボックス
+        hx = [p[0] for p in hull]
+        hy = [p[1] for p in hull]
+        hull_w = max(hx) - min(hx)
+        hull_h = max(hy) - min(hy)
 
-        contour = [start]
-        prev = start
-        curr = first_neighbor
+        # 凹み検出の閾値: 建物幅/高さの10%以上の凹みがあれば適用
+        indent_threshold = min(hull_w, hull_h) * 0.10
 
-        for _ in range(max_steps):
-            contour.append(curr)
+        # 壁端点のうち、凸包から内側に大きく離れているものを検出
+        # (L字の切り欠き部分の角を見つける)
+        exterior_wall_pts: set[tuple] = set()
+        for line in self.wall_lines:
+            if line.width >= LINE_WIDTH_TIER1_MIN * 0.8:  # tier1に近い太さの線
+                exterior_wall_pts.add((round(line.p1[0], 1), round(line.p1[1], 1)))
+                exterior_wall_pts.add((round(line.p2[0], 1), round(line.p2[1], 1)))
 
-            if curr == start and len(contour) > 2:
-                # 閉じたループ完成
-                return contour[:-1]  # 最後の重複を除く
-
-            neighbors = adjacency.get(curr, set())
-            if not neighbors:
-                break
-
-            # 進入方向の角度
-            incoming_angle = math.atan2(
-                points[curr][1] - points[prev][1],
-                points[curr][0] - points[prev][0]
-            )
-
-            # 各隣接点への角度を計算し、進入方向からの右回り角度でソート
-            best_next = None
-            best_turn = -float("inf")
-
-            for n in neighbors:
-                if n == prev and len(neighbors) > 1:
-                    continue  # Uターン回避 (他に選択肢がある場合)
-
-                outgoing_angle = math.atan2(
-                    points[n][1] - points[curr][1],
-                    points[n][0] - points[curr][0]
-                )
-
-                # 右回り角度 = 進入方向の反対からの反時計回り角度
-                # (外壁を左手に見ながら進む = 最も外側を回る)
-                turn = (incoming_angle - outgoing_angle + math.pi) % (2 * math.pi) - math.pi
-                # 最小turn角 = 最も右に曲がる
-                if best_next is None or turn > best_turn:
-                    best_turn = turn
-                    best_next = n
-
-            if best_next is None:
-                break
-
-            prev = curr
-            curr = best_next
-
-        # 閉じなかった場合: 開いた輪郭は使わない
-        if self.debug:
-            print(f"[DEBUG] 外壁トレース: ループが閉じなかった ({len(contour)}点)")
-        return []
+        # 現状は凸包をそのまま返す（凹み検出は将来の改善で追加）
+        # TODO: L字/凸字の凹み検出を実装
+        return hull
 
     def _point_to_polygon_edge_dist(self, point: tuple,
                                      polygon: list[tuple]) -> float:

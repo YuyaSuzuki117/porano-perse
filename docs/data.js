@@ -14,6 +14,503 @@ const ANALYSIS_DATA = {
   "walls": [
     {
       "id": "W1",
+      "start_x_mm": 8745,
+      "start_y_mm": 14165,
+      "end_x_mm": 10678,
+      "end_y_mm": 14165,
+      "thickness_mm": 192,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "window",
+          "position_mm": 1615,
+          "width_mm": 468,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 866,
+          "width_mm": 468,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 117,
+          "width_mm": 468,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W2",
+      "start_x_mm": 11333,
+      "start_y_mm": 13427,
+      "end_x_mm": 11333,
+      "end_y_mm": 13927,
+      "thickness_mm": 110,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 46,
+          "width_mm": 572,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W3",
+      "start_x_mm": 212,
+      "start_y_mm": 2054,
+      "end_x_mm": 212,
+      "end_y_mm": 5704,
+      "thickness_mm": 233,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 984,
+          "width_mm": 1500,
+          "height_mm": 2100
+        },
+        {
+          "type": "window",
+          "position_mm": 3242,
+          "width_mm": 1500,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3242,
+          "width_mm": 1500,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3242,
+          "width_mm": 1500,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W4",
+      "start_x_mm": 3992,
+      "start_y_mm": 233,
+      "end_x_mm": 3981,
+      "end_y_mm": 3858,
+      "thickness_mm": 250,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 3625,
+          "width_mm": 667,
+          "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": 3646,
+          "width_mm": 1042,
+          "height_mm": 2100
+        },
+        {
+          "type": "window",
+          "position_mm": 663,
+          "width_mm": 467,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 1408,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 2154,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 2900,
+          "width_mm": 467,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3959,
+          "width_mm": 542,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3959,
+          "width_mm": 542,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W5",
+      "start_x_mm": 200,
+      "start_y_mm": 199,
+      "end_x_mm": 4942,
+      "end_y_mm": 199,
+      "thickness_mm": 233,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": -83,
+          "width_mm": 1263,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W6",
+      "start_x_mm": 246,
+      "start_y_mm": 233,
+      "end_x_mm": 246,
+      "end_y_mm": 1412,
+      "thickness_mm": 166,
+      "type": "exterior",
+      "openings": []
+    },
+    {
+      "id": "W7",
+      "start_x_mm": 8308,
+      "start_y_mm": 10250,
+      "end_x_mm": 8308,
+      "end_y_mm": 14132,
+      "thickness_mm": 125,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "window",
+          "position_mm": 134,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 879,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 1625,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 2370,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3116,
+          "width_mm": 467,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 3861,
+          "width_mm": 466,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W8",
+      "start_x_mm": 3783,
+      "start_y_mm": 3920,
+      "end_x_mm": 3783,
+      "end_y_mm": 4504,
+      "thickness_mm": 83,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 292,
+          "width_mm": 625,
+          "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": -42,
+          "width_mm": 1042,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W9",
+      "start_x_mm": 7895,
+      "start_y_mm": 1027,
+      "end_x_mm": 11558,
+      "end_y_mm": 1027,
+      "thickness_mm": 125,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W10",
+      "start_x_mm": 637,
+      "start_y_mm": 14245,
+      "end_x_mm": 3758,
+      "end_y_mm": 14245,
+      "thickness_mm": 208,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "window",
+          "position_mm": 3146,
+          "width_mm": 441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 2442,
+          "width_mm": 441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 1737,
+          "width_mm": 441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 1032,
+          "width_mm": 441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 327,
+          "width_mm": 441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W11",
+      "start_x_mm": 3854,
+      "start_y_mm": 8820,
+      "end_x_mm": 3854,
+      "end_y_mm": 11768,
+      "thickness_mm": 116,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W12",
+      "start_x_mm": 3179,
+      "start_y_mm": 3878,
+      "end_x_mm": 3887,
+      "end_y_mm": 3878,
+      "thickness_mm": 84,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 610,
+          "width_mm": 667,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W13",
+      "start_x_mm": 3066,
+      "start_y_mm": 4504,
+      "end_x_mm": 3783,
+      "end_y_mm": 4504,
+      "thickness_mm": 84,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 302,
+          "width_mm": 872,
+          "height_mm": 2100
+        },
+        {
+          "type": "window",
+          "position_mm": -14,
+          "width_mm": 458,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W14",
+      "start_x_mm": 3033,
+      "start_y_mm": 6941,
+      "end_x_mm": 4144,
+      "end_y_mm": 6927,
+      "thickness_mm": 126,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W15",
+      "start_x_mm": 11637,
+      "start_y_mm": 7552,
+      "end_x_mm": 11637,
+      "end_y_mm": 8878,
+      "thickness_mm": 158,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 348,
+          "width_mm": 583,
+          "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": 400,
+          "width_mm": 867,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W16",
+      "start_x_mm": 10390,
+      "start_y_mm": 8961,
+      "end_x_mm": 11778,
+      "end_y_mm": 8961,
+      "thickness_mm": 167,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 135,
+          "width_mm": 667,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W17",
+      "start_x_mm": 11778,
+      "start_y_mm": 9849,
+      "end_x_mm": 11778,
+      "end_y_mm": 12824,
+      "thickness_mm": 125,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W18",
+      "start_x_mm": 10515,
+      "start_y_mm": 3878,
+      "end_x_mm": 11683,
+      "end_y_mm": 3878,
+      "thickness_mm": 166,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W19",
+      "start_x_mm": 3758,
+      "start_y_mm": 8953,
+      "end_x_mm": 3758,
+      "end_y_mm": 14245,
+      "thickness_mm": 175,
+      "type": "exterior",
+      "openings": []
+    },
+    {
+      "id": "W20",
+      "start_x_mm": 217,
+      "start_y_mm": 7519,
+      "end_x_mm": 217,
+      "end_y_mm": 12770,
+      "thickness_mm": 241,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 583,
+          "width_mm": 1519,
+          "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": 466,
+          "width_mm": 1096,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W21",
+      "start_x_mm": 11930,
+      "start_y_mm": 8386,
+      "end_x_mm": 11930,
+      "end_y_mm": 11688,
+      "thickness_mm": 180,
+      "type": "interior",
+      "openings": [
+        {
+          "type": "window",
+          "position_mm": 3352,
+          "width_mm": 2172,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 1380,
+          "width_mm": 1441,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": -171,
+          "width_mm": 1325,
+          "height_mm": 1800,
+          "sill_mm": 800
+        }
+      ]
+    },
+    {
+      "id": "W22",
       "start_x_mm": 791,
       "start_y_mm": 12770,
       "end_x_mm": 791,
@@ -30,17 +527,17 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W2",
+      "id": "W23",
       "start_x_mm": 429,
       "start_y_mm": 13462,
-      "end_x_mm": 433,
-      "end_y_mm": 14324,
+      "end_x_mm": 429,
+      "end_y_mm": 14341,
       "thickness_mm": 116,
       "type": "exterior",
       "openings": []
     },
     {
-      "id": "W3",
+      "id": "W24",
       "start_x_mm": 372,
       "start_y_mm": 6866,
       "end_x_mm": 764,
@@ -50,7 +547,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W4",
+      "id": "W25",
       "start_x_mm": 816,
       "start_y_mm": 6966,
       "end_x_mm": 816,
@@ -67,90 +564,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W5",
-      "start_x_mm": 12,
-      "start_y_mm": 3701,
-      "end_x_mm": 12,
-      "end_y_mm": 13692,
-      "thickness_mm": 167,
-      "type": "exterior",
-      "openings": [
-        {
-          "type": "sliding_door",
-          "position_mm": -663,
-          "width_mm": 1500,
-          "height_mm": 2100
-        },
-        {
-          "type": "window",
-          "position_mm": 782,
-          "width_mm": 4791,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1594,
-          "width_mm": 1500,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W6",
-      "start_x_mm": 213,
-      "start_y_mm": 2176,
-      "end_x_mm": 213,
-      "end_y_mm": 4874,
-      "thickness_mm": 234,
-      "type": "interior",
-      "openings": [
-        {
-          "type": "sliding_door",
-          "position_mm": 863,
-          "width_mm": 1500,
-          "height_mm": 2100
-        },
-        {
-          "type": "window",
-          "position_mm": -75,
-          "width_mm": 429,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 611,
-          "width_mm": 430,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1298,
-          "width_mm": 429,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1984,
-          "width_mm": 429,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2671,
-          "width_mm": 430,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W7",
+      "id": "W26",
       "start_x_mm": 796,
       "start_y_mm": 1445,
       "end_x_mm": 796,
@@ -167,57 +581,60 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W8",
-      "start_x_mm": 117,
-      "start_y_mm": 116,
-      "end_x_mm": 117,
-      "end_y_mm": 1445,
-      "thickness_mm": 92,
-      "type": "exterior",
-      "openings": [
-        {
-          "type": "sliding_door",
-          "position_mm": -43,
-          "width_mm": 1263,
-          "height_mm": 2100
-        },
-        {
-          "type": "window",
-          "position_mm": 611,
-          "width_mm": 430,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1298,
-          "width_mm": 429,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W9",
+      "id": "W27",
       "start_x_mm": 0,
       "start_y_mm": 0,
-      "end_x_mm": 6099,
-      "end_y_mm": 0,
-      "thickness_mm": 166,
+      "end_x_mm": 0,
+      "end_y_mm": 8030,
+      "thickness_mm": 142,
       "type": "exterior",
       "openings": [
         {
           "type": "sliding_door",
-          "position_mm": 117,
+          "position_mm": 74,
           "width_mm": 1263,
           "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": 3038,
+          "width_mm": 1500,
+          "height_mm": 2100
+        },
+        {
+          "type": "window",
+          "position_mm": 4483,
+          "width_mm": 4924,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 4483,
+          "width_mm": 4791,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 781,
+          "width_mm": 1263,
+          "height_mm": 1800,
+          "sill_mm": 800
+        },
+        {
+          "type": "window",
+          "position_mm": 5296,
+          "width_mm": 1500,
+          "height_mm": 1800,
+          "sill_mm": 800
         }
       ]
     },
     {
-      "id": "W10",
-      "start_x_mm": 6099,
-      "start_y_mm": 0,
+      "id": "W28",
+      "start_x_mm": 6083,
+      "start_y_mm": 16,
       "end_x_mm": 6099,
       "end_y_mm": 1870,
       "thickness_mm": 166,
@@ -253,7 +670,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W11",
+      "id": "W29",
       "start_x_mm": 5921,
       "start_y_mm": 2054,
       "end_x_mm": 5921,
@@ -271,13 +688,13 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W12",
+      "id": "W30",
       "start_x_mm": 7695,
       "start_y_mm": 251,
       "end_x_mm": 7695,
       "end_y_mm": 2429,
       "thickness_mm": 142,
-      "type": "interior",
+      "type": "exterior",
       "openings": [
         {
           "type": "window",
@@ -296,13 +713,13 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W13",
+      "id": "W31",
       "start_x_mm": 7695,
       "start_y_mm": 251,
       "end_x_mm": 12147,
       "end_y_mm": 899,
       "thickness_mm": 167,
-      "type": "interior",
+      "type": "exterior",
       "openings": [
         {
           "type": "window",
@@ -342,13 +759,13 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W14",
+      "id": "W32",
       "start_x_mm": 12147,
       "start_y_mm": 899,
       "end_x_mm": 12147,
       "end_y_mm": 8032,
       "thickness_mm": 230,
-      "type": "interior",
+      "type": "exterior",
       "openings": [
         {
           "type": "window",
@@ -360,7 +777,24 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W15",
+      "id": "W33",
+      "start_x_mm": 46,
+      "start_y_mm": 33,
+      "end_x_mm": 6083,
+      "end_y_mm": 16,
+      "thickness_mm": 233,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 71,
+          "width_mm": 1263,
+          "height_mm": 2100
+        }
+      ]
+    },
+    {
+      "id": "W34",
       "start_x_mm": 6099,
       "start_y_mm": 2345,
       "end_x_mm": 6966,
@@ -378,7 +812,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W16",
+      "id": "W35",
       "start_x_mm": 150,
       "start_y_mm": 14499,
       "end_x_mm": 5010,
@@ -424,60 +858,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W17",
-      "start_x_mm": 3996,
-      "start_y_mm": 8936,
-      "end_x_mm": 3996,
-      "end_y_mm": 12847,
-      "thickness_mm": 167,
-      "type": "interior",
-      "openings": [
-        {
-          "type": "window",
-          "position_mm": 653,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1348,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2044,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2739,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 3434,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 4130,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W18",
+      "id": "W36",
       "start_x_mm": 11604,
       "start_y_mm": 7399,
       "end_x_mm": 11928,
@@ -487,7 +868,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W19",
+      "id": "W37",
       "start_x_mm": 8862,
       "start_y_mm": 14482,
       "end_x_mm": 12141,
@@ -539,7 +920,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W20",
+      "id": "W38",
       "start_x_mm": 9991,
       "start_y_mm": 14261,
       "end_x_mm": 9991,
@@ -549,17 +930,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W21",
-      "start_x_mm": 9248,
-      "start_y_mm": 14179,
-      "end_x_mm": 9961,
-      "end_y_mm": 14179,
-      "thickness_mm": 164,
-      "type": "interior",
-      "openings": []
-    },
-    {
-      "id": "W22",
+      "id": "W39",
       "start_x_mm": 9186,
       "start_y_mm": 14261,
       "end_x_mm": 9186,
@@ -569,7 +940,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W23",
+      "id": "W40",
       "start_x_mm": 6025,
       "start_y_mm": 10361,
       "end_x_mm": 6025,
@@ -586,7 +957,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W24",
+      "id": "W41",
       "start_x_mm": 5537,
       "start_y_mm": 12153,
       "end_x_mm": 5537,
@@ -596,13 +967,13 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W25",
+      "id": "W42",
       "start_x_mm": 7820,
       "start_y_mm": 14297,
       "end_x_mm": 10536,
       "end_y_mm": 14297,
       "thickness_mm": 204,
-      "type": "interior",
+      "type": "exterior",
       "openings": [
         {
           "type": "window",
@@ -642,7 +1013,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W26",
+      "id": "W43",
       "start_x_mm": 7716,
       "start_y_mm": 11332,
       "end_x_mm": 7716,
@@ -679,7 +1050,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W27",
+      "id": "W44",
       "start_x_mm": 7787,
       "start_y_mm": 12662,
       "end_x_mm": 8108,
@@ -689,7 +1060,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W28",
+      "id": "W45",
       "start_x_mm": 7912,
       "start_y_mm": 9448,
       "end_x_mm": 7912,
@@ -706,7 +1077,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W29",
+      "id": "W46",
       "start_x_mm": 3996,
       "start_y_mm": 8936,
       "end_x_mm": 6025,
@@ -758,7 +1129,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W30",
+      "id": "W47",
       "start_x_mm": 6025,
       "start_y_mm": 8936,
       "end_x_mm": 6025,
@@ -775,7 +1146,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W31",
+      "id": "W48",
       "start_x_mm": 11739,
       "start_y_mm": 6831,
       "end_x_mm": 12009,
@@ -785,7 +1156,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W32",
+      "id": "W49",
       "start_x_mm": 11506,
       "start_y_mm": 7067,
       "end_x_mm": 11506,
@@ -795,7 +1166,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W33",
+      "id": "W50",
       "start_x_mm": 5525,
       "start_y_mm": 7650,
       "end_x_mm": 6158,
@@ -812,7 +1183,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W34",
+      "id": "W51",
       "start_x_mm": 11977,
       "start_y_mm": 5901,
       "end_x_mm": 12323,
@@ -822,7 +1193,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W35",
+      "id": "W52",
       "start_x_mm": 12076,
       "start_y_mm": 6790,
       "end_x_mm": 12356,
@@ -832,60 +1203,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W36",
-      "start_x_mm": 3963,
-      "start_y_mm": 10119,
-      "end_x_mm": 3963,
-      "end_y_mm": 14382,
-      "thickness_mm": 234,
-      "type": "exterior",
-      "openings": [
-        {
-          "type": "window",
-          "position_mm": 165,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 860,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1556,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2251,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2946,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 3642,
-          "width_mm": 435,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W37",
+      "id": "W53",
       "start_x_mm": 4080,
       "start_y_mm": 11365,
       "end_x_mm": 5781,
@@ -902,7 +1220,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W38",
+      "id": "W54",
       "start_x_mm": 6200,
       "start_y_mm": 10073,
       "end_x_mm": 6200,
@@ -919,7 +1237,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W39",
+      "id": "W55",
       "start_x_mm": 7716,
       "start_y_mm": 8924,
       "end_x_mm": 8108,
@@ -942,7 +1260,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W40",
+      "id": "W56",
       "start_x_mm": 7716,
       "start_y_mm": 8924,
       "end_x_mm": 7716,
@@ -952,13 +1270,13 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W41",
+      "id": "W57",
       "start_x_mm": 288,
       "start_y_mm": 3316,
       "end_x_mm": 288,
       "end_y_mm": 6462,
       "thickness_mm": 250,
-      "type": "interior",
+      "type": "exterior",
       "openings": [
         {
           "type": "sliding_door",
@@ -997,7 +1315,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W42",
+      "id": "W58",
       "start_x_mm": 130,
       "start_y_mm": 6996,
       "end_x_mm": 712,
@@ -1007,7 +1325,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W43",
+      "id": "W59",
       "start_x_mm": 918,
       "start_y_mm": 6833,
       "end_x_mm": 918,
@@ -1024,17 +1342,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W44",
-      "start_x_mm": 433,
-      "start_y_mm": 14324,
-      "end_x_mm": 3821,
-      "end_y_mm": 14307,
-      "thickness_mm": 84,
-      "type": "exterior",
-      "openings": []
-    },
-    {
-      "id": "W45",
+      "id": "W60",
       "start_x_mm": 11333,
       "start_y_mm": 12747,
       "end_x_mm": 11333,
@@ -1044,7 +1352,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W46",
+      "id": "W61",
       "start_x_mm": 6273,
       "start_y_mm": 8786,
       "end_x_mm": 6275,
@@ -1102,7 +1410,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W47",
+      "id": "W62",
       "start_x_mm": 6141,
       "start_y_mm": 11411,
       "end_x_mm": 7578,
@@ -1133,7 +1441,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W48",
+      "id": "W63",
       "start_x_mm": 7471,
       "start_y_mm": 12775,
       "end_x_mm": 7471,
@@ -1143,7 +1451,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W49",
+      "id": "W64",
       "start_x_mm": 8362,
       "start_y_mm": 8723,
       "end_x_mm": 8362,
@@ -1168,7 +1476,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W50",
+      "id": "W65",
       "start_x_mm": 7477,
       "start_y_mm": 8786,
       "end_x_mm": 7477,
@@ -1180,6 +1488,12 @@ const ANALYSIS_DATA = {
           "type": "sliding_door",
           "position_mm": 46,
           "width_mm": 1167,
+          "height_mm": 2100
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": -121,
+          "width_mm": 1084,
           "height_mm": 2100
         },
         {
@@ -1213,60 +1527,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W51",
-      "start_x_mm": 2148,
-      "start_y_mm": 244,
-      "end_x_mm": 5164,
-      "end_y_mm": 244,
-      "thickness_mm": 189,
-      "type": "interior",
-      "openings": [
-        {
-          "type": "window",
-          "position_mm": 3158,
-          "width_mm": 471,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2405,
-          "width_mm": 471,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1651,
-          "width_mm": 471,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 897,
-          "width_mm": 472,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 143,
-          "width_mm": 471,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2475,
-          "width_mm": 471,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W52",
+      "id": "W66",
       "start_x_mm": 4908,
       "start_y_mm": 4004,
       "end_x_mm": 4908,
@@ -1289,7 +1550,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W53",
+      "id": "W67",
       "start_x_mm": 6174,
       "start_y_mm": 8828,
       "end_x_mm": 6334,
@@ -1299,7 +1560,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W54",
+      "id": "W68",
       "start_x_mm": 7791,
       "start_y_mm": 2496,
       "end_x_mm": 7791,
@@ -1335,7 +1596,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W55",
+      "id": "W69",
       "start_x_mm": 5491,
       "start_y_mm": 4046,
       "end_x_mm": 8453,
@@ -1345,7 +1606,7 @@ const ANALYSIS_DATA = {
       "openings": [
         {
           "type": "sliding_door",
-          "position_mm": 363,
+          "position_mm": 1244,
           "width_mm": 583,
           "height_mm": 2100
         },
@@ -1365,12 +1626,6 @@ const ANALYSIS_DATA = {
           "type": "sliding_door",
           "position_mm": 2325,
           "width_mm": 1167,
-          "height_mm": 2100
-        },
-        {
-          "type": "sliding_door",
-          "position_mm": -270,
-          "width_mm": 501,
           "height_mm": 2100
         },
         {
@@ -1418,7 +1673,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W56",
+      "id": "W70",
       "start_x_mm": 6662,
       "start_y_mm": 4046,
       "end_x_mm": 9157,
@@ -1426,6 +1681,12 @@ const ANALYSIS_DATA = {
       "thickness_mm": 84,
       "type": "interior",
       "openings": [
+        {
+          "type": "sliding_door",
+          "position_mm": 73,
+          "width_mm": 583,
+          "height_mm": 2100
+        },
         {
           "type": "sliding_door",
           "position_mm": 1060,
@@ -1468,7 +1729,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W57",
+      "id": "W71",
       "start_x_mm": 5991,
       "start_y_mm": 2496,
       "end_x_mm": 5991,
@@ -1478,9 +1739,9 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W58",
-      "start_x_mm": 3971,
-      "start_y_mm": 3878,
+      "id": "W72",
+      "start_x_mm": 3981,
+      "start_y_mm": 3858,
       "end_x_mm": 4908,
       "end_y_mm": 3878,
       "thickness_mm": 84,
@@ -1502,7 +1763,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W59",
+      "id": "W73",
       "start_x_mm": 4908,
       "start_y_mm": 703,
       "end_x_mm": 5950,
@@ -1525,7 +1786,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W60",
+      "id": "W74",
       "start_x_mm": 7418,
       "start_y_mm": 8828,
       "end_x_mm": 7591,
@@ -1535,7 +1796,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W61",
+      "id": "W75",
       "start_x_mm": 5534,
       "start_y_mm": 3254,
       "end_x_mm": 5991,
@@ -1545,7 +1806,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W62",
+      "id": "W76",
       "start_x_mm": 4908,
       "start_y_mm": 703,
       "end_x_mm": 4908,
@@ -1584,7 +1845,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W63",
+      "id": "W77",
       "start_x_mm": 6334,
       "start_y_mm": 11411,
       "end_x_mm": 6501,
@@ -1594,7 +1855,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W64",
+      "id": "W78",
       "start_x_mm": 7251,
       "start_y_mm": 11411,
       "end_x_mm": 7418,
@@ -1604,7 +1865,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W65",
+      "id": "W79",
       "start_x_mm": 10199,
       "start_y_mm": 5921,
       "end_x_mm": 11977,
@@ -1628,7 +1889,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W66",
+      "id": "W80",
       "start_x_mm": 10199,
       "start_y_mm": 6920,
       "end_x_mm": 11558,
@@ -1653,7 +1914,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W67",
+      "id": "W81",
       "start_x_mm": 8203,
       "start_y_mm": 7919,
       "end_x_mm": 8203,
@@ -1670,7 +1931,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W68",
+      "id": "W82",
       "start_x_mm": 10199,
       "start_y_mm": 5921,
       "end_x_mm": 10199,
@@ -1680,7 +1941,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W69",
+      "id": "W83",
       "start_x_mm": 8895,
       "start_y_mm": 6878,
       "end_x_mm": 8895,
@@ -1690,7 +1951,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W70",
+      "id": "W84",
       "start_x_mm": 8203,
       "start_y_mm": 7919,
       "end_x_mm": 8979,
@@ -1720,92 +1981,24 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W71",
-      "start_x_mm": 4075,
-      "start_y_mm": 149,
-      "end_x_mm": 4075,
-      "end_y_mm": 3837,
-      "thickness_mm": 84,
-      "type": "exterior",
-      "openings": [
-        {
-          "type": "sliding_door",
-          "position_mm": 3729,
-          "width_mm": 1042,
-          "height_mm": 2100
-        },
-        {
-          "type": "window",
-          "position_mm": 746,
-          "width_mm": 467,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 1491,
-          "width_mm": 466,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2237,
-          "width_mm": 466,
-          "height_mm": 1800,
-          "sill_mm": 800
-        },
-        {
-          "type": "window",
-          "position_mm": 2983,
-          "width_mm": 467,
-          "height_mm": 1800,
-          "sill_mm": 800
-        }
-      ]
-    },
-    {
-      "id": "W72",
-      "start_x_mm": 3783,
-      "start_y_mm": 3920,
-      "end_x_mm": 3783,
-      "end_y_mm": 4504,
-      "thickness_mm": 83,
+      "id": "W85",
+      "start_x_mm": 3653,
+      "start_y_mm": 3957,
+      "end_x_mm": 3653,
+      "end_y_mm": 4469,
+      "thickness_mm": 178,
       "type": "interior",
       "openings": [
         {
           "type": "sliding_door",
-          "position_mm": 292,
+          "position_mm": 255,
           "width_mm": 625,
           "height_mm": 2100
-        },
-        {
-          "type": "sliding_door",
-          "position_mm": -42,
-          "width_mm": 1042,
-          "height_mm": 2100
         }
       ]
     },
     {
-      "id": "W73",
-      "start_x_mm": 3179,
-      "start_y_mm": 3878,
-      "end_x_mm": 3887,
-      "end_y_mm": 3878,
-      "thickness_mm": 84,
-      "type": "interior",
-      "openings": [
-        {
-          "type": "sliding_door",
-          "position_mm": 610,
-          "width_mm": 667,
-          "height_mm": 2100
-        }
-      ]
-    },
-    {
-      "id": "W74",
+      "id": "W86",
       "start_x_mm": 163,
       "start_y_mm": 4504,
       "end_x_mm": 1682,
@@ -1842,17 +2035,27 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W75",
+      "id": "W87",
+      "start_x_mm": 2000,
+      "start_y_mm": 14188,
+      "end_x_mm": 3900,
+      "end_y_mm": 14188,
+      "thickness_mm": 156,
+      "type": "interior",
+      "openings": []
+    },
+    {
+      "id": "W88",
       "start_x_mm": 918,
       "start_y_mm": 13653,
       "end_x_mm": 918,
       "end_y_mm": 14265,
       "thickness_mm": 162,
-      "type": "interior",
+      "type": "exterior",
       "openings": []
     },
     {
-      "id": "W76",
+      "id": "W89",
       "start_x_mm": 918,
       "start_y_mm": 7082,
       "end_x_mm": 918,
@@ -1869,7 +2072,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W77",
+      "id": "W90",
       "start_x_mm": 163,
       "start_y_mm": 6087,
       "end_x_mm": 971,
@@ -1886,7 +2089,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W78",
+      "id": "W91",
       "start_x_mm": 971,
       "start_y_mm": 6087,
       "end_x_mm": 1121,
@@ -1896,7 +2099,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W79",
+      "id": "W92",
       "start_x_mm": 1121,
       "start_y_mm": 5347,
       "end_x_mm": 1121,
@@ -1906,9 +2109,9 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W80",
-      "start_x_mm": 4158,
-      "start_y_mm": 6920,
+      "id": "W93",
+      "start_x_mm": 4144,
+      "start_y_mm": 6927,
       "end_x_mm": 4950,
       "end_y_mm": 6920,
       "thickness_mm": 84,
@@ -1923,9 +2126,9 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W81",
-      "start_x_mm": 4158,
-      "start_y_mm": 6920,
+      "id": "W94",
+      "start_x_mm": 4144,
+      "start_y_mm": 6927,
       "end_x_mm": 4158,
       "end_y_mm": 8786,
       "thickness_mm": 84,
@@ -1953,7 +2156,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W82",
+      "id": "W95",
       "start_x_mm": 4908,
       "start_y_mm": 7611,
       "end_x_mm": 4908,
@@ -1977,7 +2180,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W83",
+      "id": "W96",
       "start_x_mm": 1913,
       "start_y_mm": 5233,
       "end_x_mm": 1913,
@@ -2008,7 +2211,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W84",
+      "id": "W97",
       "start_x_mm": 1913,
       "start_y_mm": 4546,
       "end_x_mm": 1913,
@@ -2018,7 +2221,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W85",
+      "id": "W98",
       "start_x_mm": 1121,
       "start_y_mm": 4546,
       "end_x_mm": 1121,
@@ -2028,23 +2231,23 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W86",
-      "start_x_mm": 2952,
-      "start_y_mm": 4504,
-      "end_x_mm": 3783,
-      "end_y_mm": 4504,
-      "thickness_mm": 84,
+      "id": "W99",
+      "start_x_mm": 3028,
+      "start_y_mm": 4372,
+      "end_x_mm": 3650,
+      "end_y_mm": 4372,
+      "thickness_mm": 180,
       "type": "interior",
       "openings": [
         {
           "type": "sliding_door",
-          "position_mm": 51,
+          "position_mm": 340,
           "width_mm": 872,
           "height_mm": 2100
         },
         {
           "type": "window",
-          "position_mm": 99,
+          "position_mm": 24,
           "width_mm": 458,
           "height_mm": 1800,
           "sill_mm": 800
@@ -2052,7 +2255,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W87",
+      "id": "W100",
       "start_x_mm": 837,
       "start_y_mm": 6920,
       "end_x_mm": 1552,
@@ -2076,7 +2279,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W88",
+      "id": "W101",
       "start_x_mm": 1552,
       "start_y_mm": 6920,
       "end_x_mm": 1913,
@@ -2086,7 +2289,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W89",
+      "id": "W102",
       "start_x_mm": 7603,
       "start_y_mm": 6878,
       "end_x_mm": 7591,
@@ -2116,7 +2319,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W90",
+      "id": "W103",
       "start_x_mm": 8245,
       "start_y_mm": 10569,
       "end_x_mm": 9599,
@@ -2126,7 +2329,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W91",
+      "id": "W104",
       "start_x_mm": 10599,
       "start_y_mm": 10569,
       "end_x_mm": 11954,
@@ -2136,7 +2339,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W92",
+      "id": "W105",
       "start_x_mm": 8362,
       "start_y_mm": 10318,
       "end_x_mm": 8362,
@@ -2146,7 +2349,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W93",
+      "id": "W106",
       "start_x_mm": 8742,
       "start_y_mm": 5110,
       "end_x_mm": 8742,
@@ -2163,7 +2366,7 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W94",
+      "id": "W107",
       "start_x_mm": 10579,
       "start_y_mm": 6309,
       "end_x_mm": 11503,
@@ -2173,7 +2376,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W95",
+      "id": "W108",
       "start_x_mm": 8895,
       "start_y_mm": 7336,
       "end_x_mm": 8895,
@@ -2183,7 +2386,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W96",
+      "id": "W109",
       "start_x_mm": 4410,
       "start_y_mm": 900,
       "end_x_mm": 4410,
@@ -2193,7 +2396,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W97",
+      "id": "W110",
       "start_x_mm": 5391,
       "start_y_mm": 193,
       "end_x_mm": 5391,
@@ -2203,7 +2406,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W98",
+      "id": "W111",
       "start_x_mm": 876,
       "start_y_mm": 6887,
       "end_x_mm": 1106,
@@ -2213,7 +2416,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W99",
+      "id": "W112",
       "start_x_mm": 860,
       "start_y_mm": 7038,
       "end_x_mm": 1294,
@@ -2230,17 +2433,17 @@ const ANALYSIS_DATA = {
       ]
     },
     {
-      "id": "W100",
+      "id": "W113",
       "start_x_mm": 288,
       "start_y_mm": 4546,
       "end_x_mm": 288,
       "end_y_mm": 6045,
       "thickness_mm": 250,
-      "type": "interior",
+      "type": "exterior",
       "openings": []
     },
     {
-      "id": "W101",
+      "id": "W114",
       "start_x_mm": 6272,
       "start_y_mm": 7694,
       "end_x_mm": 6273,
@@ -2250,7 +2453,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W102",
+      "id": "W115",
       "start_x_mm": 7953,
       "start_y_mm": 7362,
       "end_x_mm": 8598,
@@ -2260,7 +2463,7 @@ const ANALYSIS_DATA = {
       "openings": []
     },
     {
-      "id": "W103",
+      "id": "W116",
       "start_x_mm": 3495,
       "start_y_mm": 5462,
       "end_x_mm": 8323,
@@ -2292,637 +2495,6 @@ const ANALYSIS_DATA = {
         "W2",
         "W3",
         "W4",
-        "W5",
-        "W6",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W14",
-        "W15",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        6914,
-        9943
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "EV",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W11",
-        "W15",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W60",
-        "W61",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        5585,
-        12133
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "EV",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W55",
-        "W56",
-        "W58",
-        "W60",
-        "W61",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        5576,
-        13184
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "PS",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W10",
-        "W11",
-        "W12",
-        "W14",
-        "W15",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        5090,
-        10213
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "PS",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W14",
-        "W15",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        7937,
-        10374
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "PS",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W10",
-        "W11",
-        "W12",
-        "W14",
-        "W15",
-        "W16",
-        "W17",
-        "W18",
-        "W19",
-        "W20",
-        "W21",
-        "W22",
-        "W23",
-        "W24",
-        "W25",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W45",
-        "W46",
-        "W47",
-        "W48",
-        "W49",
-        "W50",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        6065,
-        10914
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "＊グラス・ペール・キッチン用品収納",
-      "wall_ids": [
-        "W3",
-        "W4",
-        "W5",
-        "W6",
         "W7",
         "W8",
         "W9",
@@ -2932,22 +2504,22 @@ const ANALYSIS_DATA = {
         "W13",
         "W14",
         "W15",
+        "W16",
         "W17",
         "W18",
+        "W19",
         "W20",
         "W21",
         "W22",
         "W23",
         "W24",
         "W25",
-        "W26",
         "W27",
         "W28",
         "W29",
         "W30",
         "W31",
         "W32",
-        "W33",
         "W34",
         "W35",
         "W36",
@@ -2958,6 +2530,7 @@ const ANALYSIS_DATA = {
         "W41",
         "W42",
         "W43",
+        "W44",
         "W45",
         "W46",
         "W47",
@@ -2988,6 +2561,7 @@ const ANALYSIS_DATA = {
         "W72",
         "W73",
         "W74",
+        "W75",
         "W76",
         "W77",
         "W78",
@@ -3015,7 +2589,719 @@ const ANALYSIS_DATA = {
         "W100",
         "W101",
         "W102",
-        "W103"
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        6914,
+        9943
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "EV",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W3",
+        "W7",
+        "W8",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W27",
+        "W29",
+        "W34",
+        "W35",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W74",
+        "W75",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        5585,
+        12133
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "EV",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W7",
+        "W8",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W35",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W69",
+        "W70",
+        "W72",
+        "W74",
+        "W75",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        5576,
+        13184
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "PS",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W7",
+        "W8",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W32",
+        "W34",
+        "W35",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        5090,
+        10213
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "PS",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W4",
+        "W7",
+        "W8",
+        "W9",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W32",
+        "W34",
+        "W35",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        7937,
+        10374
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "PS",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W7",
+        "W8",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W20",
+        "W21",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W32",
+        "W34",
+        "W35",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        6065,
+        10914
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "＊グラス・ペール・キッチン用品収納",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W7",
+        "W8",
+        "W9",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W21",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W32",
+        "W33",
+        "W34",
+        "W36",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W60",
+        "W61",
+        "W62",
+        "W63",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
       ],
       "area_m2": 0,
       "center_mm": [
@@ -3129,7 +3415,20 @@ const ANALYSIS_DATA = {
         "W100",
         "W101",
         "W102",
-        "W103"
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
       ],
       "area_m2": 0,
       "center_mm": [
@@ -3142,11 +3441,12 @@ const ANALYSIS_DATA = {
       "name": "ＤＪブース",
       "wall_ids": [
         "W1",
+        "W2",
         "W3",
         "W4",
         "W5",
-        "W6",
         "W7",
+        "W8",
         "W9",
         "W10",
         "W11",
@@ -3161,7 +3461,6 @@ const ANALYSIS_DATA = {
         "W20",
         "W21",
         "W22",
-        "W23",
         "W24",
         "W25",
         "W26",
@@ -3213,6 +3512,7 @@ const ANALYSIS_DATA = {
         "W72",
         "W73",
         "W74",
+        "W75",
         "W76",
         "W77",
         "W78",
@@ -3225,7 +3525,6 @@ const ANALYSIS_DATA = {
         "W85",
         "W86",
         "W87",
-        "W88",
         "W89",
         "W90",
         "W91",
@@ -3240,7 +3539,20 @@ const ANALYSIS_DATA = {
         "W100",
         "W101",
         "W102",
-        "W103"
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
       ],
       "area_m2": 0,
       "center_mm": [
@@ -3259,16 +3571,19 @@ const ANALYSIS_DATA = {
         "W7",
         "W8",
         "W9",
-        "W10",
         "W11",
         "W12",
         "W13",
         "W14",
         "W15",
+        "W16",
         "W17",
         "W18",
-        "W23",
+        "W19",
+        "W20",
+        "W21",
         "W24",
+        "W25",
         "W26",
         "W27",
         "W28",
@@ -3278,17 +3593,15 @@ const ANALYSIS_DATA = {
         "W32",
         "W33",
         "W34",
-        "W35",
         "W36",
-        "W37",
-        "W38",
-        "W39",
         "W40",
         "W41",
-        "W42",
         "W43",
+        "W44",
+        "W45",
         "W46",
         "W47",
+        "W48",
         "W49",
         "W50",
         "W51",
@@ -3300,10 +3613,8 @@ const ANALYSIS_DATA = {
         "W57",
         "W58",
         "W59",
-        "W60",
         "W61",
         "W62",
-        "W63",
         "W64",
         "W65",
         "W66",
@@ -3315,6 +3626,7 @@ const ANALYSIS_DATA = {
         "W72",
         "W73",
         "W74",
+        "W75",
         "W76",
         "W77",
         "W78",
@@ -3326,8 +3638,6 @@ const ANALYSIS_DATA = {
         "W84",
         "W85",
         "W86",
-        "W87",
-        "W88",
         "W89",
         "W90",
         "W91",
@@ -3342,7 +3652,20 @@ const ANALYSIS_DATA = {
         "W100",
         "W101",
         "W102",
-        "W103"
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
       ],
       "area_m2": 0,
       "center_mm": [
@@ -3358,587 +3681,17 @@ const ANALYSIS_DATA = {
         "W4",
         "W5",
         "W6",
-        "W7",
         "W8",
         "W9",
-        "W10",
         "W11",
         "W12",
         "W13",
         "W14",
-        "W15",
-        "W17",
-        "W18",
-        "W23",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W46",
-        "W47",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        4717,
-        1948
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "Ｓ-ＷＣ",
-      "wall_ids": [
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W8",
-        "W9",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W14",
-        "W15",
-        "W18",
-        "W23",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W46",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        5099,
-        763
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "Ｓ-ＷＣ/小",
-      "wall_ids": [
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W8",
-        "W9",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W14",
-        "W15",
-        "W17",
-        "W18",
-        "W23",
-        "W28",
-        "W29",
-        "W30",
-        "W31",
-        "W32",
-        "W33",
-        "W34",
-        "W35",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W46",
-        "W47",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        5524,
-        2250
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "前室",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W8",
-        "W9",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
         "W15",
         "W16",
-        "W17",
-        "W23",
-        "W24",
-        "W28",
-        "W29",
-        "W30",
-        "W33",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W46",
-        "W47",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        1553,
-        4738
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "Ｇ-ＷＣ②",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W8",
-        "W9",
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W15",
-        "W16",
-        "W17",
-        "W23",
-        "W24",
-        "W26",
-        "W27",
-        "W28",
-        "W29",
-        "W30",
-        "W33",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W46",
-        "W47",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W65",
-        "W66",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W90",
-        "W92",
-        "W93",
-        "W94",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        1379,
-        5572
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "Ｇ-ＷＣ①",
-      "wall_ids": [
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5",
-        "W6",
-        "W7",
-        "W8",
-        "W9",
-        "W10",
-        "W11",
-        "W12",
-        "W15",
-        "W17",
-        "W23",
-        "W24",
-        "W28",
-        "W29",
-        "W30",
-        "W33",
-        "W36",
-        "W37",
-        "W38",
-        "W39",
-        "W40",
-        "W41",
-        "W42",
-        "W43",
-        "W44",
-        "W46",
-        "W47",
-        "W49",
-        "W50",
-        "W51",
-        "W52",
-        "W53",
-        "W54",
-        "W55",
-        "W56",
-        "W57",
-        "W58",
-        "W59",
-        "W60",
-        "W61",
-        "W62",
-        "W63",
-        "W64",
-        "W67",
-        "W68",
-        "W69",
-        "W70",
-        "W71",
-        "W72",
-        "W73",
-        "W74",
-        "W75",
-        "W76",
-        "W77",
-        "W78",
-        "W79",
-        "W80",
-        "W81",
-        "W82",
-        "W83",
-        "W84",
-        "W85",
-        "W86",
-        "W87",
-        "W88",
-        "W89",
-        "W92",
-        "W93",
-        "W95",
-        "W96",
-        "W97",
-        "W98",
-        "W99",
-        "W100",
-        "W101",
-        "W102",
-        "W103"
-      ],
-      "area_m2": 0,
-      "center_mm": [
-        600,
-        4607
-      ],
-      "polygon_mm": []
-    },
-    {
-      "name": "Ｇ-ＷＣ③",
-      "wall_ids": [
-        "W10",
-        "W11",
-        "W12",
-        "W13",
-        "W14",
-        "W15",
-        "W17",
         "W18",
         "W19",
         "W20",
-        "W21",
-        "W22",
-        "W23",
         "W24",
         "W25",
         "W26",
@@ -3950,11 +3703,7 @@ const ANALYSIS_DATA = {
         "W32",
         "W33",
         "W34",
-        "W35",
         "W36",
-        "W37",
-        "W38",
-        "W39",
         "W40",
         "W45",
         "W46",
@@ -3971,6 +3720,624 @@ const ANALYSIS_DATA = {
         "W57",
         "W58",
         "W59",
+        "W61",
+        "W62",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        4717,
+        1948
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "Ｓ-ＷＣ",
+      "wall_ids": [
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W8",
+        "W9",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W18",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W32",
+        "W33",
+        "W34",
+        "W36",
+        "W40",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W61",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        5099,
+        763
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "Ｓ-ＷＣ/小",
+      "wall_ids": [
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W8",
+        "W9",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W18",
+        "W19",
+        "W20",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W32",
+        "W33",
+        "W34",
+        "W36",
+        "W40",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W61",
+        "W62",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        5524,
+        2250
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "前室",
+      "wall_ids": [
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W8",
+        "W9",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W18",
+        "W19",
+        "W20",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W33",
+        "W34",
+        "W35",
+        "W40",
+        "W41",
+        "W45",
+        "W46",
+        "W47",
+        "W50",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W61",
+        "W62",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        1553,
+        4738
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "Ｇ-ＷＣ②",
+      "wall_ids": [
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W7",
+        "W8",
+        "W9",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W18",
+        "W19",
+        "W20",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W33",
+        "W34",
+        "W35",
+        "W40",
+        "W41",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W50",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W61",
+        "W62",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
+        "W80",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W103",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        1379,
+        5572
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "Ｇ-ＷＣ①",
+      "wall_ids": [
+        "W3",
+        "W4",
+        "W5",
+        "W6",
+        "W8",
+        "W9",
+        "W10",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W19",
+        "W20",
+        "W22",
+        "W23",
+        "W24",
+        "W25",
+        "W26",
+        "W27",
+        "W28",
+        "W29",
+        "W30",
+        "W33",
+        "W34",
+        "W40",
+        "W41",
+        "W45",
+        "W46",
+        "W47",
+        "W50",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
+        "W57",
+        "W58",
+        "W59",
+        "W61",
+        "W62",
+        "W64",
+        "W65",
+        "W66",
+        "W67",
+        "W68",
+        "W69",
+        "W70",
+        "W71",
+        "W72",
+        "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W81",
+        "W82",
+        "W83",
+        "W84",
+        "W85",
+        "W86",
+        "W87",
+        "W88",
+        "W89",
+        "W90",
+        "W91",
+        "W92",
+        "W93",
+        "W94",
+        "W95",
+        "W96",
+        "W97",
+        "W98",
+        "W99",
+        "W100",
+        "W101",
+        "W102",
+        "W105",
+        "W106",
+        "W108",
+        "W109",
+        "W110",
+        "W111",
+        "W112",
+        "W113",
+        "W114",
+        "W115",
+        "W116"
+      ],
+      "area_m2": 0,
+      "center_mm": [
+        600,
+        4607
+      ],
+      "polygon_mm": []
+    },
+    {
+      "name": "Ｇ-ＷＣ③",
+      "wall_ids": [
+        "W1",
+        "W2",
+        "W4",
+        "W7",
+        "W8",
+        "W9",
+        "W11",
+        "W12",
+        "W13",
+        "W14",
+        "W15",
+        "W16",
+        "W17",
+        "W18",
+        "W19",
+        "W21",
+        "W28",
+        "W29",
+        "W30",
+        "W31",
+        "W32",
+        "W34",
+        "W36",
+        "W37",
+        "W38",
+        "W39",
+        "W40",
+        "W41",
+        "W42",
+        "W43",
+        "W44",
+        "W45",
+        "W46",
+        "W47",
+        "W48",
+        "W49",
+        "W50",
+        "W51",
+        "W52",
+        "W53",
+        "W54",
+        "W55",
+        "W56",
         "W60",
         "W61",
         "W62",
@@ -3985,25 +4352,37 @@ const ANALYSIS_DATA = {
         "W71",
         "W72",
         "W73",
+        "W74",
+        "W75",
+        "W76",
+        "W77",
+        "W78",
+        "W79",
         "W80",
         "W81",
         "W82",
         "W83",
         "W84",
-        "W86",
-        "W88",
-        "W89",
-        "W90",
-        "W91",
-        "W92",
+        "W85",
         "W93",
         "W94",
         "W95",
         "W96",
         "W97",
+        "W99",
         "W101",
         "W102",
-        "W103"
+        "W103",
+        "W104",
+        "W105",
+        "W106",
+        "W107",
+        "W108",
+        "W109",
+        "W110",
+        "W114",
+        "W115",
+        "W116"
       ],
       "area_m2": 0,
       "center_mm": [
@@ -4170,12 +4549,12 @@ const ANALYSIS_DATA = {
     },
     {
       "p1_mm": [
-        7766,
-        -1184
+        12032,
+        -1550
       ],
       "p2_mm": [
         12032,
-        -1184
+        652
       ],
       "value_mm": 5120.0,
       "label": "5,120",
@@ -4408,7 +4787,7 @@ const ANALYSIS_DATA = {
         5691
       ],
       "p2_mm": [
-        11840,
+        11549,
         10486
       ],
       "value_mm": 1040.0,
@@ -4534,12 +4913,12 @@ const ANALYSIS_DATA = {
     },
     {
       "p1_mm": [
-        7766,
-        -1184
+        12032,
+        -1550
       ],
       "p2_mm": [
         12032,
-        -1184
+        652
       ],
       "value_mm": 5120.0,
       "label": "5,120",
@@ -4772,7 +5151,7 @@ const ANALYSIS_DATA = {
         5691
       ],
       "p2_mm": [
-        11840,
+        11549,
         10486
       ],
       "value_mm": 1040.0,
@@ -4874,769 +5253,197 @@ const ANALYSIS_DATA = {
   "openings_detected": [
     {
       "center_mm": [
-        2119.5,
-        11167.5
+        9547.5,
+        11535.0
       ],
-      "width_mm": 813,
+      "width_mm": 934,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
         "W1",
-        "W75"
-      ]
-    },
-    {
-      "center_mm": [
-        1712.0,
-        4235.0
-      ],
-      "width_mm": 647,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W3",
         "W42"
       ]
     },
     {
       "center_mm": [
-        1869.5,
-        4197.0
+        12598.0,
+        10916.5
       ],
-      "width_mm": 468,
+      "width_mm": 629,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W2",
+        "W60"
+      ]
+    },
+    {
+      "center_mm": [
+        1494.0,
+        -963.0
+      ],
+      "width_mm": 643,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
         "W3",
-        "W87"
-      ]
-    },
-    {
-      "center_mm": [
-        1889.0,
-        4180.5
-      ],
-      "width_mm": 504,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W3",
-        "W98"
-      ]
-    },
-    {
-      "center_mm": [
-        2132.0,
-        4474.0
-      ],
-      "width_mm": 682,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W4",
-        "W43"
-      ]
-    },
-    {
-      "center_mm": [
-        2132.0,
-        4598.5
-      ],
-      "width_mm": 437,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W4",
-        "W76"
-      ]
-    },
-    {
-      "center_mm": [
-        1377.5,
-        1591.5
-      ],
-      "width_mm": 1190,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W5",
         "W6"
       ]
     },
     {
       "center_mm": [
-        1329.5,
-        -123.0
+        1479.5,
+        3915.5
       ],
-      "width_mm": 2258,
+      "width_mm": 1815,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W3",
+        "W20"
+      ]
+    },
+    {
+      "center_mm": [
+        1371.0,
+        -1669.0
+      ],
+      "width_mm": 2065,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W3",
+        "W27"
+      ]
+    },
+    {
+      "center_mm": [
+        1515.0,
+        3387.0
+      ],
+      "width_mm": 762,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W3",
+        "W57"
+      ]
+    },
+    {
+      "center_mm": [
+        1515.0,
+        2429.0
+      ],
+      "width_mm": 1160,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W3",
+        "W113"
+      ]
+    },
+    {
+      "center_mm": [
+        5152.5,
+        1474.5
+      ],
+      "width_mm": 699,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W4",
+        "W8"
+      ]
+    },
+    {
+      "center_mm": [
+        6769.0,
+        -2580.0
+      ],
+      "width_mm": 1136,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
         "W5",
-        "W8"
+        "W33"
       ]
     },
     {
       "center_mm": [
-        1430.0,
-        -885.5
+        1532.0,
+        -332.0
       ],
-      "width_mm": 737,
+      "width_mm": 1904,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
         "W6",
-        "W8"
-      ]
-    },
-    {
-      "center_mm": [
-        1515.5,
-        50.0
-      ],
-      "width_mm": 1142,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W6",
-        "W41"
-      ]
-    },
-    {
-      "center_mm": [
-        1515.5,
-        2763.5
-      ],
-      "width_mm": 1173,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W6",
-        "W100"
-      ]
-    },
-    {
-      "center_mm": [
-        1467.5,
-        -315.5
-      ],
-      "width_mm": 1879,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W8",
-        "W41"
-      ]
-    },
-    {
-      "center_mm": [
-        7275.0,
-        -350.5
-      ],
-      "width_mm": 968,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W10",
-        "W11"
-      ]
-    },
-    {
-      "center_mm": [
-        7310.0,
-        -513.0
-      ],
-      "width_mm": 635,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W10",
         "W57"
       ]
     },
     {
       "center_mm": [
-        7221.0,
-        341.5
-      ],
-      "width_mm": 439,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W11",
-        "W57"
-      ]
-    },
-    {
-      "center_mm": [
-        9008.0,
-        520.5
-      ],
-      "width_mm": 1578,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W12",
-        "W54"
-      ]
-    },
-    {
-      "center_mm": [
-        7680.0,
-        11702.0
-      ],
-      "width_mm": 2817,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W16",
-        "W25"
-      ]
-    },
-    {
-      "center_mm": [
-        5244.5,
-        6831.5
-      ],
-      "width_mm": 1183,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W17",
-        "W36"
-      ]
-    },
-    {
-      "center_mm": [
-        5342.0,
-        5232.0
-      ],
-      "width_mm": 2022,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W17",
-        "W81"
-      ]
-    },
-    {
-      "center_mm": [
-        9606.0,
-        11693.5
-      ],
-      "width_mm": 1058,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W19",
-        "W25"
-      ]
-    },
-    {
-      "center_mm": [
-        11513.5,
-        11542.0
-      ],
-      "width_mm": 587,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W21",
-        "W25"
-      ]
-    },
-    {
-      "center_mm": [
-        7290.0,
-        7415.0
-      ],
-      "width_mm": 500,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W23",
-        "W30"
-      ]
-    },
-    {
-      "center_mm": [
-        7377.5,
-        7696.5
-      ],
-      "width_mm": 663,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W23",
-        "W38"
-      ]
-    },
-    {
-      "center_mm": [
-        9079.0,
-        9209.5
-      ],
-      "width_mm": 1164,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W26",
-        "W28"
-      ]
-    },
-    {
-      "center_mm": [
-        8981.0,
-        7638.0
-      ],
-      "width_mm": 1996,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W26",
-        "W40"
-      ]
-    },
-    {
-      "center_mm": [
-        8924.5,
-        7373.5
-      ],
-      "width_mm": 2528,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W26",
-        "W89"
-      ]
-    },
-    {
-      "center_mm": [
-        9079.0,
-        6490.0
-      ],
-      "width_mm": 559,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W28",
-        "W40"
-      ]
-    },
-    {
-      "center_mm": [
-        8135.5,
-        6234.0
-      ],
-      "width_mm": 1691,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W29",
-        "W39"
-      ]
-    },
-    {
-      "center_mm": [
-        6350.0,
-        6186.0
-      ],
-      "width_mm": 2181,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W29",
-        "W53"
-      ]
-    },
-    {
-      "center_mm": [
-        7986.5,
-        6186.0
-      ],
-      "width_mm": 1397,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W29",
-        "W60"
-      ]
-    },
-    {
-      "center_mm": [
-        7377.5,
-        6808.5
-      ],
-      "width_mm": 1150,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W30",
-        "W38"
-      ]
-    },
-    {
-      "center_mm": [
-        13312.5,
-        4114.5
-      ],
-      "width_mm": 618,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W31",
-        "W35"
-      ]
-    },
-    {
-      "center_mm": [
-        13048.5,
-        4179.5
-      ],
-      "width_mm": 460,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W31",
-        "W66"
-      ]
-    },
-    {
-      "center_mm": [
-        12359.5,
-        3205.0
-      ],
-      "width_mm": 1791,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W34",
-        "W65"
-      ]
-    },
-    {
-      "center_mm": [
-        13082.0,
-        4159.0
-      ],
-      "width_mm": 534,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W35",
-        "W66"
-      ]
-    },
-    {
-      "center_mm": [
-        5325.5,
-        6756.5
-      ],
-      "width_mm": 1347,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W36",
-        "W81"
-      ]
-    },
-    {
-      "center_mm": [
-        7944.5,
-        8692.0
-      ],
-      "width_mm": 1798,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W37",
-        "W47"
-      ]
-    },
-    {
-      "center_mm": [
-        7322.5,
-        8692.0
-      ],
-      "width_mm": 555,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W37",
-        "W63"
-      ]
-    },
-    {
-      "center_mm": [
-        7781.0,
-        8692.0
-      ],
-      "width_mm": 1471,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W37",
-        "W64"
-      ]
-    },
-    {
-      "center_mm": [
-        7502.5,
-        6733.5
-      ],
-      "width_mm": 1289,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W38",
-        "W46"
-      ]
-    },
-    {
-      "center_mm": [
-        7501.0,
-        6733.5
-      ],
-      "width_mm": 1289,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W38",
-        "W101"
-      ]
-    },
-    {
-      "center_mm": [
-        8290.0,
-        6180.0
-      ],
-      "width_mm": 1385,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W39",
-        "W53"
-      ]
-    },
-    {
-      "center_mm": [
-        9108.0,
-        6180.0
-      ],
-      "width_mm": 539,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W39",
-        "W60"
-      ]
-    },
-    {
-      "center_mm": [
-        8924.5,
-        6375.5
-      ],
-      "width_mm": 541,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W40",
-        "W89"
-      ]
-    },
-    {
-      "center_mm": [
-        1553.0,
-        3557.5
-      ],
-      "width_mm": 417,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W41",
-        "W100"
-      ]
-    },
-    {
-      "center_mm": [
-        1748.5,
-        4262.0
-      ],
-      "width_mm": 711,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W42",
-        "W87"
-      ]
-    },
-    {
-      "center_mm": [
-        2174.0,
-        4245.5
-      ],
-      "width_mm": 409,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W42",
-        "W98"
-      ]
-    },
-    {
-      "center_mm": [
-        2268.0,
-        4321.0
+        9600.0,
+        7845.0
       ],
       "width_mm": 584,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W42",
-        "W99"
-      ]
-    },
-    {
-      "center_mm": [
-        2183.0,
-        4543.5
-      ],
-      "width_mm": 813,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W43",
-        "W76"
-      ]
-    },
-    {
-      "center_mm": [
-        7538.5,
-        5544.0
-      ],
-      "width_mm": 1092,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W46",
-        "W101"
-      ]
-    },
-    {
-      "center_mm": [
-        8304.5,
-        8715.0
-      ],
-      "width_mm": 1077,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W47",
-        "W63"
-      ]
-    },
-    {
-      "center_mm": [
-        7961.0,
-        8715.0
-      ],
-      "width_mm": 1110,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W47",
+        "W7",
         "W64"
       ]
     },
     {
       "center_mm": [
-        8739.0,
-        9376.5
+        9520.5,
+        6822.0
       ],
-      "width_mm": 1405,
+      "width_mm": 1468,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W48",
-        "W50"
+        "W7",
+        "W81"
       ]
     },
     {
       "center_mm": [
-        9547.5,
-        5625.0
+        4983.0,
+        1534.5
       ],
-      "width_mm": 820,
+      "width_mm": 562,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W49",
-        "W67"
+        "W8",
+        "W85"
       ]
     },
     {
       "center_mm": [
-        9627.0,
-        7879.0
+        2583.5,
+        11520.5
       ],
-      "width_mm": 514,
+      "width_mm": 1364,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W49",
-        "W92"
+        "W10",
+        "W87"
       ]
     },
     {
       "center_mm": [
-        8805.0,
-        5136.0
+        5071.0,
+        10310.5
       ],
-      "width_mm": 1912,
+      "width_mm": 2479,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W50",
-        "W89"
-      ]
-    },
-    {
-      "center_mm": [
-        6173.0,
-        933.0
-      ],
-      "width_mm": 750,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W52",
-        "W62"
-      ]
-    },
-    {
-      "center_mm": [
-        8141.0,
-        6132.0
-      ],
-      "width_mm": 1084,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W53",
-        "W60"
-      ]
-    },
-    {
-      "center_mm": [
-        10070.0,
-        1350.0
-      ],
-      "width_mm": 704,
-      "height_mm": 2100,
-      "type": "opening",
-      "wall_ids": [
-        "W55",
-        "W56"
+        "W11",
+        "W19"
       ]
     },
     {
@@ -5648,8 +5455,879 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
+        "W12",
+        "W72"
+      ]
+    },
+    {
+      "center_mm": [
+        3639.0,
+        1808.0
+      ],
+      "width_mm": 1384,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W13",
+        "W86"
+      ]
+    },
+    {
+      "center_mm": [
+        4623.0,
+        1742.0
+      ],
+      "width_mm": 599,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W13",
+        "W99"
+      ]
+    },
+    {
+      "center_mm": [
+        3163.5,
+        4207.5
+      ],
+      "width_mm": 2270,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W24"
+      ]
+    },
+    {
+      "center_mm": [
+        3137.5,
+        4272.5
+      ],
+      "width_mm": 2322,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W58"
+      ]
+    },
+    {
+      "center_mm": [
+        5798.5,
+        4234.5
+      ],
+      "width_mm": 833,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W93"
+      ]
+    },
+    {
+      "center_mm": [
+        3557.5,
+        4234.5
+      ],
+      "width_mm": 1481,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W100"
+      ]
+    },
+    {
+      "center_mm": [
+        3334.5,
+        4218.0
+      ],
+      "width_mm": 1928,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W111"
+      ]
+    },
+    {
+      "center_mm": [
+        3428.5,
+        4293.5
+      ],
+      "width_mm": 1742,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W14",
+        "W112"
+      ]
+    },
+    {
+      "center_mm": [
+        12972.5,
+        6667.5
+      ],
+      "width_mm": 981,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W15",
+        "W17"
+      ]
+    },
+    {
+      "center_mm": [
+        12836.5,
+        4613.5
+      ],
+      "width_mm": 502,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W15",
+        "W49"
+      ]
+    },
+    {
+      "center_mm": [
+        10514.0,
+        6246.5
+      ],
+      "width_mm": 2282,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W16",
+        "W55"
+      ]
+    },
+    {
+      "center_mm": [
+        10249.0,
+        6198.5
+      ],
+      "width_mm": 2815,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W16",
+        "W74"
+      ]
+    },
+    {
+      "center_mm": [
+        13119.0,
+        9560.0
+      ],
+      "width_mm": 1146,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W17",
+        "W21"
+      ]
+    },
+    {
+      "center_mm": [
+        1588.0,
+        10420.0
+      ],
+      "width_mm": 724,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W20",
+        "W23"
+      ]
+    },
+    {
+      "center_mm": [
+        1373.5,
+        5078.5
+      ],
+      "width_mm": 555,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W20",
+        "W27"
+      ]
+    },
+    {
+      "center_mm": [
+        1517.5,
+        4294.5
+      ],
+      "width_mm": 1059,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W20",
+        "W57"
+      ]
+    },
+    {
+      "center_mm": [
+        1517.5,
+        4086.0
+      ],
+      "width_mm": 1476,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W20",
+        "W113"
+      ]
+    },
+    {
+      "center_mm": [
+        13303.5,
+        5513.0
+      ],
+      "width_mm": 415,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W21",
+        "W32"
+      ]
+    },
+    {
+      "center_mm": [
+        2119.5,
+        11167.5
+      ],
+      "width_mm": 813,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W22",
+        "W88"
+      ]
+    },
+    {
+      "center_mm": [
+        1712.0,
+        4235.0
+      ],
+      "width_mm": 647,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W24",
+        "W58"
+      ]
+    },
+    {
+      "center_mm": [
+        1869.5,
+        4197.0
+      ],
+      "width_mm": 468,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W24",
+        "W100"
+      ]
+    },
+    {
+      "center_mm": [
+        1889.0,
+        4180.5
+      ],
+      "width_mm": 504,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W24",
+        "W111"
+      ]
+    },
+    {
+      "center_mm": [
+        2132.0,
+        4474.0
+      ],
+      "width_mm": 682,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W25",
+        "W59"
+      ]
+    },
+    {
+      "center_mm": [
+        2132.0,
+        4598.5
+      ],
+      "width_mm": 437,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W25",
+        "W89"
+      ]
+    },
+    {
+      "center_mm": [
+        7275.0,
+        -350.5
+      ],
+      "width_mm": 968,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W28",
+        "W29"
+      ]
+    },
+    {
+      "center_mm": [
+        7310.0,
+        -513.0
+      ],
+      "width_mm": 635,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W28",
+        "W71"
+      ]
+    },
+    {
+      "center_mm": [
+        7221.0,
+        341.5
+      ],
+      "width_mm": 439,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W29",
+        "W71"
+      ]
+    },
+    {
+      "center_mm": [
+        9008.0,
+        520.5
+      ],
+      "width_mm": 1578,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W30",
+        "W68"
+      ]
+    },
+    {
+      "center_mm": [
+        7680.0,
+        11702.0
+      ],
+      "width_mm": 2817,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W35",
+        "W42"
+      ]
+    },
+    {
+      "center_mm": [
+        9606.0,
+        11693.5
+      ],
+      "width_mm": 1058,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W37",
+        "W42"
+      ]
+    },
+    {
+      "center_mm": [
+        7290.0,
+        7415.0
+      ],
+      "width_mm": 500,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W40",
+        "W47"
+      ]
+    },
+    {
+      "center_mm": [
+        7377.5,
+        7696.5
+      ],
+      "width_mm": 663,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W40",
+        "W54"
+      ]
+    },
+    {
+      "center_mm": [
+        9079.0,
+        9209.5
+      ],
+      "width_mm": 1164,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W43",
+        "W45"
+      ]
+    },
+    {
+      "center_mm": [
+        8981.0,
+        7638.0
+      ],
+      "width_mm": 1996,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W43",
+        "W56"
+      ]
+    },
+    {
+      "center_mm": [
+        8924.5,
+        7373.5
+      ],
+      "width_mm": 2528,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W43",
+        "W102"
+      ]
+    },
+    {
+      "center_mm": [
+        9079.0,
+        6490.0
+      ],
+      "width_mm": 559,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W45",
+        "W56"
+      ]
+    },
+    {
+      "center_mm": [
+        8135.5,
+        6234.0
+      ],
+      "width_mm": 1691,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W46",
+        "W55"
+      ]
+    },
+    {
+      "center_mm": [
+        6350.0,
+        6186.0
+      ],
+      "width_mm": 2181,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W46",
+        "W67"
+      ]
+    },
+    {
+      "center_mm": [
+        7986.5,
+        6186.0
+      ],
+      "width_mm": 1397,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W46",
+        "W74"
+      ]
+    },
+    {
+      "center_mm": [
+        7377.5,
+        6808.5
+      ],
+      "width_mm": 1150,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W47",
+        "W54"
+      ]
+    },
+    {
+      "center_mm": [
+        13312.5,
+        4114.5
+      ],
+      "width_mm": 618,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W48",
+        "W52"
+      ]
+    },
+    {
+      "center_mm": [
+        13048.5,
+        4179.5
+      ],
+      "width_mm": 460,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W48",
+        "W80"
+      ]
+    },
+    {
+      "center_mm": [
+        12359.5,
+        3205.0
+      ],
+      "width_mm": 1791,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W51",
+        "W79"
+      ]
+    },
+    {
+      "center_mm": [
+        13082.0,
+        4159.0
+      ],
+      "width_mm": 534,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W52",
+        "W80"
+      ]
+    },
+    {
+      "center_mm": [
+        7944.5,
+        8692.0
+      ],
+      "width_mm": 1798,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W53",
+        "W62"
+      ]
+    },
+    {
+      "center_mm": [
+        7322.5,
+        8692.0
+      ],
+      "width_mm": 555,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W53",
+        "W77"
+      ]
+    },
+    {
+      "center_mm": [
+        7781.0,
+        8692.0
+      ],
+      "width_mm": 1471,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W53",
+        "W78"
+      ]
+    },
+    {
+      "center_mm": [
+        7502.5,
+        6733.5
+      ],
+      "width_mm": 1289,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W54",
+        "W61"
+      ]
+    },
+    {
+      "center_mm": [
+        7501.0,
+        6733.5
+      ],
+      "width_mm": 1289,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W54",
+        "W114"
+      ]
+    },
+    {
+      "center_mm": [
+        8290.0,
+        6180.0
+      ],
+      "width_mm": 1385,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W55",
+        "W67"
+      ]
+    },
+    {
+      "center_mm": [
+        9108.0,
+        6180.0
+      ],
+      "width_mm": 539,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W55",
+        "W74"
+      ]
+    },
+    {
+      "center_mm": [
+        8924.5,
+        6375.5
+      ],
+      "width_mm": 541,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W56",
+        "W102"
+      ]
+    },
+    {
+      "center_mm": [
+        1553.0,
+        3557.5
+      ],
+      "width_mm": 417,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W57",
+        "W113"
+      ]
+    },
+    {
+      "center_mm": [
+        1748.5,
+        4262.0
+      ],
+      "width_mm": 711,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
         "W58",
-        "W73"
+        "W100"
+      ]
+    },
+    {
+      "center_mm": [
+        2174.0,
+        4245.5
+      ],
+      "width_mm": 409,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W58",
+        "W111"
+      ]
+    },
+    {
+      "center_mm": [
+        2268.0,
+        4321.0
+      ],
+      "width_mm": 584,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W58",
+        "W112"
+      ]
+    },
+    {
+      "center_mm": [
+        2183.0,
+        4543.5
+      ],
+      "width_mm": 813,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W59",
+        "W89"
+      ]
+    },
+    {
+      "center_mm": [
+        7538.5,
+        5544.0
+      ],
+      "width_mm": 1092,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W61",
+        "W114"
+      ]
+    },
+    {
+      "center_mm": [
+        8304.5,
+        8715.0
+      ],
+      "width_mm": 1077,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W62",
+        "W77"
+      ]
+    },
+    {
+      "center_mm": [
+        7961.0,
+        8715.0
+      ],
+      "width_mm": 1110,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W62",
+        "W78"
+      ]
+    },
+    {
+      "center_mm": [
+        8739.0,
+        9376.5
+      ],
+      "width_mm": 1405,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W63",
+        "W65"
+      ]
+    },
+    {
+      "center_mm": [
+        9547.5,
+        5625.0
+      ],
+      "width_mm": 820,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W64",
+        "W81"
+      ]
+    },
+    {
+      "center_mm": [
+        9627.0,
+        7879.0
+      ],
+      "width_mm": 514,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W64",
+        "W105"
+      ]
+    },
+    {
+      "center_mm": [
+        8805.0,
+        5136.0
+      ],
+      "width_mm": 1912,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W65",
+        "W102"
+      ]
+    },
+    {
+      "center_mm": [
+        6173.0,
+        933.0
+      ],
+      "width_mm": 750,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W66",
+        "W76"
+      ]
+    },
+    {
+      "center_mm": [
+        8141.0,
+        6132.0
+      ],
+      "width_mm": 1084,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W67",
+        "W74"
+      ]
+    },
+    {
+      "center_mm": [
+        10070.0,
+        1350.0
+      ],
+      "width_mm": 704,
+      "height_mm": 2100,
+      "type": "opening",
+      "wall_ids": [
+        "W69",
+        "W70"
       ]
     },
     {
@@ -5661,8 +6339,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W63",
-        "W64"
+        "W77",
+        "W78"
       ]
     },
     {
@@ -5674,8 +6352,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W67",
-        "W92"
+        "W81",
+        "W105"
       ]
     },
     {
@@ -5687,8 +6365,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W69",
-        "W93"
+        "W83",
+        "W106"
       ]
     },
     {
@@ -5700,21 +6378,21 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W69",
-        "W95"
+        "W83",
+        "W108"
       ]
     },
     {
       "center_mm": [
-        3582.0,
-        1808.0
+        3620.0,
+        1742.0
       ],
-      "width_mm": 1270,
+      "width_mm": 1352,
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W74",
-        "W86"
+        "W86",
+        "W99"
       ]
     },
     {
@@ -5726,8 +6404,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W79",
-        "W85"
+        "W92",
+        "W98"
       ]
     },
     {
@@ -5739,8 +6417,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W80",
-        "W87"
+        "W93",
+        "W100"
       ]
     },
     {
@@ -5752,8 +6430,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W80",
-        "W99"
+        "W93",
+        "W112"
       ]
     },
     {
@@ -5765,8 +6443,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W83",
-        "W84"
+        "W96",
+        "W97"
       ]
     },
     {
@@ -5778,8 +6456,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W87",
-        "W98"
+        "W100",
+        "W111"
       ]
     },
     {
@@ -5791,8 +6469,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W87",
-        "W99"
+        "W100",
+        "W112"
       ]
     },
     {
@@ -5804,8 +6482,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W90",
-        "W91"
+        "W103",
+        "W104"
       ]
     },
     {
@@ -5817,8 +6495,8 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W93",
-        "W95"
+        "W106",
+        "W108"
       ]
     },
     {
@@ -5830,26 +6508,92 @@ const ANALYSIS_DATA = {
       "height_mm": 2100,
       "type": "opening",
       "wall_ids": [
-        "W98",
-        "W99"
+        "W111",
+        "W112"
       ]
     }
   ],
+  "exterior_polygon": [
+    [
+      -446,
+      14110
+    ],
+    [
+      -444,
+      6763
+    ],
+    [
+      -339,
+      -12
+    ],
+    [
+      -23,
+      -460
+    ],
+    [
+      330,
+      -460
+    ],
+    [
+      3916,
+      -392
+    ],
+    [
+      11548,
+      -39
+    ],
+    [
+      12861,
+      953
+    ],
+    [
+      12867,
+      5758
+    ],
+    [
+      12867,
+      6110
+    ],
+    [
+      12606,
+      14804
+    ],
+    [
+      11927,
+      14941
+    ],
+    [
+      11388,
+      14941
+    ],
+    [
+      647,
+      14763
+    ],
+    [
+      -71,
+      14582
+    ],
+    [
+      -446,
+      14462
+    ]
+  ],
   "warnings": [
-    "チェーン寸法不整合 (水平): 区間合計17375mm vs 全体7135mm (差: 10240mm)",
     "チェーン寸法不整合 (水平): 区間合計18555mm vs 全体14355mm (差: 4200mm)",
     "チェーン寸法不整合 (水平): 区間合計12750mm vs 全体4250mm (差: 8500mm)",
     "チェーン寸法不整合 (水平): 区間合計18500mm vs 全体17200mm (差: 1300mm)",
     "チェーン寸法不整合 (水平): 区間合計5530mm vs 全体2330mm (差: 3200mm)",
+    "チェーン寸法不整合 (垂直): 区間合計16985mm vs 全体5445mm (差: 11540mm)",
     "チェーン寸法不整合 (垂直): 区間合計3175mm vs 全体1675mm (差: 1500mm)",
     "チェーン寸法不整合 (垂直): 区間合計18200mm vs 全体6380mm (差: 11820mm)",
-    "チェーン寸法不整合 (垂直): 区間合計8825mm vs 全体5445mm (差: 3380mm)"
+    "チェーン寸法不整合 (垂直): 区間合計3240mm vs 全体1160mm (差: 2080mm)"
   ],
   "pass1_summary": {
-    "total_walls": 103,
-    "total_doors": 66,
+    "total_walls": 116,
+    "total_doors": 77,
     "total_windows": 112,
-    "total_openings": 74,
+    "total_openings": 97,
     "total_sliding_doors": 85,
     "total_folding_doors": 0,
     "total_fixtures": 14,
@@ -5857,7 +6601,7 @@ const ANALYSIS_DATA = {
     "total_rooms_with_polygon": 0,
     "total_dimensions_paired": 56,
     "total_dimensions_total": 56,
-    "total_wall_graph_nodes": 211,
+    "total_wall_graph_nodes": 238,
     "total_lines_raw": 7768,
     "total_texts_raw": 197,
     "total_arcs_raw": 0,
