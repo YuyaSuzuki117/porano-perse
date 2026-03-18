@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini図面読み取りプロンプト</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;max-width:900px;margin:0 auto}
+h1{color:#58a6ff;margin-bottom:8px;font-size:20px}
+.subtitle{color:#8b949e;margin-bottom:20px;font-size:13px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:16px;overflow:hidden}
+.card-header{background:#1c2128;padding:10px 16px;border-bottom:1px solid #30363d;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+.prompt-box{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:#e6edf3;position:relative;max-height:600px;overflow-y:auto}
+.copy-btn{position:absolute;top:8px;right:8px;background:#238636;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;z-index:1}
+.copy-btn:hover{background:#2ea043}
+.copy-btn.copied{background:#1f6feb}
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-num{background:#238636;color:#fff;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.step-text{font-size:13px;line-height:1.6}
+.tag{display:inline-block;background:#1f6feb33;color:#58a6ff;border-radius:3px;padding:1px 6px;font-size:11px;margin-right:4px}
+.warn{color:#d29922;font-size:12px;margin-top:8px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+.back{margin-bottom:16px;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="back"><a href="index.html">&larr; ダッシュボードに戻る</a></div>
+
+<h1>Gemini 図面読み取りプロンプト</h1>
+<p class="subtitle">PDFの平面図をGeminiに見せて、gen-dxf.py互換のJSONを生成させるためのプロンプト</p>
+
+<!-- 使い方 -->
+<div class="card">
+<div class="card-header">使い方</div>
+<div class="card-body">
+<div class="step"><div class="step-num">1</div><div class="step-text"><a href="https://gemini.google.com/" target="_blank">gemini.google.com</a> を開く</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">PDFファイル（または平面図の画像）をアップロード</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">下のプロンプトをコピーして送信</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">返ってきたJSONを <code>output/blueprint-analysis/&lt;案件名&gt;.json</code> に保存</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-text"><code>python scripts/gen-dxf.py --json &lt;JSONパス&gt; -o &lt;出力DXF&gt;</code> で図面生成</div></div>
+<p class="warn">※ 複数ページのPDFは平面図のページだけスクリーンショットして送るのが確実です</p>
+</div>
+</div>
+
+<!-- メインプロンプト -->
+<div class="card">
+<div class="card-header"><span class="tag">MAIN</span> 図面読み取りプロンプト（コピペ用）</div>
+<div class="card-body" style="position:relative">
+<button class="copy-btn" onclick="copyPrompt(this,'mainPrompt')">コピー</button>
+<div class="prompt-box" id="mainPrompt">あなたは建築図面の読み取りエキスパートです。
+添付した平面図から以下の情報を正確に読み取り、JSON形式で出力してください。
+
+## 読み取りルール（厳守）
+
+1. **単位はすべてmm（ミリメートル）**
+2. **座標系**: 原点=図面の左下角、X=右方向、Y=上方向
+3. **縮尺**: 図面の縮尺表記（1:50等）を確認し、寸法線の値を実寸mmで記録
+4. **推測禁止**: 寸法線が読めない場合はドアサイズ(幅900mm)を基準に推定し、"estimated": true を付ける
+5. **省略禁止**: 図面に描かれている全ての壁・建具・什器・部屋を含める
+
+## 読み取り手順
+
+### Pass 1: 全体把握
+- 外形寸法（幅×奥行）を寸法線から読み取る
+- 全室名をリストアップ
+- 全建具（ドア・窓・引戸・折戸・開口）を数える
+- 全什器・設備を数える
+
+### Pass 2: 詳細抽出
+- 各壁の始点・終点座標を寸法線から正確に算出
+- 各壁上の建具の位置・幅・タイプを記録
+- 各什器の位置・サイズを記録
+
+## 出力JSON形式
+
+```json
+{
+  "source": "gemini-vision",
+  "pdf_file": "（ファイル名）",
+  "scale_detected": "1:50",
+  "project_name": "（案件名があれば）",
+
+  "walls": [
+    {
+      "id": "W1",
+      "start_x_mm": 0,
+      "start_y_mm": 0,
+      "end_x_mm": 12000,
+      "end_y_mm": 0,
+      "thickness_mm": 120,
+      "type": "exterior",
+      "openings": [
+        {
+          "type": "door",
+          "position_mm": 3000,
+          "width_mm": 900,
+          "height_mm": 2100
+        },
+        {
+          "type": "window",
+          "position_mm": 6000,
+          "width_mm": 1800,
+          "height_mm": 1200,
+          "sill_mm": 800
+        },
+        {
+          "type": "sliding_door",
+          "position_mm": 9000,
+          "width_mm": 1600,
+          "height_mm": 2100
+        }
+      ]
+    }
+  ],
+
+  "rooms": [
+    {
+      "name": "エリアA",
+      "wall_ids": ["W1", "W2", "W3", "W4"],
+      "area_m2": 35.0,
+      "center_mm": [6000, 4000],
+      "polygon_mm": [[0,0], [12000,0], [12000,7000], [0,7000]]
+    }
+  ],
+
+  "fixtures": [
+    {
+      "name": "カウンター",
+      "x_mm": 3000,
+      "y_mm": 5000,
+      "width_mm": 2400,
+      "depth_mm": 600,
+      "rotation_deg": 0,
+      "estimated": false
+    }
+  ]
+}
+```
+
+## 各フィールドの説明
+
+### walls（壁）
+- **id**: "W1", "W2", ... の連番
+- **start/end_x_mm, start/end_y_mm**: 壁の中心線の始点・終点（実寸mm）
+- **thickness_mm**: 壁厚（外壁: 150-200mm, 内壁: 100-150mm, 間仕切り: 65-100mm）
+- **type**: "exterior"（外壁）/ "interior"（内壁）/ "partition"（間仕切り）
+- **openings**: この壁上の建具リスト
+  - **type**: "door"（開き戸）/ "sliding_door"（引戸）/ "folding_door"（折戸）/ "window"（窓）/ "opening"（開口）
+  - **position_mm**: 壁の始点からの距離
+  - **width_mm**: 建具の幅
+  - **height_mm**: 建具の高さ（ドア: 2100mm, 窓: 1200mm）
+  - **sill_mm**: 窓台の高さ（窓のみ、通常800mm）
+
+### rooms（部屋）
+- **name**: 室名（図面のテキストそのまま）
+- **wall_ids**: この部屋を囲む壁のIDリスト（時計回り）
+- **area_m2**: 面積（図面に記載があればその値、なければ計算値）
+- **center_mm**: 部屋の重心座標
+- **polygon_mm**: 部屋の頂点座標リスト（時計回り、閉じなくてOK）
+
+### fixtures（什器・設備）
+- **name**: 什器名（図面のテキストそのまま）
+- **x_mm, y_mm**: 左下角の座標
+- **width_mm, depth_mm**: 幅と奥行
+- **rotation_deg**: 回転角度（0/90/180/270）
+- **estimated**: サイズが推定の場合 true
+
+## 重要な注意
+
+- **壁は必ず閉じたループを形成すること** — 各部屋を囲む壁が途切れないように
+- **寸法線の区間合計が外形寸法と一致するか検算**すること
+- **展開方向図や凡例エリアの要素は含めない**（平面図部分のみ）
+- 室名に面積記載がある場合（例: "エリア(35帖)"）、そのまま name に入れる
+- 日本語テキストはそのまま出力（変換不要）
+- L字型・凸字型の部屋は polygon_mm で正確に形状を表現
+
+JSONのみ出力してください。説明文は不要です。</div>
+</div>
+</div>
+
+<!-- 検証プロンプト -->
+<div class="card">
+<div class="card-header"><span class="tag">CHECK</span> 検証プロンプト（JSONの修正依頼用）</div>
+<div class="card-body" style="position:relative">
+<button class="copy-btn" onclick="copyPrompt(this,'checkPrompt')">コピー</button>
+<div class="prompt-box" id="checkPrompt">先ほど出力したJSONを以下の観点で検証・修正してください。
+
+## 検証チェックリスト
+
+1. **壁の閉合チェック**: 各部屋のwall_idsの壁が閉じたループを形成しているか？
+   - 壁Aの終点と壁Bの始点が一致（または200mm以内）しているか確認
+   - 閉じていない場合、不足する壁を追加
+
+2. **寸法検算**:
+   - 外形の各辺: 区間寸法の合計 = 全体寸法になっているか？
+   - 計算が合わない場合は修正
+
+3. **建具の全数チェック**:
+   - 図面上のドア（開き円弧の記号）を全数カウント → walls.openingsの合計と一致するか？
+   - 引戸（二重線記号）、窓（ダブルライン/W表記）も同様にチェック
+
+4. **室名の全数チェック**:
+   - 図面上の全室名テキスト → rooms配列と1:1対応しているか？
+   - 不足する部屋があれば追加
+
+5. **polygon_mmの妥当性**:
+   - 各部屋のpolygon_mmの面積を計算し、area_m2と整合するか？
+   - 帖数表記がある場合: 1帖=1.6562m² で検算
+
+修正後のJSONを出力してください。</div>
+</div>
+</div>
+
+<!-- コマンド -->
+<div class="card">
+<div class="card-header"><span class="tag">CMD</span> JSON保存後のコマンド</div>
+<div class="card-body">
+<div class="prompt-box" style="font-size:13px"># JSONを保存
+# → output/blueprint-analysis/&lt;案件名&gt;_gemini.json
+
+# DXF生成
+python scripts/gen-dxf.py --json output/blueprint-analysis/ChloeBY_gemini.json -o output/drawings/ChloeBY_gemini.dxf
+
+# 比較画像生成（元PDFと重ね合わせ）
+python scripts/compare-pdf-dxf.py "元のPDF.pdf" output/drawings/ChloeBY_gemini.dxf -o output/drawings/comparison_gemini.png --page 0
+
+# Blenderパース生成（オプション）
+"/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" --background --python scripts/render-from-dxf.py -- output/drawings/ChloeBY_gemini.dxf --quality preview</div>
+</div>
+</div>
+
+<script>
+function copyPrompt(btn, id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'コピー済み';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'コピー';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>
