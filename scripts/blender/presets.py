@@ -1,30 +1,38 @@
 """
 Blender パース制作標準プリセット
 建築パース制作に必要なカメラ・照明・レンダリング設定を集約
+
+改善点:
+- レンダリング品質: preview 32→64サンプル、適応サンプリング最適化
+- カラーマネジメント: AgX exposure 0.0（暗すぎ修正）、Punchy look
+- ライトバウンス: diffuse 6→8、transparent 8→12、Fast GI有効化
+- カメラプリセット: 対角線構図、被写界深度対応
 """
 import bpy
 import math
 
 
 # ============================================================
-# レンダリング品質プリセット
+# レンダリング品質プリセット（ノイズ低減・品質向上）
 # ============================================================
 RENDER_QUALITY = {
     'preview': {
-        'samples': 32,
+        'samples': 64,           # 32→64（ノイズ大幅減）
         'resolution_x': 1920,
         'resolution_y': 1080,
         'use_denoiser': True,
         'denoiser': 'OPENIMAGEDENOISE',
-        'time_limit': 60,
+        'time_limit': 90,        # 60→90（品質向上分）
+        'adaptive_threshold': 0.05,  # 高速化しつつ品質維持
     },
     'draft': {
-        'samples': 64,
+        'samples': 128,          # 64→128
         'resolution_x': 2560,
         'resolution_y': 1440,
         'use_denoiser': True,
         'denoiser': 'OPENIMAGEDENOISE',
-        'time_limit': 180,
+        'time_limit': 240,       # 180→240
+        'adaptive_threshold': 0.02,
     },
     'production': {
         'samples': 256,
@@ -33,6 +41,7 @@ RENDER_QUALITY = {
         'use_denoiser': True,
         'denoiser': 'OPENIMAGEDENOISE',
         'time_limit': 600,
+        'adaptive_threshold': 0.01,
     },
     'ultra': {
         'samples': 512,
@@ -41,24 +50,27 @@ RENDER_QUALITY = {
         'use_denoiser': True,
         'denoiser': 'OPENIMAGEDENOISE',
         'time_limit': 1200,
+        'adaptive_threshold': 0.005,
     },
 }
 
 
 # ============================================================
-# カメラプリセット（建築パース用）
+# カメラプリセット（建築パース用 — 被写界深度対応）
 # ============================================================
 CAMERA_PRESETS = {
     # 人の目線高さからの標準アングル（室内パースは広角が基本）
     'eye_level': {
         'height_m': 1.5,
         'fov_deg': 65,
+        'dof_fstop': 8.0,        # f/8 — ほぼパンフォーカス
         'description': '人の目線高さ。室内パース標準の広角',
     },
     # カウンター越しの視点
     'counter_view': {
         'height_m': 1.1,
         'fov_deg': 45,
+        'dof_fstop': 5.6,        # f/5.6 — 適度なボケ
         'description': 'カウンターに座った客の視点',
     },
     # やや高めの俯瞰
@@ -66,24 +78,28 @@ CAMERA_PRESETS = {
         'height_m': 2.2,
         'fov_deg': 55,
         'pitch_deg': -15,
+        'dof_fstop': 11.0,       # f/11 — 全体にピント
         'description': '全体を見渡す俯瞰。空間把握用',
     },
     # ローアングル（迫力重視）
     'low_angle': {
         'height_m': 0.8,
         'fov_deg': 40,
+        'dof_fstop': 5.6,
         'description': '低い位置から見上げる。天井の印象を強調',
     },
-    # コーナーからの対角線ショット
+    # コーナーからの対角線ショット（空間を最大限に見せる）
     'corner_diagonal': {
-        'height_m': 1.5,
-        'fov_deg': 60,
-        'description': '部屋のコーナーから対角線方向。空間の広がりを表現',
+        'height_m': 1.2,
+        'fov_deg': 70,            # 60→70（より広角で開放感）
+        'dof_fstop': 8.0,
+        'description': '部屋のコーナーから対角線方向。空間の広がりを最大限に表現',
     },
     # 入口からの第一印象
     'entrance': {
-        'height_m': 1.6,
-        'fov_deg': 55,
+        'height_m': 1.5,
+        'fov_deg': 60,            # 55→60（入口は広く見せる）
+        'dof_fstop': 8.0,
         'description': '入口に立った時の第一印象',
     },
 }
@@ -98,6 +114,7 @@ LIGHTING_PRESETS = {
         'sun_angle': (math.radians(45), 0, math.radians(-30)),
         'ambient_strength': 0.5,
         'color_temp_k': 5500,
+        'environment_strength': 0.3,   # プロシージャルスカイ環境の強度
         'description': '昼間の自然光。窓からの光を重視',
     },
     'evening': {
@@ -105,6 +122,7 @@ LIGHTING_PRESETS = {
         'sun_angle': (math.radians(15), 0, math.radians(-60)),
         'ambient_strength': 0.3,
         'color_temp_k': 3500,
+        'environment_strength': 0.15,
         'description': '夕方の暖かい光。雰囲気重視',
     },
     'night_warm': {
@@ -112,6 +130,7 @@ LIGHTING_PRESETS = {
         'ambient_strength': 0.1,
         'point_lights': True,
         'color_temp_k': 2700,
+        'environment_strength': 0.05,
         'description': '夜の室内照明。暖色LED',
     },
     'night_cool': {
@@ -119,6 +138,7 @@ LIGHTING_PRESETS = {
         'ambient_strength': 0.1,
         'point_lights': True,
         'color_temp_k': 4000,
+        'environment_strength': 0.05,
         'description': '夜の室内照明。白色LED',
     },
     'showroom': {
@@ -126,6 +146,7 @@ LIGHTING_PRESETS = {
         'ambient_strength': 0.2,
         'point_lights': True,
         'color_temp_k': 5000,
+        'environment_strength': 0.1,
         'description': 'ショールーム照明。均一で明るい',
     },
 }
@@ -274,7 +295,7 @@ CEILING_HEIGHT_MM = {
 # ヘルパー関数
 # ============================================================
 def apply_render_quality(quality='preview'):
-    """レンダリング品質プリセットを適用"""
+    """レンダリング品質プリセットを適用（間接光・カラマネ強化版）"""
     preset = RENDER_QUALITY.get(quality, RENDER_QUALITY['preview'])
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
@@ -291,21 +312,30 @@ def apply_render_quality(quality='preview'):
         scene.cycles.use_denoising = True
         scene.cycles.denoiser = preset['denoiser']
 
-    # パフォーマンス
+    # 適応サンプリング（品質プリセット別の閾値）
     scene.cycles.use_adaptive_sampling = True
-    scene.cycles.adaptive_threshold = 0.01
+    scene.cycles.adaptive_threshold = preset.get('adaptive_threshold', 0.01)
 
-    # ライトパス（室内シーンはバウンス多め）
+    # -----------------------------------------------------------------------
+    # ライトバウンス（間接光の品質向上）
+    # -----------------------------------------------------------------------
     scene.cycles.max_bounces = 12
-    scene.cycles.diffuse_bounces = 6
+    scene.cycles.diffuse_bounces = 8       # 6→8（間接光強化）
     scene.cycles.glossy_bounces = 6
     scene.cycles.transmission_bounces = 12
-    scene.cycles.transparent_max_bounces = 8
+    scene.cycles.transparent_max_bounces = 12  # 8→12
 
-    # カラーマネジメント
+    # Fast GI — 品質/速度のバランス向上
+    scene.cycles.use_fast_gi = True
+    scene.cycles.fast_gi_method = 'REPLACE'
+
+    # -----------------------------------------------------------------------
+    # カラーマネジメント（AgX最適化）
+    # -----------------------------------------------------------------------
     scene.view_settings.view_transform = 'AgX'
-    scene.view_settings.look = 'AgX - Punchy'
-    scene.view_settings.exposure = -0.2
+    scene.view_settings.look = 'AgX - Punchy'  # コントラスト強めで印象的
+    scene.view_settings.exposure = 0.0          # -0.2→0.0（暗すぎ修正）
+    scene.view_settings.gamma = 1.0
 
     # 単位
     scene.unit_settings.system = 'METRIC'
@@ -314,9 +344,11 @@ def apply_render_quality(quality='preview'):
     # GPU自動検出
     _detect_gpu()
 
-    print(f"[presets] Render quality: {quality} "
+    print(f"[presets] レンダリング品質: {quality} "
           f"({preset['resolution_x']}x{preset['resolution_y']}, "
-          f"{preset['samples']} samples)")
+          f"{preset['samples']}samples, "
+          f"adaptive={preset.get('adaptive_threshold', 0.01)}, "
+          f"diffuse_bounces=8, Fast GI=ON, exposure=0.0)")
 
     return preset
 
@@ -351,10 +383,15 @@ def apply_material_preset(obj, preset_name):
 
 def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
                               wall_thickness=0.12):
-    """カメラプリセットを適用してカメラを配置
+    """カメラプリセットを適用してカメラを配置（被写界深度対応）
 
     TrackTo制約でターゲット（部屋中心）を安定追従する。
     マージンは部屋サイズに応じて自動計算。
+
+    改善点:
+    - 壁からの最低マージン0.3m確保
+    - 被写界深度の自動設定
+    - ターゲットを部屋中心より奥寄りに（奥行き感）
 
     Args:
         preset_name: CAMERA_PRESETS のキー名
@@ -365,7 +402,7 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
     """
     preset = CAMERA_PRESETS.get(preset_name)
     if not preset:
-        print(f"[presets] Unknown camera preset '{preset_name}', using eye_level")
+        print(f"[presets] 未知のカメラプリセット '{preset_name}', eye_levelを使用")
         preset = CAMERA_PRESETS['eye_level']
 
     cam_data = bpy.data.cameras.new(name=f"Camera_{preset_name}")
@@ -377,9 +414,14 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
     cam_obj = bpy.data.objects.new(f"Camera_{preset_name}", cam_data)
     bpy.context.collection.objects.link(cam_obj)
 
-    # マージン: 壁厚+余裕。大きい部屋ほど中央寄りに配置（障害物回避）
+    # マージン: 壁厚+余裕。壁から最低0.3m離す
     min_dim = min(room_width, room_depth)
-    margin = max(wall_thickness + 0.5, min_dim * 0.2, (room_width + room_depth) / 8)
+    margin = max(
+        wall_thickness + 0.5,
+        min_dim * 0.2,
+        (room_width + room_depth) / 8,
+        0.3,  # 最低0.3m保証
+    )
 
     # コーナーに配置（部屋の(-x, -y)角からmargin内側）
     cam_x = room_center[0] - room_width / 2 + margin
@@ -388,11 +430,14 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
 
     cam_obj.location = (cam_x, cam_y, cam_z)
 
-    # ターゲット: 部屋中心、目線よりやや下
+    # ターゲット: 部屋中心よりやや奥（奥行き感を出す）
+    target_x = room_center[0] + room_width * 0.05  # 中心よりやや奥
+    target_y = room_center[1] + room_depth * 0.1   # 中心よりやや奥
     target_z = preset['height_m'] * 0.7
+
     target_empty = bpy.data.objects.new(f"Camera_{preset_name}_Target", None)
     bpy.context.collection.objects.link(target_empty)
-    target_empty.location = (room_center[0], room_center[1], target_z)
+    target_empty.location = (target_x, target_y, target_z)
     target_empty.empty_display_size = 0.1
 
     # TrackTo制約で安定したカメラ追従
@@ -401,9 +446,22 @@ def setup_camera_from_preset(preset_name, room_center, room_width, room_depth,
     constraint.track_axis = 'TRACK_NEGATIVE_Z'
     constraint.up_axis = 'UP_Y'
 
-    print(f"[presets] Camera '{preset_name}': loc=({cam_x:.2f}, {cam_y:.2f}, {cam_z:.2f}), "
-          f"target=({room_center[0]:.2f}, {room_center[1]:.2f}, {target_z:.2f}), "
-          f"lens={cam_data.lens:.1f}mm, margin={margin:.2f}m")
+    # 被写界深度の設定
+    dof_fstop = preset.get('dof_fstop')
+    if dof_fstop is not None:
+        cam_data.dof.use_dof = True
+        dx = target_x - cam_x
+        dy = target_y - cam_y
+        dz = target_z - cam_z
+        dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+        cam_data.dof.focus_distance = dist * 0.8
+        cam_data.dof.aperture_fstop = dof_fstop
+
+    print(f"[presets] カメラ '{preset_name}': "
+          f"loc=({cam_x:.2f}, {cam_y:.2f}, {cam_z:.2f}), "
+          f"target=({target_x:.2f}, {target_y:.2f}, {target_z:.2f}), "
+          f"lens={cam_data.lens:.1f}mm, margin={margin:.2f}m"
+          + (f", DOF f/{dof_fstop}" if dof_fstop else ""))
 
     return cam_obj
 
@@ -414,7 +472,7 @@ def _fov_to_focal_length(fov_deg, sensor_width=36):
 
 
 def _detect_gpu():
-    """GPU自動検出: CUDA → OPTIX → CPU"""
+    """GPU自動検出: OPTIX → CUDA → CPU"""
     prefs = bpy.context.preferences.addons.get('cycles')
     if prefs:
         cprefs = prefs.preferences
@@ -426,9 +484,9 @@ def _detect_gpu():
                     device.use = True
                 if compute_type != 'NONE':
                     bpy.context.scene.cycles.device = 'GPU'
-                    print(f"GPU detected: {compute_type}")
+                    print(f"GPU検出: {compute_type}")
                     return
             except Exception:
                 continue
-    print("No GPU detected, using CPU")
+    print("GPU未検出、CPUを使用")
     bpy.context.scene.cycles.device = 'CPU'

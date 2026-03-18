@@ -57,7 +57,7 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
-  <span class="badge-iter">test7</span>
+  <span class="badge-iter">test9</span>
   <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
@@ -75,10 +75,12 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">最新 (test7) 元PDF vs DXF出力</div>
+    <div class="card-header">最新 (test9) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay7',this)">重ね合わせ (test7)</div>
+        <div class="vbtn active" onclick="setView('overlay9',this)">重ね合わせ (test9)</div>
+        <div class="vbtn" onclick="setView('sidebyside9',this)">並列比較 (test9)</div>
+        <div class="vbtn" onclick="setView('overlay7',this)">重ね合わせ (test7)</div>
         <div class="vbtn" onclick="setView('sidebyside7',this)">並列比較 (test7)</div>
         <div class="vbtn" onclick="setView('overlay6',this)">重ね合わせ (test6)</div>
         <div class="vbtn" onclick="setView('sidebyside6',this)">並列比較 (test6)</div>
@@ -91,7 +93,7 @@ th{color:#8b949e}
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="compare_test7_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="comparison_test9_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
     </div>
@@ -102,7 +104,69 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 7 (test7) -- 投影ベース中心線+ドアギャップ閉鎖+定数最適化 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-header">Iteration 9 (test9) -- 壁誤検出削減+室名マッチング改善 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>壁誤検出削減: WALL_THICKNESS_MIN_MM を70→95mmに引き上げ（83-84mmの什器線除外）</li>
+          <li>壁ペア検出に中心線長350mmフィルタと細線+短壁コンボフィルタ追加</li>
+          <li>室名マッチング改善: OpenCV連結成分ラベルによるラスター直接マッチング＋最近傍フォールバックの2フェーズ方式</li>
+          <li>面積ラベル(m2)のフォールバック活用</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁セグメント</div>
+          <div class="value">42本</div>
+          <div class="change">72 → 42 (-42%)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">部屋数</div>
+          <div class="value">36室</div>
+          <div class="change">32 → 36 (+4)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">名前あり部屋</div>
+          <div class="value">25室</div>
+          <div class="change">12 → 25 (+13)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">不明部屋</div>
+          <div class="value">11室</div>
+          <div class="change">20 → 11 (-9)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">什器</div>
+          <div class="value">14個</div>
+          <div class="change">14個 (維持)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">開口部</div>
+          <div class="value">10個</div>
+          <div class="change">ドアギャップ閉鎖</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <strong style="font-size:13px;color:#3fb950">改善点:</strong>
+        <div class="improve">壁セグメント42%削減 (72→42) — 什器線の誤検出を排除</div>
+        <div class="improve">名前あり部屋2倍以上 (12→25) — ラスター直接マッチングで大幅改善</div>
+        <div class="improve">不明部屋45%削減 (20→11) — 面積ラベルフォールバック活用</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg9('comparison_test9_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg9('comparison_test9_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView9">
+          <img src="comparison_test9_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 7 (test7) -- 投影ベース中心線+ドアギャップ閉鎖+定数最適化 <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>実装内容:</strong>
@@ -380,7 +444,7 @@ const D = ANALYSIS_DATA;
 const S = D.pass1_summary || {};
 
 // 更新日時表示
-document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test7 + centerline rewrite + door gap closure)';
+document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test9)';
 
 // タブ
 function showTab(id) {
@@ -392,6 +456,8 @@ function showTab(id) {
 
 // 比較ビュー
 var viewMap = {
+  overlay9: 'comparison_test9_overlay.png',
+  sidebyside9: 'comparison_test9_sidebyside.png',
   overlay7: 'compare_test7_overlay.png',
   sidebyside7: 'compare_test7_sidebyside.png',
   overlay6: 'compare_test6_overlay.png',
@@ -420,6 +486,11 @@ function showIterImg(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
   document.getElementById('iterView5').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
+}
+function showIterImg9(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView9').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 function showIterImg7(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
@@ -481,6 +552,10 @@ var pdca = [
   ['Do','寸法線フィルタ強化 (テキスト近接フィルタ, 分類順序修正)','done'],
   ['Do','ドアギャップ閉鎖 (214個の開口を仮壁で埋める)','done'],
   ['Do','ラスタライズ改良 (生壁線+処理済み壁の二重描画, 膨張使い分け)','done'],
+  ['Do','壁誤検出削減: WALL_THICKNESS_MIN_MM 70→95mm (什器線除外)','done'],
+  ['Do','壁ペア中心線長350mmフィルタ+細線短壁コンボフィルタ','done'],
+  ['Do','室名マッチング: OpenCV連結成分ラベル+最近傍フォールバック2フェーズ','done'],
+  ['Do','面積ラベル(m2)フォールバック活用','done'],
   ['Act','L字凹み検出でポリゴン精度向上','todo'],
   ['Act','什器ラベルのマッチング改善','todo'],
   ['Act','壁接続グラフの改善','todo'],

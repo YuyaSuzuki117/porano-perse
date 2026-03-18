@@ -133,48 +133,148 @@ def _build_wood_floor(color, roughness, wood_type='oak'):
 
 
 def _build_tile_floor(color, roughness):
+    """タイル床 — Brick Textureで目地パターン + タイルごとの色・ラフネスバリエーション
+
+    特徴:
+    - Brick Textureでリアルな目地ライン（少し暗い色）
+    - タイルごとの微妙な色違い（Voronoi + Noise）
+    - 目地部分にバンプ（凹み）
+    - タイルごとのラフネスバリエーション
+    """
     rough = roughness if roughness is not None else 0.3
     base_color = color or (0.85, 0.85, 0.88, 1.0)
+    r, g, b = base_color[0], base_color[1], base_color[2]
 
     mat = bpy.data.materials.new(name="M_Floor_Tile")
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
-    bsdf = nodes.get("Principled BSDF")
 
+    # デフォルトノードを削除してクリーンに構築
+    for n in list(nodes):
+        if n.name != "Material Output":
+            nodes.remove(n)
+    output = nodes["Material Output"]
+
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (500, 300)
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+    # --- テクスチャ座標 ---
     tex_coord = nodes.new('ShaderNodeTexCoord')
-    tex_coord.location = (-900, 300)
-
+    tex_coord.location = (-1200, 300)
     mapping = nodes.new('ShaderNodeMapping')
-    mapping.location = (-700, 300)
+    mapping.location = (-1000, 300)
     links.new(tex_coord.outputs['Generated'], mapping.inputs['Vector'])
 
-    # Checker for grid pattern
-    checker = nodes.new('ShaderNodeTexChecker')
-    checker.location = (-450, 400)
-    checker.inputs['Scale'].default_value = 10.0
-    checker.inputs['Color1'].default_value = base_color
-    checker.inputs['Color2'].default_value = (
-        base_color[0] * 0.92, base_color[1] * 0.92, base_color[2] * 0.92, 1.0
-    )
-    links.new(mapping.outputs['Vector'], checker.inputs['Vector'])
+    # --- Brick Texture: 目地パターン ---
+    brick = nodes.new('ShaderNodeTexBrick')
+    brick.location = (-700, 400)
+    brick.inputs['Scale'].default_value = 8.0
+    brick.inputs['Mortar Size'].default_value = 0.015     # 目地幅
+    brick.inputs['Mortar Smooth'].default_value = 0.1      # 目地のぼかし
+    brick.inputs['Bias'].default_value = 0.0               # 均等グリッド
+    brick.inputs['Brick Width'].default_value = 0.5        # 正方形タイル
+    brick.inputs['Row Height'].default_value = 0.5
+    brick.offset = 0.0  # オフセットなし（通し目地）
+    # タイル色と目地色
+    brick.inputs['Color1'].default_value = (r, g, b, 1.0)
+    brick.inputs['Color2'].default_value = (r * 0.95, g * 0.95, b * 0.95, 1.0)
+    grout_color = (r * 0.6, g * 0.6, b * 0.6, 1.0)  # 目地は暗め
+    brick.inputs['Mortar'].default_value = grout_color
+    links.new(mapping.outputs['Vector'], brick.inputs['Vector'])
 
-    # Noise for subtle variation
+    # --- Voronoi: タイルごとのランダム色バリエーション ---
+    voronoi = nodes.new('ShaderNodeTexVoronoi')
+    voronoi.location = (-700, 100)
+    voronoi.feature = 'F1'
+    voronoi.inputs['Scale'].default_value = 8.0
+    voronoi.inputs['Randomness'].default_value = 0.0  # グリッド整列
+    links.new(mapping.outputs['Vector'], voronoi.inputs['Vector'])
+
+    # ノイズ: タイル面内の微細テクスチャ
     noise = nodes.new('ShaderNodeTexNoise')
-    noise.location = (-450, 100)
-    noise.inputs['Scale'].default_value = 25.0
+    noise.location = (-700, -150)
+    noise.inputs['Scale'].default_value = 40.0
     noise.inputs['Detail'].default_value = 4.0
     links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
 
-    mix = nodes.new('ShaderNodeMix')
-    mix.location = (-200, 300)
-    mix.data_type = 'RGBA'
-    mix.inputs['Factor'].default_value = 0.05
-    links.new(checker.outputs['Color'], mix.inputs[6])
-    links.new(noise.outputs['Color'], mix.inputs[7])
+    # タイル色バリエーション: Voronoiで微妙に明暗
+    tile_var = nodes.new('ShaderNodeMix')
+    tile_var.location = (-400, 300)
+    tile_var.data_type = 'RGBA'
+    slightly_light = (min(r * 1.05, 1.0), min(g * 1.05, 1.0), min(b * 1.05, 1.0), 1.0)
+    slightly_dark = (r * 0.93, g * 0.93, b * 0.93, 1.0)
+    tile_var.inputs[6].default_value = slightly_dark    # A
+    tile_var.inputs[7].default_value = slightly_light   # B
+    links.new(voronoi.outputs['Distance'], tile_var.inputs['Factor'])
 
-    links.new(mix.outputs[2], bsdf.inputs['Base Color'])
-    bsdf.inputs['Roughness'].default_value = rough
+    # Brick色にタイルバリエーションをオーバーレイ
+    final_color = nodes.new('ShaderNodeMix')
+    final_color.location = (-150, 350)
+    final_color.data_type = 'RGBA'
+    final_color.inputs['Factor'].default_value = 0.3  # タイルバリエーション30%
+    links.new(brick.outputs['Color'], final_color.inputs[6])     # A: Brick
+    links.new(tile_var.outputs[2], final_color.inputs[7])         # B: バリエーション
+
+    # 微細ノイズを加算（面内テクスチャ 5%）
+    surface_mix = nodes.new('ShaderNodeMix')
+    surface_mix.location = (50, 350)
+    surface_mix.data_type = 'RGBA'
+    surface_mix.inputs['Factor'].default_value = 0.05
+    links.new(final_color.outputs[2], surface_mix.inputs[6])
+    links.new(noise.outputs['Color'], surface_mix.inputs[7])
+
+    links.new(surface_mix.outputs[2], bsdf.inputs['Base Color'])
+
+    # --- ラフネスバリエーション ---
+    # タイル面: 指定roughness ± 変動、目地: やや粗い
+    rough_tile = nodes.new('ShaderNodeMapRange')
+    rough_tile.location = (50, -50)
+    rough_tile.inputs['From Min'].default_value = 0.0
+    rough_tile.inputs['From Max'].default_value = 1.0
+    rough_tile.inputs['To Min'].default_value = max(rough - 0.08, 0.1)
+    rough_tile.inputs['To Max'].default_value = rough + 0.05
+    links.new(voronoi.outputs['Distance'], rough_tile.inputs['Value'])
+
+    # 目地部分はラフネスを高く
+    rough_grout = nodes.new('ShaderNodeMix')
+    rough_grout.location = (200, -50)
+    rough_grout.data_type = 'FLOAT'
+    rough_grout.inputs[2].default_value = rough + 0.3  # 目地のラフネス
+    links.new(brick.outputs['Fac'], rough_grout.inputs['Factor'])
+    links.new(rough_tile.outputs['Result'], rough_grout.inputs[3])  # A: タイル
+    # Fac=0（目地部分）→目地ラフネス、Fac=1（タイル部分）→タイルラフネス
+    links.new(rough_grout.outputs[1], bsdf.inputs['Roughness'])
+
+    # --- バンプ: 目地の凹み ---
+    # Brick Facを反転（目地=0 → 目地=凹み）
+    invert = nodes.new('ShaderNodeMath')
+    invert.location = (50, -250)
+    invert.operation = 'SUBTRACT'
+    invert.inputs[0].default_value = 1.0
+    links.new(brick.outputs['Fac'], invert.inputs[1])
+
+    bump_grout = nodes.new('ShaderNodeBump')
+    bump_grout.location = (200, -250)
+    bump_grout.inputs['Strength'].default_value = 0.3
+    bump_grout.inputs['Distance'].default_value = 0.003
+    links.new(invert.outputs['Value'], bump_grout.inputs['Height'])
+
+    # 微細バンプ: タイル面のテクスチャ
+    bump_surface = nodes.new('ShaderNodeBump')
+    bump_surface.location = (350, -350)
+    bump_surface.inputs['Strength'].default_value = 0.03
+    bump_surface.inputs['Distance'].default_value = 0.001
+    links.new(noise.outputs['Fac'], bump_surface.inputs['Height'])
+    links.new(bump_grout.outputs['Normal'], bump_surface.inputs['Normal'])
+    links.new(bump_surface.outputs['Normal'], bsdf.inputs['Normal'])
+
+    # Specular
+    try:
+        bsdf.inputs['Specular IOR Level'].default_value = 0.5
+    except KeyError:
+        pass
 
     return mat
 

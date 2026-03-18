@@ -59,7 +59,8 @@ DOOR_HEIGHT_REF_MM = 2100
 WINDOW_WIDTH_REF_MM = 1800
 
 # 壁厚判定 (スケール後mm) — 日本の一般的な壁: 100-150mm
-WALL_THICKNESS_MIN_MM = 70
+# 70→95に引き上げ: 83-84mmの什器輪郭線ペアが壁として誤検出されるのを防止
+WALL_THICKNESS_MIN_MM = 95
 WALL_THICKNESS_MAX_MM = 180
 WALL_THICKNESS_DEFAULT_MM = 120
 
@@ -109,6 +110,8 @@ ROOM_NAME_PATTERNS = [
     "ＤＪ", "DJ", "ブース", "ステージ",
     "ボトル", "ドリンク", "レセプション", "ﾚｾﾌﾟｼｮﾝ",
     "キャッシャー", "レジ",
+    # エリア表記
+    "ENT", "AD",
     # 設備室
     "収納",
 ]
@@ -1089,6 +1092,10 @@ class PDFVectorExtractor:
             if re.match(r'^[A-Za-z]$', text):
                 continue
 
+            # 集計・注記テキストはスキップ
+            if re.match(r'^(合計|展開|PLAN|※)', text):
+                continue
+
             # 寸法値判定 (先に判定)
             val = parse_dim_text(text)
             if val and 100 <= val <= 50000:
@@ -1125,6 +1132,17 @@ class PDFVectorExtractor:
                 })
                 continue
 
+            # 面積ラベル判定 (例: "20.5㎡", "35㎡") — 室名が見つからないポリゴンのフォールバック名
+            area_match = re.match(r'^(\d+(?:\.\d+)?)\s*[㎡m²]', text)
+            if area_match:
+                self.room_names.append({
+                    "name": f"エリア({text})",
+                    "origin": t.origin,
+                    "size": t.size,
+                    "is_area_label": True,
+                })
+                continue
+
         if self.debug:
             print(f"[DEBUG] 室名: {len(self.room_names)}, 寸法テキスト: {len(self.dim_texts)}")
             for rn in self.room_names:
@@ -1157,11 +1175,33 @@ class PDFVectorExtractor:
                     overlap = self._calc_overlap(l1, l2)
                     min_len = min(l1.length, l2.length)
                     if overlap > min_len * 0.5:
+                        # --- 什器線フィルタ ---
+                        # 1. 壁ペアの中心線長が350mm未満は什器の可能性が高い
+                        cl = self._centerline(l1, l2)
+                        cl_length_mm = distance(cl["p1"], cl["p2"]) * sf
+                        if cl_length_mm < 350:
+                            if self.debug:
+                                print(f"[DEBUG] 壁ペア候補除外(短すぎ): "
+                                      f"長さ{cl_length_mm:.0f}mm < 350mm")
+                            continue
+
+                        # 2. 両線とも細線(tier2下位)の場合、什器輪郭の可能性
+                        #    壁線は通常tier1/tier2上位の太さを持つ
+                        #    両方ともtier2最小閾値の1.2倍未満なら除外
+                        both_thin = (l1.width < LINE_WIDTH_TIER2_MIN * 1.2
+                                     and l2.width < LINE_WIDTH_TIER2_MIN * 1.2)
+                        if both_thin and cl_length_mm < 800:
+                            if self.debug:
+                                print(f"[DEBUG] 壁ペア候補除外(細線+短): "
+                                      f"幅{l1.width:.3f}/{l2.width:.3f}, "
+                                      f"長さ{cl_length_mm:.0f}mm")
+                            continue
+
                         self.wall_pairs.append({
                             "line1": l1,
                             "line2": l2,
                             "thickness_mm": round(thickness_mm),
-                            "centerline": self._centerline(l1, l2),
+                            "centerline": cl,
                         })
                         used.add(i)
                         used.add(j)
@@ -1604,7 +1644,7 @@ class PDFVectorExtractor:
         else:
             # 壁ペアがない場合: 太い単線を壁として使う
             for line in self.wall_lines:
-                if line.length * sf < 300:  # 300mm未満は壁として短すぎる
+                if line.length * sf < 350:  # 350mm未満は壁として短すぎる
                     continue
                 wall_id += 1
                 self.walls.append({
@@ -1628,10 +1668,14 @@ class PDFVectorExtractor:
         self._extend_walls_to_intersections()
         self._merge_collinear_walls()
         self._split_walls_at_t_junctions()
-        # 短すぎる壁を除去 (300mm未満は家具/什器の誤検出の可能性が高い)
+        # 短すぎる壁を除去 (350mm未満は家具/什器の誤検出の可能性が高い)
+        pre_short_filter = len(self.walls)
         self.walls = [w for w in self.walls
                       if distance((w["start_x_mm"], w["start_y_mm"]),
-                                  (w["end_x_mm"], w["end_y_mm"])) >= 300]
+                                  (w["end_x_mm"], w["end_y_mm"])) >= 350]
+        if self.debug and len(self.walls) < pre_short_filter:
+            print(f"[DEBUG] 短壁除去: {pre_short_filter} → {len(self.walls)} "
+                  f"({pre_short_filter - len(self.walls)}本除去, 閾値350mm)")
         self._snap_wall_endpoints()
 
         # 什器の構築
@@ -2749,27 +2793,110 @@ class PDFVectorExtractor:
                 "area_m2": round(area_m2, 1),
                 "center_mm": list(center_mm),
                 "polygon_mm": [[p[0], p[1]] for p in polygon],
+                "_label_id": label_id,
             })
             room_count += 1
 
-        # 室名マッチング: 各室名テキストの最近傍部屋ポリゴンに割り当て
-        for idx, rn in enumerate(self.room_names):
-            rn_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
-            best_room = None
-            best_dist = float("inf")
-            for room in self.rooms:
-                if room["name"] != "不明":
-                    continue  # 既に名前がある部屋はスキップ
-                if not room.get("polygon_mm") or len(room["polygon_mm"]) < 3:
+        # 室名マッチング: ラスターラベル直接参照 + 最近傍フォールバック
+        # label_id → room のマッピングを構築
+        label_to_room: dict[int, dict] = {}
+        for room in self.rooms:
+            lid = room.get("_label_id")
+            if lid is not None:
+                label_to_room[lid] = room
+
+        # mm座標 → ラスターピクセル座標の変換関数
+        def mm_to_raster(x_mm: float, y_mm: float) -> tuple[int, int]:
+            """内部mm座標 (Y-flipped) → ラスターピクセル座標"""
+            x_pt = x_mm / PT_TO_MM
+            y_flipped_pt = y_mm / PT_TO_MM
+            y_pt_orig = page_h_pt - y_flipped_pt
+            px_x = int(x_pt * dpi / 72.0)
+            px_y = int(y_pt_orig * dpi / 72.0)
+            return px_x, px_y
+
+        def _find_raster_label(origin_mm: tuple) -> int | None:
+            """テキスト原点の周囲を探索し、最も多くヒットしたラベルIDを返す"""
+            px_x, px_y = mm_to_raster(origin_mm[0], origin_mm[1])
+            search_max_r = 40
+            label_counts: dict[int, int] = {}
+            for dy in range(-search_max_r, search_max_r + 1, 3):
+                for dx in range(-search_max_r, search_max_r + 1, 3):
+                    r = abs(dx) + abs(dy)
+                    if r > search_max_r:
+                        continue
+                    sx, sy = px_x + dx, px_y + dy
+                    if 0 <= sx < w and 0 <= sy < h:
+                        lid = int(labels[sy, sx])
+                        if lid > 0 and lid in label_to_room:
+                            label_counts[lid] = label_counts.get(lid, 0) + 1
+            if label_counts:
+                return max(label_counts, key=label_counts.get)
+            return None
+
+        # 通常の室名を先に処理、面積ラベルは後で処理
+        normal_names = [(i, rn) for i, rn in enumerate(self.room_names)
+                        if not rn.get("is_area_label")]
+        area_labels = [(i, rn) for i, rn in enumerate(self.room_names)
+                       if rn.get("is_area_label")]
+
+        # Phase 1: ラスターラベルで直接マッチング (各ラベルに最も近いテキストを割り当て)
+        # ラベルID → [(idx, rn, distance_to_center)] のマッピングを構築
+        label_candidates: dict[int, list[tuple[int, dict, float]]] = {}
+
+        for name_list in [normal_names, area_labels]:
+            for idx, rn in name_list:
+                rn_origin_mm = rn["origin"]
+                rn_mm_scaled = (round(rn_origin_mm[0] * sf), round(rn_origin_mm[1] * sf))
+
+                lid = _find_raster_label(rn_origin_mm)
+                if lid is not None:
+                    room = label_to_room[lid]
+                    d = distance(rn_mm_scaled, tuple(room["center_mm"]))
+                    if lid not in label_candidates:
+                        label_candidates[lid] = []
+                    label_candidates[lid].append((idx, rn, d))
+
+        # 各ラベルについて、最も近いテキストを採用
+        # (面積ラベルより通常室名を優先)
+        for lid, candidates in label_candidates.items():
+            room = label_to_room[lid]
+            # 通常室名を優先、同種なら距離が近いものを優先
+            candidates.sort(key=lambda x: (x[1].get("is_area_label", False), x[2]))
+            winner = candidates[0]
+            idx, rn, d = winner
+            room["name"] = rn["name"]
+            used_room_names.add(idx)
+            if self.debug:
+                print(f"[DEBUG] 室名マッチ(ラスター): {rn['name']} -> center={room['center_mm']} "
+                      f"(候補{len(candidates)}個)")
+
+        # Phase 2: ラスターで見つからなかった室名を最近傍で探す
+        for name_list in [normal_names, area_labels]:
+            for idx, rn in name_list:
+                if idx in used_room_names:
                     continue
-                d = distance(rn_mm, tuple(room["center_mm"]))
-                if d < best_dist:
-                    best_dist = d
-                    best_room = room
-            # 最近傍が5000mm以内なら割り当て
-            if best_room and best_dist < 5000:
-                best_room["name"] = rn["name"]
-                used_room_names.add(idx)
+                rn_origin_mm = rn["origin"]
+                rn_mm_scaled = (round(rn_origin_mm[0] * sf), round(rn_origin_mm[1] * sf))
+
+                best_room = None
+                best_dist = float("inf")
+                for room in self.rooms:
+                    if room["name"] != "不明":
+                        continue
+                    if not room.get("polygon_mm") or len(room["polygon_mm"]) < 3:
+                        continue
+                    d = distance(rn_mm_scaled, tuple(room["center_mm"]))
+                    if d < best_dist:
+                        best_dist = d
+                        best_room = room
+                # 最近傍が5000mm以内なら割り当て
+                if best_room and best_dist < 5000:
+                    best_room["name"] = rn["name"]
+                    used_room_names.add(idx)
+                    if self.debug:
+                        print(f"[DEBUG] 室名マッチ(最近傍): {rn['name']} -> center={best_room['center_mm']} "
+                              f"dist={best_dist:.0f}mm")
 
         # フォールバック: ポリゴンに含まれなかった室名
         for idx, rn in enumerate(self.room_names):
@@ -3251,7 +3378,7 @@ class PDFVectorExtractor:
             },
 
             "walls": self.walls,
-            "rooms": self.rooms,
+            "rooms": [{k: v for k, v in r.items() if not k.startswith("_")} for r in self.rooms],
             "fixtures": self.fixtures,
             "dimensions_extracted": self.dimensions,
             "openings_detected": [

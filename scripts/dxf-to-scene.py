@@ -19,6 +19,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 
 import ezdxf
@@ -26,7 +27,108 @@ import ezdxf
 # デフォルト値
 DEFAULT_CEILING_HEIGHT_MM = 2700
 DEFAULT_WALL_THICKNESS_MM = 120
+DEFAULT_DOOR_HEIGHT_MM = 2100
+DEFAULT_DOOR_ELEVATION_MM = 0
+DEFAULT_WINDOW_HEIGHT_MM = 1200
+DEFAULT_WINDOW_ELEVATION_MM = 800
 EPS = 5  # mm 精度の閾値
+
+# === 什器タイプマッピング（日本語→GLBモデル名） ===
+FURNITURE_TYPE_MAP = {
+    # バー・飲食
+    "カウンター": "counter",
+    "バーカウンター": "bar_counter",
+    "l字カウンター": "counter_l_shape",
+    "ストレートカウンター": "counter_straight",
+    "ビールサーバー": "beer_server",
+    "エスプレッソマシン": "espresso_machine",
+    "コーヒーマシン": "coffee_machine",
+    "カクテルステーション": "cocktail_station",
+    "ケーキショーケース": "cake_showcase",
+    "レジカウンター": "register_counter",
+    # 椅子・ソファ
+    "椅子": "chair",
+    "チェア": "chair",
+    "バーチェア": "bar_chair",
+    "バースツール": "bar_stool",
+    "スツール": "bar_stool",
+    "アームチェア": "armchair",
+    "ソファ": "sofa",
+    "ブースソファ": "booth_sofa",
+    "ベンチ": "bench",
+    "オフィスチェア": "office_chair",
+    # テーブル
+    "テーブル": "table_square",
+    "丸テーブル": "table_round",
+    "ラウンドテーブル": "table_round",
+    "バーテーブル": "bar_table",
+    "デスク": "desk",
+    "オフィスデスク": "office_desk",
+    # 収納
+    "棚": "display_shelf",
+    "本棚": "bookcase",
+    "ラック": "display_shelf",
+    "ファイルキャビネット": "file_cabinet",
+    "食器棚": "dish_cabinet",
+    "ドレッサー": "dresser",
+    # 什器・ディスプレイ
+    "レジ": "cash_register",
+    "ショーケース": "glass_showcase",
+    "ガラスショーケース": "glass_showcase",
+    "ディスプレイケース": "display_case",
+    "ディスプレイシェルフ": "display_shelf",
+    "フィッティングルーム": "fitting_room",
+    "デジタルサイネージ": "digital_signage",
+    # 設備
+    "エアコン": "air_conditioner",
+    "空気清浄機": "air_purifier",
+    "冷蔵庫": "fridge",
+    "洗面台": "washbasin",
+    "シンク": "sink",
+    "トイレ": "toilet",
+    "自動販売機": "vending_machine",
+    "atm": "atm",
+    "aed": "aed",
+    "消火器": "fire_extinguisher",
+    "洗濯機": "washing_machine",
+    # 家具
+    "ベッド": "bed",
+    "シングルベッド": "bed_single",
+    "ダブルベッド": "bed_double",
+    "鏡": "mirror",
+    "ミラー": "mirror",
+    # 建具・造作
+    "ガラスパーテーション": "glass_partition",
+    "パーテーション": "glass_partition",
+    "カーテン": "curtain",
+    "装飾柱": "decorative_column",
+    "巾木": "baseboard",
+    "木巾木": "baseboard_wood",
+    "廻り縁": "crown_molding",
+    "カーテンボックス": "curtain_box",
+    "ドア枠": "door_frame",
+    "自動ドア": "auto_door",
+    "ガラスドア": "glass_door",
+    "フラッシュドア": "flush_door",
+    "引き戸": "double_sliding_door",
+    # 照明
+    "ダウンライト": "downlight_recessed",
+    "シーリングファン": "ceiling_fan",
+    "ペンダントライト": "pendant_light_simple",
+    # 装飾・小物
+    "植物": "plant_small",
+    "観葉植物": "plant_large",
+    "フラワーポット": "flower_pot",
+    "花瓶": "flower_pot",
+    "傘立て": "umbrella_stand",
+    "コートハンガー": "coat_hanger",
+    "コートラック": "coat_rack",
+    "時計": "clock",
+    "ゴミ箱": "trash_can",
+    "非常口サイン": "exit_sign",
+    # フィットネス
+    "ダンベルラック": "dumbbell_rack",
+}
 
 
 def parse_dxf_walls(msp):
@@ -82,9 +184,22 @@ def parse_dxf_wall_thickness(msp, walls):
     return DEFAULT_WALL_THICKNESS_MM
 
 
-def parse_dxf_openings(msp, walls):
-    """建具レイヤーからドア(ARC)と窓を検出"""
+def parse_dxf_openings(msp, walls, meta_openings=None):
+    """建具レイヤーからドア(ARC)と窓を検出
+
+    meta_openings: meta.jsonのopenings配列（高さ/elevation情報の参照用）
+    """
     openings = []
+
+    # メタデータから開口部の高さ情報をインデックス化
+    # wall_index + type でルックアップ
+    meta_opening_lookup = {}
+    if meta_openings:
+        for mo in meta_openings:
+            key = (mo.get("wall_index", -1), mo.get("type", ""))
+            if key not in meta_opening_lookup:
+                meta_opening_lookup[key] = []
+            meta_opening_lookup[key].append(mo)
 
     # ARC → ドア
     for entity in msp.query('ARC[layer=="建具"]'):
@@ -94,13 +209,24 @@ def parse_dxf_openings(msp, walls):
         # 最も近い壁を探す
         best_wall_idx, best_pos = _find_closest_wall(walls, cx, cy)
         if best_wall_idx >= 0:
+            # メタデータから高さ情報を取得（あれば）
+            door_height = DEFAULT_DOOR_HEIGHT_MM
+            door_elevation = DEFAULT_DOOR_ELEVATION_MM
+            meta_doors = meta_opening_lookup.get((best_wall_idx, "door"), [])
+            if meta_doors:
+                # 位置が最も近いメタデータを使用
+                best_meta = _find_closest_meta_opening(meta_doors, best_pos)
+                if best_meta:
+                    door_height = best_meta.get("height_mm", DEFAULT_DOOR_HEIGHT_MM)
+                    door_elevation = best_meta.get("elevation_mm", DEFAULT_DOOR_ELEVATION_MM)
+
             openings.append({
                 "wall_index": best_wall_idx,
                 "type": "door",
                 "position_mm": round(best_pos),
                 "width_mm": round(radius),
-                "height_mm": 2100,
-                "elevation_mm": 0,
+                "height_mm": door_height,
+                "elevation_mm": door_elevation,
             })
 
     # 建具レイヤーのLINE群から窓を検出（ARCがない直線群 = 窓）
@@ -144,17 +270,73 @@ def parse_dxf_openings(msp, walls):
                     dup = True
                     break
             if not dup:
+                # メタデータから高さ情報を取得（あれば）
+                win_height = DEFAULT_WINDOW_HEIGHT_MM
+                win_elevation = DEFAULT_WINDOW_ELEVATION_MM
+                meta_windows = meta_opening_lookup.get((best_wall_idx, "window"), [])
+                if meta_windows:
+                    best_meta = _find_closest_meta_opening(meta_windows, best_pos)
+                    if best_meta:
+                        win_height = best_meta.get("height_mm", DEFAULT_WINDOW_HEIGHT_MM)
+                        win_elevation = best_meta.get("elevation_mm", DEFAULT_WINDOW_ELEVATION_MM)
+
                 openings.append({
                     "wall_index": best_wall_idx,
                     "type": "window",
                     "position_mm": round(best_pos),
                     "width_mm": round(width),
-                    "height_mm": 1200,
-                    "elevation_mm": 800,
+                    "height_mm": win_height,
+                    "elevation_mm": win_elevation,
                 })
                 used.add(i)
 
     return openings
+
+
+def _find_closest_meta_opening(meta_list, position_mm):
+    """メタデータ開口部リストから位置が最も近いものを返す"""
+    if not meta_list:
+        return None
+    best = None
+    best_dist = float("inf")
+    for mo in meta_list:
+        dist = abs(mo.get("position_mm", 0) - position_mm)
+        if dist < best_dist:
+            best_dist = dist
+            best = mo
+    return best
+
+
+def _calculate_rotation_from_vertices(points):
+    """LWPOLYLINE の頂点列から矩形の回転角を計算（度）
+
+    4頂点の閉じた矩形を想定。長辺の方向から回転角度を算出する。
+    """
+    if len(points) < 4:
+        return 0.0
+
+    # 最初の4頂点を使用
+    vertices = points[:4]
+
+    # 辺ベクトルを計算
+    edge0 = (vertices[1][0] - vertices[0][0], vertices[1][1] - vertices[0][1])
+    edge1 = (vertices[2][0] - vertices[1][0], vertices[2][1] - vertices[1][1])
+
+    len0 = math.sqrt(edge0[0] ** 2 + edge0[1] ** 2)
+    len1 = math.sqrt(edge1[0] ** 2 + edge1[1] ** 2)
+
+    # ゼロ長の辺がある場合は回転なし
+    if len0 < EPS and len1 < EPS:
+        return 0.0
+
+    # 長辺の方向を回転角とする（正方形の場合はedge0を使用）
+    if len0 >= len1:
+        rotation_rad = math.atan2(edge0[1], edge0[0])
+    else:
+        rotation_rad = math.atan2(edge1[1], edge1[0])
+
+    rotation_deg = math.degrees(rotation_rad)
+    return round(rotation_deg, 2)
 
 
 def parse_dxf_furniture(msp):
@@ -172,11 +354,33 @@ def parse_dxf_furniture(msp):
             cy = (min(ys) + max(ys)) / 2
             w = max(xs) - min(xs)
             d = max(ys) - min(ys)
+
+            # 頂点から回転角を計算
+            rotation = _calculate_rotation_from_vertices(points)
+
+            # 回転がある場合、幅と奥行は辺の長さから取得
+            if abs(rotation) > EPS:
+                edge0_len = math.sqrt(
+                    (points[1][0] - points[0][0]) ** 2 +
+                    (points[1][1] - points[0][1]) ** 2
+                )
+                edge1_len = math.sqrt(
+                    (points[2][0] - points[1][0]) ** 2 +
+                    (points[2][1] - points[1][1]) ** 2
+                )
+                # 長辺=幅、短辺=奥行（慣例）
+                w = round(max(edge0_len, edge1_len))
+                d = round(min(edge0_len, edge1_len))
+            else:
+                w = round(w)
+                d = round(d)
+
             if w > 10 and d > 10:
                 polys.append({
                     "center": (cx, cy),
-                    "width": round(w),
-                    "depth": round(d),
+                    "width": w,
+                    "depth": d,
+                    "rotation_deg": rotation,
                 })
 
     # TEXT → 什器名（最も近いポリラインに割当て）
@@ -203,7 +407,7 @@ def parse_dxf_furniture(msp):
             "width_mm": poly["width"],
             "depth_mm": poly["depth"],
             "height_mm": _guess_height(name),
-            "rotation_deg": 0,
+            "rotation_deg": poly["rotation_deg"],
         })
 
     return furniture
@@ -253,7 +457,34 @@ def _guess_height(name):
         return 1800
     if any(k in name for k in ["ソファ", "sofa"]):
         return 800
+    if any(k in name for k in ["ベッド", "bed"]):
+        return 500
+    if any(k in name for k in ["冷蔵庫", "fridge"]):
+        return 1800
+    if any(k in name for k in ["洗面台", "washbasin", "シンク", "sink"]):
+        return 850
+    if any(k in name for k in ["エアコン", "air_conditioner"]):
+        return 300
+    if any(k in name for k in ["ダウンライト", "downlight"]):
+        return 100
+    if any(k in name for k in ["植物", "plant", "観葉"]):
+        return 1200
     return 750
+
+
+def _name_to_snake_case(name):
+    """名前をsnake_caseに変換（英語フォールバック用）"""
+    if not name:
+        return ""
+    # 既にASCIIのみの場合はsnake_case変換
+    ascii_name = name.strip().lower()
+    # スペース・ハイフンをアンダースコアに
+    ascii_name = re.sub(r'[\s\-]+', '_', ascii_name)
+    # 英数字とアンダースコア以外を除去
+    ascii_name = re.sub(r'[^a-z0-9_]', '', ascii_name)
+    # 連続アンダースコアを1つに
+    ascii_name = re.sub(r'_+', '_', ascii_name).strip('_')
+    return ascii_name
 
 
 def determine_wall_direction(walls, wall_index, room_bounds):
@@ -279,6 +510,37 @@ def determine_wall_direction(walls, wall_index, room_bounds):
         return "east" if mid_x > center_x else "west"
 
 
+def _guess_furniture_type(name):
+    """什器名からGLBモデルタイプを推定
+
+    1. FURNITURE_TYPE_MAP で日本語名を完全一致検索
+    2. 部分一致検索（長いキーから優先）
+    3. 英語名の場合はsnake_caseに変換して返す
+    4. いずれも該当しなければ "custom"
+    """
+    if not name:
+        return "custom"
+
+    name_lower = name.lower()
+
+    # 完全一致チェック
+    if name_lower in FURNITURE_TYPE_MAP:
+        return FURNITURE_TYPE_MAP[name_lower]
+
+    # 部分一致チェック（長いキーを先に試す → 「バーカウンター」が「カウンター」より優先）
+    sorted_keys = sorted(FURNITURE_TYPE_MAP.keys(), key=len, reverse=True)
+    for key in sorted_keys:
+        if key in name_lower:
+            return FURNITURE_TYPE_MAP[key]
+
+    # 英語名フォールバック: snake_caseに変換して返す
+    snake = _name_to_snake_case(name)
+    if snake:
+        return snake
+
+    return "custom"
+
+
 def dxf_to_scene(dxf_path, meta_path=None):
     """DXF（+ メタJSON）→ Blender シーン JSON"""
     doc = ezdxf.readfile(dxf_path)
@@ -298,7 +560,10 @@ def dxf_to_scene(dxf_path, meta_path=None):
     # === DXF 解析 ===
     dxf_walls = parse_dxf_walls(msp)
     wall_thickness = parse_dxf_wall_thickness(msp, dxf_walls)
-    dxf_openings = parse_dxf_openings(msp, dxf_walls)
+
+    # 開口部解析（メタデータの高さ情報を参照）
+    meta_openings_data = meta.get("openings")
+    dxf_openings = parse_dxf_openings(msp, dxf_walls, meta_openings_data)
     dxf_furniture = parse_dxf_furniture(msp)
 
     # メタデータで上書き（meta.json があればそちらを優先）
@@ -306,6 +571,7 @@ def dxf_to_scene(dxf_path, meta_path=None):
         dxf_walls = meta["walls"]
         wall_thickness = meta.get("wall_thickness_mm", wall_thickness)
     if meta.get("openings"):
+        # メタデータのopeningsが完全データならそちらを使用
         dxf_openings = meta["openings"]
     if meta.get("furniture"):
         dxf_furniture = meta["furniture"]
@@ -358,6 +624,16 @@ def dxf_to_scene(dxf_path, meta_path=None):
         "style_hints": meta.get("style", "modern"),
     }
 
+    # メタデータのスタイル/マテリアル情報をパススルー
+    if meta.get("style"):
+        scene["style_hints"] = meta["style"]
+    if meta.get("materials"):
+        scene["materials"] = meta["materials"]
+    if meta.get("color_palette"):
+        scene["color_palette"] = meta["color_palette"]
+    if meta.get("accent_materials"):
+        scene["accent_materials"] = meta["accent_materials"]
+
     # 壁データ（blueprint_converter.py 用、mm単位）
     for i, w in enumerate(dxf_walls):
         wall_entry = {
@@ -377,6 +653,7 @@ def dxf_to_scene(dxf_path, meta_path=None):
                 "type": o["type"],
                 "width_mm": o["width_mm"],
                 "height_mm": o["height_mm"],
+                "elevation_mm": o.get("elevation_mm", 0),
             })
 
         scene["walls"].append(wall_entry)
@@ -459,26 +736,6 @@ def _material_to_texture(material_key):
         "floor_mortar": "concrete",
     }
     return textures.get(material_key, "wood")
-
-
-def _guess_furniture_type(name):
-    """什器名からタイプを推定"""
-    if not name:
-        return "custom"
-    name = name.lower()
-    if any(k in name for k in ["カウンター", "counter"]):
-        return "counter"
-    if any(k in name for k in ["テーブル", "table"]):
-        return "table_square"
-    if any(k in name for k in ["椅子", "chair", "チェア"]):
-        return "chair"
-    if any(k in name for k in ["スツール", "stool"]):
-        return "stool"
-    if any(k in name for k in ["ソファ", "sofa"]):
-        return "sofa"
-    if any(k in name for k in ["棚", "shelf"]):
-        return "shelf"
-    return "custom"
 
 
 def main():

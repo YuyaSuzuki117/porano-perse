@@ -162,45 +162,88 @@ print(f"Room: {W}m x {D}m x {H}m")
 
 room_objects = build_room(scene_data, collections)
 
-# 2.3 什器配置（プレースホルダー）
-furniture_col = collections.get("02_Furniture")
+# 2.3 什器配置（GLBモデル優先、フォールバックでプレースホルダーキューブ）
+
+# 什器タイプ → GLBファイル名のマッピング
+TYPE_TO_GLB = {
+    "table_square": "table_square",
+    "table_round": "table_round",
+    "chair": "chair",
+    "counter": "counter",
+    "stool": "bar_stool",
+    "sofa": "sofa",
+    "shelf": "display_shelf",
+    "custom": None,  # キューブフォールバック使用
+}
+
+# modelsDir を scene_data に設定（furniture_importer が参照する）
+models_dir = os.path.join(project_dir, "public", "models")
+scene_data["modelsDir"] = models_dir
+
+# 什器タイプをGLBファイル名にマッピング（furniture_importerがtype名でGLBを探すため）
 for furn in scene_data.get("furniture", []):
-    name = furn.get("name", furn.get("type", "Furniture"))
-    pos = furn.get("position", [0, 0, 0])
-    scale = furn.get("scale", [0.6, 0.75, 0.6])
-    rot = furn.get("rotation", [0, 0, 0])
-
-    # 座標変換: アプリ(x,y,z) → Blender(x,-z,y) + 中心原点オフセット
-    bl_pos = to_blender(pos)
-    bl_x = bl_pos[0] - W / 2
-    bl_y = bl_pos[1] + D / 2
-    bl_z = bl_pos[2]
-
-    import bmesh
-    mesh = bpy.data.meshes.new(f"Mesh_{name}")
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    bm.to_mesh(mesh)
-    bm.free()
-
-    obj = bpy.data.objects.new(name, mesh)
-    obj.location = (bl_x, bl_y, bl_z)
-    obj.scale = scale_to_blender(scale)
-    obj.rotation_euler = rot_to_blender(rot)
-
-    # マテリアル
     ftype = furn.get("type", "")
-    if "counter" in ftype or "table" in ftype or "desk" in ftype:
-        apply_material_preset(obj, "wood_medium")
-    elif "chair" in ftype or "stool" in ftype or "sofa" in ftype:
-        apply_material_preset(obj, "fabric_gray")
-    else:
-        apply_material_preset(obj, "wood_light")
+    if ftype in TYPE_TO_GLB and TYPE_TO_GLB[ftype] is not None:
+        furn["type"] = TYPE_TO_GLB[ftype]
 
-    if furniture_col:
-        link_to_collection(obj, furniture_col)
+# furniture_importer は to_blender() で座標変換するが、
+# 部屋の中心原点オフセット（-W/2, +D/2）は適用しない。
+# アプリ座標系で事前にオフセットを加算しておく。
+# to_blender: (x, y, z) → (x, -z, y)
+# 目標Blender座標: (x - W/2, -z + D/2, y)
+# → アプリ座標を (x - W/2, y, z - D/2) に調整すれば to_blender で正しい結果になる
+for furn in scene_data.get("furniture", []):
+    pos = furn.get("position", [0, 0, 0])
+    furn["position"] = [pos[0] - W / 2, pos[1], pos[2] - D / 2]
 
-    print(f"  Furniture: {name} at ({bl_x:.2f}, {bl_y:.2f}, {bl_z:.2f})")
+# furniture_importer でGLBモデルをインポート
+_furniture_import_success = False
+try:
+    from blender.furniture_importer import import_furniture
+    import_furniture(scene_data, collections)
+    _furniture_import_success = True
+    print(f"  GLBモデルインポート完了（modelsDir: {models_dir}）")
+except Exception as e:
+    print(f"  WARNING: furniture_importer 失敗: {e}")
+    print(f"  フォールバック: プレースホルダーキューブを使用")
+
+# フォールバック: furniture_importer が失敗した場合、キューブで配置
+if not _furniture_import_success:
+    furniture_col = collections.get("02_Furniture")
+    for furn in scene_data.get("furniture", []):
+        name = furn.get("name", furn.get("type", "Furniture"))
+        pos = furn.get("position", [0, 0, 0])
+        scale = furn.get("scale", [0.6, 0.75, 0.6])
+        rot = furn.get("rotation", [0, 0, 0])
+
+        # position は既にオフセット適用済みなので to_blender で変換
+        bl_pos = to_blender(pos)
+
+        import bmesh
+        mesh = bpy.data.meshes.new(f"Mesh_{name}")
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=1.0)
+        bm.to_mesh(mesh)
+        bm.free()
+
+        obj = bpy.data.objects.new(name, mesh)
+        obj.location = bl_pos
+        obj.scale = scale_to_blender(scale)
+        obj.rotation_euler = rot_to_blender(rot)
+
+        # マテリアル
+        ftype = furn.get("type", "")
+        if "counter" in ftype or "table" in ftype or "desk" in ftype:
+            apply_material_preset(obj, "wood_medium")
+        elif "chair" in ftype or "stool" in ftype or "sofa" in ftype:
+            apply_material_preset(obj, "fabric_gray")
+        else:
+            apply_material_preset(obj, "wood_light")
+
+        if furniture_col:
+            link_to_collection(obj, furniture_col)
+
+        print(f"  Furniture(fallback): {name} at ({bl_pos[0]:.2f}, {bl_pos[1]:.2f}, {bl_pos[2]:.2f})")
 
 # 2.4 照明
 setup_lighting(scene_data, collections)
