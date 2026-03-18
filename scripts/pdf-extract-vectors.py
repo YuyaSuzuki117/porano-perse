@@ -1676,6 +1676,7 @@ class PDFVectorExtractor:
         self._filter_short_isolated_walls()
 
         self._snap_wall_endpoints()
+        self._straighten_walls()
 
         # 什器の構築
         for fr in self.furniture_rects:
@@ -2288,6 +2289,41 @@ class PDFVectorExtractor:
             cross_count = sum(1 for wids in self.wall_graph.values() if len(wids) >= 4)
             print(f"[DEBUG] T字交差: {t_count}, 十字交差: {cross_count}")
 
+    def _straighten_walls(self) -> None:
+        """ほぼ水平/垂直な壁を完全な水平/垂直に矯正する。
+
+        建築図面の壁は基本的に水平か垂直。壁ペア検出やスナップで
+        わずかに傾いた壁を、傾き比率が15%未満なら矯正する。
+        """
+        straightened = 0
+        for w in self.walls:
+            sx, sy = w["start_x_mm"], w["start_y_mm"]
+            ex, ey = w["end_x_mm"], w["end_y_mm"]
+            dx = abs(ex - sx)
+            dy = abs(ey - sy)
+            length = (dx ** 2 + dy ** 2) ** 0.5
+            if length < 100:
+                continue
+
+            if dx > dy:
+                # ほぼ水平 — dy が 100mm未満 かつ dy/dx < 0.05 なら水平に矯正
+                # (長い壁の微小傾きのみ。0.15は長壁で過剰矯正する)
+                if dy > 0 and dx > 0 and dy < 100 and dy / dx < 0.05:
+                    avg_y = round((sy + ey) / 2)
+                    w["start_y_mm"] = avg_y
+                    w["end_y_mm"] = avg_y
+                    straightened += 1
+            else:
+                # ほぼ垂直 — dx が 100mm未満 かつ dx/dy < 0.05 なら垂直に矯正
+                if dx > 0 and dy > 0 and dx < 100 and dx / dy < 0.05:
+                    avg_x = round((sx + ex) / 2)
+                    w["start_x_mm"] = avg_x
+                    w["end_x_mm"] = avg_x
+                    straightened += 1
+
+        if self.debug and straightened:
+            print(f"[DEBUG] 壁矯正(水平/垂直): {straightened}本")
+
     def _merge_collinear_walls(self) -> None:
         """同一直線上にある壁セグメントを統合し、断片化を解消する。
 
@@ -2889,13 +2925,29 @@ class PDFVectorExtractor:
             y_mm = y_flipped_pt * PT_TO_MM
             return x_mm * sf, y_mm * sf
 
+        # 壁の外接矩形を計算 (範囲外ノイズフィルタ用)
+        if self.walls:
+            wall_xs = []
+            wall_ys = []
+            for wall in self.walls:
+                wall_xs.extend([wall["start_x_mm"], wall["end_x_mm"]])
+                wall_ys.extend([wall["start_y_mm"], wall["end_y_mm"]])
+            wall_bound_x_min = min(wall_xs) - 500  # 500mmマージン
+            wall_bound_x_max = max(wall_xs) + 500
+            wall_bound_y_min = min(wall_ys) - 500
+            wall_bound_y_max = max(wall_ys) + 500
+        else:
+            wall_bound_x_min = wall_bound_y_min = -float("inf")
+            wall_bound_x_max = wall_bound_y_max = float("inf")
+
         used_room_names: set[int] = set()
         room_count = 0
+        noise_count = 0
+        px_to_mm = 72.0 / dpi * PT_TO_MM * sf
 
         for label_id in range(1, num_labels):  # 0=背景
             area_px = stats[label_id, cv2.CC_STAT_AREA]
             # 面積フィルタ (mm²)
-            px_to_mm = 72.0 / dpi * PT_TO_MM * sf
             area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
 
             if area_m2 < 0.8 or area_m2 > 300.0:
@@ -2905,37 +2957,111 @@ class PDFVectorExtractor:
                     print(f"[DEBUG] 連結成分スキップ(小): label={label_id} area={area_m2:.2f}㎡ center=({round(c_mm[0])},{round(c_mm[1])})")
                 continue
 
-            # バウンディングボックス (ラスター座標)
-            rx = stats[label_id, cv2.CC_STAT_LEFT]
-            ry = stats[label_id, cv2.CC_STAT_TOP]
-            rw = stats[label_id, cv2.CC_STAT_WIDTH]
-            rh = stats[label_id, cv2.CC_STAT_HEIGHT]
-
-            # 4隅をmm座標に変換
-            tl = raster_to_mm(rx, ry)
-            tr = raster_to_mm(rx + rw, ry)
-            br = raster_to_mm(rx + rw, ry + rh)
-            bl = raster_to_mm(rx, ry + rh)
-            polygon = [
-                (round(tl[0]), round(tl[1])),
-                (round(tr[0]), round(tr[1])),
-                (round(br[0]), round(br[1])),
-                (round(bl[0]), round(bl[1])),
-            ]
-
             # 中心点
             cx_px, cy_px = centroids[label_id]
             center = raster_to_mm(int(cx_px), int(cy_px))
             center_mm = (round(center[0]), round(center[1]))
 
-            # 室名テキストをマッチング
-            # 室名テキストとのマッチングは後でまとめて行う (下のループ)
+            # 壁の外接矩形範囲外はノイズとしてスキップ
+            if (center_mm[0] < wall_bound_x_min or center_mm[0] > wall_bound_x_max or
+                    center_mm[1] < wall_bound_y_min or center_mm[1] > wall_bound_y_max):
+                noise_count += 1
+                if self.debug:
+                    print(f"[DEBUG] 連結成分スキップ(範囲外): label={label_id} area={area_m2:.2f}㎡ center={center_mm}")
+                continue
+
+            # OpenCVコンターからポリゴン形状を取得 (バウンディングボックスではなく)
+            component_mask = np.uint8(labels == label_id) * 255
+            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            polygon: list[tuple[int, int]] = []
+            if contours:
+                # 最大コンターを使用
+                largest = max(contours, key=cv2.contourArea)
+                # ポリゴン簡略化 (epsilon = 周長の1%)
+                epsilon = 0.01 * cv2.arcLength(largest, True)
+                approx = cv2.approxPolyDP(largest, epsilon, True)
+                for pt in approx:
+                    px_x_pt, px_y_pt = pt[0]
+                    mm = raster_to_mm(int(px_x_pt), int(px_y_pt))
+                    polygon.append((round(mm[0]), round(mm[1])))
+
+            # ポリゴンが取れなかった場合はバウンディングボックスにフォールバック
+            if len(polygon) < 3:
+                rx = stats[label_id, cv2.CC_STAT_LEFT]
+                ry = stats[label_id, cv2.CC_STAT_TOP]
+                rw = stats[label_id, cv2.CC_STAT_WIDTH]
+                rh = stats[label_id, cv2.CC_STAT_HEIGHT]
+                tl = raster_to_mm(rx, ry)
+                tr = raster_to_mm(rx + rw, ry)
+                br = raster_to_mm(rx + rw, ry + rh)
+                bl = raster_to_mm(rx, ry + rh)
+                polygon = [
+                    (round(tl[0]), round(tl[1])),
+                    (round(tr[0]), round(tr[1])),
+                    (round(br[0]), round(br[1])),
+                    (round(bl[0]), round(bl[1])),
+                ]
+
+            # --- フィルタ1: 負座標の頂点を持つポリゴンをスキップ ---
+            has_negative = any(p[0] < -200 or p[1] < -200 for p in polygon)
+            if has_negative:
+                noise_count += 1
+                if self.debug:
+                    print(f"[DEBUG] 部屋スキップ(負座標): label={label_id} area={area_m2:.1f}㎡ center={center_mm}")
+                continue
+
+            # --- フィルタ2: ポリゴンを壁BBにクリップ ---
+            clipped: list[tuple[int, int]] = []
+            for px, py in polygon:
+                cx = max(wall_bound_x_min, min(wall_bound_x_max, px))
+                cy = max(wall_bound_y_min, min(wall_bound_y_max, py))
+                clipped.append((round(cx), round(cy)))
+            polygon = clipped
+
+            # --- フィルタ3: ポリゴン面積とピクセル面積の乖離チェック ---
+            if len(polygon) >= 3:
+                poly_area = abs(shoelace_area(polygon)) / 1_000_000.0
+                if area_m2 > 0 and poly_area > 0:
+                    ratio = poly_area / area_m2
+                    if ratio > 3.0 or ratio < 0.2:
+                        # ポリゴンが不正確→BBにフォールバック
+                        rx2 = stats[label_id, cv2.CC_STAT_LEFT]
+                        ry2 = stats[label_id, cv2.CC_STAT_TOP]
+                        rw2 = stats[label_id, cv2.CC_STAT_WIDTH]
+                        rh2 = stats[label_id, cv2.CC_STAT_HEIGHT]
+                        tl2 = raster_to_mm(rx2, ry2)
+                        br2 = raster_to_mm(rx2 + rw2, ry2 + rh2)
+                        polygon = [
+                            (round(tl2[0]), round(tl2[1])),
+                            (round(tl2[0] + rw2 * px_to_mm), round(tl2[1])),
+                            (round(br2[0]), round(br2[1])),
+                            (round(tl2[0]), round(br2[1])),
+                        ]
+                        if self.debug:
+                            print(f"[DEBUG] ポリゴンBBフォールバック: label={label_id} poly_area={poly_area:.1f}㎡ vs pixel_area={area_m2:.1f}㎡ ratio={ratio:.1f}")
+
+            # --- 最終フィルタ: フォールバック後のポリゴンも壁BBにクリップ+負座標除外 ---
+            polygon = [
+                (max(round(wall_bound_x_min), p[0]), max(round(wall_bound_y_min), p[1]))
+                for p in polygon
+            ]
+            if any(p[0] < -200 or p[1] < -200 for p in polygon):
+                noise_count += 1
+                if self.debug:
+                    print(f"[DEBUG] 部屋スキップ(最終負座標): label={label_id} area={area_m2:.1f}㎡")
+                continue
 
             # 近くの壁を検出
             nearby_walls: list[str] = []
             for wall in self.walls:
                 wc = ((wall["start_x_mm"] + wall["end_x_mm"]) / 2,
                       (wall["start_y_mm"] + wall["end_y_mm"]) / 2)
+                # バウンディングボックスの最大寸法
+                rx = stats[label_id, cv2.CC_STAT_LEFT]
+                ry = stats[label_id, cv2.CC_STAT_TOP]
+                rw = stats[label_id, cv2.CC_STAT_WIDTH]
+                rh = stats[label_id, cv2.CC_STAT_HEIGHT]
                 max_dim = max(rw, rh) * px_to_mm + 500
                 if distance(center_mm, wc) < max_dim:
                     nearby_walls.append(wall["id"])
@@ -2949,6 +3075,9 @@ class PDFVectorExtractor:
                 "_label_id": label_id,
             })
             room_count += 1
+
+        if self.debug:
+            print(f"[DEBUG] 部屋検出: {room_count}室 (ノイズ除外: {noise_count}個)")
 
         # 室名マッチング: ラスターラベル直接参照 + 最近傍フォールバック
         # label_id → room のマッピングを構築
@@ -2971,10 +3100,11 @@ class PDFVectorExtractor:
         def _find_raster_label(origin_mm: tuple) -> int | None:
             """テキスト原点の周囲を探索し、最も多くヒットしたラベルIDを返す"""
             px_x, px_y = mm_to_raster(origin_mm[0], origin_mm[1])
-            search_max_r = 40
+            # 探索半径を拡大 (40→80px): テキストが部屋中心から離れている場合に対応
+            search_max_r = 80
             label_counts: dict[int, int] = {}
-            for dy in range(-search_max_r, search_max_r + 1, 3):
-                for dx in range(-search_max_r, search_max_r + 1, 3):
+            for dy in range(-search_max_r, search_max_r + 1, 4):
+                for dx in range(-search_max_r, search_max_r + 1, 4):
                     r = abs(dx) + abs(dy)
                     if r > search_max_r:
                         continue

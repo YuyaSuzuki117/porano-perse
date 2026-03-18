@@ -57,7 +57,7 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
-  <span class="badge-iter">test10</span>
+  <span class="badge-iter">test13</span>
   <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
@@ -75,10 +75,14 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">最新 (test10) 元PDF vs DXF出力</div>
+    <div class="card-header">最新 (test13) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay10',this)">重ね合わせ (test10)</div>
+        <div class="vbtn active" onclick="setView('overlay13',this)">重ね合わせ (test13)</div>
+        <div class="vbtn" onclick="setView('sidebyside13',this)">並列比較 (test13)</div>
+        <div class="vbtn" onclick="setView('overlay11',this)">重ね合わせ (test11)</div>
+        <div class="vbtn" onclick="setView('sidebyside11',this)">並列比較 (test11)</div>
+        <div class="vbtn" onclick="setView('overlay10',this)">重ね合わせ (test10)</div>
         <div class="vbtn" onclick="setView('sidebyside10',this)">並列比較 (test10)</div>
         <div class="vbtn" onclick="setView('overlay9',this)">重ね合わせ (test9)</div>
         <div class="vbtn" onclick="setView('sidebyside9',this)">並列比較 (test9)</div>
@@ -95,7 +99,7 @@ th{color:#8b949e}
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="comparison_test10_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="comparison_test13_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
     </div>
@@ -106,7 +110,112 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 10 (test10) -- 近接重複壁統合+小部屋検出+壁フォールバック推定 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-header">Iteration 13 (test13) -- 壁矯正修正+ポリゴンクリップ+オーバーレイ改善 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18 15:30</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>壁矯正バグ修正: _straighten_walls() の閾値を dy/dx&lt;0.15→dy&lt;100mm&amp;&amp;dy/dx&lt;0.05 に厳格化 (W17過剰矯正を防止)</li>
+          <li>負座標ポリゴンフィルタ: 建物外の部屋ポリゴンを除外+壁BBクリッピング</li>
+          <li>ポリゴン面積乖離検証: shoelace面積とピクセル面積の比率が3x超ならBBフォールバック</li>
+          <li>オーバーレイ改善: 壁IDラベル表示、部屋面積表示、線幅調整</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁セグメント</div>
+          <div class="value">31本</div>
+          <div class="change">31 → 31 (維持)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">部屋数</div>
+          <div class="value">27室</div>
+          <div class="change">27 → 27 (ポリゴン品質改善)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">名前あり部屋</div>
+          <div class="value">25室 (93%)</div>
+          <div class="change">25 → 25 (維持)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">什器</div>
+          <div class="value">14個</div>
+          <div class="change">14 → 14 (改善予定)</div>
+        </div>
+      </div>
+      <div class="view-btns" style="margin-top:8px">
+        <div class="vbtn active" onclick="setIterView('overlay13','iter13')">重ね合わせ</div>
+        <div class="vbtn" onclick="setIterView('sidebyside13','iter13')">並列比較</div>
+      </div>
+      <div class="img-box" id="iter13">
+        <img src="comparison_test13_overlay.png" onclick="this.classList.toggle('zoomed')">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 11 (test11) -- ノイズ部屋除去+実ポリゴン形状+ラスター探索拡大 <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>壁外接矩形フィルタ: 壁の範囲外(展開図/凡例エリア)のノイズ部屋を除去</li>
+          <li>OpenCVコンターからの実ポリゴン形状取得: バウンディングボックス→approxPolyDPで実形状 (L字対応)</li>
+          <li>ラスターラベル探索半径拡大: 40→80px (テキストが部屋中心から離れた場合の対応)</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁セグメント</div>
+          <div class="value">31本</div>
+          <div class="change">31 → 31 (維持)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">部屋数</div>
+          <div class="value">27室</div>
+          <div class="change">47 → 27 (ノイズ21除去)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">名前あり部屋</div>
+          <div class="value">25室</div>
+          <div class="change">25 → 25 (維持)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">不明部屋</div>
+          <div class="value">2室</div>
+          <div class="change">22 → 2 (-91%)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">室名解決率</div>
+          <div class="value">93%</div>
+          <div class="change">53% → 93% (+40pt)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">ポリゴン頂点数</div>
+          <div class="value">最大24pt</div>
+          <div class="change">全4pt矩形 → 実形状</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <strong style="font-size:13px;color:#3fb950">改善点:</strong>
+        <div class="improve">ノイズ部屋91%削減 (22→2) — 壁外接矩形フィルタで展開図エリア除去</div>
+        <div class="improve">室名解決率93% — 53%→93% (+40ポイント)</div>
+        <div class="improve">実ポリゴン形状 — L字/不整形の部屋をOpenCVコンターで正確に表現</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg11('comparison_test11_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg11('comparison_test11_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView11">
+          <img src="comparison_test11_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 10 (test10) -- 近接重複壁統合+小部屋検出+壁フォールバック推定 <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>実装内容:</strong>
@@ -522,6 +631,10 @@ function showTab(id) {
 
 // 比較ビュー
 var viewMap = {
+  overlay13: 'comparison_test13_overlay.png',
+  sidebyside13: 'comparison_test13_sidebyside.png',
+  overlay11: 'comparison_test11_overlay.png',
+  sidebyside11: 'comparison_test11_sidebyside.png',
   overlay10: 'comparison_test10_overlay.png',
   sidebyside10: 'comparison_test10_sidebyside.png',
   overlay9: 'comparison_test9_overlay.png',
@@ -554,6 +667,11 @@ function showIterImg(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
   document.getElementById('iterView5').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
+}
+function showIterImg11(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView11').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 function showIterImg10(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });

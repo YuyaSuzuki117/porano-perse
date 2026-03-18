@@ -123,12 +123,17 @@ def draw_overlay_direct(pdf_img: Image.Image, bp_data: dict,
     overlay = Image.fromarray(pdf_faded)
     draw = ImageDraw.Draw(overlay)
 
-    # 壁を赤で描画 (中心線を3px幅で描画 — 位置確認しやすく)
+    # 壁を赤で描画 (中心線を2px幅 + ID表示)
     walls = bp_data.get('walls', [])
     for w in walls:
         p1 = world_to_pixel(w['start_x_mm'], w['start_y_mm'])
         p2 = world_to_pixel(w['end_x_mm'], w['end_y_mm'])
-        draw.line([p1, p2], fill=(255, 30, 30), width=3)
+        draw.line([p1, p2], fill=(220, 40, 40), width=2)
+        # 壁IDラベル (中点に表示)
+        mid = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+        wid = w.get('id', '')
+        if wid and 0 <= mid[0] < img_w and 0 <= mid[1] < img_h:
+            draw.text((mid[0] - 8, mid[1] - 10), wid, fill=(200, 0, 0))
 
     # 什器を緑で描画
     fixtures = bp_data.get('fixtures', [])
@@ -146,20 +151,22 @@ def draw_overlay_direct(pdf_img: Image.Image, bp_data: dict,
         ]
         draw.polygon(corners, outline=(30, 180, 30), width=2)
 
-    # 部屋ポリゴンを青で描画
+    # 部屋ポリゴンを青で描画 (面積付きラベル)
     rooms = bp_data.get('rooms', [])
     for r in rooms:
         poly = r.get('polygon_mm', [])
         if len(poly) >= 3:
             pts = [world_to_pixel(p[0], p[1]) for p in poly]
-            draw.polygon(pts, outline=(50, 100, 255), width=1)
-        # 室名ラベル
+            draw.polygon(pts, outline=(40, 80, 220), width=2)
+        # 室名+面積ラベル
         name = r.get('name', '不明')
+        area = r.get('area_m2', 0)
+        label = f"{name[:8]} {area}m2"
         center = r.get('center_mm', [0, 0])
         cp = world_to_pixel(center[0], center[1])
         if 0 <= cp[0] < img_w and 0 <= cp[1] < img_h:
-            draw.text((cp[0] - 10, cp[1] - 6), name[:8],
-                      fill=(50, 50, 255))
+            draw.text((cp[0] - 20, cp[1] - 6), label,
+                      fill=(30, 30, 200))
 
     # ラベル
     draw.text((10, 10),
