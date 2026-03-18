@@ -4854,14 +4854,14 @@ const ANALYSIS_DATA = {
     "チェーン寸法不整合 (垂直): 区間合計16775mm vs 全体5885mm (差: 10890mm)"
   ],
   "pass1_summary": {
-    "total_walls": 42,
+    "total_walls": 31,
     "total_doors": 51,
     "total_windows": 80,
     "total_openings": 10,
     "total_sliding_doors": 83,
     "total_folding_doors": 0,
     "total_fixtures": 14,
-    "total_rooms": 36,
+    "total_rooms": 47,
     "total_rooms_with_polygon": 25,
     "total_dimensions_paired": 56,
     "total_dimensions_total": 56,

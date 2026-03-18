@@ -60,35 +60,61 @@ def render_pdf_page(pdf_path: str, page_num: int = 0, dpi: int = 150) -> Image.I
     return img
 
 
-def render_dxf(dxf_path: str, width: int = 2000, height: int = 2000) -> Image.Image:
-    """DXFを画像としてレンダリング (白背景・黒線)"""
+def render_dxf(dxf_path: str, page_width_mm: float = 0,
+               page_height_mm: float = 0,
+               target_size: tuple = None) -> Image.Image:
+    """DXFを画像としてレンダリング (白背景・黒線)
+
+    page_width_mm/page_height_mm: PDFページのmm寸法を指定すると
+    DXF描画範囲をPDFと一致させ、オーバーレイ時の位置合わせが正確になる。
+    target_size: (width, height) ピクセルサイズを指定するとその解像度で出力。
+    """
     from ezdxf.addons.drawing.config import Configuration
 
     doc = ezdxf.readfile(dxf_path)
     msp = doc.modelspace()
 
-    fig, ax = plt.subplots(figsize=(20, 20), dpi=150)
+    # ページサイズが指定されていればアスペクト比を合わせる
+    if page_width_mm > 0 and page_height_mm > 0:
+        aspect = page_width_mm / page_height_mm
+        fig_h = 20
+        fig_w = fig_h * aspect
+    else:
+        fig_w, fig_h = 20, 20
+
+    dpi = 150
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=dpi)
     ax.set_aspect('equal')
     ax.set_facecolor('white')
 
     ctx = RenderContext(doc)
     out = MatplotlibBackend(ax)
-    # 白背景設定
     config = Configuration(
         background_policy=2,  # WHITE
     )
     Frontend(ctx, out, config=config).draw_layout(msp)
 
-    ax.autoscale()
-    ax.margins(0.02)
+    # ページサイズ指定時: 軸範囲をPDFページに一致させる
+    if page_width_mm > 0 and page_height_mm > 0:
+        ax.set_xlim(0, page_width_mm)
+        ax.set_ylim(0, page_height_mm)
+    else:
+        ax.autoscale()
+        ax.margins(0.02)
+
     ax.axis('off')
 
     fig.savefig('_temp_dxf_render.png', bbox_inches='tight',
-                facecolor='white', edgecolor='none', dpi=150)
+                facecolor='white', edgecolor='none', dpi=dpi)
     plt.close(fig)
 
     img = Image.open('_temp_dxf_render.png').convert('RGB')
     os.remove('_temp_dxf_render.png')
+
+    # target_sizeが指定されていればリサイズ
+    if target_size:
+        img = img.resize(target_size, Image.LANCZOS)
+
     return img
 
 
@@ -133,8 +159,11 @@ def create_overlay_fast(pdf_img: Image.Image, dxf_img: Image.Image) -> Image.Ima
     except ImportError:
         return create_overlay(pdf_img, dxf_img)
 
-    # DXFをPDFサイズに合わせる
-    dxf_resized = dxf_img.resize(pdf_img.size, Image.LANCZOS)
+    # DXFが既にPDFと同サイズでなければリサイズ
+    if dxf_img.size != pdf_img.size:
+        dxf_resized = dxf_img.resize(pdf_img.size, Image.LANCZOS)
+    else:
+        dxf_resized = dxf_img
 
     # numpy配列に変換
     pdf_arr = np.array(pdf_img, dtype=np.float32)
@@ -160,13 +189,44 @@ def create_comparison(pdf_path: str, dxf_path: str, output_path: str,
     print(f"元PDF: {pdf_path} (page {page_num})")
     print(f"DXF:   {dxf_path}")
 
+    # PDFページサイズをmm単位で取得
+    doc_pdf = fitz.open(pdf_path)
+    page = doc_pdf[page_num]
+    page_rect = page.rect  # points (72dpi)
+    page_width_mm = page_rect.width * 25.4 / 72.0
+    page_height_mm = page_rect.height * 25.4 / 72.0
+    doc_pdf.close()
+
+    # DXF meta.json からスケールを取得 (実寸mm = 用紙mm × scale)
+    scale = 50  # デフォルト 1:50
+    meta_path = dxf_path + ".meta.json"
+    bp_json_path = dxf_path.replace('.dxf', '.json').replace('drawings', 'blueprint-analysis')
+    for json_path in [meta_path, bp_json_path]:
+        if os.path.exists(json_path):
+            with open(json_path, encoding='utf-8') as f:
+                meta_data = json.load(f)
+            sd = meta_data.get('scale_detected', '')
+            if sd and ':' in str(sd):
+                try:
+                    scale = int(str(sd).split(':')[1])
+                except (ValueError, IndexError):
+                    pass
+            break
+
+    # DXF座標は実寸mm。ページ全体の実寸mm範囲を計算
+    dxf_page_width = page_width_mm * scale
+    dxf_page_height = page_height_mm * scale
+    print(f"PDFページ: {page_width_mm:.1f} x {page_height_mm:.1f} mm (scale 1:{scale}, "
+          f"DXF範囲: {dxf_page_width:.0f} x {dxf_page_height:.0f} mm)")
+
     # レンダリング
     print("PDFレンダリング中...")
     pdf_img = render_pdf_page(pdf_path, page_num, dpi=150)
     print(f"  PDF画像: {pdf_img.size}")
 
     print("DXFレンダリング中...")
-    dxf_img = render_dxf(dxf_path)
+    dxf_img = render_dxf(dxf_path, dxf_page_width, dxf_page_height,
+                         target_size=pdf_img.size)
     print(f"  DXF画像: {dxf_img.size}")
 
     # 1. 並べた比較画像

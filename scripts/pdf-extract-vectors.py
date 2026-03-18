@@ -1668,14 +1668,13 @@ class PDFVectorExtractor:
         self._extend_walls_to_intersections()
         self._merge_collinear_walls()
         self._split_walls_at_t_junctions()
-        # 短すぎる壁を除去 (350mm未満は家具/什器の誤検出の可能性が高い)
-        pre_short_filter = len(self.walls)
-        self.walls = [w for w in self.walls
-                      if distance((w["start_x_mm"], w["start_y_mm"]),
-                                  (w["end_x_mm"], w["end_y_mm"])) >= 350]
-        if self.debug and len(self.walls) < pre_short_filter:
-            print(f"[DEBUG] 短壁除去: {pre_short_filter} → {len(self.walls)} "
-                  f"({pre_short_filter - len(self.walls)}本除去, 閾値350mm)")
+
+        # --- 近接重複壁の統合 (105mm以内に並行する壁ペアを検出し長い方を残す) ---
+        self._merge_near_duplicate_walls()
+
+        # --- 短壁の接続性チェック付きフィルタ (500mm未満かつ孤立した壁を除去) ---
+        self._filter_short_isolated_walls()
+
         self._snap_wall_endpoints()
 
         # 什器の構築
@@ -2401,6 +2400,156 @@ class PDFVectorExtractor:
         if self.debug:
             print(f"[DEBUG] 壁統合: {merge_count}回統合 → 残{len(self.walls)}壁")
 
+    def _merge_near_duplicate_walls(self) -> None:
+        """近接重複壁の統合: 並行かつ近接(120mm以内)な壁ペアを検出し長い方を残す。
+
+        什器線や壁ペアの片側が壁として誤検出された場合に、
+        ほぼ同じ位置に並行する2本の壁が生成されることがある。
+        これらを検出して長い方だけを残す。
+        """
+        if len(self.walls) < 2:
+            return
+
+        dup_dist_mm = 120  # この距離以内の並行壁を重複とみなす
+        removed_indices: set[int] = set()
+
+        for i in range(len(self.walls)):
+            if i in removed_indices:
+                continue
+            w1 = self.walls[i]
+            p1s = (w1["start_x_mm"], w1["start_y_mm"])
+            p1e = (w1["end_x_mm"], w1["end_y_mm"])
+            w1_len = distance(p1s, p1e)
+            if w1_len < 10:
+                continue
+
+            for j in range(i + 1, len(self.walls)):
+                if j in removed_indices:
+                    continue
+                w2 = self.walls[j]
+                p2s = (w2["start_x_mm"], w2["start_y_mm"])
+                p2e = (w2["end_x_mm"], w2["end_y_mm"])
+                w2_len = distance(p2s, p2e)
+                if w2_len < 10:
+                    continue
+
+                # 平行判定
+                if not lines_are_parallel(p1s, p1e, p2s, p2e):
+                    continue
+
+                # 垂直距離チェック (120mm以内)
+                d1 = perpendicular_distance(p2s, p1s, p1e)
+                d2 = perpendicular_distance(p2e, p1s, p1e)
+                if max(d1, d2) > dup_dist_mm:
+                    continue
+
+                # 投影重なりチェック: 2壁の投影区間が50%以上重なっていること
+                dx = p1e[0] - p1s[0]
+                dy = p1e[1] - p1s[1]
+                ux, uy = dx / w1_len, dy / w1_len
+                t2s = (p2s[0] - p1s[0]) * ux + (p2s[1] - p1s[1]) * uy
+                t2e = (p2e[0] - p1s[0]) * ux + (p2e[1] - p1s[1]) * uy
+                if t2s > t2e:
+                    t2s, t2e = t2e, t2s
+                overlap_start = max(0.0, t2s)
+                overlap_end = min(w1_len, t2e)
+                overlap = max(0.0, overlap_end - overlap_start)
+                min_len = min(w1_len, w2_len)
+                if min_len < 10 or overlap / min_len < 0.4:
+                    continue
+
+                # 重複確定: 短い方を除去
+                if w1_len >= w2_len:
+                    remove_idx = j
+                    keep_wall = w1
+                else:
+                    remove_idx = i
+                    keep_wall = w2
+                removed_indices.add(remove_idx)
+                if self.debug:
+                    removed_wall = self.walls[remove_idx]
+                    print(f"[DEBUG] 近接重複壁除去: {removed_wall['id']} "
+                          f"L={distance((removed_wall['start_x_mm'], removed_wall['start_y_mm']), (removed_wall['end_x_mm'], removed_wall['end_y_mm'])):.0f}mm "
+                          f"(並行距離{max(d1, d2):.0f}mm, 残={keep_wall['id']})")
+                if remove_idx == i:
+                    break  # w1が除去されたのでiのループを抜ける
+
+        if removed_indices:
+            before = len(self.walls)
+            self.walls = [w for idx, w in enumerate(self.walls) if idx not in removed_indices]
+            if self.debug:
+                print(f"[DEBUG] 近接重複壁統合: {before} → {len(self.walls)} "
+                      f"({len(removed_indices)}本除去)")
+
+    def _filter_short_isolated_walls(self) -> None:
+        """短壁(500mm未満)のうち、他の壁と端点接続していない孤立壁を除去する。
+
+        500mm未満でも他の壁と端点が近い(100mm以内)場合は間仕切りの端として残す。
+        350mm未満は無条件除去(従来通り)。
+        1000mm以上の壁(外壁)は絶対に消さない。
+        """
+        short_threshold_mm = 500
+        connect_radius_mm = 100  # この距離以内に他壁の端点があれば「接続」とみなす
+        min_wall_mm = 350  # これ未満は無条件除去
+
+        pre_count = len(self.walls)
+        keep_walls: list[dict] = []
+
+        for i, w in enumerate(self.walls):
+            ws = (w["start_x_mm"], w["start_y_mm"])
+            we = (w["end_x_mm"], w["end_y_mm"])
+            w_len = distance(ws, we)
+
+            # 1000mm以上は絶対に残す(外壁保護)
+            if w_len >= 1000:
+                keep_walls.append(w)
+                continue
+
+            # 350mm未満は無条件除去
+            if w_len < min_wall_mm:
+                if self.debug:
+                    print(f"[DEBUG] 短壁除去(無条件): {w['id']} L={w_len:.0f}mm < {min_wall_mm}mm")
+                continue
+
+            # 350-500mm: 接続チェック
+            if w_len < short_threshold_mm:
+                # 他の壁(自分以外)の端点との最小距離を計算
+                start_connected = False
+                end_connected = False
+                for j, other in enumerate(self.walls):
+                    if i == j:
+                        continue
+                    os = (other["start_x_mm"], other["start_y_mm"])
+                    oe = (other["end_x_mm"], other["end_y_mm"])
+                    # start端点の接続チェック
+                    if distance(ws, os) <= connect_radius_mm or distance(ws, oe) <= connect_radius_mm:
+                        start_connected = True
+                    # end端点の接続チェック
+                    if distance(we, os) <= connect_radius_mm or distance(we, oe) <= connect_radius_mm:
+                        end_connected = True
+                    if start_connected and end_connected:
+                        break
+
+                if start_connected or end_connected:
+                    # 少なくとも片端が接続 → 残す
+                    keep_walls.append(w)
+                    if self.debug:
+                        conn_info = "両端" if (start_connected and end_connected) else ("始端" if start_connected else "終端")
+                        print(f"[DEBUG] 短壁残留(接続あり): {w['id']} L={w_len:.0f}mm {conn_info}接続")
+                else:
+                    # 孤立 → 除去
+                    if self.debug:
+                        print(f"[DEBUG] 短壁除去(孤立): {w['id']} L={w_len:.0f}mm 端点接続なし")
+                    continue
+            else:
+                # 500mm以上は残す
+                keep_walls.append(w)
+
+        self.walls = keep_walls
+        if self.debug and len(self.walls) < pre_count:
+            print(f"[DEBUG] 短壁フィルタ: {pre_count} → {len(self.walls)} "
+                  f"({pre_count - len(self.walls)}本除去, 閾値{short_threshold_mm}mm, 接続半径{connect_radius_mm}mm)")
+
     def _split_walls_at_t_junctions(self) -> None:
         """T字交差点で壁を分割し、端点接続を確保する。
 
@@ -2749,7 +2898,11 @@ class PDFVectorExtractor:
             px_to_mm = 72.0 / dpi * PT_TO_MM * sf
             area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
 
-            if area_m2 < 1.5 or area_m2 > 300.0:
+            if area_m2 < 0.8 or area_m2 > 300.0:
+                if self.debug and 0.3 < area_m2 < 0.8:
+                    cx_px, cy_px = centroids[label_id]
+                    c_mm = raster_to_mm(int(cx_px), int(cy_px))
+                    print(f"[DEBUG] 連結成分スキップ(小): label={label_id} area={area_m2:.2f}㎡ center=({round(c_mm[0])},{round(c_mm[1])})")
                 continue
 
             # バウンディングボックス (ラスター座標)
@@ -2898,23 +3051,80 @@ class PDFVectorExtractor:
                         print(f"[DEBUG] 室名マッチ(最近傍): {rn['name']} -> center={best_room['center_mm']} "
                               f"dist={best_dist:.0f}mm")
 
-        # フォールバック: ポリゴンに含まれなかった室名
+        # フォールバック: ポリゴンに含まれなかった室名 → 周辺壁から矩形ポリゴンを推定
         for idx, rn in enumerate(self.room_names):
             if idx in used_room_names:
                 continue
             center_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
-            nearby_walls: list[str] = []
+
+            # 周辺壁を収集 (近い順)
+            wall_dists: list[tuple[float, dict]] = []
             for wall in self.walls:
                 wc = ((wall["start_x_mm"] + wall["end_x_mm"]) / 2,
                       (wall["start_y_mm"] + wall["end_y_mm"]) / 2)
-                if distance(center_mm, wc) < 10000:
-                    nearby_walls.append(wall["id"])
+                d = distance(center_mm, wc)
+                if d < 5000:
+                    wall_dists.append((d, wall))
+            wall_dists.sort(key=lambda x: x[0])
+
+            nearby_walls = [w["id"] for _, w in wall_dists]
+
+            # 壁端点からバウンディングボックスを推定
+            polygon_mm: list[list[int]] = []
+            est_area_m2 = 0.0
+
+            if len(wall_dists) >= 2:
+                # 近くの壁の端点を集めてcenter周辺のバウンディングボックスを作る
+                wall_pts_x: list[float] = []
+                wall_pts_y: list[float] = []
+                for _, w in wall_dists[:12]:  # 最大12本の壁を考慮
+                    wall_pts_x.extend([w["start_x_mm"], w["end_x_mm"]])
+                    wall_pts_y.extend([w["start_y_mm"], w["end_y_mm"]])
+
+                # center の上下左右で最も近い壁端点を見つけて部屋の範囲を推定
+                cx, cy = center_mm
+                # 各方向で最も近い壁座標を探す
+                left_xs = [x for x in wall_pts_x if x < cx - 50]
+                right_xs = [x for x in wall_pts_x if x > cx + 50]
+                bottom_ys = [y for y in wall_pts_y if y < cy - 50]
+                top_ys = [y for y in wall_pts_y if y > cy + 50]
+
+                x_min = max(left_xs) if left_xs else cx - 500
+                x_max = min(right_xs) if right_xs else cx + 500
+                y_min = max(bottom_ys) if bottom_ys else cy - 500
+                y_max = min(top_ys) if top_ys else cy + 500
+
+                # 最低サイズ制限 (300mm x 300mm)
+                if x_max - x_min < 300:
+                    x_min, x_max = cx - 300, cx + 300
+                if y_max - y_min < 300:
+                    y_min, y_max = cy - 300, cy + 300
+
+                # 最大サイズ制限 (5000mm x 5000mm) - 不合理に大きくしない
+                if x_max - x_min > 5000:
+                    x_min, x_max = cx - 2500, cx + 2500
+                if y_max - y_min > 5000:
+                    y_min, y_max = cy - 2500, cy + 2500
+
+                polygon_mm = [
+                    [round(x_min), round(y_max)],
+                    [round(x_max), round(y_max)],
+                    [round(x_max), round(y_min)],
+                    [round(x_min), round(y_min)],
+                ]
+                est_area_m2 = round((x_max - x_min) * (y_max - y_min) / 1_000_000.0, 1)
+
+                if self.debug:
+                    print(f"[DEBUG] フォールバックポリゴン推定: {rn['name']} "
+                          f"bbox=({round(x_min)},{round(y_min)})-({round(x_max)},{round(y_max)}) "
+                          f"area={est_area_m2}㎡")
+
             self.rooms.append({
                 "name": rn["name"],
                 "wall_ids": nearby_walls,
-                "area_m2": 0,
+                "area_m2": est_area_m2,
                 "center_mm": list(center_mm),
-                "polygon_mm": [],
+                "polygon_mm": polygon_mm,
             })
 
         if self.debug:
@@ -3122,8 +3332,8 @@ class PDFVectorExtractor:
         for lid, cells in label_cells.items():
             area_m2 = len(cells) * (cell_mm ** 2) / 1_000_000.0
 
-            # 極端に小さい領域は除外 (< 1.5m², トイレ等の小部屋は残す)
-            if area_m2 < 1.5:
+            # 極端に小さい領域は除外 (< 0.8m², WC/PS等の小部屋はフォールバックで推定)
+            if area_m2 < 0.8:
                 continue
             # 極端に大きい領域は除外 (> 300m²)
             if area_m2 > 300.0:

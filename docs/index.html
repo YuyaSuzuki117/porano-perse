@@ -57,7 +57,7 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
-  <span class="badge-iter">test9</span>
+  <span class="badge-iter">test10</span>
   <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
@@ -75,10 +75,12 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">最新 (test9) 元PDF vs DXF出力</div>
+    <div class="card-header">最新 (test10) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay9',this)">重ね合わせ (test9)</div>
+        <div class="vbtn active" onclick="setView('overlay10',this)">重ね合わせ (test10)</div>
+        <div class="vbtn" onclick="setView('sidebyside10',this)">並列比較 (test10)</div>
+        <div class="vbtn" onclick="setView('overlay9',this)">重ね合わせ (test9)</div>
         <div class="vbtn" onclick="setView('sidebyside9',this)">並列比較 (test9)</div>
         <div class="vbtn" onclick="setView('overlay7',this)">重ね合わせ (test7)</div>
         <div class="vbtn" onclick="setView('sidebyside7',this)">並列比較 (test7)</div>
@@ -93,7 +95,7 @@ th{color:#8b949e}
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="comparison_test9_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="comparison_test10_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
     </div>
@@ -104,7 +106,71 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 9 (test9) -- 壁誤検出削減+室名マッチング改善 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-header">Iteration 10 (test10) -- 近接重複壁統合+小部屋検出+壁フォールバック推定 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>近接重複壁の統合: 120mm以内に並行する壁ペアを検出し長い方を残す</li>
+          <li>短壁の接続性チェックフィルタ: 350-500mmの壁は他の壁と端点接続がなければ除外、1000mm以上は保護</li>
+          <li>OpenCV面積フィルタ引き下げ: 1.5m2→0.8m2で小部屋(WC/PS)検出</li>
+          <li>壁ベースフォールバックポリゴン推定: OpenCVで検出できない室名テキストの周辺壁から矩形推定</li>
+          <li>比較ツール座標修正: DXF実寸mm↔PDF用紙mmのスケール変換を追加、正確な重ね合わせ</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁セグメント</div>
+          <div class="value">31本</div>
+          <div class="change">42 → 31 (-26%)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">部屋数</div>
+          <div class="value">47室</div>
+          <div class="change">36 → 47 (+11)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">名前あり部屋</div>
+          <div class="value">25室</div>
+          <div class="change">25 (変化なし)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">不明部屋</div>
+          <div class="value">22室</div>
+          <div class="change">11 → 22 (+11, 小部屋検出増)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">area=0の部屋</div>
+          <div class="value">0室</div>
+          <div class="change">11 → 0 (全解消)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">什器</div>
+          <div class="value">14個</div>
+          <div class="change">14個 (維持)</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <strong style="font-size:13px;color:#3fb950">改善点:</strong>
+        <div class="improve">壁セグメント26%削減 (42→31) — 近接重複壁統合+短壁フィルタ</div>
+        <div class="improve">area=0の部屋を全解消 (11→0) — 壁ベースフォールバック推定</div>
+        <div class="improve">小部屋(WC/PS)検出 — OpenCV面積フィルタ0.8m2で部屋数+11</div>
+        <div class="improve">比較ツール座標修正 — DXF↔PDF正確な重ね合わせ</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg10('comparison_test10_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg10('comparison_test10_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView10">
+          <img src="comparison_test10_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 9 (test9) -- 壁誤検出削減+室名マッチング改善 <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>実装内容:</strong>
@@ -444,7 +510,7 @@ const D = ANALYSIS_DATA;
 const S = D.pass1_summary || {};
 
 // 更新日時表示
-document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test9)';
+document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test10)';
 
 // タブ
 function showTab(id) {
@@ -456,6 +522,8 @@ function showTab(id) {
 
 // 比較ビュー
 var viewMap = {
+  overlay10: 'comparison_test10_overlay.png',
+  sidebyside10: 'comparison_test10_sidebyside.png',
   overlay9: 'comparison_test9_overlay.png',
   sidebyside9: 'comparison_test9_sidebyside.png',
   overlay7: 'compare_test7_overlay.png',
@@ -486,6 +554,11 @@ function showIterImg(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
   document.getElementById('iterView5').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
+}
+function showIterImg10(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView10').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 function showIterImg9(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
@@ -556,6 +629,11 @@ var pdca = [
   ['Do','壁ペア中心線長350mmフィルタ+細線短壁コンボフィルタ','done'],
   ['Do','室名マッチング: OpenCV連結成分ラベル+最近傍フォールバック2フェーズ','done'],
   ['Do','面積ラベル(m2)フォールバック活用','done'],
+  ['Do','近接重複壁統合 (120mm以内の並行壁ペア→長い方を残す)','done'],
+  ['Do','短壁接続性チェックフィルタ (350-500mm壁は端点接続なしなら除外)','done'],
+  ['Do','OpenCV面積フィルタ引き下げ (1.5m2→0.8m2で小部屋WC/PS検出)','done'],
+  ['Do','壁ベースフォールバックポリゴン推定 (OpenCV未検出室名→周辺壁から矩形推定)','done'],
+  ['Do','比較ツール座標修正 (DXF実寸mm↔PDF用紙mmスケール変換)','done'],
   ['Act','L字凹み検出でポリゴン精度向上','todo'],
   ['Act','什器ラベルのマッチング改善','todo'],
   ['Act','壁接続グラフの改善','todo'],
