@@ -229,6 +229,7 @@ JSONのみ出力してください。説明文は不要です。</div>
 <button onclick="saveToLocalStorage()" style="background:#238636;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:13px">ブラウザに保存</button>
 <button onclick="downloadJson()" style="background:#8b5cf6;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:13px">JSONダウンロード</button>
 <button onclick="copyJsonForClaude()" style="background:#d29922;color:#000;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:13px">Claude用コピー</button>
+<button onclick="shareViaGitHub()" style="background:#f0883e;color:#000;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-size:13px">GitHub経由で共有</button>
 </div>
 <div id="jsonStatus" style="margin-top:10px;font-size:12px;min-height:20px"></div>
 <div id="jsonSummary" style="margin-top:8px;font-size:12px;color:#8b949e"></div>
@@ -391,6 +392,30 @@ function deleteSaved(key) {
     refreshSavedList();
     setStatus('削除しました', '#8b949e');
   }
+}
+
+function shareViaGitHub() {
+  const data = validateJson();
+  if (!data) return;
+  const name = getFileName();
+  const jsonStr = JSON.stringify(data, null, 2);
+  const walls = (data.walls || []).length;
+  const rooms = (data.rooms || []).length;
+  const fixtures = (data.fixtures || []).length;
+  const title = encodeURIComponent('Gemini JSON: ' + name);
+  const body = encodeURIComponent(
+    '## Gemini図面読み取り結果\n' +
+    '- ファイル名: `' + name + '`\n' +
+    '- 壁: ' + walls + '本 / 部屋: ' + rooms + '室 / 什器: ' + fixtures + '個\n\n' +
+    '## 処理指示\n' +
+    '```\n' +
+    'python scripts/gen-dxf.py --json output/blueprint-analysis/' + name + '.json -o output/drawings/' + name + '.dxf\n' +
+    '```\n\n' +
+    '## JSON\n```json\n' + jsonStr + '\n```'
+  );
+  const url = 'https://github.com/YuyaSuzuki117/porano-perse/issues/new?title=' + title + '&body=' + body + '&labels=gemini-json';
+  window.open(url, '_blank');
+  setStatus('GitHubのIssue作成ページを開きました。「Submit」を押してください。', '#f0883e');
 }
 
 // ページ読み込み時に保存済みリストを表示
