@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(tsx?|jsx?)$'; then cd C:/Users/LENOVO/.gemini/porano-perse && npx tsc --noEmit --pretty 2>&1 | head -30; fi",
+            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(tsx?|jsx?)$'; then cd C:/Users/y-suz/porano-perse && npx tsc --noEmit --pretty 2>&1 | head -30; fi",
             "timeout": 30000
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(tsx?|jsx?)$'; then cd C:/Users/LENOVO/.gemini/porano-perse && npx eslint \"$FILE\" --no-warn-ignored 2>&1 | head -20; fi",
+            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(tsx?|jsx?)$'; then cd C:/Users/y-suz/porano-perse && npx eslint \"$FILE\" --no-warn-ignored 2>&1 | head -20; fi",
             "timeout": 15000
           }
         ]
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.py$'; then cd C:/Users/LENOVO/.gemini/porano-perse && python -m py_compile \"$FILE\" 2>&1 | head -10; fi",
+            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.py$'; then cd C:/Users/y-suz/porano-perse && python -m py_compile \"$FILE\" 2>&1 | head -10; fi",
             "timeout": 10000
           }
         ]

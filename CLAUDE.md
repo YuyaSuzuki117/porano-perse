@@ -219,7 +219,7 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 - **3D→2D禁止**: 変更は常に2D図面 → 3Dシーンの一方向。
 - **Blenderパイプライン**: template-to-json.ts → scene.json → render-template.py → Blender → .blend/.png
 
-## 7. Slash Commands (カスタム 22コマンド)
+## 7. Slash Commands (カスタム 23コマンド)
 
 ### 7.1 案件管理
 | コマンド | 用途 |
@@ -236,6 +236,7 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | `/dxf-validate` | DXF品質検証（構造・寸法・Blenderインポート互換性） |
 | `/gemini-prompt-gen` | Gemini図面分析→Claude Code制作指示プロンプト生成（--autoで一気通貫） |
 | `/perse-from-blueprint` | 図面分析JSONからBlenderパーススクリプト生成+レンダリング |
+| `/pdf-dxf-pdca` | PDF→DXF改善PDCAサイクル1回実行（抽出→比較→修正→記録） |
 
 ### 7.3 3D・レンダリング
 | コマンド | 用途 |
@@ -260,12 +261,10 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | `/store-inspect` | ストアの指定セクションだけ安全に読む |
 
 ## 8. MCP Servers
-| MCP | 用途 |
-|-----|------|
-| **Playwright** | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
-| **Context7** | Three.js/R3F/Drei/Zustand/Blender ドキュメント参照 |
-| **Sequential Thinking** | 複雑な3D数学・座標変換・図面寸法計算の段階的推論 |
-| **mcp-three** | GLB/GLTF→R3F JSXコンポーネント変換・3Dモデル構造分析 |
+| MCP | 設定場所 | 用途 |
+|-----|---------|------|
+| **Playwright** | グローバル (~/.claude/settings.json) | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
+| **Context7** | プロジェクト (~/.claude.json) | Three.js/R3F/Drei/Zustand/Blender/Python ドキュメント参照 |
 
 ### 8.1 図面→パース制作パイプライン
 ```
