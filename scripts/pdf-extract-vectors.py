@@ -56,7 +56,7 @@ WALL_THICKNESS_MAX_MM = 250
 WALL_THICKNESS_DEFAULT_MM = 120
 
 # 壁端点スナップ距離 (mm) — この距離以内の端点は同一点に統合
-SNAP_THRESHOLD_MM = 50
+SNAP_THRESHOLD_MM = 150
 
 # 線幅分類: 3段階 (tier1=外壁, tier2=内壁, tier3=細線/寸法)
 # 動的クラスタリングで決定するが、フォールバック閾値
@@ -255,6 +255,23 @@ def shoelace_area(polygon: list[tuple]) -> float:
         area += polygon[i][0] * polygon[j][1]
         area -= polygon[j][0] * polygon[i][1]
     return abs(area) / 2.0
+
+
+def line_intersection(p1: tuple, p2: tuple, p3: tuple, p4: tuple) -> Optional[tuple]:
+    """2直線 (p1-p2) と (p3-p4) の交点を返す。平行なら None。
+    直線の延長上も含む（線分ではなく直線として計算）。
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = p3
+    x4, y4 = p4
+    denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    if abs(denom) < 1e-9:
+        return None  # 平行
+    t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
+    ix = x1 + t * (x2 - x1)
+    iy = y1 + t * (y2 - y1)
+    return (ix, iy)
 
 
 def point_in_polygon(point: tuple, polygon: list[tuple]) -> bool:
@@ -1398,7 +1415,14 @@ class PDFVectorExtractor:
         # 外壁判定
         self._classify_exterior_walls()
 
-        # 壁端点スナップ + 接続グラフ構築
+        # 壁延長→交差点計算 + 同一線上壁統合 + T字分割 + 端点スナップ + 接続グラフ構築
+        self._extend_walls_to_intersections()
+        self._merge_collinear_walls()
+        self._split_walls_at_t_junctions()
+        # 短すぎる壁・0長壁を除去
+        self.walls = [w for w in self.walls
+                      if distance((w["start_x_mm"], w["start_y_mm"]),
+                                  (w["end_x_mm"], w["end_y_mm"])) >= 50]
         self._snap_wall_endpoints()
 
         # 什器の構築
@@ -1677,8 +1701,9 @@ class PDFVectorExtractor:
                                  sf: float) -> list[tuple]:
         """凸包を壁セグメントに沿って凹ませてL字/不整形に対応。
 
-        凸包の各辺について、その辺から大きく内側に入る壁群があれば、
-        凸包を凹ませて実際の建物形状に近づける。
+        凸包の各辺に対して外壁線の端点群を走査し、凸包から内側に
+        大きく引っ込んでいる箇所を検出。検出したら凸包頂点を追加して
+        凹ポリゴン（L字/凸字等）を形成する。
         """
         if not self.wall_lines or len(hull) < 3:
             return hull
@@ -1692,17 +1717,142 @@ class PDFVectorExtractor:
         # 凹み検出の閾値: 建物幅/高さの10%以上の凹みがあれば適用
         indent_threshold = min(hull_w, hull_h) * 0.10
 
-        # 壁端点のうち、凸包から内側に大きく離れているものを検出
-        # (L字の切り欠き部分の角を見つける)
-        exterior_wall_pts: set[tuple] = set()
+        # 外壁候補線（tier1）の端点を収集（mm座標に変換）
+        ext_pts_mm: list[tuple] = []
         for line in self.wall_lines:
-            if line.width >= LINE_WIDTH_TIER1_MIN * 0.8:  # tier1に近い太さの線
-                exterior_wall_pts.add((round(line.p1[0], 1), round(line.p1[1], 1)))
-                exterior_wall_pts.add((round(line.p2[0], 1), round(line.p2[1], 1)))
+            if line.width >= LINE_WIDTH_TIER1_MIN * 0.8:
+                ext_pts_mm.append((round(line.p1[0] * sf), round(line.p1[1] * sf)))
+                ext_pts_mm.append((round(line.p2[0] * sf), round(line.p2[1] * sf)))
 
-        # 現状は凸包をそのまま返す（凹み検出は将来の改善で追加）
-        # TODO: L字/凸字の凹み検出を実装
-        return hull
+        if not ext_pts_mm:
+            return hull
+
+        # hull座標もmm単位に変換
+        hull_mm = [(round(p[0] * sf), round(p[1] * sf)) for p in hull]
+
+        # 凸包の各辺について、外壁端点が大きく内側に離れているか調べる
+        # 辺ごとに「内側に引っ込んでいるクラスタ」を検出
+        indent_candidates: list[dict] = []
+
+        for ei in range(len(hull_mm)):
+            ej = (ei + 1) % len(hull_mm)
+            edge_p1 = hull_mm[ei]
+            edge_p2 = hull_mm[ej]
+            edge_len = distance(edge_p1, edge_p2)
+            if edge_len < 500:
+                continue
+
+            # 辺の方向ベクトルと法線
+            edx = edge_p2[0] - edge_p1[0]
+            edy = edge_p2[1] - edge_p1[1]
+            # 内向き法線（凸包は反時計回りを仮定、内向き = 右手方向）
+            nx = edy / edge_len
+            ny = -edx / edge_len
+
+            # この辺から内側に大きく離れた外壁端点を探す
+            for pt in ext_pts_mm:
+                # 辺からの符号付き距離（正 = 内側）
+                dx_pt = pt[0] - edge_p1[0]
+                dy_pt = pt[1] - edge_p1[1]
+                signed_dist = dx_pt * nx + dy_pt * ny
+
+                if signed_dist > indent_threshold:
+                    # 辺上の投影位置を確認（辺の範囲内か）
+                    t = (dx_pt * edx + dy_pt * edy) / (edge_len ** 2)
+                    if 0.05 < t < 0.95:
+                        indent_candidates.append({
+                            "point_mm": pt,
+                            "edge_idx": ei,
+                            "depth": signed_dist,
+                            "t": t,
+                        })
+
+        if not indent_candidates:
+            return hull
+
+        # エッジごとにインデント候補をグルーピング
+        from itertools import groupby
+        indent_candidates.sort(key=lambda c: (c["edge_idx"], c["t"]))
+
+        # 各エッジについて凹みを形成
+        # 凹みの角となる点を凸包に挿入する
+        concave_pts_by_edge: dict[int, list[tuple]] = defaultdict(list)
+
+        for edge_idx, group in groupby(indent_candidates, key=lambda c: c["edge_idx"]):
+            pts = list(group)
+            if len(pts) < 2:
+                continue
+
+            # 最も深い凹み方向の点群をクラスタリング
+            # 凹みの角 = 辺に対して直角方向に最も深い点の両端
+            pts.sort(key=lambda c: c["t"])
+
+            # 凹み領域の開始と終了の投影位置
+            t_min = pts[0]["t"]
+            t_max = pts[-1]["t"]
+
+            ei = edge_idx
+            ej = (ei + 1) % len(hull_mm)
+            ep1 = hull_mm[ei]
+            ep2 = hull_mm[ej]
+
+            # 凹みの角点を計算（辺から直角方向に落とした点）
+            # 角1: 辺上のt_min位置
+            corner1_on_edge = (
+                round(ep1[0] + t_min * (ep2[0] - ep1[0])),
+                round(ep1[1] + t_min * (ep2[1] - ep1[1])),
+            )
+            # 角2: 辺上のt_max位置
+            corner2_on_edge = (
+                round(ep1[0] + t_max * (ep2[0] - ep1[0])),
+                round(ep1[1] + t_max * (ep2[1] - ep1[1])),
+            )
+
+            # 凹み深さ方向の点 (最も深い凹みの位置)
+            max_depth_pt = max(pts, key=lambda c: c["depth"])
+
+            # 凹みの内側角点
+            # 辺の法線方向にmax_depth分だけ内側に入った位置
+            edx = ep2[0] - ep1[0]
+            edy = ep2[1] - ep1[1]
+            edge_len = distance(ep1, ep2)
+            nx = edy / edge_len
+            ny = -edx / edge_len
+            depth = max_depth_pt["depth"]
+
+            inner_corner1 = (
+                round(corner1_on_edge[0] + depth * nx),
+                round(corner1_on_edge[1] + depth * ny),
+            )
+            inner_corner2 = (
+                round(corner2_on_edge[0] + depth * nx),
+                round(corner2_on_edge[1] + depth * ny),
+            )
+
+            concave_pts_by_edge[edge_idx] = [
+                corner1_on_edge, inner_corner1, inner_corner2, corner2_on_edge
+            ]
+
+        if not concave_pts_by_edge:
+            return hull
+
+        # 凸包に凹み頂点を挿入して凹ポリゴンを構築
+        result_mm: list[tuple] = []
+        for i in range(len(hull_mm)):
+            result_mm.append(hull_mm[i])
+            if i in concave_pts_by_edge:
+                # この辺に凹みがある → 角点を挿入
+                for cp in concave_pts_by_edge[i]:
+                    result_mm.append(cp)
+
+        # mm座標をPDF座標に戻す
+        result = [(p[0] / sf, p[1] / sf) for p in result_mm]
+
+        if self.debug:
+            print(f"[DEBUG] 凹ポリゴン: {len(hull)}頂点 → {len(result)}頂点 "
+                  f"(凹み{len(concave_pts_by_edge)}箇所)")
+
+        return result
 
     def _point_to_polygon_edge_dist(self, point: tuple,
                                      polygon: list[tuple]) -> float:
@@ -1718,6 +1868,88 @@ class PDFVectorExtractor:
             if d_actual < min_d:
                 min_d = d_actual
         return min_d
+
+    def _extend_walls_to_intersections(self) -> None:
+        """近接する非平行壁の端点を交差点まで延長し、接続性を改善。
+
+        壁のペアが角を形成しているが端点が離れている場合、
+        両壁の延長線の交差点を計算し、端点をその交差点に移動する。
+        """
+        if len(self.walls) < 2:
+            return
+
+        max_gap_mm = 300  # 端点間がこの距離以内なら延長対象
+        extended = 0
+
+        for i, w1 in enumerate(self.walls):
+            p1s = (w1["start_x_mm"], w1["start_y_mm"])
+            p1e = (w1["end_x_mm"], w1["end_y_mm"])
+            w1_len = distance(p1s, p1e)
+            if w1_len < 100:
+                continue
+
+            for j, w2 in enumerate(self.walls):
+                if j <= i:
+                    continue
+                p2s = (w2["start_x_mm"], w2["start_y_mm"])
+                p2e = (w2["end_x_mm"], w2["end_y_mm"])
+                w2_len = distance(p2s, p2e)
+                if w2_len < 100:
+                    continue
+
+                # 平行な壁はスキップ（壁ペアのため）
+                dx1 = p1e[0] - p1s[0]
+                dy1 = p1e[1] - p1s[1]
+                dx2 = p2e[0] - p2s[0]
+                dy2 = p2e[1] - p2s[1]
+                cross = abs(dx1 * dy2 - dy1 * dx2)
+                dot = abs(dx1 * dx2 + dy1 * dy2)
+                if cross < 0.1 * (w1_len * w2_len):
+                    continue  # ほぼ平行
+
+                # 最も近い端点ペアを探す
+                pairs = [
+                    ("end", "start", distance(p1e, p2s)),
+                    ("end", "end", distance(p1e, p2e)),
+                    ("start", "start", distance(p1s, p2s)),
+                    ("start", "end", distance(p1s, p2e)),
+                ]
+                best_side1, best_side2, best_dist = min(pairs, key=lambda x: x[2])
+
+                if best_dist > max_gap_mm or best_dist < 1:
+                    continue
+
+                # 交差点を計算
+                ix = line_intersection(p1s, p1e, p2s, p2e)
+                if ix is None:
+                    continue
+
+                # 交差点が両壁の近傍にあるか確認（極端に遠い交差点は除外）
+                ep1 = p1e if best_side1 == "end" else p1s
+                ep2 = p2s if best_side2 == "start" else p2e
+                if distance(ix, ep1) > max_gap_mm or distance(ix, ep2) > max_gap_mm:
+                    continue
+
+                # 壁端点を交差点に移動
+                ix_rounded = (round(ix[0]), round(ix[1]))
+                if best_side1 == "end":
+                    w1["end_x_mm"] = ix_rounded[0]
+                    w1["end_y_mm"] = ix_rounded[1]
+                else:
+                    w1["start_x_mm"] = ix_rounded[0]
+                    w1["start_y_mm"] = ix_rounded[1]
+
+                if best_side2 == "start":
+                    w2["start_x_mm"] = ix_rounded[0]
+                    w2["start_y_mm"] = ix_rounded[1]
+                else:
+                    w2["end_x_mm"] = ix_rounded[0]
+                    w2["end_y_mm"] = ix_rounded[1]
+
+                extended += 1
+
+        if self.debug:
+            print(f"[DEBUG] 壁延長→交差点: {extended}組")
 
     def _snap_wall_endpoints(self) -> None:
         """壁の端点をスナップ距離以内で統合し、接続グラフを構築"""
@@ -1803,6 +2035,200 @@ class PDFVectorExtractor:
             t_count = sum(1 for wids in self.wall_graph.values() if len(wids) == 3)
             cross_count = sum(1 for wids in self.wall_graph.values() if len(wids) >= 4)
             print(f"[DEBUG] T字交差: {t_count}, 十字交差: {cross_count}")
+
+    def _merge_collinear_walls(self) -> None:
+        """同一直線上にある壁セグメントを統合し、断片化を解消する。
+
+        同じ方向（平行）で、同じ直線上（垂直距離が小さい）で、
+        端点が近接（重なりまたは小さなギャップ）している壁を1本に統合する。
+        """
+        if len(self.walls) < 2:
+            return
+
+        merge_gap_mm = 200  # この距離以内のギャップは統合
+        perp_tol_mm = 100   # 垂直方向の許容差
+
+        merged = True
+        merge_count = 0
+
+        while merged:
+            merged = False
+            i = 0
+            while i < len(self.walls):
+                w1 = self.walls[i]
+                p1s = (w1["start_x_mm"], w1["start_y_mm"])
+                p1e = (w1["end_x_mm"], w1["end_y_mm"])
+                w1_len = distance(p1s, p1e)
+                if w1_len < 10:
+                    i += 1
+                    continue
+
+                j = i + 1
+                merged_this = False
+                while j < len(self.walls):
+                    w2 = self.walls[j]
+                    p2s = (w2["start_x_mm"], w2["start_y_mm"])
+                    p2e = (w2["end_x_mm"], w2["end_y_mm"])
+                    w2_len = distance(p2s, p2e)
+                    if w2_len < 10:
+                        j += 1
+                        continue
+
+                    # 厚みが異なる壁は統合しない（外壁+内壁混合防止）
+                    if abs(w1.get("thickness_mm", 120) - w2.get("thickness_mm", 120)) > 50:
+                        j += 1
+                        continue
+
+                    # 平行判定
+                    if not lines_are_parallel(p1s, p1e, p2s, p2e):
+                        j += 1
+                        continue
+
+                    # 垂直距離チェック
+                    d1 = perpendicular_distance(p2s, p1s, p1e)
+                    d2 = perpendicular_distance(p2e, p1s, p1e)
+                    if max(d1, d2) > perp_tol_mm:
+                        j += 1
+                        continue
+
+                    # 投影ベースで重なり/ギャップチェック
+                    dx = p1e[0] - p1s[0]
+                    dy = p1e[1] - p1s[1]
+                    ux, uy = dx / w1_len, dy / w1_len
+
+                    # w1上の投影区間
+                    t1s, t1e = 0.0, w1_len
+
+                    # w2上の投影区間
+                    t2s = (p2s[0] - p1s[0]) * ux + (p2s[1] - p1s[1]) * uy
+                    t2e = (p2e[0] - p1s[0]) * ux + (p2e[1] - p1s[1]) * uy
+                    if t2s > t2e:
+                        t2s, t2e = t2e, t2s
+
+                    # ギャップチェック: 重なりまたは小さなギャップ
+                    gap = max(t2s - t1e, t1s - t2e)
+                    if gap > merge_gap_mm:
+                        j += 1
+                        continue
+
+                    # 統合: 両端の最小・最大投影で新しい壁を作成
+                    t_min = min(t1s, t2s)
+                    t_max = max(t1e, t2e)
+                    new_start = (
+                        round(p1s[0] + t_min * ux),
+                        round(p1s[1] + t_min * uy),
+                    )
+                    new_end = (
+                        round(p1s[0] + t_max * ux),
+                        round(p1s[1] + t_max * uy),
+                    )
+
+                    w1["start_x_mm"] = new_start[0]
+                    w1["start_y_mm"] = new_start[1]
+                    w1["end_x_mm"] = new_end[0]
+                    w1["end_y_mm"] = new_end[1]
+                    p1s = new_start
+                    p1e = new_end
+                    w1_len = distance(p1s, p1e)
+
+                    # w2を削除
+                    self.walls.pop(j)
+                    merged = True
+                    merged_this = True
+                    merge_count += 1
+                    # jは進めない（次の壁がjの位置に来る）
+
+                if not merged_this:
+                    i += 1
+                else:
+                    # w1が更新されたので再度同じiから
+                    pass
+                    i += 1
+
+        if self.debug:
+            print(f"[DEBUG] 壁統合: {merge_count}回統合 → 残{len(self.walls)}壁")
+
+    def _split_walls_at_t_junctions(self) -> None:
+        """T字交差点で壁を分割し、端点接続を確保する。
+
+        壁Aの中間点に壁Bの端点が接している場合、壁Aをその点で2分割する。
+        これにより隣接グラフで壁Aの中間点にも接続が生まれ、
+        部屋ポリゴンのDFS探索が閉ループを見つけられるようになる。
+        """
+        snap = SNAP_THRESHOLD_MM
+        new_walls: list[dict] = []
+        walls_to_remove: set[str] = set()
+        wall_nums = [int(w["id"].replace("wall_", ""))
+                     for w in self.walls if w["id"].startswith("wall_")]
+        next_id = (max(wall_nums) + 1) if wall_nums else 0
+
+        # 各壁について、他の壁端点がT字接合しているか調べる
+        for w1 in self.walls:
+            p1 = (w1["start_x_mm"], w1["start_y_mm"])
+            p2 = (w1["end_x_mm"], w1["end_y_mm"])
+            w1_len = distance(p1, p2)
+            if w1_len < 200:
+                continue
+
+            # w1上にT字接合する点を収集
+            split_points: list[tuple[float, tuple]] = []  # (t値, 接合点座標)
+
+            for w2 in self.walls:
+                if w2["id"] == w1["id"]:
+                    continue
+                for ep in [(w2["start_x_mm"], w2["start_y_mm"]),
+                           (w2["end_x_mm"], w2["end_y_mm"])]:
+                    perp = perpendicular_distance(ep, p1, p2)
+                    if perp > snap:
+                        continue
+                    dx = p2[0] - p1[0]
+                    dy = p2[1] - p1[1]
+                    t = ((ep[0] - p1[0]) * dx + (ep[1] - p1[1]) * dy) / (w1_len ** 2)
+                    if 0.05 < t < 0.95:
+                        # 投影点を接合座標にする（w2端点ではなくw1上の投影点）
+                        proj = (round(p1[0] + t * dx), round(p1[1] + t * dy))
+                        # 既存の分割点と重複しないか
+                        duplicate = False
+                        for _, existing in split_points:
+                            if distance(proj, existing) < snap:
+                                duplicate = True
+                                break
+                        if not duplicate:
+                            split_points.append((t, proj))
+
+            if not split_points:
+                continue
+
+            # t値でソートして壁を分割
+            split_points.sort(key=lambda x: x[0])
+            walls_to_remove.add(w1["id"])
+
+            # 分割セグメントを生成
+            segments = [(p1, split_points[0][1])]
+            for k in range(len(split_points) - 1):
+                segments.append((split_points[k][1], split_points[k + 1][1]))
+            segments.append((split_points[-1][1], p2))
+
+            for seg_start, seg_end in segments:
+                seg_len = distance(seg_start, seg_end)
+                if seg_len < 50:
+                    continue
+                new_wall = dict(w1)
+                new_wall["id"] = f"wall_{next_id}"
+                new_wall["start_x_mm"] = seg_start[0]
+                new_wall["start_y_mm"] = seg_start[1]
+                new_wall["end_x_mm"] = seg_end[0]
+                new_wall["end_y_mm"] = seg_end[1]
+                new_walls.append(new_wall)
+                next_id += 1
+
+        if walls_to_remove:
+            self.walls = [w for w in self.walls if w["id"] not in walls_to_remove]
+            self.walls.extend(new_walls)
+
+            if self.debug:
+                print(f"[DEBUG] T字分割: {len(walls_to_remove)}壁分割 → "
+                      f"+{len(new_walls)}壁 = 合計{len(self.walls)}壁")
 
     def _detect_wall_intersections(self) -> None:
         """T字・十字交差を検出してグラフに追加"""
@@ -2004,60 +2430,206 @@ class PDFVectorExtractor:
                     )
 
     def _build_room_polygons(self) -> None:
-        """壁接続グラフから閉ループを抽出し、室名テキストを割り当てて部屋ポリゴンを構築"""
+        """ラスタライズ+フラッドフィル方式で部屋ポリゴンを検出。
 
-        # まず壁の端点から隣接リストを構築
-        adj: dict[tuple, list[tuple[tuple, str]]] = defaultdict(list)  # 端点 → [(隣接端点, 壁ID)]
-        for w in self.walls:
-            sp = (w["start_x_mm"], w["start_y_mm"])
-            ep = (w["end_x_mm"], w["end_y_mm"])
-            adj[sp].append((ep, w["id"]))
-            adj[ep].append((sp, w["id"]))
+        壁線をグリッドにラスタライズし、外部からフラッドフィルで塗りつぶし、
+        残った未塗りつぶし領域を部屋として検出する。
+        トポロジー完全接続が不要で、壁線の小さなギャップにも頑健。
+        """
+        if not self.wall_lines:
+            return
 
-        # 小さな閉ループ（部屋候補）を探索
-        found_cycles: list[list[tuple]] = []
-        visited_edge_sets: set[frozenset] = set()
-
-        # 各ノードからDFSで閉ループを探す (最大8頂点まで)
-        max_cycle_len = 8
-        for start_node in adj:
-            self._find_cycles_from(start_node, adj, found_cycles,
-                                   visited_edge_sets, max_cycle_len)
-
-        # 見つかった閉ループに室名を割り当て
         sf = self.scale_factor
+        cell_mm = 100  # グリッドセルサイズ (mm)
+
+        # 生の壁線のバウンディングボックス (mm単位)
+        all_x = []
+        all_y = []
+        for line in self.wall_lines:
+            all_x.extend([line.p1[0] * sf, line.p2[0] * sf])
+            all_y.extend([line.p1[1] * sf, line.p2[1] * sf])
+
+        min_x, max_x = min(all_x) - 500, max(all_x) + 500
+        min_y, max_y = min(all_y) - 500, max(all_y) + 500
+
+        grid_w = int((max_x - min_x) / cell_mm) + 2
+        grid_h = int((max_y - min_y) / cell_mm) + 2
+
+        if grid_w > 500 or grid_h > 500:
+            # グリッドが大きすぎる場合はセルサイズを拡大
+            cell_mm = max((max_x - min_x), (max_y - min_y)) / 400
+            grid_w = int((max_x - min_x) / cell_mm) + 2
+            grid_h = int((max_y - min_y) / cell_mm) + 2
+
+        # グリッド初期化 (0=空, 1=壁, 2=外部塗りつぶし済み)
+        grid = [[0] * grid_w for _ in range(grid_h)]
+
+        def mm_to_grid(x_mm: float, y_mm: float) -> tuple[int, int]:
+            gx = int((x_mm - min_x) / cell_mm)
+            gy = int((y_mm - min_y) / cell_mm)
+            return max(0, min(gx, grid_w - 1)), max(0, min(gy, grid_h - 1))
+
+        def grid_to_mm(gx: int, gy: int) -> tuple[float, float]:
+            return (min_x + gx * cell_mm + cell_mm / 2,
+                    min_y + gy * cell_mm + cell_mm / 2)
+
+        # 生の壁線をラスタライズ (Bresenham)
+        # wall_lines (tier1+tier2) を使い、ドア開口もギャップなしで描画
+        for line in self.wall_lines:
+            gx1, gy1 = mm_to_grid(line.p1[0] * sf, line.p1[1] * sf)
+            gx2, gy2 = mm_to_grid(line.p2[0] * sf, line.p2[1] * sf)
+
+            # Bresenham's line algorithm
+            dx = abs(gx2 - gx1)
+            dy = abs(gy2 - gy1)
+            sx = 1 if gx1 < gx2 else -1
+            sy = 1 if gy1 < gy2 else -1
+            err = dx - dy
+            x, y = gx1, gy1
+
+            while True:
+                if 0 <= x < grid_w and 0 <= y < grid_h:
+                    grid[y][x] = 1
+                    # 壁の厚みを表現するために隣接セルも塗る
+                    for ddx in range(-1, 2):
+                        for ddy in range(-1, 2):
+                            nx, ny = x + ddx, y + ddy
+                            if 0 <= nx < grid_w and 0 <= ny < grid_h:
+                                grid[ny][nx] = 1
+                if x == gx2 and y == gy2:
+                    break
+                e2 = 2 * err
+                if e2 > -dy:
+                    err -= dy
+                    x += sx
+                if e2 < dx:
+                    err += dx
+                    y += sy
+
+        # 外部からフラッドフィル (端からのBFS)
+        from collections import deque
+        queue = deque()
+
+        # 4辺の全セルからフラッドフィル開始
+        for gx in range(grid_w):
+            if grid[0][gx] == 0:
+                grid[0][gx] = 2
+                queue.append((gx, 0))
+            if grid[grid_h - 1][gx] == 0:
+                grid[grid_h - 1][gx] = 2
+                queue.append((gx, grid_h - 1))
+        for gy in range(grid_h):
+            if grid[gy][0] == 0:
+                grid[gy][0] = 2
+                queue.append((0, gy))
+            if grid[gy][grid_w - 1] == 0:
+                grid[gy][grid_w - 1] = 2
+                queue.append((grid_w - 1, gy))
+
+        while queue:
+            cx, cy = queue.popleft()
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = cx + dx, cy + dy
+                if 0 <= nx < grid_w and 0 <= ny < grid_h and grid[ny][nx] == 0:
+                    grid[ny][nx] = 2
+                    queue.append((nx, ny))
+
+        # 残った空セル (value=0) = 室内領域
+        # 連結成分ラベリング
+        room_label = [[0] * grid_w for _ in range(grid_h)]
+        label_id = 0
+        label_cells: dict[int, list[tuple[int, int]]] = {}
+
+        for gy in range(grid_h):
+            for gx in range(grid_w):
+                if grid[gy][gx] == 0 and room_label[gy][gx] == 0:
+                    # 新しい部屋発見 → フラッドフィルでラベル付け
+                    label_id += 1
+                    cells: list[tuple[int, int]] = []
+                    fill_queue = deque([(gx, gy)])
+                    room_label[gy][gx] = label_id
+
+                    while fill_queue:
+                        fx, fy = fill_queue.popleft()
+                        cells.append((fx, fy))
+                        for ddx, ddy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                            nx2, ny2 = fx + ddx, fy + ddy
+                            if (0 <= nx2 < grid_w and 0 <= ny2 < grid_h and
+                                    grid[ny2][nx2] == 0 and room_label[ny2][nx2] == 0):
+                                room_label[ny2][nx2] = label_id
+                                fill_queue.append((nx2, ny2))
+
+                    label_cells[label_id] = cells
+
+        # 各ラベルから部屋ポリゴンを生成
         used_room_names: set[int] = set()
 
-        for cycle in found_cycles:
-            if len(cycle) < 3:
+        for lid, cells in label_cells.items():
+            area_m2 = len(cells) * (cell_mm ** 2) / 1_000_000.0
+
+            # 極端に小さい領域は除外 (< 2m²)
+            if area_m2 < 2.0:
+                continue
+            # 極端に大きい領域は除外 (> 300m²)
+            if area_m2 > 300.0:
                 continue
 
-            # ポリゴンの面積
-            area_mm2 = shoelace_area(cycle)
-            area_m2 = area_mm2 / 1_000_000.0
+            # バウンディングボックスからポリゴンを生成
+            gx_list = [c[0] for c in cells]
+            gy_list = [c[1] for c in cells]
+            gx_min, gx_max = min(gx_list), max(gx_list)
+            gy_min, gy_max = min(gy_list), max(gy_list)
 
-            # 極端に小さい/大きいポリゴンは除外
-            if area_m2 < 1.0 or area_m2 > 500.0:
-                continue
+            # ポリゴン (バウンディングボックス矩形)
+            p_tl = grid_to_mm(gx_min, gy_min)
+            p_tr = grid_to_mm(gx_max, gy_min)
+            p_br = grid_to_mm(gx_max, gy_max)
+            p_bl = grid_to_mm(gx_min, gy_max)
+            polygon = [
+                (round(p_tl[0]), round(p_tl[1])),
+                (round(p_tr[0]), round(p_tr[1])),
+                (round(p_br[0]), round(p_br[1])),
+                (round(p_bl[0]), round(p_bl[1])),
+            ]
 
-            # ポリゴン内に室名テキストがあるか
+            # 中心点
+            center = grid_to_mm(
+                (gx_min + gx_max) // 2,
+                (gy_min + gy_max) // 2,
+            )
+            center_mm = (round(center[0]), round(center[1]))
+
+            # 室名テキストがこの領域内にあるか
             room_name = None
             for idx, rn in enumerate(self.room_names):
                 if idx in used_room_names:
                     continue
                 rn_mm = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
-                if point_in_polygon(rn_mm, cycle):
+                rgx, rgy = mm_to_grid(rn_mm[0], rn_mm[1])
+                if room_label[rgy][rgx] == lid:
                     room_name = rn["name"]
                     used_room_names.add(idx)
                     break
 
-            # 室名がなくても部屋として登録 (名前は「不明」)
+            # 近くの壁を検出
+            nearby_walls: list[str] = []
+            for w in self.walls:
+                wall_center = (
+                    (w["start_x_mm"] + w["end_x_mm"]) / 2,
+                    (w["start_y_mm"] + w["end_y_mm"]) / 2,
+                )
+                if distance(center_mm, wall_center) < max(
+                    (gx_max - gx_min + 2) * cell_mm,
+                    (gy_max - gy_min + 2) * cell_mm
+                ):
+                    nearby_walls.append(w["id"])
+
             self.rooms.append({
                 "name": room_name or "不明",
-                "wall_ids": self._walls_for_polygon(cycle),
-                "area_m2": round(area_m2, 2),
-                "center_mm": list(self._polygon_centroid(cycle)),
-                "polygon_mm": [[p[0], p[1]] for p in cycle],
+                "wall_ids": nearby_walls,
+                "area_m2": round(area_m2, 1),
+                "center_mm": list(center_mm),
+                "polygon_mm": [[p[0], p[1]] for p in polygon],
             })
 
         # ポリゴンに含まれなかった室名は従来方式でフォールバック
@@ -2083,36 +2655,10 @@ class PDFVectorExtractor:
                 "polygon_mm": [],
             })
 
-    def _find_cycles_from(self, start: tuple,
-                          adj: dict[tuple, list[tuple[tuple, str]]],
-                          found_cycles: list[list[tuple]],
-                          visited_edge_sets: set[frozenset],
-                          max_len: int) -> None:
-        """始点からの閉ループをDFSで探索"""
-        # 簡易DFS: スタックベース
-        stack: list[tuple[list[tuple], set[tuple]]] = [([start], {start})]
-
-        while stack:
-            path, visited = stack.pop()
-            current = path[-1]
-
-            if len(path) > max_len:
-                continue
-
-            for neighbor, wall_id in adj[current]:
-                if neighbor == start and len(path) >= 3:
-                    # 閉ループ発見
-                    cycle = path[:]
-                    edge_set = frozenset(
-                        frozenset([cycle[i], cycle[(i + 1) % len(cycle)]])
-                        for i in range(len(cycle))
-                    )
-                    if edge_set not in visited_edge_sets:
-                        visited_edge_sets.add(edge_set)
-                        found_cycles.append(cycle)
-                elif neighbor not in visited and len(path) < max_len:
-                    new_visited = visited | {neighbor}
-                    stack.append((path + [neighbor], new_visited))
+        if self.debug:
+            polygon_rooms = [r for r in self.rooms if r.get("polygon_mm") and len(r["polygon_mm"]) >= 3]
+            print(f"[DEBUG] 部屋ポリゴン: {len(polygon_rooms)}室 "
+                  f"(ラスタライズ {grid_w}x{grid_h}, セル{cell_mm}mm)")
 
     def _walls_for_polygon(self, polygon: list[tuple]) -> list[str]:
         """ポリゴンの辺に対応する壁IDを返す"""

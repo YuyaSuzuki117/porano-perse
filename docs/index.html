@@ -57,7 +57,7 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
-  <span class="badge-iter">test5</span>
+  <span class="badge-iter">test6</span>
   <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
@@ -75,10 +75,12 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">最新 (test5) 元PDF vs DXF出力</div>
+    <div class="card-header">最新 (test6) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay5',this)">重ね合わせ (test5)</div>
+        <div class="vbtn active" onclick="setView('overlay6',this)">重ね合わせ (test6)</div>
+        <div class="vbtn" onclick="setView('sidebyside6',this)">並列比較 (test6)</div>
+        <div class="vbtn" onclick="setView('overlay5',this)">重ね合わせ (test5)</div>
         <div class="vbtn" onclick="setView('sidebyside5',this)">並列比較 (test5)</div>
         <div class="vbtn" onclick="setView('overlay4',this)">重ね合わせ (test4)</div>
         <div class="vbtn" onclick="setView('sidebyside4',this)">並列比較 (test4)</div>
@@ -87,7 +89,7 @@ th{color:#8b949e}
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="compare_test5_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="compare_test6_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
     </div>
@@ -98,7 +100,59 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 5 (test5) -- 線幅3段階分類 + 凸包外壁ポリゴン <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-header">Iteration 6 (test6) -- 壁延長+T字分割+ラスタライズ部屋検出 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>壁延長→交差点計算 — 74組の壁端点を交差点に延長</li>
+          <li>同一線上壁統合 — 14回の統合で断片化解消</li>
+          <li>T字分割 — 36壁を分割→88セグメント</li>
+          <li>ラスタライズ部屋検出 — フラッドフィル方式で壁囲み領域を検出</li>
+          <li>L字凹み検出実装 — 凸包→凹ポリゴン変換</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat">
+          <div class="label">壁セグメント</div>
+          <div class="value">147本</div>
+          <div class="change">116 → 147 (+27%)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">壁接続ノード</div>
+          <div class="value">67</div>
+          <div class="change">20 → 67 (+235%)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">部屋ポリゴン</div>
+          <div class="value">7室</div>
+          <div class="change">0室 → 7室 (新規)</div>
+        </div>
+        <div class="iter-stat">
+          <div class="label">スナップ閾値</div>
+          <div class="value">150mm</div>
+          <div class="change">50mm → 150mm</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <strong style="font-size:13px;color:#f85149">残課題:</strong>
+        <div class="warn">壁位置ずれ (test5と同程度)</div>
+        <div class="warn">7/17室のみポリゴン化 (ドア開口ギャップで10室がフラッドフィル漏れ)</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="view-btns">
+          <div class="vbtn" onclick="showIterImg6('compare_test6_overlay.png',this)">重ね合わせ</div>
+          <div class="vbtn" onclick="showIterImg6('compare_test6_sidebyside.png',this)">並列比較</div>
+        </div>
+        <div class="img-box" id="iterView6">
+          <img src="compare_test6_overlay.png" onclick="this.classList.toggle('zoomed')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 5 (test5) -- 線幅3段階分類 + 凸包外壁ポリゴン <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>改善内容:</strong>
@@ -260,7 +314,7 @@ const D = ANALYSIS_DATA;
 const S = D.pass1_summary || {};
 
 // 更新日時表示
-document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test5 + convex hull)';
+document.getElementById('lastUpdate').textContent = 'Updated: 2026-03-18 (test6 + room detection)';
 
 // タブ
 function showTab(id) {
@@ -272,6 +326,8 @@ function showTab(id) {
 
 // 比較ビュー
 var viewMap = {
+  overlay6: 'compare_test6_overlay.png',
+  sidebyside6: 'compare_test6_sidebyside.png',
   overlay5: 'compare_test5_overlay.png',
   sidebyside5: 'compare_test5_sidebyside.png',
   overlay4: 'ChloeBY_compare_overlay.png',
@@ -296,6 +352,11 @@ function showIterImg(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
   el.classList.add('active');
   document.getElementById('iterView5').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
+}
+function showIterImg6(src, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('iterView6').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 function showIterImg4(src, el) {
   el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
