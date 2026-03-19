@@ -417,7 +417,7 @@ def calculate_quality_score(merged: dict) -> dict:
     total_width = room_info.get("width_mm", 0)
     total_depth = room_info.get("depth_mm", 0)
     envelope_area = (total_width * total_depth) / 1e6  # m2
-    room_area_sum = sum(r.get("area_m2", 0) for r in rooms)
+    room_area_sum = sum(r.get("area_m2", 0) or 0 for r in rooms)
     if envelope_area > 0 and room_area_sum > 0:
         ratio = room_area_sum / envelope_area
         # L字型等では合計<外形が正常

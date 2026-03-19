@@ -29,6 +29,7 @@ import math
 import os
 import re
 import sys
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional
@@ -74,10 +75,10 @@ LINE_WIDTH_TIER2_MIN = 0.15   # これ以上 = 内壁候補
 # tier2_min 未満 = 細線/寸法線
 
 # 引戸検出: 壁線上の平行線ペア間距離 (mm)
-SLIDING_DOOR_GAP_MIN_MM = 20
-SLIDING_DOOR_GAP_MAX_MM = 100
-SLIDING_DOOR_LENGTH_MIN_MM = 500
-SLIDING_DOOR_LENGTH_MAX_MM = 2000
+SLIDING_DOOR_GAP_MIN_MM = 60
+SLIDING_DOOR_GAP_MAX_MM = 150
+SLIDING_DOOR_LENGTH_MIN_MM = 650
+SLIDING_DOOR_LENGTH_MAX_MM = 1300
 
 # 折戸検出: ジグザグパターンの角度範囲 (度)
 FOLDING_DOOR_ANGLE_MIN = 30
@@ -1081,12 +1082,19 @@ class PDFVectorExtractor:
         "入金", "OPEN",
         # 設備 (室名ではなく什器/設備)
         "消火栓", "分電盤", "ﾛｯｶｰ", "ロッカー",
-        "キャッシャー", "ｷｬｯｼｬｰ", "レジ",
+        "キャッシャー", "ｷｬｯｼｬｰ", "レジ", "ﾚｼﾞ",
         # 追加什器キーワード
         "ソファ", "ｿﾌｧ", "椅子", "ｲｽ", "カウンター", "ｶｳﾝﾀｰ",
         "ボトル", "ﾎﾞﾄﾙ", "什器", "厨房", "食洗", "製氷",
         "ガス", "ｶﾞｽ", "手洗", "鏡", "ﾐﾗｰ", "ミラー",
         "パントリー", "ﾊﾟﾝﾄﾘｰ", "電話", "ｲﾝﾀｰﾎﾝ",
+        # test14 追加キーワード
+        "ﾎﾞﾄﾙ棚", "ボトル棚", "LED", "ＬＥＤ",
+        "ﾚｾﾌﾟｼｮﾝ", "レセプション",
+        "ﾄﾞﾘﾝｸ", "ドリンク",
+        "ﾁｪｱ", "チェア", "ﾃﾞｽｸ", "デスク",
+        "ｴｱｺﾝ", "エアコン", "室外機", "給湯",
+        "ｽﾋﾟｰｶｰ", "スピーカー",
     ]
 
     # 什器テキストのデフォルトサイズ推定 (テキストラベルだけの場合)
@@ -1124,9 +1132,12 @@ class PDFVectorExtractor:
                 continue
 
             # 什器キーワードチェック (室名より優先)
+            # 半角↔全角カタカナ正規化してから比較
+            text_normalized = unicodedata.normalize('NFKC', text)
             is_fixture_text = False
             for kw in self.FIXTURE_KEYWORDS:
-                if kw in text:
+                kw_normalized = unicodedata.normalize('NFKC', kw)
+                if kw_normalized in text_normalized:
                     is_fixture_text = True
                     break
 
@@ -1156,8 +1167,13 @@ class PDFVectorExtractor:
             # 面積ラベル判定 (例: "20.5㎡", "35㎡") — 室名が見つからないポリゴンのフォールバック名
             area_match = re.match(r'^(\d+(?:\.\d+)?)\s*[㎡m²]', text)
             if area_match:
+                # エリア表記の正規化: "エリア(16.80㎡)" → "エリア 16.80㎡"
+                area_val = area_match.group(1)
+                # 元テキストから㎡部分を取得
+                area_unit_match = re.search(r'[㎡m²]', text)
+                area_unit = area_unit_match.group(0) if area_unit_match else '㎡'
                 self.room_names.append({
-                    "name": f"エリア({text})",
+                    "name": f"エリア {area_val}{area_unit}",
                     "origin": t.origin,
                     "size": t.size,
                     "is_area_label": True,
@@ -1395,19 +1411,35 @@ class PDFVectorExtractor:
                         break
 
                 if is_on_wall:
-                    center = midpoint(
-                        midpoint(l1.p1, l1.p2),
-                        midpoint(l2.p1, l2.p2)
-                    )
-                    self.sliding_doors.append({
-                        "center": center,
-                        "width_mm": round(max(length1_mm, length2_mm)),
-                        "height_mm": DOOR_HEIGHT_REF_MM,
-                        "type": "sliding_door",
-                    })
-                    used_lines.add(i)
-                    used_lines.add(j)
-                    break
+                    # 壁との関連性チェック: 既知の壁の近傍(300mm以内)にないスライド戸は除外
+                    near_wall = False
+                    for wall in self.walls:
+                        wc = ((wall["start_x_mm"] + wall["end_x_mm"]) / 2,
+                              (wall["start_y_mm"] + wall["end_y_mm"]) / 2)
+                        cc_mm = (center_candidate[0] * sf, center_candidate[1] * sf)
+                        if distance(cc_mm, wc) < 300 + max(
+                            abs(wall["end_x_mm"] - wall["start_x_mm"]),
+                            abs(wall["end_y_mm"] - wall["start_y_mm"])
+                        ) / 2:
+                            near_wall = True
+                            break
+                    if not self.walls:
+                        near_wall = True  # 壁未検出なら制約なし
+
+                    if near_wall:
+                        center = midpoint(
+                            midpoint(l1.p1, l1.p2),
+                            midpoint(l2.p1, l2.p2)
+                        )
+                        self.sliding_doors.append({
+                            "center": center,
+                            "width_mm": round(max(length1_mm, length2_mm)),
+                            "height_mm": DOOR_HEIGHT_REF_MM,
+                            "type": "sliding_door",
+                        })
+                        used_lines.add(i)
+                        used_lines.add(j)
+                        break
 
     def _detect_folding_doors(self) -> None:
         """折戸: 壁線上のジグザグ/V字パターンを検出。
@@ -1538,7 +1570,9 @@ class PDFVectorExtractor:
                 center = (rect.x + rect.w / 2, rect.y + rect.h / 2)
 
                 # 近くにテキストラベルがあればそれを什器名とする
-                label = self._find_nearby_text(center, search_radius_mm=max(w_mm, h_mm) / sf)
+                # 検索半径を1.5倍に拡大し、最低500mm(用紙mm)を保証
+                raw_radius = max(w_mm, h_mm) / sf
+                label = self._find_nearby_text(center, search_radius_mm=max(raw_radius * 1.5, 500 / sf))
 
                 self.furniture_rects.append({
                     "center_pdf": center,
@@ -3054,12 +3088,44 @@ class PDFVectorExtractor:
             if contours:
                 # 最大コンターを使用
                 largest = max(contours, key=cv2.contourArea)
-                # ポリゴン簡略化 (epsilon = 周長の1%)
-                epsilon = 0.01 * cv2.arcLength(largest, True)
-                approx = cv2.approxPolyDP(largest, epsilon, True)
+                # ポリゴン簡略化 (epsilon を compactness に応じて動的調整)
+                perimeter = cv2.arcLength(largest, True)
+                cont_area = cv2.contourArea(largest)
+                compactness = perimeter * perimeter / (4 * 3.14159 * cont_area) if cont_area > 0 else 1
+                if compactness < 1.5:  # ほぼ矩形
+                    eps = 0.02 * perimeter
+                elif compactness < 3.0:  # L字など
+                    eps = 0.015 * perimeter
+                else:  # 非常に複雑
+                    eps = 0.008 * perimeter
+                approx = cv2.approxPolyDP(largest, eps, True)
+
+                # 矩形スナップ: 4頂点で全角度が75°～105°なら最小外接矩形にスナップ
+                if len(approx) == 4:
+                    pts_2d = approx.reshape(4, 2)
+                    def _angle_at_vertex(pts, idx):
+                        n = len(pts)
+                        p0 = pts[(idx - 1) % n]
+                        p1 = pts[idx]
+                        p2 = pts[(idx + 1) % n]
+                        v1 = (float(p0[0] - p1[0]), float(p0[1] - p1[1]))
+                        v2 = (float(p2[0] - p1[0]), float(p2[1] - p1[1]))
+                        dot = v1[0]*v2[0] + v1[1]*v2[1]
+                        mag1 = (v1[0]**2 + v1[1]**2)**0.5
+                        mag2 = (v2[0]**2 + v2[1]**2)**0.5
+                        if mag1 == 0 or mag2 == 0:
+                            return 0
+                        cos_a = max(-1, min(1, dot / (mag1 * mag2)))
+                        return math.degrees(math.acos(cos_a))
+                    angles = [_angle_at_vertex(pts_2d, i) for i in range(4)]
+                    if all(75 <= a <= 105 for a in angles):
+                        rect = cv2.minAreaRect(largest)
+                        box = cv2.boxPoints(rect)
+                        approx = np.int32(box).reshape(-1, 1, 2)
+
                 for pt in approx:
                     px_x_pt, px_y_pt = pt[0]
-                    mm = raster_to_mm(int(px_x_pt), int(px_y_pt))
+                    mm = raster_to_mm(round(px_x_pt), round(px_y_pt))
                     polygon.append((round(mm[0]), round(mm[1])))
 
             # ポリゴンが取れなかった場合はバウンディングボックスにフォールバック
@@ -3176,8 +3242,8 @@ class PDFVectorExtractor:
         def _find_raster_label(origin_mm: tuple) -> int | None:
             """テキスト原点の周囲を探索し、最も多くヒットしたラベルIDを返す"""
             px_x, px_y = mm_to_raster(origin_mm[0], origin_mm[1])
-            # 探索半径を拡大 (40→80px): テキストが部屋中心から離れている場合に対応
-            search_max_r = 80
+            # 探索半径を拡大 (80→120px): テキストが部屋中心から離れている場合に対応
+            search_max_r = 120
             label_counts: dict[int, int] = {}
             for dy in range(-search_max_r, search_max_r + 1, 4):
                 for dx in range(-search_max_r, search_max_r + 1, 4):

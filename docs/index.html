@@ -57,7 +57,7 @@ th{color:#8b949e}
 <div class="header">
   <h1>PDF-DXF Pipeline</h1>
   <span class="badge">ChloeBY</span>
-  <span class="badge-iter">test13</span>
+  <span class="badge-iter">merged (test14+Gemini)</span>
   <span style="margin-left:auto;font-size:11px;color:#8b949e" id="lastUpdate"></span>
 </div>
 
@@ -76,10 +76,12 @@ th{color:#8b949e}
 <!-- 比較検証 -->
 <div id="tab-compare">
   <div class="card">
-    <div class="card-header">最新 (test13) 元PDF vs DXF出力</div>
+    <div class="card-header">最新 (merged: test14+Gemini) 元PDF vs DXF出力</div>
     <div class="card-body">
       <div class="view-btns">
-        <div class="vbtn active" onclick="setView('overlay13',this)">重ね合わせ (test13)</div>
+        <div class="vbtn active" onclick="setView('overlayMerged',this)">重ね合わせ (merged)</div>
+        <div class="vbtn" onclick="setView('sidebysideMerged',this)">並列比較 (merged)</div>
+        <div class="vbtn" onclick="setView('overlay13',this)">重ね合わせ (test13)</div>
         <div class="vbtn" onclick="setView('sidebyside13',this)">並列比較 (test13)</div>
         <div class="vbtn" onclick="setView('overlay11',this)">重ね合わせ (test11)</div>
         <div class="vbtn" onclick="setView('sidebyside11',this)">並列比較 (test11)</div>
@@ -100,9 +102,36 @@ th{color:#8b949e}
         <div class="vbtn" onclick="setView('svg',this)">SVG</div>
       </div>
       <div class="img-box" id="mainView">
-        <img src="comparison_test13_overlay.png" onclick="this.classList.toggle('zoomed')">
+        <img src="comparison_merged_overlay.png" onclick="this.classList.toggle('zoomed')">
       </div>
       <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替。スワイプでスクロール。</p>
+    </div>
+  </div>
+
+  <!-- マージ結果サマリー -->
+  <div class="card">
+    <div class="card-header">ハイブリッドパイプライン結果 (2026-03-19)</div>
+    <div class="card-body">
+      <div class="grid">
+        <div class="grid-item"><div class="num">31</div><div class="lbl">壁</div></div>
+        <div class="grid-item"><div class="num">38</div><div class="lbl">部屋</div></div>
+        <div class="grid-item"><div class="num">36</div><div class="lbl">名前あり</div></div>
+        <div class="grid-item"><div class="num">88</div><div class="lbl">什器</div></div>
+        <div class="grid-item"><div class="num">59</div><div class="lbl">建具</div></div>
+        <div class="grid-item"><div class="num">69.1</div><div class="lbl">品質スコア</div></div>
+      </div>
+      <div class="improve" style="margin-top:10px">ルールベース(test14): 壁31・部屋26・什器68 + Gemini Vision(12.9秒): 部屋12・什器26 → マージ統合</div>
+      <table style="margin-top:10px">
+        <tr><th>品質項目</th><th>スコア</th><th>満点</th></tr>
+        <tr><td>壁閉合率</td><td>9.7</td><td>30</td></tr>
+        <tr><td>部屋名付与率</td><td>18.9</td><td>20</td></tr>
+        <tr><td>什器検出</td><td>13.1</td><td>15</td></tr>
+        <tr><td>建具分類</td><td>15.0</td><td>15</td></tr>
+        <tr><td>面積整合性</td><td>8.5</td><td>10</td></tr>
+        <tr><td>マージ信頼度</td><td>3.9</td><td>10</td></tr>
+        <tr><th>合計</th><th>69.1</th><th>100</th></tr>
+      </table>
+      <div class="warn" style="margin-top:8px">残課題: 壁閉合率9.7/30(端点接続改善必要)、マージ信頼度3.9/10(AI座標なし)、部屋重複排除</div>
     </div>
   </div>
 </div>
@@ -111,7 +140,32 @@ th{color:#8b949e}
 <div id="tab-iterations" style="display:none">
 
   <div class="card">
-    <div class="card-header">Iteration 13 (test13) -- 壁矯正修正+ポリゴンクリップ+オーバーレイ改善 <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18 15:30</span></div>
+    <div class="card-header">Merged (test14+Gemini) -- ハイブリッドパイプライン初回テスト <span class="badge-iter">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-19 22:00</span></div>
+    <div class="card-body">
+      <div class="iter-desc">
+        <strong>実装内容:</strong>
+        <ul>
+          <li>Gemini 2.5 Flash Vision (streaming, google-genai SDK) で意味理解抽出 (12.9秒)</li>
+          <li>merge-extractions.py でルールベース(test14)+AI(Gemini)を統合</li>
+          <li>test14改善: approxPolyDP epsilon動的化、矩形スナップ、什器キーワード+26語、NFKC正規化</li>
+          <li>スライド戸過検出修正: 距離60-150mm、長さ650-1300mm、壁近傍チェック</li>
+          <li>室名マッチング: 探索±120px、エリア表記正規化</li>
+        </ul>
+      </div>
+      <div class="iter-stats">
+        <div class="iter-stat"><div class="label">壁</div><div class="value">31本</div><div class="change">維持</div></div>
+        <div class="iter-stat"><div class="label">部屋</div><div class="value">38室</div><div class="change">26+12(AI) → 38</div></div>
+        <div class="iter-stat"><div class="label">名前あり</div><div class="value">36 (95%)</div><div class="change">24(92%) → 36(95%)</div></div>
+        <div class="iter-stat"><div class="label">什器</div><div class="value">88個</div><div class="change">68+26(AI) → 88</div></div>
+        <div class="iter-stat"><div class="label">品質スコア</div><div class="value">69.1/100</div></div>
+      </div>
+      <div class="improve">Gemini Vision: 室名「5卓」「10卓」「4卓」「6卓」「S-WC」等を正確に取得。什器「ボトル棚」「製氷機」「キャッシャー」等26個追加</div>
+      <div class="warn">壁閉合9.7/30、信頼度3.9/10（AI座標なし）。部屋重複排除が課題</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Iteration 13 (test13) -- 壁矯正修正+ポリゴンクリップ+オーバーレイ改善 <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-18 15:30</span></div>
     <div class="card-body">
       <div class="iter-desc">
         <strong>実装内容:</strong>
@@ -632,6 +686,8 @@ function showTab(id) {
 
 // 比較ビュー
 var viewMap = {
+  overlayMerged: 'comparison_merged_overlay.png',
+  sidebysideMerged: 'comparison_merged_sidebyside.png',
   overlay13: 'comparison_test13_overlay.png',
   sidebyside13: 'comparison_test13_sidebyside.png',
   overlay11: 'comparison_test11_overlay.png',
