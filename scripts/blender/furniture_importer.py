@@ -32,6 +32,7 @@ try:
     _custom_generators['counter'] = create_bar_counter
     _custom_generators['sofa'] = create_hostclub_sofa
     _custom_generators['vip_table'] = create_vip_table
+    _custom_generators['table_square'] = create_vip_table
 except ImportError as e:
     print(f"[furniture] Custom model import warning: {e}")
     pass
@@ -199,11 +200,11 @@ def import_furniture(scene_data, collections):
                 for obj in new_objects:
                     obj.parent = parent_empty
 
-                # Apply style material override if specified
-                if default_material:
-                    mat = _get_style_material(default_material, style)
-                    if mat:
-                        _apply_material_to_hierarchy(parent_empty, mat)
+                # Apply style material override (default to metal for unspecified)
+                mat_type = default_material or 'metal'
+                mat = _get_style_material(mat_type, style)
+                if mat:
+                    _apply_material_to_hierarchy(parent_empty, mat)
 
                 # Link to furniture collection
                 if furniture_col:
@@ -221,14 +222,21 @@ def import_furniture(scene_data, collections):
                 fallback.rotation_euler = bl_rot
                 fallback.scale = bl_scale
 
-                # Apply style material to fallback if specified
+                # Apply style material to fallback — default to dark metal
+                mat = None
                 if default_material:
                     mat = _get_style_material(default_material, style)
-                    if mat:
-                        if len(fallback.data.materials) == 0:
-                            fallback.data.materials.append(mat)
-                        else:
-                            fallback.data.materials[0] = mat
+                if mat is None:
+                    # フォールバックはダークメタルで目立たなく
+                    key = "metal_dark_fallback"
+                    if key not in _mat_cache:
+                        _mat_cache[key] = create_metal_material('dark')
+                    mat = _mat_cache[key]
+                if mat:
+                    if len(fallback.data.materials) == 0:
+                        fallback.data.materials.append(mat)
+                    else:
+                        fallback.data.materials[0] = mat
 
                 if furniture_col:
                     link_to_collection(fallback, furniture_col)

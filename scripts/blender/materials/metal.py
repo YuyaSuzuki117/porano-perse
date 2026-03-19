@@ -6,6 +6,7 @@ METAL_PRESETS = {
     'oxidized': {'color': (0.35, 0.45, 0.40, 1.0), 'roughness': 0.65, 'metallic': 0.7},
     'matte':    {'color': (0.50, 0.50, 0.52, 1.0), 'roughness': 0.60, 'metallic': 0.9},
     'brass':    {'color': (0.80, 0.65, 0.25, 1.0), 'roughness': 0.30, 'metallic': 0.95},
+    'dark':     {'color': (0.15, 0.15, 0.18, 1.0), 'roughness': 0.45, 'metallic': 0.9},
 }
 
 

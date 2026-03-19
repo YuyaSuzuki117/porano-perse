@@ -50,11 +50,15 @@ def apply_style(scene_data):
     print(f"[style] World background set — {sky_color_hex}")
 
     # -------------------------------------------------------------------
-    # 2. Color management (AgX works well with Cycles)
+    # 2. Color management — style exposure override
     # -------------------------------------------------------------------
     scene = bpy.context.scene
-    # Don't override renderer's color management settings
-    # renderer.py already sets AgX with proper exposure
     scene.view_settings.gamma = 1.0
+
+    # style.exposure でレンダリング露出を上書き（暗いシーンの補正用）
+    exposure = style.get("exposure")
+    if exposure is not None:
+        scene.view_settings.exposure = float(exposure)
+        print(f"[style] Exposure override — {exposure}")
 
     print("[style] Style application complete")

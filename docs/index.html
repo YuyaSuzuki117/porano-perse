@@ -634,8 +634,61 @@ th{color:#8b949e}
 
 <!-- パース -->
 <div id="tab-perse" style="display:none">
+
+  <!-- 三経59 ホストクラブ v6 -->
   <div class="card">
-    <div class="card-header">パースレンダリング</div>
+    <div class="card-header">三経59 ホストクラブ v6 <span class="badge">最新</span> <span style="font-size:11px;color:#8b949e;margin-left:auto">2026-03-19</span></div>
+    <div class="card-body">
+      <div class="view-btns">
+        <div class="vbtn active" onclick="setPerseView('eye',this)">目線 (eye_level)</div>
+        <div class="vbtn" onclick="setPerseView('entrance',this)">エントランス</div>
+        <div class="vbtn" onclick="setPerseView('overview',this)">俯瞰 (overview)</div>
+        <div class="vbtn" onclick="setPerseView('bird',this)">鳥瞰 (bird_eye)</div>
+        <div class="vbtn" onclick="setPerseView('before',this)">Before (改善前)</div>
+      </div>
+      <div class="img-box" id="perseView">
+        <img src="sankei59_v6_eye.png" onclick="this.classList.toggle('zoomed')">
+      </div>
+      <p style="font-size:11px;color:#8b949e;margin-top:6px">画像タップでズーム切替</p>
+    </div>
+  </div>
+
+  <!-- 改善内容 -->
+  <div class="card">
+    <div class="card-header">照明改善サマリー (v6)</div>
+    <div class="card-body">
+      <div class="grid">
+        <div class="grid-item"><div class="num">39</div><div class="lbl">壁</div></div>
+        <div class="grid-item"><div class="num">20</div><div class="lbl">部屋</div></div>
+        <div class="grid-item"><div class="num">16</div><div class="lbl">ドア</div></div>
+        <div class="grid-item"><div class="num">24</div><div class="lbl">什器</div></div>
+        <div class="grid-item"><div class="num">16</div><div class="lbl">ダウンライト</div></div>
+        <div class="grid-item"><div class="num">8</div><div class="lbl">LED間接</div></div>
+      </div>
+      <div class="improve" style="margin-top:10px">
+        照明: spotlightIntensity 0.6→1.5 / downlightEnergy 30→150 / LED 20→120 (コーブ+足元2段)
+      </div>
+      <div class="improve">
+        露出: exposure 0.0→1.8 / environmentStrength 0.3→0.5
+      </div>
+      <div class="improve">
+        什器: table_square→VIPテーブル / フォールバック→ダークメタル
+      </div>
+      <table style="margin-top:10px">
+        <tr><th>修正項目</th><th>Before</th><th>After</th></tr>
+        <tr><td>壁</td><td class="issue">見えない</td><td class="done">紫照明で可視</td></tr>
+        <tr><td>天井</td><td class="issue">真っ黒</td><td class="wip">コーブ照明</td></tr>
+        <tr><td>照明</td><td class="issue">ほぼ暗闇</td><td class="done">16DL+8LED</td></tr>
+        <tr><td>什器</td><td class="issue">白い箱</td><td class="done">ダークメタル</td></tr>
+        <tr><td>カメラ</td><td class="issue">bird_eye効かず</td><td class="done">プリセット動作</td></tr>
+      </table>
+      <div class="warn" style="margin-top:8px">残課題: 天井中央暗い / サービスエリア白い箱 / 床テクスチャ繰返し / 奥側暗落ち</div>
+    </div>
+  </div>
+
+  <!-- ChloeBY (旧) -->
+  <div class="card">
+    <div class="card-header">ChloeBY パースレンダリング (旧)</div>
     <div class="card-body">
       <div class="img-box">
         <img src="ChloeBY_perse.png" onclick="this.classList.toggle('zoomed')" onerror="this.parentElement.innerHTML='<p style=padding:30px;text-align:center;color:#8b949e>パース画像なし</p>'">
@@ -717,6 +770,20 @@ function setView(v, el) {
   } else {
     document.getElementById('mainView').innerHTML = '<img src="' + src + '" onclick="this.classList.toggle(\'zoomed\')">';
   }
+}
+
+// パース画像切替
+var perseMap = {
+  'eye': 'sankei59_v6_eye.png',
+  'entrance': 'sankei59_v6_entrance.png',
+  'overview': 'sankei59_v6_overview.png',
+  'bird': 'sankei59_v6_bird.png',
+  'before': 'sankei59_v6_before.png'
+};
+function setPerseView(v, el) {
+  el.parentElement.querySelectorAll('.vbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('perseView').innerHTML = '<img src="' + perseMap[v] + '" onclick="this.classList.toggle(\'zoomed\')">';
 }
 
 // 改善履歴の画像切替

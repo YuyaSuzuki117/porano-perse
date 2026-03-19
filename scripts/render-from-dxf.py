@@ -270,7 +270,11 @@ custom_cam_pos = style.get("cameraPosition")  # [x_dxf_mm, y_dxf_mm, z_m]
 custom_cam_target = style.get("cameraTarget")  # [x_dxf_mm, y_dxf_mm, z_m]
 custom_cam_fov = style.get("cameraFov", 65)
 
-if custom_cam_pos and custom_cam_target:
+# カスタムカメラ位置はeye_level（デフォルト）の場合のみ使用
+# bird_eye等を明示的に指定した場合はプリセットを優先
+use_custom_camera = (custom_cam_pos and custom_cam_target
+                     and camera_preset == "eye_level")
+if use_custom_camera:
     # DXF mm座標をBlender座標に変換（建物中心=原点）
     cam_data = bpy.data.cameras.new(name="Camera_Custom")
     cam_data.lens = 36 / (2 * __import__('math').tan(__import__('math').radians(custom_cam_fov / 2)))
@@ -326,6 +330,13 @@ else:
 # 2.6 レンダリング設定
 render_quality = scene_data.get("render_quality", quality)
 apply_render_quality(render_quality)
+
+# スタイルのexposure上書き（暗いシーンの補正用）
+style_exposure = style.get("exposure")
+if style_exposure is not None:
+    bpy.context.scene.view_settings.exposure = float(style_exposure)
+    print(f"Style exposure override: {style_exposure}")
+
 print(f"Quality: {render_quality}")
 
 # =============================================================

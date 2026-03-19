@@ -149,7 +149,8 @@ def setup_lighting(scene_data, collections):
     # -----------------------------------------------------------------------
     # レイヤー1: プロシージャルスカイ環境（HDRIの代替）
     # -----------------------------------------------------------------------
-    setup_hdri_environment(strength=0.3)
+    env_strength = float(style.get("environmentStrength", 0.3))
+    setup_hdri_environment(strength=env_strength)
 
     # -----------------------------------------------------------------------
     # レイヤー2: 天井メインエリアライト — 暖色4000K相当、部屋サイズ連動
@@ -293,9 +294,10 @@ def setup_lighting(scene_data, collections):
     # -----------------------------------------------------------------------
     # レイヤー6: フィルライト（影なし、暗部補填強化）
     # -----------------------------------------------------------------------
+    fill_energy = spot_intensity * 40 * area_scale  # スタイル連動＋増量
     fill = _create_light_data(
         'AREA', "Light_Fill",
-        energy=30 * area_scale,        # 15→30に増加（暗い角を消す）
+        energy=fill_energy,
         color=(1.0, 0.97, 0.93),
         size=max(W, D) * 1.0,
         use_shadow=False,              # 影なし（補助光）
@@ -313,35 +315,35 @@ def setup_lighting(scene_data, collections):
     if led_color_hex:
         led_color = hex_to_linear(led_color_hex)
         led_energy = float(style.get("ledStripEnergy", 15)) * area_scale
-        led_height = 0.05  # 床上5cm
+        led_height_cove = H - 0.15  # 天井付近（コーブ照明）
+        led_height_floor = 0.05     # 床上5cm
         strip_count = 0
 
-        # 4辺の壁際にLEDストリップ配置
-        positions = [
-            # (位置, サイズ幅, サイズ奥行, 回転)
-            ((0, -D/2 + 0.1, led_height), W * 0.8, 0.05, (0, 0, 0)),       # south
-            ((0, D/2 - 0.1, led_height), W * 0.8, 0.05, (0, 0, 0)),        # north
-            ((-W/2 + 0.1, 0, led_height), 0.05, D * 0.8, (0, 0, 0)),       # west
-            ((W/2 - 0.1, 0, led_height), 0.05, D * 0.8, (0, 0, 0)),        # east
-        ]
+        # 4辺の壁際にLEDストリップ配置（天井コーブ + 床足元の2段）
+        for level_name, lh, energy_mult in [("cove", led_height_cove, 1.0),
+                                             ("floor", led_height_floor, 0.4)]:
+            positions = [
+                ((0, -D/2 + 0.15, lh), W * 0.8, 0.05),  # south
+                ((0, D/2 - 0.15, lh), W * 0.8, 0.05),    # north
+                ((-W/2 + 0.15, 0, lh), 0.05, D * 0.8),   # west
+                ((W/2 - 0.15, 0, lh), 0.05, D * 0.8),    # east
+            ]
 
-        for idx, (loc, sx, sy, rot) in enumerate(positions):
-            led = _create_light_data(
-                'AREA', f"Light_LED_Strip_{idx:02d}",
-                energy=led_energy,
-                color=led_color,
-                size=max(sx, sy),
-                use_shadow=False,
-            )
-            led.location = loc
-            led.rotation_euler = rot
-            # エリアライト上向き
-            led.rotation_euler = (0, 0, 0)
-            if lighting_col:
-                link_to_collection(led, lighting_col)
-            strip_count += 1
+            for idx, (loc, sx, sy) in enumerate(positions):
+                led = _create_light_data(
+                    'AREA', f"Light_LED_{level_name}_{idx:02d}",
+                    energy=led_energy * energy_mult,
+                    color=led_color,
+                    size=max(sx, sy),
+                    use_shadow=False,
+                )
+                led.location = loc
+                led.rotation_euler = (0, 0, 0)
+                if lighting_col:
+                    link_to_collection(led, lighting_col)
+                strip_count += 1
 
-        print(f"[lighting] レイヤー7: LED間接照明 — {strip_count}本, "
+        print(f"[lighting] レイヤー7: LED間接照明 — {strip_count}本 (コーブ+足元), "
               f"color={led_color_hex}, energy={led_energy:.0f}")
     else:
         print("[lighting] レイヤー7: LED間接照明 — スキップ (ledStripColor未設定)")
