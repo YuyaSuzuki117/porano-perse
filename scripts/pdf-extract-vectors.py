@@ -66,7 +66,7 @@ WALL_THICKNESS_MAX_MM = 180
 WALL_THICKNESS_DEFAULT_MM = 120
 
 # 壁端点スナップ距離 (mm) — この距離以内の端点は同一点に統合
-SNAP_THRESHOLD_MM = 80
+SNAP_THRESHOLD_MM = 40
 
 # 線幅分類: 3段階 (tier1=外壁, tier2=内壁, tier3=細線/寸法)
 # 動的クラスタリングで決定するが、フォールバック閾値
@@ -124,8 +124,8 @@ DIM_TEXT_RE = re.compile(
 
 # よくある縮尺
 COMMON_SCALES = {
-    "1:20": 20, "1:30": 30, "1:50": 50,
-    "1:100": 100, "1:200": 200,
+    "1:20": 20, "1:30": 30, "1:40": 40, "1:50": 50,
+    "1:60": 60, "1:75": 75, "1:100": 100, "1:200": 200,
 }
 
 # JW_CAD 標準色マッピング — (r, g, b) 0-1 → レイヤー種別
@@ -698,6 +698,15 @@ class PDFVectorExtractor:
         if scale_votes:
             # 最頻値に近いスケールを選択
             median_ratio = sorted(scale_votes)[len(scale_votes) // 2]
+
+            # 投票の一致度を評価
+            if len(scale_votes) >= 3:
+                import statistics
+                stdev = statistics.stdev(scale_votes)
+                vote_consistency = stdev / median_ratio if median_ratio > 0 else 1.0
+            else:
+                vote_consistency = 1.0  # 投票数が少ない場合は不安定扱い
+
             # 最も近い標準スケールにスナップ
             best_scale = None
             best_diff = float("inf")
@@ -707,7 +716,18 @@ class PDFVectorExtractor:
                     best_diff = diff
                     best_scale = (label, val)
 
-            if best_scale and best_diff < best_scale[1] * 0.3:
+            if best_scale and best_diff < best_scale[1] * 0.15:
+                # 標準スケールに十分近い場合はスナップ
+                self.scale_factor = best_scale[1]
+                self.scale_label = best_scale[0]
+                self.confidence = max(0.6, 1.0 - best_diff / best_scale[1])
+            elif vote_consistency < 0.02 and len(scale_votes) >= 5:
+                # 投票が非常に一致（CV<2%）→ 実測値をそのまま使用
+                rounded = round(median_ratio)
+                self.scale_factor = rounded
+                self.scale_label = f"1:{rounded}"
+                self.confidence = 0.9
+            elif best_scale and best_diff < best_scale[1] * 0.3:
                 self.scale_factor = best_scale[1]
                 self.scale_label = best_scale[0]
                 self.confidence = max(0.5, 1.0 - best_diff / best_scale[1])
@@ -715,6 +735,10 @@ class PDFVectorExtractor:
                 self.scale_factor = median_ratio
                 self.scale_label = f"1:{median_ratio:.0f}"
                 self.confidence = 0.4
+
+            if self.debug:
+                print(f"[DEBUG] スケール投票: {len(scale_votes)}票, "
+                      f"median={median_ratio:.1f}, CV={vote_consistency:.4f}")
         else:
             # フォールバック: 弧（ドア）を探して900mm基準で推定
             door_arc = self._find_door_arc_for_scale()
@@ -1341,7 +1365,7 @@ class PDFVectorExtractor:
                 self.door_arcs.append({
                     "center": arc.center,
                     "radius_mm": round(radius_mm),
-                    "width_mm": round(radius_mm),  # ドア幅≈弧の半径
+                    "width_mm": round(radius_mm),  # ドア幅~=弧の半径
                     "swing": swing,
                     "height_mm": DOOR_HEIGHT_REF_MM,
                     "type": "swing_door",
@@ -1561,11 +1585,20 @@ class PDFVectorExtractor:
         """矩形を什器候補として分類"""
         sf = self.scale_factor
 
+        # 非什器キーワード (設備シャフト等)
+        NON_FIXTURE_KW = {"PS", "EPS", "DS", "MB", "EV", "ＰＳ", "ＥＰＳ", "ＤＳ", "ＭＢ", "ＥＶ"}
+
         for rect in self.rects:
             w_mm = rect.w * sf
             h_mm = rect.h * sf
-            # 什器サイズの範囲 (80mm-5000mm — 狭い棚やカウンターも検出)
-            if 80 < w_mm < 5000 and 80 < h_mm < 5000:
+            # 什器サイズの範囲 (80mm-3000mm — 巨大なものは壁/構造体)
+            if not (80 < w_mm < 3000 and 80 < h_mm < 3000):
+                continue
+            # アスペクト比チェック — 細長すぎるのは壁線
+            aspect = max(w_mm, h_mm) / max(min(w_mm, h_mm), 1)
+            if aspect > 12:
+                continue
+            if 80 < w_mm < 3000 and 80 < h_mm < 3000:
                 # 壁と重ならないか確認 (壁は除外)
                 center = (rect.x + rect.w / 2, rect.y + rect.h / 2)
 
@@ -1573,6 +1606,10 @@ class PDFVectorExtractor:
                 # 検索半径を1.5倍に拡大し、最低500mm(用紙mm)を保証
                 raw_radius = max(w_mm, h_mm) / sf
                 label = self._find_nearby_text(center, search_radius_mm=max(raw_radius * 1.5, 500 / sf))
+
+                # 非什器キーワードに該当するラベルはスキップ
+                if label and label.strip() in NON_FIXTURE_KW:
+                    continue
 
                 self.furniture_rects.append({
                     "center_pdf": center,
@@ -1623,10 +1660,10 @@ class PDFVectorExtractor:
                 wall_id += 1
                 wall = {
                     "id": f"W{wall_id}",
-                    "start_x_mm": round(cl["p1"][0] * sf),
-                    "start_y_mm": round(cl["p1"][1] * sf),
-                    "end_x_mm": round(cl["p2"][0] * sf),
-                    "end_y_mm": round(cl["p2"][1] * sf),
+                    "start_x_mm": cl["p1"][0] * sf,
+                    "start_y_mm": cl["p1"][1] * sf,
+                    "end_x_mm": cl["p2"][0] * sf,
+                    "end_y_mm": cl["p2"][1] * sf,
                     "thickness_mm": pair["thickness_mm"],
                     "type": "interior",  # 後で外壁判定
                     "openings": [],
@@ -1776,6 +1813,9 @@ class PDFVectorExtractor:
 
         # 寸法データ — 端点ペアリング付き
         self._pair_dimension_endpoints()
+
+        # ページ範囲外の壁をフィルタ (寸法線エリアの偽壁除去)
+        self._filter_out_of_page_walls()
 
         # 部屋ポリゴン構築
         self._build_room_polygons()
@@ -2215,7 +2255,7 @@ class PDFVectorExtractor:
         if len(self.walls) < 2:
             return
 
-        max_gap_mm = 300  # 端点間がこの距離以内なら延長対象
+        max_gap_mm = 200  # 端点間がこの距離以内なら延長対象
         extended = 0
 
         for i, w1 in enumerate(self.walls):
@@ -2787,6 +2827,187 @@ class PDFVectorExtractor:
                         ):
                             self.wall_graph[node_key] = [w1["id"], w2["id"]]
 
+    def _filter_out_of_page_walls(self) -> None:
+        """ページ範囲外の壁を除去 (寸法線エリアの偽壁など)"""
+        page_w_real = self.page_width_mm * self.scale_factor
+        page_h_real = self.page_height_mm * self.scale_factor
+        margin = 500  # 500mm (実寸) の余裕
+
+        before = len(self.walls)
+        filtered = []
+        for w in self.walls:
+            sx, sy = w["start_x_mm"], w["start_y_mm"]
+            ex, ey = w["end_x_mm"], w["end_y_mm"]
+            # いずれかの端点がページ範囲外なら除去
+            any_out = (min(sx, ex) < -margin or min(sy, ey) < -margin or
+                       max(sx, ex) > page_w_real + margin or
+                       max(sy, ey) > page_h_real + margin)
+            if any_out:
+                continue
+            filtered.append(w)
+        self.walls = filtered
+
+        if self.debug and before != len(self.walls):
+            print(f"[DEBUG] ページ範囲外壁フィルタ: {before} → {len(self.walls)} "
+                  f"({before - len(self.walls)}本除去)")
+
+    def _snap_polygon_to_walls(self, polygon_mm: list[list[int]]) -> list[list[int]]:
+        """部屋ポリゴンの頂点を最寄りの壁線にスナップし、共線頂点を除去"""
+        if not self.walls or len(polygon_mm) < 3:
+            return polygon_mm
+
+        snap_threshold = 300  # mm — この距離以内の壁にスナップ
+        snapped = []
+
+        for vx, vy in polygon_mm:
+            best_dist = snap_threshold
+            snapped_x, snapped_y = vx, vy
+
+            for w in self.walls:
+                sx, sy = w["start_x_mm"], w["start_y_mm"]
+                ex, ey = w["end_x_mm"], w["end_y_mm"]
+
+                # 水平壁 → Y座標をスナップ
+                if abs(sy - ey) < 50 and abs(vy - sy) < best_dist:
+                    # 頂点が壁のX範囲内か確認
+                    wx_min, wx_max = min(sx, ex) - 200, max(sx, ex) + 200
+                    if wx_min <= vx <= wx_max:
+                        best_dist = abs(vy - sy)
+                        snapped_y = round((sy + ey) / 2)
+
+                # 垂直壁 → X座標をスナップ
+                if abs(sx - ex) < 50 and abs(vx - sx) < best_dist:
+                    wy_min, wy_max = min(sy, ey) - 200, max(sy, ey) + 200
+                    if wy_min <= vy <= wy_max:
+                        best_dist = abs(vx - sx)
+                        snapped_x = round((sx + ex) / 2)
+
+            snapped.append([snapped_x, snapped_y])
+
+        # 共線頂点を除去 (3連続点がほぼ直線なら中間を削除)
+        if len(snapped) <= 3:
+            return snapped
+
+        simplified = [snapped[0]]
+        for i in range(1, len(snapped) - 1):
+            prev = simplified[-1]
+            curr = snapped[i]
+            nxt = snapped[i + 1]
+            # 3点が直線上か (外積で判定)
+            cross = abs((curr[0] - prev[0]) * (nxt[1] - prev[1]) -
+                        (curr[1] - prev[1]) * (nxt[0] - prev[0]))
+            # 面積が小さければ共線
+            if cross > 50000:  # 十分な面積があれば頂点を維持
+                simplified.append(curr)
+        simplified.append(snapped[-1])
+
+        # 最初と最後の共線チェック
+        if len(simplified) > 3:
+            prev = simplified[-2]
+            curr = simplified[-1]
+            nxt = simplified[0]
+            cross = abs((curr[0] - prev[0]) * (nxt[1] - prev[1]) -
+                        (curr[1] - prev[1]) * (nxt[0] - prev[0]))
+            if cross < 50000:
+                simplified.pop()
+
+        # 最終チェック: まだ頂点が多い場合、近接頂点をマージ
+        if len(simplified) > 12:
+            merged = [simplified[0]]
+            for i in range(1, len(simplified)):
+                dx = abs(simplified[i][0] - merged[-1][0])
+                dy = abs(simplified[i][1] - merged[-1][1])
+                if dx + dy > 200:  # 200mm以上離れていれば別の頂点
+                    merged.append(simplified[i])
+            simplified = merged if len(merged) >= 3 else simplified
+
+        return simplified if len(simplified) >= 3 else snapped
+
+    @staticmethod
+    def _pt_dist(p1, p2) -> float:
+        """2点間の距離"""
+        return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
+
+    @staticmethod
+    def _project_point_to_segment(pt, seg_start, seg_end):
+        """点を線分上に投影し、(投影点, 距離) を返す"""
+        dx = seg_end[0] - seg_start[0]
+        dy = seg_end[1] - seg_start[1]
+        len_sq = dx * dx + dy * dy
+        if len_sq < 1e-10:
+            d = ((pt[0] - seg_start[0]) ** 2 + (pt[1] - seg_start[1]) ** 2) ** 0.5
+            return list(seg_start), d
+        t = ((pt[0] - seg_start[0]) * dx + (pt[1] - seg_start[1]) * dy) / len_sq
+        t = max(0.0, min(1.0, t))
+        proj = [seg_start[0] + t * dx, seg_start[1] + t * dy]
+        d = ((pt[0] - proj[0]) ** 2 + (pt[1] - proj[1]) ** 2) ** 0.5
+        return proj, d
+
+    def _simplify_room_polygon(self, polygon_mm: list[list[int]], snap_thresh: int = 50) -> list[list[int]]:
+        """部屋ポリゴンを直交化・壁スナップする後処理。
+
+        Steps:
+        1. 近接頂点の統合 (20mm以内)
+        2. 軸揃え — 各辺を水平 or 垂直にスナップ
+        3. 壁スナップ — 頂点を最寄り壁線上に投影 (snap_thresh mm以内)
+        """
+        if len(polygon_mm) < 3:
+            return polygon_mm
+
+        # --- Step 1: 近接頂点の統合 (20mm以内) ---
+        simplified: list[list[int]] = []
+        for pt in polygon_mm:
+            if not simplified or self._pt_dist(pt, simplified[-1]) > 20:
+                simplified.append(list(pt))
+        if len(simplified) > 1 and self._pt_dist(simplified[0], simplified[-1]) < 20:
+            simplified.pop()
+        if len(simplified) < 3:
+            return polygon_mm
+
+        # --- Step 2: 軸揃え — 各辺を水平 or 垂直にスナップ ---
+        result: list[list[int]] = [list(simplified[0])]
+        for i in range(1, len(simplified)):
+            prev = result[-1]
+            curr = list(simplified[i])
+            dx = abs(curr[0] - prev[0])
+            dy = abs(curr[1] - prev[1])
+            # ほぼ水平 (dy < dx * tan(5deg) ≈ dx * 0.087 → 0.1)
+            if dy < dx * 0.1 and dx > 50:
+                curr[1] = prev[1]
+            # ほぼ垂直
+            elif dx < dy * 0.1 and dy > 50:
+                curr[0] = prev[0]
+            result.append(curr)
+
+        # 最初の辺も軸揃え (最後→最初)
+        if len(result) >= 2:
+            last = result[-1]
+            first = result[0]
+            dx = abs(first[0] - last[0])
+            dy = abs(first[1] - last[1])
+            if dy < dx * 0.1 and dx > 50:
+                result[0] = [first[0], last[1]]
+            elif dx < dy * 0.1 and dy > 50:
+                result[0] = [last[0], first[1]]
+
+        # --- Step 3: 壁スナップ — 頂点を最寄り壁線上に投影 ---
+        if self.walls:
+            for i, pt in enumerate(result):
+                best_dist = snap_thresh
+                best_pt = None
+                for w in self.walls:
+                    proj, dist = self._project_point_to_segment(
+                        pt,
+                        [w['start_x_mm'], w['start_y_mm']],
+                        [w['end_x_mm'], w['end_y_mm']])
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_pt = proj
+                if best_pt:
+                    result[i] = [round(best_pt[0]), round(best_pt[1])]
+
+        return result if len(result) >= 3 else polygon_mm
+
     def _pair_dimension_endpoints(self) -> None:
         """寸法テキストから寸法線の端点ペアを構築"""
         sf = self.scale_factor
@@ -2822,71 +3043,60 @@ class PDFVectorExtractor:
 
     def _find_dimension_endpoints(self, text_origin: tuple, value_mm: float
                                   ) -> tuple[Optional[tuple], Optional[tuple]]:
-        """寸法テキスト近傍の線端点から寸法線の両端を特定する。
+        """寸法テキスト近傍で、寸法値に最も近い長さの寸法線を1本選んでその端点を返す。
 
-        寸法線の構造:
-          引出線1 ─┤── 寸法線 ──├─ 引出線2
-                      テキスト
-
-        テキストの左右（または上下）方向に最も近い線端点2つを探す。
+        旧方式の問題: 近傍の全端点から最遠を取ると、別の寸法線の端点を拾い
+        p1/p2のスパンが実際の寸法値と一致しなくなる。
+        新方式: 寸法値/scale_factor に最も近い長さの単一線を選択。
         """
+        sf = self.scale_factor
         search_r = DIM_ENDPOINT_SEARCH_RADIUS_MM
+        expected_paper_mm = value_mm / sf  # 用紙上での期待長さ
 
-        # テキスト近傍の細い線を収集
-        nearby_lines: list[RawLine] = []
+        # テキスト近傍の細い H/V 線を収集
+        candidates: list[tuple[float, RawLine]] = []  # (score, line)
         for line in self.dim_lines:
             mp = midpoint(line.p1, line.p2)
-            if distance(text_origin, mp) < search_r * 3:
-                nearby_lines.append(line)
+            text_dist = distance(text_origin, mp)
+            if text_dist > search_r * 3:
+                continue
+            if not (is_horizontal(line.p1, line.p2) or is_vertical(line.p1, line.p2)):
+                continue
+            # 長さとの一致度スコア (低いほど良い)
+            length_diff = abs(line.length - expected_paper_mm)
+            length_ratio = length_diff / max(expected_paper_mm, 1.0)
+            if length_ratio > 0.5:  # 50%以上ズレたら候補外
+                continue
+            # テキストとの距離 + 長さ一致度の複合スコア
+            score = text_dist * 0.3 + length_diff * 0.7
+            candidates.append((score, line))
 
-        if not nearby_lines:
+        if not candidates:
+            # フォールバック: 最も近い線 (長さ無視)
+            best_line = None
+            best_dist = search_r * 3
+            for line in self.dim_lines:
+                mp = midpoint(line.p1, line.p2)
+                d = distance(text_origin, mp)
+                if d < best_dist and (is_horizontal(line.p1, line.p2) or
+                                       is_vertical(line.p1, line.p2)):
+                    best_dist = d
+                    best_line = line
+            if best_line:
+                return best_line.p1, best_line.p2
             return None, None
 
-        # テキストが水平寸法か垂直寸法か判定
-        # 近傍線の主方向で判断
-        h_count = sum(1 for l in nearby_lines if is_horizontal(l.p1, l.p2))
-        v_count = sum(1 for l in nearby_lines if is_vertical(l.p1, l.p2))
-        is_h_dim = h_count >= v_count
+        # 最良スコアの線を選択
+        candidates.sort(key=lambda x: x[0])
+        best_line = candidates[0][1]
 
-        # テキストの左右(水平)または上下(垂直)方向に端点を探す
-        all_endpoints: list[tuple] = []
-        for line in nearby_lines:
-            # 寸法線方向と同じ向きの線のみ
-            if is_h_dim and not is_horizontal(line.p1, line.p2):
-                continue
-            if not is_h_dim and not is_vertical(line.p1, line.p2):
-                continue
-            all_endpoints.append(line.p1)
-            all_endpoints.append(line.p2)
-
-        if len(all_endpoints) < 2:
+        # 検証: 選ばれた線の長さと期待長さの一致度
+        actual_mm = best_line.length * sf
+        if actual_mm > 0 and abs(actual_mm - value_mm) / value_mm > 0.3:
+            # 30%以上ズレ → unpaired扱い
             return None, None
 
-        if is_h_dim:
-            # 水平寸法: テキストの左側と右側で最も遠い端点
-            left_pts = [p for p in all_endpoints if p[0] < text_origin[0]]
-            right_pts = [p for p in all_endpoints if p[0] > text_origin[0]]
-
-            if not left_pts or not right_pts:
-                # テキストが端にある場合: 全端点からx座標が最小・最大のものを取る
-                sorted_by_x = sorted(all_endpoints, key=lambda p: p[0])
-                return sorted_by_x[0], sorted_by_x[-1]
-
-            p1 = min(left_pts, key=lambda p: p[0])  # 最も左
-            p2 = max(right_pts, key=lambda p: p[0])  # 最も右
-        else:
-            # 垂直寸法: テキストの上側と下側で最も遠い端点
-            below_pts = [p for p in all_endpoints if p[1] < text_origin[1]]
-            above_pts = [p for p in all_endpoints if p[1] > text_origin[1]]
-
-            if not below_pts or not above_pts:
-                sorted_by_y = sorted(all_endpoints, key=lambda p: p[1])
-                return sorted_by_y[0], sorted_by_y[-1]
-
-            p1 = min(below_pts, key=lambda p: p[1])
-            p2 = max(above_pts, key=lambda p: p[1])
-
-        return p1, p2
+        return best_line.p1, best_line.p2
 
     def _validate_chain_dimensions(self) -> None:
         """連続寸法（チェーン寸法）の整合性チェック。
@@ -2970,10 +3180,12 @@ class PDFVectorExtractor:
         dpi = self._raster_dpi
         page_h_pt = self._raster_page_height_pt
 
-        # 検出済み壁をラスターマスクに描画 → ドア開口を確実に閉じる
-        # (モルフォロジー閉じだけでは900mm開口@1:50@300DPI=213pxを閉じられない)
+        # === 壁のみマスクを構築 (BFS用) ===
+        # ラスター二値化マスクは什器・寸法線も拾ってしまうため、
+        # BFS用には検出済み壁のみで構築したクリーンマスクを使う。
+        # これにより什器の線でBFSが止まらず、正確な部屋面積が得られる。
+        wall_only_mask = np.zeros_like(mask)
         if self.walls:
-            augmented = mask.copy()
             for wall in self.walls:
                 # 実寸mm → ラスターpx 変換
                 sx_mm, sy_mm = wall["start_x_mm"] / sf, wall["start_y_mm"] / sf
@@ -2987,43 +3199,243 @@ class PDFVectorExtractor:
                 sy_px = int(sy_pt * dpi / 72.0)
                 ex_px = int(ex_pt * dpi / 72.0)
                 ey_px = int(ey_pt * dpi / 72.0)
-                # 壁厚をpx単位に変換 (最低4px)
+                # 壁厚をpx単位に変換 (最低6px → BFSが確実に通れないように)
                 thick_mm = wall.get("thickness_mm", 120)
-                thick_px = max(4, int(thick_mm / sf / PT_TO_MM * dpi / 72.0))
-                cv2.line(augmented, (sx_px, sy_px), (ex_px, ey_px), 255, thick_px)
-            wall_drawn = int(np.count_nonzero(augmented)) - int(np.count_nonzero(mask))
+                thick_px = max(6, int(thick_mm / sf / PT_TO_MM * dpi / 72.0))
+                cv2.line(wall_only_mask, (sx_px, sy_px), (ex_px, ey_px), 255, thick_px)
             if self.debug:
-                print(f"[DEBUG] 壁マスク増強: {len(self.walls)}本描画, +{wall_drawn}px")
-            mask = augmented
+                wall_px = int(np.count_nonzero(wall_only_mask))
+                print(f"[DEBUG] 壁のみマスク構築: {len(self.walls)}本, {wall_px}px")
 
-        # モルフォロジーで小さな隙間を閉じる (壁描画で大きな開口は対処済み)
-        close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-        closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
+        # ラスター二値化マスクにも壁を追加 (コンター抽出の精度向上用)
+        mask = cv2.bitwise_or(mask, wall_only_mask)
 
-        # 外部からフラッドフィル (OpenCV floodFill)
-        # maskをコピーして外枠をシードに
-        flood_mask = closed.copy()
-        fill_h, fill_w = flood_mask.shape
-        # 4辺から外部を塗りつぶす (値=2で塗る → 128)
-        fill_val = 128
-        # floodFillには+2のマスクが必要
-        ff_mask = np.zeros((fill_h + 2, fill_w + 2), np.uint8)
-        # 4隅から開始
-        for seed in [(0, 0), (fill_w - 1, 0), (0, fill_h - 1), (fill_w - 1, fill_h - 1)]:
-            if flood_mask[seed[1], seed[0]] == 0:
-                cv2.floodFill(flood_mask, ff_mask, seed, fill_val)
+        # ドア/開口部の位置にマスク上で閉鎖線を描画 → BFS漏れ防止
+        # (検出済みのドア弧・引戸・折戸・壁ギャップ開口の位置に壁線を追加)
+        opening_close_count = 0
+        all_openings_for_mask = []
+        # 開き戸: 弧の中心(=ヒンジ側)から弧の半径分の範囲に壁線を描画
+        for da in self.door_arcs:
+            cx_mm = da["center"][0] * sf
+            cy_mm = da["center"][1] * sf
+            r_mm = da["radius_mm"]
+            # ドアの開口幅に対応する壁線を描画
+            all_openings_for_mask.append((cx_mm, cy_mm, r_mm))
+        # 引戸
+        for sd in self.sliding_doors:
+            c = sd.get("center_mm") or sd.get("center")
+            if c:
+                cx_mm = c[0] if len(c) >= 2 else 0
+                cy_mm = c[1] if len(c) >= 2 else 0
+                w_mm = sd.get("width_mm", 900)
+                all_openings_for_mask.append((cx_mm, cy_mm, w_mm))
+        # 折戸
+        for fd in self.folding_doors:
+            c = fd.get("center_mm") or fd.get("center")
+            if c:
+                cx_mm = c[0] if len(c) >= 2 else 0
+                cy_mm = c[1] if len(c) >= 2 else 0
+                w_mm = fd.get("width_mm", 900)
+                all_openings_for_mask.append((cx_mm, cy_mm, w_mm))
+        # 壁ギャップ開口
+        for op in self.openings:
+            c = op.get("center_mm")
+            if c:
+                cx_mm = c[0]
+                cy_mm = c[1]
+                w_mm = op.get("width_mm", 900)
+                all_openings_for_mask.append((cx_mm, cy_mm, w_mm))
 
-        # 外部でも壁でもない領域 = 室内 (値=0のまま)
-        interior = np.zeros_like(flood_mask)
-        interior[flood_mask == 0] = 255
+        for cx_mm, cy_mm, open_width_mm in all_openings_for_mask:
+            # 実寸mm → ラスターpx
+            cx_paper = cx_mm / sf
+            cy_paper = cy_mm / sf
+            cx_pt = cx_paper / PT_TO_MM
+            cy_pt = page_h_pt - cy_paper / PT_TO_MM
+            cx_px = int(cx_pt * dpi / 72.0)
+            cy_px = int(cy_pt * dpi / 72.0)
+            # 開口幅 → ピクセル半径 (少しマージン追加)
+            r_paper = (open_width_mm * 0.6) / sf
+            r_px = max(8, int(r_paper / PT_TO_MM * dpi / 72.0))
+            # 中心を通る十字線を描画 — 壁のみマスクとラスターマスク両方に
+            for target_mask in [wall_only_mask, mask]:
+                if 0 <= cy_px < h:
+                    x1 = max(0, cx_px - r_px)
+                    x2 = min(w - 1, cx_px + r_px)
+                    cv2.line(target_mask, (x1, cy_px), (x2, cy_px), 255, 6)
+                if 0 <= cx_px < w:
+                    y1 = max(0, cy_px - r_px)
+                    y2 = min(h - 1, cy_px + r_px)
+                    cv2.line(target_mask, (cx_px, y1), (cx_px, y2), 255, 6)
+            opening_close_count += 1
 
-        # 連結成分ラベリング
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
-            interior, connectivity=4
-        )
+        if self.debug and opening_close_count > 0:
+            print(f"[DEBUG] 開口部マスク閉鎖: {opening_close_count}箇所")
+
+        # 壁のみマスクにモルフォロジー閉鎖 (BFS用: 壁間の小さな隙間を閉じる)
+        close_wall = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        wall_closed = cv2.morphologyEx(wall_only_mask, cv2.MORPH_CLOSE, close_wall, iterations=2)
+
+        # ラスターマスクにもモルフォロジー (コンター抽出精度向上用)
+        close_small = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+        closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_small, iterations=2)
+        close_medium = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21))
+        closed = cv2.morphologyEx(closed, cv2.MORPH_CLOSE, close_medium, iterations=1)
+        close_large = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (55, 55))
+        closed = cv2.morphologyEx(closed, cv2.MORPH_CLOSE, close_large, iterations=1)
+
+        # === 室名テキストシード方式 ===
+        # 各室名テキストの位置からフラッドフィルし、壁で囲まれた領域を部屋として検出。
+        # 従来の外部フラッドフィル方式と違い、ドア開口を通じた部屋マージが起きない。
+
+        # mm座標 → ラスターピクセル座標
+        def mm_to_raster_local(x_mm: float, y_mm: float) -> tuple[int, int]:
+            x_pt = x_mm / PT_TO_MM
+            y_pt_orig = page_h_pt - (y_mm / PT_TO_MM)
+            return int(x_pt * dpi / 72.0), int(y_pt_orig * dpi / 72.0)
+
+        # ラスター座標→mm座標
+        def raster_to_mm(px_x: int, px_y: int) -> tuple[float, float]:
+            x_pt = px_x * 72.0 / dpi
+            y_pt_orig = px_y * 72.0 / dpi
+            y_flipped_pt = page_h_pt - y_pt_orig
+            x_mm = x_pt * PT_TO_MM
+            y_mm = y_flipped_pt * PT_TO_MM
+            return x_mm * sf, y_mm * sf
+
+        # ラベル画像: 0=未割当, 壁=特殊値, N=部屋N
+        # closedマスク (ラスター二値化 + 壁描画 + モルフォロジー閉鎖) を使用。
+        # 什器線も壁として扱われるが、BFS全シード方式 + グラフ閉路補完 + 不明室マージ
+        # の組み合わせで精度を確保する。
+        label_img = np.zeros((h, w), dtype=np.int32)
+        label_img[closed > 0] = -1  # 壁 = -1
+
+        # 室名テキストのシード位置を収集 (壁上なら近傍の空きpxに移動)
+        seeds: list[tuple[int, int, int, dict]] = []  # (px_x, px_y, label_id, room_name_dict)
+        label_counter = 0
+        for rn in self.room_names:
+            px_x, px_y = mm_to_raster_local(rn["origin"][0], rn["origin"][1])
+            if not (0 <= px_x < w and 0 <= px_y < h):
+                continue
+            # 壁上の場合は近傍の空きピクセルを探索
+            if label_img[px_y, px_x] != 0:
+                found = False
+                for radius in range(1, 60):
+                    for dy in range(-radius, radius + 1):
+                        for dx in range(-radius, radius + 1):
+                            if abs(dx) + abs(dy) != radius:
+                                continue
+                            nx, ny = px_x + dx, px_y + dy
+                            if 0 <= nx < w and 0 <= ny < h and label_img[ny, nx] == 0:
+                                px_x, px_y = nx, ny
+                                found = True
+                                break
+                        if found:
+                            break
+                    if found:
+                        break
+                if not found:
+                    continue
+            label_counter += 1
+            seeds.append((px_x, px_y, label_counter, rn))
 
         if self.debug:
-            print(f"[DEBUG] CV2部屋検出: {num_labels - 1}個の連結成分")
+            print(f"[DEBUG] 室名シード: {len(seeds)}個 (室名テキスト: {len(self.room_names)}個)")
+
+        # === BFSフラッドフィル方式 (全シード統一) ===
+        # レイキャスト矩形の代わりに、全シードからBFSフラッドフィルで
+        # 実際の部屋形状を塗り分ける。壁マスク(closed)が開口を閉じているので
+        # BFSが隣室に漏れることなく正確な部屋形状を取得できる。
+        from collections import deque as _deque
+
+        px_per_mm_paper = (dpi / 72.0) / PT_TO_MM
+        area_max_paper = 30_000_000 / (sf * sf)
+        max_room_px = int(area_max_paper * (px_per_mm_paper ** 2))
+        max_room_px = min(max_room_px, 1_500_000)
+
+        bfs_filled_count = 0
+        for px_x, px_y, lid, rn in seeds:
+            if label_img[px_y, px_x] != 0:
+                continue
+            queue = _deque([(px_x, px_y)])
+            label_img[px_y, px_x] = lid
+            count = 0
+            while queue:
+                cx, cy = queue.popleft()
+                count += 1
+                if count > max_room_px:
+                    break
+                for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                    nx, ny = cx + dx, cy + dy
+                    if 0 <= nx < w and 0 <= ny < h and label_img[ny, nx] == 0:
+                        label_img[ny, nx] = lid
+                        queue.append((nx, ny))
+            bfs_filled_count += 1
+
+        if self.debug:
+            print(f"[DEBUG] BFSフラッドフィル部屋: {bfs_filled_count}室")
+
+        # 未割当の室内領域用に外部フラッドフィルも実行 → 残りを連結成分で拾う
+        exterior_val = -2
+        for seed_pt in [(0,0), (w-1,0), (0,h-1), (w-1,h-1)]:
+            sx, sy = seed_pt
+            if label_img[sy, sx] == 0:
+                queue = _deque([(sx, sy)])
+                label_img[sy, sx] = exterior_val
+                while queue:
+                    cx, cy = queue.popleft()
+                    for ddx, ddy in ((1,0),(-1,0),(0,1),(0,-1)):
+                        nx, ny = cx + ddx, cy + ddy
+                        if 0 <= nx < w and 0 <= ny < h and label_img[ny, nx] == 0:
+                            label_img[ny, nx] = exterior_val
+                            queue.append((nx, ny))
+
+        # 残りの未割当領域 (室名テキストがない部屋) を連結成分で拾う
+        remaining = np.uint8(label_img == 0) * 255
+        if np.any(remaining):
+            num_rem, rem_labels, rem_stats, rem_centroids = cv2.connectedComponentsWithStats(
+                remaining, connectivity=4
+            )
+            px_to_mm_local = 72.0 / dpi * PT_TO_MM * sf
+            for rem_id in range(1, num_rem):
+                area_px = rem_stats[rem_id, cv2.CC_STAT_AREA]
+                area_m2 = area_px * (px_to_mm_local ** 2) / 1_000_000.0
+                if area_m2 >= 0.5:
+                    label_counter += 1
+                    label_img[rem_labels == rem_id] = label_counter
+
+        # ラベル画像からstats/centroids相当を計算
+        unique_labels = set(int(v) for v in np.unique(label_img) if v > 0)
+        num_labels = max(unique_labels) + 1 if unique_labels else 1
+
+        # statsとcentroidsを構築
+        stats = np.zeros((num_labels, 5), dtype=np.int32)
+        centroids = np.zeros((num_labels, 2), dtype=np.float64)
+        labels = label_img
+
+        for lid in unique_labels:
+            mask_lid = (label_img == lid)
+            area = int(np.count_nonzero(mask_lid))
+            ys, xs = np.where(mask_lid)
+            if len(xs) == 0:
+                continue
+            stats[lid, cv2.CC_STAT_AREA] = area
+            stats[lid, cv2.CC_STAT_LEFT] = int(xs.min())
+            stats[lid, cv2.CC_STAT_TOP] = int(ys.min())
+            stats[lid, cv2.CC_STAT_WIDTH] = int(xs.max() - xs.min())
+            stats[lid, cv2.CC_STAT_HEIGHT] = int(ys.max() - ys.min())
+            centroids[lid] = [xs.mean(), ys.mean()]
+
+        # シード→ラベルIDのマッピング (室名マッチング用)
+        seed_label_names: dict[int, str] = {}
+        seed_label_is_area: dict[int, bool] = {}
+        for _, _, lid, rn in seeds:
+            seed_label_names[lid] = rn["name"]
+            seed_label_is_area[lid] = rn.get("is_area_label", False)
+
+        if self.debug:
+            print(f"[DEBUG] 室名シード部屋検出: {len(unique_labels)}領域 "
+                  f"(シード: {len(seeds)}, 残り: {len(unique_labels) - len(seeds)})")
 
         # ラスター座標→mm座標の変換関数
         def raster_to_mm(px_x: int, px_y: int) -> tuple[float, float]:
@@ -3060,8 +3472,8 @@ class PDFVectorExtractor:
             # 面積フィルタ (mm²)
             area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
 
-            if area_m2 < 0.8 or area_m2 > 300.0:
-                if self.debug and 0.3 < area_m2 < 0.8:
+            if area_m2 < 0.3 or area_m2 > 300.0:
+                if self.debug and 0.15 < area_m2 < 0.3:
                     cx_px, cy_px = centroids[label_id]
                     c_mm = raster_to_mm(int(cx_px), int(cy_px))
                     print(f"[DEBUG] 連結成分スキップ(小): label={label_id} area={area_m2:.2f}㎡ center=({round(c_mm[0])},{round(c_mm[1])})")
@@ -3080,12 +3492,15 @@ class PDFVectorExtractor:
                     print(f"[DEBUG] 連結成分スキップ(範囲外): label={label_id} area={area_m2:.2f}㎡ center={center_mm}")
                 continue
 
-            # OpenCVコンターからポリゴン形状を取得 (バウンディングボックスではなく)
-            component_mask = np.uint8(labels == label_id) * 255
-            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+            # 全部屋をBFSラベル画像からコンター抽出で形状を取得
             polygon: list[tuple[int, int]] = []
-            if contours:
+            contours = []
+            if not polygon:
+                # OpenCVコンターからポリゴン形状を取得
+                component_mask = np.uint8(labels == label_id) * 255
+                contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            if not polygon and contours:
                 # 最大コンターを使用
                 largest = max(contours, key=cv2.contourArea)
                 # ポリゴン簡略化 (epsilon を compactness に応じて動的調整)
@@ -3093,11 +3508,11 @@ class PDFVectorExtractor:
                 cont_area = cv2.contourArea(largest)
                 compactness = perimeter * perimeter / (4 * 3.14159 * cont_area) if cont_area > 0 else 1
                 if compactness < 1.5:  # ほぼ矩形
-                    eps = 0.02 * perimeter
+                    eps = 0.03 * perimeter
                 elif compactness < 3.0:  # L字など
-                    eps = 0.015 * perimeter
+                    eps = 0.025 * perimeter
                 else:  # 非常に複雑
-                    eps = 0.008 * perimeter
+                    eps = 0.02 * perimeter
                 approx = cv2.approxPolyDP(largest, eps, True)
 
                 # 矩形スナップ: 4頂点で全角度が75°～105°なら最小外接矩形にスナップ
@@ -3208,13 +3623,25 @@ class PDFVectorExtractor:
                 if distance(center_mm, wc) < max_dim:
                     nearby_walls.append(wall["id"])
 
+            # シードから室名を取得 (シードなし部屋は "不明")
+            room_name = seed_label_names.get(label_id, "不明")
+
+            # 壁スナップでポリゴン形状を改善
+            snapped_poly = self._snap_polygon_to_walls(
+                [[p[0], p[1]] for p in polygon])
+
+            # 直交化・壁スナップ後処理
+            snapped_poly = self._simplify_room_polygon(snapped_poly, snap_thresh=50)
+
             self.rooms.append({
-                "name": "不明",
+                "name": room_name,
                 "wall_ids": nearby_walls,
                 "area_m2": round(area_m2, 1),
                 "center_mm": list(center_mm),
-                "polygon_mm": [[p[0], p[1]] for p in polygon],
+                "polygon_mm": snapped_poly,
                 "_label_id": label_id,
+                "confidence": 0.3 if room_name == "不明" else 0.8,
+                "nearby_texts": [],
             })
             room_count += 1
 
@@ -3242,8 +3669,8 @@ class PDFVectorExtractor:
         def _find_raster_label(origin_mm: tuple) -> int | None:
             """テキスト原点の周囲を探索し、最も多くヒットしたラベルIDを返す"""
             px_x, px_y = mm_to_raster(origin_mm[0], origin_mm[1])
-            # 探索半径を拡大 (80→120px): テキストが部屋中心から離れている場合に対応
-            search_max_r = 120
+            # 探索半径を拡大: テキストが部屋中心から離れている場合に対応
+            search_max_r = 180
             label_counts: dict[int, int] = {}
             for dy in range(-search_max_r, search_max_r + 1, 4):
                 for dx in range(-search_max_r, search_max_r + 1, 4):
@@ -3291,6 +3718,7 @@ class PDFVectorExtractor:
             winner = candidates[0]
             idx, rn, d = winner
             room["name"] = rn["name"]
+            room["confidence"] = 1.0  # ラスターラベル直接ヒット
             used_room_names.add(idx)
             if self.debug:
                 print(f"[DEBUG] 室名マッチ(ラスター): {rn['name']} -> center={room['center_mm']} "
@@ -3318,10 +3746,87 @@ class PDFVectorExtractor:
                 # 最近傍が5000mm以内なら割り当て
                 if best_room and best_dist < 5000:
                     best_room["name"] = rn["name"]
+                    best_room["confidence"] = 0.8  # 最近傍マッチ
                     used_room_names.add(idx)
                     if self.debug:
                         print(f"[DEBUG] 室名マッチ(最近傍): {rn['name']} -> center={best_room['center_mm']} "
                               f"dist={best_dist:.0f}mm")
+
+        # Phase 3: 不明室に対して、中心点の近傍テキストから室名を推定
+        for room in self.rooms:
+            if room["name"] != "不明":
+                continue
+            cx_mm = room["center_mm"][0] / sf  # paper mm
+            cy_mm = room["center_mm"][1] / sf
+            best_name = None
+            best_d = 3000 / sf  # 3000mm real → paper mm
+            for rn in self.room_names:
+                if any(r["name"] == rn["name"] and r is not room
+                       for r in self.rooms if r["name"] != "不明"):
+                    continue  # この名前は既に使われている
+                d = distance((cx_mm, cy_mm), rn["origin"])
+                if d < best_d:
+                    best_d = d
+                    best_name = rn["name"]
+            if best_name:
+                room["name"] = best_name
+                room["confidence"] = 0.8  # 最近傍テキスト補完
+                if self.debug:
+                    print(f"[DEBUG] 不明室名補完: {best_name} -> center={room['center_mm']}")
+
+        # nearby_texts: 各部屋（特に不明室）の中心から2000mm以内のテキストを収集
+        for room in self.rooms:
+            cx_real = room["center_mm"][0]
+            cy_real = room["center_mm"][1]
+            nearby: list[str] = []
+            for rn in self.room_names:
+                # room_names の origin は paper mm → scale_factor で実寸に変換
+                rn_x = rn["origin"][0] * sf
+                rn_y = rn["origin"][1] * sf
+                d = distance((cx_real, cy_real), (rn_x, rn_y))
+                if d < 2000 and rn["name"] != room["name"]:
+                    nearby.append(rn["name"])
+            room["nearby_texts"] = nearby
+
+        # Phase 4: 小さな不明室を最近傍の名前付き部屋にマージ (DISABLED - correction UIで判断)
+        # BFSがドア閉鎖により正しく分離した結果、室名テキストがない小領域が独立する。
+        # これらを隣接する名前付き部屋に統合して不明室を減らす。
+        # → 無効化: correction UI でユーザーがマージ判断する
+        _PHASE4_MERGE_ENABLED = False
+        merge_threshold_m2 = 2.0  # この面積以下の不明室をマージ対象に
+        merge_dist_mm = 3000     # この距離以内の名前付き部屋にマージ
+        merged_count = 0
+        rooms_to_remove = []
+        if _PHASE4_MERGE_ENABLED:
+          for room in self.rooms:
+            if room["name"] != "不明":
+                continue
+            if room["area_m2"] > merge_threshold_m2:
+                continue
+            # 最近傍の名前付き部屋を探す
+            rc = tuple(room["center_mm"])
+            best_target = None
+            best_dist = merge_dist_mm
+            for target in self.rooms:
+                if target is room or target["name"] == "不明":
+                    continue
+                d = distance(rc, tuple(target["center_mm"]))
+                if d < best_dist:
+                    best_dist = d
+                    best_target = target
+            if best_target:
+                # ターゲット部屋の面積に加算し、不明室を削除リストに追加
+                best_target["area_m2"] = round(best_target["area_m2"] + room["area_m2"], 1)
+                rooms_to_remove.append(room)
+                merged_count += 1
+                if self.debug:
+                    print(f"[DEBUG] 不明室マージ: {room['area_m2']:.1f}m2 → {best_target['name']} "
+                          f"(dist={best_dist:.0f}mm)")
+        if _PHASE4_MERGE_ENABLED:
+            for room in rooms_to_remove:
+                self.rooms.remove(room)
+            if self.debug and merged_count > 0:
+                print(f"[DEBUG] 不明室マージ合計: {merged_count}室削除")
 
         # フォールバック: ポリゴンに含まれなかった室名 → 周辺壁から矩形ポリゴンを推定
         for idx, rn in enumerate(self.room_names):
@@ -3391,12 +3896,17 @@ class PDFVectorExtractor:
                           f"bbox=({round(x_min)},{round(y_min)})-({round(x_max)},{round(y_max)}) "
                           f"area={est_area_m2}㎡")
 
+            # 直交化・壁スナップ後処理
+            polygon_mm = self._simplify_room_polygon(polygon_mm, snap_thresh=50)
+
             self.rooms.append({
                 "name": rn["name"],
                 "wall_ids": nearby_walls,
                 "area_m2": est_area_m2,
                 "center_mm": list(center_mm),
                 "polygon_mm": polygon_mm,
+                "confidence": 0.8,  # フォールバック壁推定
+                "nearby_texts": [],
             })
 
         if self.debug:
@@ -3404,10 +3914,165 @@ class PDFVectorExtractor:
 
         return room_count > 0
 
+    def _build_room_polygons_graph(self) -> None:
+        """PDFの太線グラフから最小閉路を検出し、面積テキストと照合して大部屋ポリゴンを補完。"""
+        if not self.pdf_path or not self.room_names:
+            return
+
+        sf = self.scale_factor
+        from collections import defaultdict as _dd
+
+        try:
+            doc = fitz.open(self.pdf_path)
+            page = doc[self.page_num]
+        except Exception:
+            return
+
+        page_h_pt = page.rect.height
+        eps = 8  # snap threshold in paper mm
+
+        nodes: dict[int, tuple[float, float]] = {}
+        nc = [0]
+
+        def snap_n(x, y):
+            for nid, (nx, ny) in nodes.items():
+                if abs(x - nx) < eps and abs(y - ny) < eps:
+                    return nid
+            nid = nc[0]; nodes[nid] = (x, y); nc[0] += 1; return nid
+
+        adj: dict[int, set[int]] = _dd(set)
+        for d_item in page.get_drawings():
+            w = d_item.get('width', 0) or 0
+            if w < 0.25:
+                continue
+            for item in d_item['items']:
+                if item[0] != 'l':
+                    continue
+                p1, p2 = item[1], item[2]
+                x1 = p1.x * PT_TO_MM
+                y1 = (page_h_pt - p1.y) * PT_TO_MM
+                x2 = p2.x * PT_TO_MM
+                y2 = (page_h_pt - p2.y) * PT_TO_MM
+                if abs(y2 - y1) < 1 or abs(x2 - x1) < 1:
+                    if math.hypot(x2 - x1, y2 - y1) < 3:
+                        continue
+                    n1 = snap_n(x1, y1)
+                    n2 = snap_n(x2, y2)
+                    if n1 != n2:
+                        adj[n1].add(n2)
+                        adj[n2].add(n1)
+        doc.close()
+
+        # 最小閉路検出 (left-turn algorithm)
+        def af(x1, y1, x2, y2):
+            return math.atan2(y2 - y1, x2 - x1)
+
+        cycles = []
+        used_dir: set[tuple[int, int]] = set()
+        for s in adj:
+            for nx in adj[s]:
+                if (s, nx) in used_dir:
+                    continue
+                cy = [s]
+                prev, curr = s, nx
+                for _ in range(150):
+                    cy.append(curr)
+                    used_dir.add((prev, curr))
+                    if curr == s:
+                        break
+                    px, py = nodes[prev]
+                    cx2, cy2 = nodes[curr]
+                    inc = af(cx2, cy2, px, py)
+                    bn = None
+                    ba = float('inf')
+                    for nb in adj[curr]:
+                        if nb == prev and len(adj[curr]) > 1:
+                            continue
+                        nnx, nny = nodes[nb]
+                        out = af(cx2, cy2, nnx, nny)
+                        dd = (out - inc) % (2 * math.pi)
+                        if dd < ba:
+                            ba = dd
+                            bn = nb
+                    if bn is None:
+                        break
+                    prev, curr = curr, bn
+                else:
+                    continue
+                if len(cy) >= 4 and cy[-1] == s:
+                    coords = [nodes[n] for n in cy[:-1]]
+                    area = abs(sum(
+                        coords[i][0] * coords[(i + 1) % len(coords)][1] -
+                        coords[(i + 1) % len(coords)][0] * coords[i][1]
+                        for i in range(len(coords))
+                    )) / 2
+                    area_m2 = area * (sf ** 2) / 1_000_000
+                    if 1.0 < area_m2 < 200:
+                        poly_real = [(round(c[0] * sf), round(c[1] * sf)) for c in coords]
+                        center = (sum(p[0] for p in poly_real) // len(poly_real),
+                                  sum(p[1] for p in poly_real) // len(poly_real))
+                        cycles.append((area_m2, poly_real, center))
+
+        if self.debug:
+            print(f"[DEBUG] グラフ閉路: {len(cycles)}個検出")
+
+        # 全部屋に対してグラフ閉路で面積補完
+        # (1) 面積テキストがある部屋で面積不足のもの → 期待面積との照合で置換
+        # (2) 面積テキストがない部屋でも面積が極端に小さいもの → 最近傍閉路で補完
+        import re as _re
+        graph_replaced = 0
+        for room in self.rooms:
+            # 面積テキストから期待面積を取得
+            m = _re.search(r'([\d.]+)', room["name"]) if room.get("name") else None
+            expected = float(m.group(1)) if m and float(m.group(1)) > 1.0 else 0
+
+            # 期待面積あり: 現在面積が40%未満なら閉路置換
+            # 期待面積なし: 現在面積が0.8m²未満で「不明」でない部屋なら閉路補完
+            needs_replacement = False
+            if expected > 1.0 and room["area_m2"] < expected * 0.4:
+                needs_replacement = True
+            elif expected == 0 and room["area_m2"] < 0.8 and room["name"] != "不明":
+                needs_replacement = True
+
+            if not needs_replacement:
+                continue
+
+            # この部屋の中心に最も近い閉路を探す
+            rc = room["center_mm"]
+            best_cycle = None
+            best_dist = 5000
+            for area_m2, poly, center in cycles:
+                d = math.hypot(center[0] - rc[0], center[1] - rc[1])
+                if expected > 1.0:
+                    # 期待面積あり: 面積範囲でフィルタ
+                    if d < best_dist and expected * 0.3 <= area_m2 <= expected * 1.5:
+                        best_dist = d
+                        best_cycle = (area_m2, poly, center)
+                else:
+                    # 期待面積なし: 距離が近い閉路を採用 (面積1〜100m²)
+                    if d < best_dist and 1.0 <= area_m2 <= 100:
+                        best_dist = d
+                        best_cycle = (area_m2, poly, center)
+
+            if best_cycle:
+                room["polygon_mm"] = [[p[0], p[1]] for p in best_cycle[1]]
+                room["area_m2"] = round(best_cycle[0], 1)
+                room["center_mm"] = list(best_cycle[2])
+                room["confidence"] = 0.6  # グラフ閉路置換
+                graph_replaced += 1
+                if self.debug:
+                    print(f"[DEBUG] グラフ閉路置換: {room['name']} "
+                          f"→ {best_cycle[0]:.1f}m2 ({len(best_cycle[1])}pts)")
+
+        if self.debug:
+            print(f"[DEBUG] グラフ閉路置換合計: {graph_replaced}室")
+
     def _build_room_polygons(self) -> None:
         """部屋ポリゴンを検出。OpenCV版を優先、失敗時はベクター版にフォールバック。"""
         # OpenCV版を試行
         if _HAS_CV2 and self._build_room_polygons_cv2():
+            # グラフ閉路で大部屋を補完
+            self._build_room_polygons_graph()
             return
 
         # フォールバック: ベクターベースの部屋検出
@@ -3667,6 +4332,8 @@ class PDFVectorExtractor:
                 "area_m2": round(area_m2, 1),
                 "center_mm": list(center_mm),
                 "polygon_mm": [[p[0], p[1]] for p in polygon],
+                "confidence": 0.3 if (room_name or "不明") == "不明" else 0.8,
+                "nearby_texts": [],
             })
 
         # ポリゴンに含まれなかった室名は従来方式でフォールバック
@@ -3690,6 +4357,8 @@ class PDFVectorExtractor:
                 "area_m2": 0,
                 "center_mm": list(center_mm),
                 "polygon_mm": [],
+                "confidence": 0.8,  # フォールバック（ポリゴンなし）
+                "nearby_texts": [],
             })
 
         if self.debug:
@@ -3742,10 +4411,10 @@ class PDFVectorExtractor:
                 val = dt["value_mm"]
                 if abs(val - width_mm) < 100:
                     if self.debug:
-                        print(f"[DEBUG] 幅寸法一致: {val}mm ≈ {width_mm}mm")
+                        print(f"[DEBUG] 幅寸法一致: {val}mm ~= {width_mm}mm")
                 elif abs(val - depth_mm) < 100:
                     if self.debug:
-                        print(f"[DEBUG] 奥行寸法一致: {val}mm ≈ {depth_mm}mm")
+                        print(f"[DEBUG] 奥行寸法一致: {val}mm ~= {depth_mm}mm")
 
         # 開口部数チェック
         total_swing = sum(
@@ -3791,8 +4460,20 @@ class PDFVectorExtractor:
                 all_y.extend([w["start_y_mm"], w["end_y_mm"]])
             min_x, max_x = min(all_x), max(all_x)
             min_y, max_y = min(all_y), max(all_y)
+
+            # ページ範囲を実寸mmで計算 — 範囲外の座標をクランプ
+            page_w_real = self.page_width_mm * self.scale_factor
+            page_h_real = self.page_height_mm * self.scale_factor
+            min_x = max(0.0, min_x)
+            min_y = max(0.0, min_y)
+            max_x = min(page_w_real, max_x)
+            max_y = min(page_h_real, max_y)
+
             width_mm = max_x - min_x
             depth_mm = max_y - min_y
+
+            # 原点オフセットを保存 (overlay描画で逆変換に必要)
+            self._origin_offset_mm = {"x": round(min_x), "y": round(min_y)}
 
             # 原点を (0,0) にシフト
             for w in self.walls:
@@ -3851,6 +4532,10 @@ class PDFVectorExtractor:
             "pages_analyzed": 1,
 
             "project_name": project_name,
+
+            # 座標原点オフセット (実寸mm) — overlay描画で逆変換に必要
+            # JSONの座標は (0,0) 基準に正規化済み。元のPDF座標に戻すにはこの値を加算する
+            "origin_offset_mm": getattr(self, '_origin_offset_mm', {"x": 0, "y": 0}),
 
             "room": {
                 "width_mm": round(width_mm),
@@ -3976,9 +4661,26 @@ def main():
 
     result = extractor.run()
 
+    # Round floats to 1 decimal place during JSON serialization
+    class _RoundingEncoder(json.JSONEncoder):
+        def default(self, o):
+            return super().default(o)
+
+        def encode(self, o):
+            return super().encode(self._round(o))
+
+        def _round(self, o):
+            if isinstance(o, float):
+                return round(o, 1)
+            if isinstance(o, dict):
+                return {k: self._round(v) for k, v in o.items()}
+            if isinstance(o, (list, tuple)):
+                return [self._round(v) for v in o]
+            return o
+
     # 結果表示
     indent = 2 if args.pretty else None
-    json_str = json.dumps(result, ensure_ascii=False, indent=indent)
+    json_str = json.dumps(result, ensure_ascii=False, indent=indent, cls=_RoundingEncoder)
 
     if args.output:
         out_path = Path(args.output)

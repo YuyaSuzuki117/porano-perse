@@ -79,7 +79,9 @@ def load_blueprint_json(dxf_path: str) -> dict | None:
 
 
 def draw_overlay_direct(pdf_img: Image.Image, bp_data: dict,
-                        page_info: dict, dpi: int = 150) -> Image.Image:
+                        page_info: dict, dpi: int = 150,
+                        pdf_path: str | None = None,
+                        page_num: int = 0) -> Image.Image:
     """blueprint JSONのデータをPDF画像に直接描画する。
 
     座標変換:
@@ -99,14 +101,26 @@ def draw_overlay_direct(pdf_img: Image.Image, bp_data: dict,
         except (ValueError, IndexError):
             pass
 
+    # 原点オフセット取得 (JSONの座標は正規化済み → 元のPDF座標に戻すために加算)
+    origin = bp_data.get('origin_offset_mm', {"x": 0, "y": 0})
+    origin_x_mm = origin.get("x", 0)
+    origin_y_mm = origin.get("y", 0)
+
     page_h_pt = page_info["height_pt"]
     img_w, img_h = pdf_img.size
 
     def world_to_pixel(x_mm: float, y_mm: float) -> tuple[int, int]:
-        """実寸mm (Y-up) → PDFピクセル座標 (Y-down)"""
+        """実寸mm (Y-up, 正規化済み) → PDFピクセル座標 (Y-down)
+
+        JSONの座標は origin_offset_mm 分だけシフト済みなので、
+        元のPDF上の位置に戻すために origin_offset を加算する。
+        """
+        # 原点オフセット復元 → 元の実寸mm座標
+        x_real = x_mm + origin_x_mm
+        y_real = y_mm + origin_y_mm
         # 実寸mm → 用紙mm
-        x_paper = x_mm / scale
-        y_paper = y_mm / scale
+        x_paper = x_real / scale
+        y_paper = y_real / scale
         # 用紙mm → pt
         x_pt = x_paper / PT_TO_MM
         y_flipped_pt = y_paper / PT_TO_MM
@@ -168,9 +182,30 @@ def draw_overlay_direct(pdf_img: Image.Image, bp_data: dict,
             draw.text((cp[0] - 20, cp[1] - 6), label,
                       fill=(30, 30, 200))
 
+    # PDF太線を参照レイヤーとして描画 (薄い灰色)
+    if pdf_path:
+        try:
+            doc = fitz.open(pdf_path)
+            page = doc[page_num]
+            zoom = dpi / 72.0
+            for d_item in page.get_drawings():
+                w = d_item.get('width', 0) or 0
+                if w < 0.25:
+                    continue
+                for item in d_item['items']:
+                    if item[0] != 'l':
+                        continue
+                    p1, p2 = item[1], item[2]
+                    px1 = (int(p1.x * zoom), int(p1.y * zoom))
+                    px2 = (int(p2.x * zoom), int(p2.y * zoom))
+                    draw.line([px1, px2], fill=(160, 160, 160), width=1)
+            doc.close()
+        except Exception:
+            pass
+
     # ラベル
     draw.text((10, 10),
-              "OVERLAY: Gray=PDF, Red=Wall, Green=Fixture, Blue=Room",
+              "OVERLAY: LightGray=PDFLines, Red=Wall, Green=Fixture, Blue=Room",
               fill=(0, 0, 180))
 
     return overlay
@@ -239,7 +274,8 @@ def create_comparison(pdf_path: str, dxf_path: str, output_path: str,
         sd = bp_data.get('scale_detected', '?')
         print(f"Blueprint JSON 読み込み完了 (scale: {sd})")
         print("重ね合わせ画像生成中 (直接描画)...")
-        overlay = draw_overlay_direct(pdf_img, bp_data, page_info, dpi)
+        overlay = draw_overlay_direct(pdf_img, bp_data, page_info, dpi,
+                                       pdf_path=pdf_path, page_num=page_num)
     else:
         print("Blueprint JSON が見つかりません。DXFレンダリングにフォールバック...")
         dxf_img = render_dxf_standalone(dxf_path)
