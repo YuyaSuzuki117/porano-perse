@@ -27,18 +27,18 @@
       "page": 0,
       "expected": {
         "walls": 55,
-        "rooms": 163,
-        "named_rooms": 24,
+        "rooms": 34,
+        "named_rooms": 23,
         "fixtures": 147
       },
       "tolerance": {
         "walls": 10,
-        "rooms": 20,
+        "rooms": 10,
         "fixtures": 15
       },
       "approved_by": "鈴木",
-      "approved_date": "2026-03-20",
-      "notes": "密な図面。部屋過検出は今後の改善対象"
+      "approved_date": "2026-03-21",
+      "notes": "過検出修正後(163→34)。IoU重複除去+部屋数上限+不明室マージ"
     }
   ]
 }

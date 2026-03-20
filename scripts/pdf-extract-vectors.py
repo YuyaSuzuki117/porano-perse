@@ -3585,7 +3585,7 @@ class PDFVectorExtractor:
             for rem_id in range(1, num_rem):
                 area_px = rem_stats[rem_id, cv2.CC_STAT_AREA]
                 area_m2 = area_px * (px_to_mm_local ** 2) / 1_000_000.0
-                if area_m2 >= 1.5:
+                if area_m2 >= 2.0:
                     label_counter += 1
                     label_img[rem_labels == rem_id] = label_counter
 
@@ -3657,9 +3657,9 @@ class PDFVectorExtractor:
             # 面積フィルタ (mm²)
             area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
 
-            # 面積フィルタ: 名前付き部屋は0.3㎡以上、不明室は1.0㎡以上
+            # 面積フィルタ: 名前付き部屋は0.3㎡以上、不明室は5.0㎡以上
             is_named = label_id in seed_label_names
-            min_area = 0.3 if is_named else 1.0
+            min_area = 0.3 if is_named else 5.0
             if area_m2 < min_area or area_m2 > 300.0:
                 if self.debug and area_m2 >= 0.15 and area_m2 < min_area:
                     cx_px, cy_px = centroids[label_id]
@@ -4072,12 +4072,19 @@ class PDFVectorExtractor:
         if self.debug and rooms_to_remove_contained:
             print(f"[DEBUG] 包含マージ合計: {len(rooms_to_remove_contained)}室削除")
 
-        # Phase 4: 小さな不明室を最近傍の名前付き部屋にマージ
-        # BFSがドア閉鎖により正しく分離した結果、室名テキストがない小領域が独立する。
-        # 面積3㎡以下の不明室で、名前付き部屋から2000mm以内のものをマージ
+        # Phase 4: 不明室を最近傍の名前付き部屋にマージ
+        # BFSがドア閉鎖や什器線により分離した不明領域を名前付き部屋に統合する。
+        # 不明室の数が過多の場合（名前付き部屋数の2倍超）は全不明室をマージ対象にする。
         _PHASE4_MERGE_ENABLED = True
-        merge_threshold_m2 = 3.0  # この面積以下の不明室をマージ対象に
-        merge_dist_mm = 2000     # この距離以内の名前付き部屋にマージ
+        named_count = len([r for r in self.rooms if r["name"] != "不明"])
+        unknown_count = len([r for r in self.rooms if r["name"] == "不明"])
+        # 不明室が名前付き部屋の2倍以上 → 過検出とみなし全不明室をマージ対象
+        if unknown_count > named_count * 2:
+            merge_threshold_m2 = 999.0  # 全不明室をマージ対象
+            merge_dist_mm = 15000       # 広い範囲で最近傍を探す
+        else:
+            merge_threshold_m2 = 10.0   # 通常: 10㎡以下の不明室をマージ対象
+            merge_dist_mm = 5000
         merged_count = 0
         rooms_to_remove = []
         if _PHASE4_MERGE_ENABLED:
@@ -4110,6 +4117,89 @@ class PDFVectorExtractor:
                 self.rooms.remove(room)
             if self.debug and merged_count > 0:
                 print(f"[DEBUG] 不明室マージ合計: {merged_count}室削除")
+
+        # Phase 4.5: IoUベースの重複除去
+        # 80%以上の面積が重複する部屋ペアを検出し、小さい方（不明室優先）を削除
+        def _bbox_of_polygon(poly):
+            """ポリゴンのバウンディングボックスを返す (x_min, y_min, x_max, y_max)"""
+            xs = [p[0] if isinstance(p, (list, tuple)) else 0 for p in poly]
+            ys = [p[1] if isinstance(p, (list, tuple)) else 0 for p in poly]
+            if not xs or not ys:
+                return (0, 0, 0, 0)
+            return (min(xs), min(ys), max(xs), max(ys))
+
+        def _bbox_overlap_area(bb1, bb2):
+            """2つのBBの重複面積 (mm^2)"""
+            x_overlap = max(0, min(bb1[2], bb2[2]) - max(bb1[0], bb2[0]))
+            y_overlap = max(0, min(bb1[3], bb2[3]) - max(bb1[1], bb2[1]))
+            return x_overlap * y_overlap
+
+        rooms_to_remove_overlap: list[dict] = []
+        for i, ra in enumerate(self.rooms):
+            if ra in rooms_to_remove_overlap:
+                continue
+            poly_a = ra.get("polygon_mm", [])
+            if len(poly_a) < 3:
+                continue
+            bb_a = _bbox_of_polygon(poly_a)
+            area_a_mm2 = ra["area_m2"] * 1_000_000.0
+            if area_a_mm2 <= 0:
+                continue
+            for j, rb in enumerate(self.rooms):
+                if j <= i or rb in rooms_to_remove_overlap:
+                    continue
+                poly_b = rb.get("polygon_mm", [])
+                if len(poly_b) < 3:
+                    continue
+                bb_b = _bbox_of_polygon(poly_b)
+                area_b_mm2 = rb["area_m2"] * 1_000_000.0
+                if area_b_mm2 <= 0:
+                    continue
+                overlap = _bbox_overlap_area(bb_a, bb_b)
+                # 小さい方の面積の80%以上が重複していれば重複とみなす
+                smaller_area = min(area_a_mm2, area_b_mm2)
+                if overlap >= smaller_area * 0.8:
+                    # 両方名前付き部屋の場合は除去しない（正当な隣接部屋の可能性）
+                    if ra["name"] != "不明" and rb["name"] != "不明":
+                        continue
+                    # 不明室を優先的に削除、両方不明なら小さい方を削除
+                    if ra["name"] == "不明" and rb["name"] != "不明":
+                        victim = ra
+                    elif rb["name"] == "不明" and ra["name"] != "不明":
+                        victim = rb
+                    elif ra["area_m2"] <= rb["area_m2"]:
+                        victim = ra
+                    else:
+                        victim = rb
+                    if victim not in rooms_to_remove_overlap:
+                        rooms_to_remove_overlap.append(victim)
+                        if self.debug:
+                            print(f"[DEBUG] IoU重複除去: {victim['name']} {victim['area_m2']:.1f}㎡ "
+                                  f"(overlap={overlap/1e6:.1f}㎡)")
+        for room in rooms_to_remove_overlap:
+            self.rooms.remove(room)
+        if self.debug and rooms_to_remove_overlap:
+            print(f"[DEBUG] IoU重複除去合計: {len(rooms_to_remove_overlap)}室削除")
+
+        # Phase 4.6: 部屋数の上限チェック
+        # 名前付き部屋数の2倍 or 壁数×0.8 の小さい方を上限とする
+        # 超過した場合、面積が小さい不明室から順に削除
+        num_walls = len(self.walls)
+        current_named = len([r for r in self.rooms if r["name"] != "不明"])
+        max_rooms = min(max(int(current_named * 1.5), 30), max(int(num_walls * 0.7), 30))
+        if len(self.rooms) > max_rooms:
+            # 不明室を面積昇順でソート
+            unknown_rooms = sorted(
+                [r for r in self.rooms if r["name"] == "不明"],
+                key=lambda r: r["area_m2"]
+            )
+            excess = len(self.rooms) - max_rooms
+            rooms_to_trim = unknown_rooms[:excess]
+            for room in rooms_to_trim:
+                self.rooms.remove(room)
+            if self.debug and rooms_to_trim:
+                print(f"[DEBUG] 壁数上限フィルタ: walls={num_walls} → max_rooms={max_rooms}, "
+                      f"{len(rooms_to_trim)}不明室削除 (残{len(self.rooms)}室)")
 
         # フォールバック: ポリゴンに含まれなかった室名 → 周辺壁から矩形ポリゴンを推定
         for idx, rn in enumerate(self.room_names):
