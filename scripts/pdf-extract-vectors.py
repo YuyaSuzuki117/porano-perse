@@ -187,6 +187,12 @@ def lines_are_parallel(l1_p1, l1_p2, l2_p1, l2_p2, tol_deg: float = 5.0) -> bool
     return diff < tol_deg or abs(diff - 180) < tol_deg
 
 
+def _is_axis_aligned(line: "RawLine", tolerance_deg: float = 5.0) -> bool:
+    """Check if a line is roughly horizontal or vertical."""
+    return (is_horizontal(line.p1, line.p2, tolerance_deg)
+            or is_vertical(line.p1, line.p2, tolerance_deg))
+
+
 def perpendicular_distance(point: tuple, line_p1: tuple, line_p2: tuple) -> float:
     """点と直線の距離"""
     dx = line_p2[0] - line_p1[0]
@@ -1064,9 +1070,17 @@ class PDFVectorExtractor:
                 # tier2: 内壁候補
                 self.wall_lines.append(line)
             else:
-                # tier3: 細線/寸法線
-                # 色が壁を示す場合は内壁に昇格
+                # tier3: thin lines / dimension lines
+                # Rescue to wall if color indicates wall
                 if color_label == "wall" and line.width >= tier2_threshold * 0.5:
+                    self.wall_lines.append(line)
+                # Rescue by geometric features: long, axis-aligned lines
+                # are likely walls even if thinner than tier2 threshold
+                # (fixes right-half wall loss when global clustering
+                #  sets tier2 too high due to left-half thick lines)
+                elif (line.width >= tier2_threshold * 0.4
+                      and line.length >= 500.0 / self.scale_factor
+                      and _is_axis_aligned(line, tolerance_deg=5.0)):
                     self.wall_lines.append(line)
                 else:
                     self.dim_lines.append(line)
@@ -1075,28 +1089,38 @@ class PDFVectorExtractor:
             print(f"[DEBUG] 外壁候補線(tier1): {len(self.exterior_wall_lines)}, "
                   f"壁線候補(全): {len(self.wall_lines)}, 寸法線候補: {len(self.dim_lines)}")
 
-        # --- ラスターベース壁検証 (OpenCV) ---
-        # 現在は無効化 — 壁と寸法線の太さ差が300DPIでは1-2px程度で信頼性が低い
-        # OpenCVは代わりに _build_room_polygons_raster() で部屋検出に使用
-        if False and _HAS_CV2 and self._raster_wall_mask():
-            pre_count = len(self.wall_lines)
-            verified_walls: list[RawLine] = []
-            rejected: list[RawLine] = []
+        # --- Raster-based wall rescue (OpenCV) ---
+        # Scan dim_lines for misclassified walls: lines that fell below
+        # tier2 threshold but appear thick on the raster image are rescued
+        # back to wall_lines.  This is additive — existing wall_lines are
+        # never removed, only dim_lines are promoted.
+        if _HAS_CV2 and self._raster_wall_mask():
+            rescued: list[RawLine] = []
+            remaining_dim: list[RawLine] = []
+            # Minimum raster thickness (px) to consider a line as wall.
+            # At 300 DPI, a 0.15mm line ≈ 1.8px; walls are typically ≥ 3px.
+            min_wall_px = 3.0
 
-            # 検証に失敗した線はdim_linesに移動
-            self.wall_lines = verified_walls
-            self.dim_lines.extend(rejected)
+            wall_line_set = set(id(wl) for wl in self.wall_lines)
 
-            # exterior_wall_linesも同様にフィルタ
-            self.exterior_wall_lines = [
-                wl for wl in self.exterior_wall_lines
-                if wl in verified_walls
-            ]
+            for line in self.dim_lines:
+                # Only rescue axis-aligned lines with reasonable length
+                # (avoids promoting short dim ticks or angled hatching)
+                if (id(line) not in wall_line_set
+                        and line.length >= 300.0 / self.scale_factor
+                        and _is_axis_aligned(line, tolerance_deg=5.0)
+                        and self._measure_raster_thickness(line) >= min_wall_px):
+                    rescued.append(line)
+                else:
+                    remaining_dim.append(line)
+
+            if rescued:
+                self.wall_lines.extend(rescued)
+                self.dim_lines = remaining_dim
 
             if self.debug:
-                filtered = pre_count - len(self.wall_lines)
-                print(f"[DEBUG] ラスター壁検証: {pre_count}本中 {filtered}本を除外 "
-                      f"→ 壁線: {len(self.wall_lines)}, 除外→寸法線へ: {filtered}")
+                print(f"[DEBUG] Raster wall rescue: {len(rescued)} lines "
+                      f"promoted from dim_lines to wall_lines")
 
     # 什器キーワード (これが含まれるテキストは室名ではなく什器扱い)
     FIXTURE_KEYWORDS = [
@@ -3008,6 +3032,134 @@ class PDFVectorExtractor:
 
         return result if len(result) >= 3 else polygon_mm
 
+    @staticmethod
+    def _clean_polygon_self_intersections(polygon_pts: list[list[int]]) -> list[list[int]]:
+        """Remove self-intersections from a polygon.
+
+        Steps:
+        1. Remove consecutive duplicate points
+        2. Remove fold-back patterns (A->B->A)
+        3. Detect edge-edge intersections, split at intersection points,
+           and keep the largest-area sub-polygon
+        """
+        if len(polygon_pts) < 3:
+            return polygon_pts
+
+        # --- Step 1: Remove consecutive duplicate points (within 5mm) ---
+        cleaned: list[list[int]] = [list(polygon_pts[0])]
+        for i in range(1, len(polygon_pts)):
+            dx = polygon_pts[i][0] - cleaned[-1][0]
+            dy = polygon_pts[i][1] - cleaned[-1][1]
+            if abs(dx) > 5 or abs(dy) > 5:
+                cleaned.append(list(polygon_pts[i]))
+        # Check last vs first
+        if len(cleaned) > 1:
+            dx = cleaned[-1][0] - cleaned[0][0]
+            dy = cleaned[-1][1] - cleaned[0][1]
+            if abs(dx) <= 5 and abs(dy) <= 5:
+                cleaned.pop()
+        if len(cleaned) < 3:
+            return polygon_pts
+
+        # --- Step 2: Remove fold-back patterns (A->B->A within 20mm) ---
+        changed = True
+        while changed:
+            changed = False
+            if len(cleaned) < 3:
+                break
+            new_pts: list[list[int]] = []
+            i = 0
+            while i < len(cleaned):
+                if i + 2 < len(cleaned):
+                    a = cleaned[i]
+                    c = cleaned[i + 2]
+                    if abs(a[0] - c[0]) <= 20 and abs(a[1] - c[1]) <= 20:
+                        # A->B->A pattern: skip B and the duplicate A
+                        new_pts.append(a)
+                        i += 3
+                        changed = True
+                        continue
+                new_pts.append(cleaned[i])
+                i += 1
+            # Also check wrap-around fold-backs
+            if len(new_pts) >= 3:
+                # Check last-first-second
+                a = new_pts[-1]
+                c = new_pts[1] if len(new_pts) > 1 else new_pts[0]
+                if abs(a[0] - c[0]) <= 20 and abs(a[1] - c[1]) <= 20:
+                    new_pts.pop(0)
+                    changed = True
+                # Check second-to-last, last, first
+                if len(new_pts) >= 3:
+                    a = new_pts[-2]
+                    c = new_pts[0]
+                    if abs(a[0] - c[0]) <= 20 and abs(a[1] - c[1]) <= 20:
+                        new_pts.pop(-1)
+                        changed = True
+            cleaned = new_pts
+
+        if len(cleaned) < 3:
+            return polygon_pts
+
+        # --- Step 3: Detect and resolve edge-edge self-intersections ---
+        def _seg_intersect(p1, p2, p3, p4):
+            """Return intersection point of segments p1-p2 and p3-p4, or None."""
+            d1x = p2[0] - p1[0]; d1y = p2[1] - p1[1]
+            d2x = p4[0] - p3[0]; d2y = p4[1] - p3[1]
+            denom = d1x * d2y - d1y * d2x
+            if abs(denom) < 1e-10:
+                return None
+            t = ((p3[0] - p1[0]) * d2y - (p3[1] - p1[1]) * d2x) / denom
+            u = ((p3[0] - p1[0]) * d1y - (p3[1] - p1[1]) * d1x) / denom
+            # Strict interior intersection (not at endpoints)
+            if 0.01 < t < 0.99 and 0.01 < u < 0.99:
+                ix = p1[0] + t * d1x
+                iy = p1[1] + t * d1y
+                return [round(ix), round(iy)]
+            return None
+
+        n = len(cleaned)
+        for i in range(n):
+            found_intersection = False
+            for j in range(i + 2, n):
+                if i == 0 and j == n - 1:
+                    continue  # Adjacent edges (wrap-around)
+                p1 = cleaned[i]
+                p2 = cleaned[(i + 1) % n]
+                p3 = cleaned[j]
+                p4 = cleaned[(j + 1) % n]
+                ix = _seg_intersect(p1, p2, p3, p4)
+                if ix is not None:
+                    # Split into two sub-polygons at intersection point
+                    # Sub-polygon 1: ix -> edges i+1..j -> ix
+                    sub1 = [ix] + cleaned[i + 1:j + 1]
+                    # Sub-polygon 2: ix -> edges j+1..i -> ix
+                    sub2_pts = cleaned[j + 1:] + cleaned[:i + 1]
+                    sub2 = [ix] + sub2_pts
+
+                    area1 = abs(shoelace_area(sub1)) if len(sub1) >= 3 else 0
+                    area2 = abs(shoelace_area(sub2)) if len(sub2) >= 3 else 0
+
+                    # Keep the larger sub-polygon
+                    if area1 >= area2 and len(sub1) >= 3:
+                        cleaned = [[p[0], p[1]] for p in sub1]
+                    elif len(sub2) >= 3:
+                        cleaned = [[p[0], p[1]] for p in sub2]
+                    else:
+                        continue
+
+                    found_intersection = True
+                    break
+            if found_intersection:
+                # Restart intersection detection from scratch
+                n = len(cleaned)
+                if n < 3:
+                    return polygon_pts
+                # Recurse to handle remaining intersections
+                return BlueprintExtractor._clean_polygon_self_intersections(cleaned)
+
+        return cleaned if len(cleaned) >= 3 else polygon_pts
+
     def _pair_dimension_endpoints(self) -> None:
         """寸法テキストから寸法線の端点ペアを構築"""
         sf = self.scale_factor
@@ -3199,10 +3351,14 @@ class PDFVectorExtractor:
                 sy_px = int(sy_pt * dpi / 72.0)
                 ex_px = int(ex_pt * dpi / 72.0)
                 ey_px = int(ey_pt * dpi / 72.0)
-                # 壁厚をpx単位に変換 (最低6px → BFSが確実に通れないように)
+                # Wall thickness in px (min 8px so BFS cannot leak through)
                 thick_mm = wall.get("thickness_mm", 120)
-                thick_px = max(6, int(thick_mm / sf / PT_TO_MM * dpi / 72.0))
+                thick_px = max(8, int(thick_mm / sf / PT_TO_MM * dpi / 72.0))
                 cv2.line(wall_only_mask, (sx_px, sy_px), (ex_px, ey_px), 255, thick_px)
+                # Draw circular patches at wall endpoints to seal junction gaps
+                endpoint_r = max(thick_px, 8)
+                cv2.circle(wall_only_mask, (sx_px, sy_px), endpoint_r, 255, -1)
+                cv2.circle(wall_only_mask, (ex_px, ey_px), endpoint_r, 255, -1)
             if self.debug:
                 wall_px = int(np.count_nonzero(wall_only_mask))
                 print(f"[DEBUG] 壁のみマスク構築: {len(self.walls)}本, {wall_px}px")
@@ -3633,6 +3789,9 @@ class PDFVectorExtractor:
             # 直交化・壁スナップ後処理
             snapped_poly = self._simplify_room_polygon(snapped_poly, snap_thresh=50)
 
+            # Remove self-intersections (fold-back, crossing edges)
+            snapped_poly = self._clean_polygon_self_intersections(snapped_poly)
+
             self.rooms.append({
                 "name": room_name,
                 "wall_ids": nearby_walls,
@@ -3899,6 +4058,9 @@ class PDFVectorExtractor:
             # 直交化・壁スナップ後処理
             polygon_mm = self._simplify_room_polygon(polygon_mm, snap_thresh=50)
 
+            # Remove self-intersections (fold-back, crossing edges)
+            polygon_mm = self._clean_polygon_self_intersections(polygon_mm)
+
             self.rooms.append({
                 "name": rn["name"],
                 "wall_ids": nearby_walls,
@@ -4055,7 +4217,8 @@ class PDFVectorExtractor:
                         best_cycle = (area_m2, poly, center)
 
             if best_cycle:
-                room["polygon_mm"] = [[p[0], p[1]] for p in best_cycle[1]]
+                raw_poly = [[p[0], p[1]] for p in best_cycle[1]]
+                room["polygon_mm"] = self._clean_polygon_self_intersections(raw_poly)
                 room["area_m2"] = round(best_cycle[0], 1)
                 room["center_mm"] = list(best_cycle[2])
                 room["confidence"] = 0.6  # グラフ閉路置換

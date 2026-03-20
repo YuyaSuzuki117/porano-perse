@@ -1458,6 +1458,7 @@ def main():
     elif args.json:
         gen = DXFGenerator()
         gen.from_blueprint_json(args.json)
+        gen.meta["source_json"] = os.path.abspath(args.json)
         gen.save(args.output)
     elif args.store_json:
         gen = DXFGenerator()

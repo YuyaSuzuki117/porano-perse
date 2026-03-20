@@ -19,6 +19,26 @@
       "approved_by": "鈴木",
       "approved_date": "2026-03-19",
       "notes": "test13ベース。壁マスク増強・PS分割済み"
+    },
+    {
+      "name": "sankei59",
+      "json": "sankei59.json",
+      "pdf": "C:/Users/y-suz/porano-perse/output/blueprint-analysis/sankei59.pdf",
+      "page": 0,
+      "expected": {
+        "walls": 39,
+        "rooms": 20,
+        "named_rooms": 20,
+        "fixtures": 24
+      },
+      "tolerance": {
+        "walls": 3,
+        "rooms": 5,
+        "fixtures": 5
+      },
+      "approved_by": "鈴木",
+      "approved_date": "2026-03-20",
+      "notes": "v6ベース。三経59ホストクラブ。壁39本・部屋20室・什器24"
     }
   ]
 }

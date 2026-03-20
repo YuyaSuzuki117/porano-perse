@@ -5,7 +5,7 @@ PDF図面 ↔ DXF出力 比較ツール
 直接PDF画像上に描画して重ね合わせる。
 
 使い方:
-  python scripts/compare-pdf-dxf.py <original.pdf> <output.dxf> [-o comparison.png] [--page 0]
+  python scripts/compare-pdf-dxf.py <original.pdf> <output.dxf> [-o comparison.png] [--page 0] [--json blueprint.json]
 
 出力:
   1. 左右並べた比較画像 (side-by-side)
@@ -61,16 +61,44 @@ def get_pdf_page_info(pdf_path: str, page_num: int = 0) -> dict:
     }
 
 
-def load_blueprint_json(dxf_path: str) -> dict | None:
-    """DXFパスから対応するblueprint JSONを探して読み込む"""
-    # パターン: output/drawings/ChloeBY_test10.dxf → output/blueprint-analysis/ChloeBY_test10.json
+def load_blueprint_json(dxf_path: str, json_override: str | None = None) -> dict | None:
+    """DXFパスから対応するblueprint JSONを探して読み込む
+
+    Search order:
+    1. Explicit --json override (if provided)
+    2. source_json field inside .dxf.meta.json
+    3. Same-name .json in blueprint-analysis/
+    4. *_corrected.json variant in blueprint-analysis/
+    5. .dxf.meta.json itself as fallback
+    """
+    # 1. Explicit override
+    if json_override and os.path.exists(json_override):
+        with open(json_override, encoding='utf-8') as f:
+            return json.load(f)
+
+    # 2. Check meta.json for source_json path
+    meta_path = dxf_path + ".meta.json"
+    if os.path.exists(meta_path):
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+        source = meta.get('source_json')
+        if source and os.path.exists(source):
+            with open(source, encoding='utf-8') as f:
+                return json.load(f)
+
+    # 3. Same-name .json in blueprint-analysis/
     json_path = dxf_path.replace('.dxf', '.json').replace('drawings', 'blueprint-analysis')
     if os.path.exists(json_path):
         with open(json_path, encoding='utf-8') as f:
             return json.load(f)
 
-    # .dxf.meta.json もチェック
-    meta_path = dxf_path + ".meta.json"
+    # 4. *_corrected.json variant
+    corrected_path = dxf_path.replace('.dxf', '_corrected.json').replace('drawings', 'blueprint-analysis')
+    if os.path.exists(corrected_path):
+        with open(corrected_path, encoding='utf-8') as f:
+            return json.load(f)
+
+    # 5. .dxf.meta.json as fallback
     if os.path.exists(meta_path):
         with open(meta_path, encoding='utf-8') as f:
             return json.load(f)
@@ -250,10 +278,12 @@ def render_dxf_standalone(dxf_path: str) -> Image.Image:
 
 
 def create_comparison(pdf_path: str, dxf_path: str, output_path: str,
-                      page_num: int = 0):
+                      page_num: int = 0, json_override: str | None = None):
     """比較画像を生成"""
     print(f"元PDF: {pdf_path} (page {page_num})")
     print(f"DXF:   {dxf_path}")
+    if json_override:
+        print(f"JSON:  {json_override}")
 
     # PDF情報取得
     page_info = get_pdf_page_info(pdf_path, page_num)
@@ -267,7 +297,7 @@ def create_comparison(pdf_path: str, dxf_path: str, output_path: str,
     print(f"  PDF画像: {pdf_img.size}")
 
     # blueprint JSON を読み込み
-    bp_data = load_blueprint_json(dxf_path)
+    bp_data = load_blueprint_json(dxf_path, json_override)
 
     # 1. 重ね合わせ画像 (blueprint JSONから直接描画)
     if bp_data:
@@ -346,9 +376,11 @@ def main():
     parser.add_argument("-o", "--output", default="output/drawings/comparison.png",
                         help="出力画像パス")
     parser.add_argument("--page", type=int, default=0, help="PDFページ番号")
+    parser.add_argument("--json", default=None,
+                        help="Blueprint JSON path (override auto-detection)")
     args = parser.parse_args()
 
-    create_comparison(args.pdf, args.dxf, args.output, args.page)
+    create_comparison(args.pdf, args.dxf, args.output, args.page, args.json)
 
 
 if __name__ == "__main__":
