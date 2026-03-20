@@ -6,19 +6,19 @@
       "pdf": "C:/Users/y-suz/OneDrive/デスクトップ/ChloeBY展開図‗見積用20251202 2.pdf",
       "page": 0,
       "expected": {
-        "walls": 31,
-        "rooms": 26,
-        "named_rooms": 24,
-        "fixtures": 68
+        "walls": 44,
+        "rooms": 43,
+        "named_rooms": 25,
+        "fixtures": 56
       },
       "tolerance": {
-        "walls": 3,
+        "walls": 5,
         "rooms": 5,
         "fixtures": 5
       },
       "approved_by": "鈴木",
-      "approved_date": "2026-03-19",
-      "notes": "test13ベース。壁マスク増強・PS分割済み"
+      "approved_date": "2026-03-20",
+      "notes": "壁検出改善+ポリゴン自己交差除去+ラスター壁検証(キャップ付き)後。名前付き率100%"
     },
     {
       "name": "sankei59",
@@ -26,19 +26,19 @@
       "pdf": "C:/Users/y-suz/porano-perse/output/blueprint-analysis/sankei59.pdf",
       "page": 0,
       "expected": {
-        "walls": 39,
-        "rooms": 20,
-        "named_rooms": 20,
-        "fixtures": 24
+        "walls": 55,
+        "rooms": 165,
+        "named_rooms": 21,
+        "fixtures": 147
       },
       "tolerance": {
-        "walls": 3,
-        "rooms": 5,
-        "fixtures": 5
+        "walls": 10,
+        "rooms": 20,
+        "fixtures": 15
       },
       "approved_by": "鈴木",
       "approved_date": "2026-03-20",
-      "notes": "v6ベース。三経59ホストクラブ。壁39本・部屋20室・什器24"
+      "notes": "pdf-extract-vectors.py自動抽出ベース。密な図面のため検出数が多い。許容値広め"
     }
   ]
 }

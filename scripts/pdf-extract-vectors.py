@@ -519,13 +519,22 @@ class PDFVectorExtractor:
                         })
 
                 elif kind == "qu":  # 2次ベジェ曲線
-                    self.curves.append({
-                        "points": [(pt_to_mm(item[i].x),
-                                    pt_to_mm(flip_y(item[i].y, page_height_pt)))
-                                   for i in range(1, 4)],
-                        "width": width_mm,
-                        "color": color
-                    })
+                    try:
+                        qu_pts = []
+                        for i in range(1, 4):
+                            p = item[i]
+                            if hasattr(p, 'x') and hasattr(p, 'y'):
+                                qu_pts.append((pt_to_mm(p.x), pt_to_mm(flip_y(p.y, page_height_pt))))
+                            elif hasattr(p, 'ul'):  # Quad object — use upper-left
+                                qu_pts.append((pt_to_mm(p.ul.x), pt_to_mm(flip_y(p.ul.y, page_height_pt))))
+                        if len(qu_pts) == 3:
+                            self.curves.append({
+                                "points": qu_pts,
+                                "width": width_mm,
+                                "color": color
+                            })
+                    except (AttributeError, IndexError):
+                        pass  # Skip malformed quadratic bezier items
 
     def _try_bezier_to_arc(self, pts: list) -> Optional[dict]:
         """3次ベジェ4点から円弧パラメータを推定。
@@ -1079,7 +1088,7 @@ class PDFVectorExtractor:
                 # (fixes right-half wall loss when global clustering
                 #  sets tier2 too high due to left-half thick lines)
                 elif (line.width >= tier2_threshold * 0.4
-                      and line.length >= 500.0 / self.scale_factor
+                      and line.length >= 1000.0 / self.scale_factor
                       and _is_axis_aligned(line, tolerance_deg=5.0)):
                     self.wall_lines.append(line)
                 else:
@@ -1098,8 +1107,10 @@ class PDFVectorExtractor:
             rescued: list[RawLine] = []
             remaining_dim: list[RawLine] = []
             # Minimum raster thickness (px) to consider a line as wall.
-            # At 300 DPI, a 0.15mm line ≈ 1.8px; walls are typically ≥ 3px.
-            min_wall_px = 3.0
+            # At 300 DPI, a 0.15mm line ≈ 1.8px; walls are typically ≥ 5px.
+            # Using 5px to avoid rescuing dimension lines that appear thick
+            # due to PDF rendering artifacts.
+            min_wall_px = 5.0
 
             wall_line_set = set(id(wl) for wl in self.wall_lines)
 
@@ -1107,7 +1118,7 @@ class PDFVectorExtractor:
                 # Only rescue axis-aligned lines with reasonable length
                 # (avoids promoting short dim ticks or angled hatching)
                 if (id(line) not in wall_line_set
-                        and line.length >= 300.0 / self.scale_factor
+                        and line.length >= 1500.0 / self.scale_factor
                         and _is_axis_aligned(line, tolerance_deg=5.0)
                         and self._measure_raster_thickness(line) >= min_wall_px):
                     rescued.append(line)
@@ -1115,6 +1126,16 @@ class PDFVectorExtractor:
                     remaining_dim.append(line)
 
             if rescued:
+                # Cap rescue count: if rescued lines exceed 50% of existing
+                # wall_lines, it's likely over-rescuing (e.g., dense dim lines).
+                # In that case, only keep the longest rescued lines up to the cap.
+                max_rescue = max(len(self.wall_lines) // 2, 10)
+                if len(rescued) > max_rescue:
+                    rescued.sort(key=lambda l: l.length, reverse=True)
+                    rescued = rescued[:max_rescue]
+                    # Rebuild remaining_dim
+                    rescued_ids = set(id(l) for l in rescued)
+                    remaining_dim = [l for l in self.dim_lines if id(l) not in rescued_ids]
                 self.wall_lines.extend(rescued)
                 self.dim_lines = remaining_dim
 
@@ -3118,45 +3139,43 @@ class PDFVectorExtractor:
                 return [round(ix), round(iy)]
             return None
 
-        n = len(cleaned)
-        for i in range(n):
+        # Iteratively resolve intersections (max 50 passes to avoid infinite loop)
+        for _pass in range(50):
+            n = len(cleaned)
             found_intersection = False
-            for j in range(i + 2, n):
-                if i == 0 and j == n - 1:
-                    continue  # Adjacent edges (wrap-around)
-                p1 = cleaned[i]
-                p2 = cleaned[(i + 1) % n]
-                p3 = cleaned[j]
-                p4 = cleaned[(j + 1) % n]
-                ix = _seg_intersect(p1, p2, p3, p4)
-                if ix is not None:
-                    # Split into two sub-polygons at intersection point
-                    # Sub-polygon 1: ix -> edges i+1..j -> ix
-                    sub1 = [ix] + cleaned[i + 1:j + 1]
-                    # Sub-polygon 2: ix -> edges j+1..i -> ix
-                    sub2_pts = cleaned[j + 1:] + cleaned[:i + 1]
-                    sub2 = [ix] + sub2_pts
-
-                    area1 = abs(shoelace_area(sub1)) if len(sub1) >= 3 else 0
-                    area2 = abs(shoelace_area(sub2)) if len(sub2) >= 3 else 0
-
-                    # Keep the larger sub-polygon
-                    if area1 >= area2 and len(sub1) >= 3:
-                        cleaned = [[p[0], p[1]] for p in sub1]
-                    elif len(sub2) >= 3:
-                        cleaned = [[p[0], p[1]] for p in sub2]
-                    else:
-                        continue
-
-                    found_intersection = True
+            for i in range(n):
+                if found_intersection:
                     break
-            if found_intersection:
-                # Restart intersection detection from scratch
-                n = len(cleaned)
-                if n < 3:
-                    return polygon_pts
-                # Recurse to handle remaining intersections
-                return BlueprintExtractor._clean_polygon_self_intersections(cleaned)
+                for j in range(i + 2, n):
+                    if i == 0 and j == n - 1:
+                        continue  # Adjacent edges (wrap-around)
+                    p1 = cleaned[i]
+                    p2 = cleaned[(i + 1) % n]
+                    p3 = cleaned[j]
+                    p4 = cleaned[(j + 1) % n]
+                    ix = _seg_intersect(p1, p2, p3, p4)
+                    if ix is not None:
+                        # Split into two sub-polygons at intersection point
+                        sub1 = [ix] + cleaned[i + 1:j + 1]
+                        sub2_pts = cleaned[j + 1:] + cleaned[:i + 1]
+                        sub2 = [ix] + sub2_pts
+
+                        area1 = abs(shoelace_area(sub1)) if len(sub1) >= 3 else 0
+                        area2 = abs(shoelace_area(sub2)) if len(sub2) >= 3 else 0
+
+                        if area1 >= area2 and len(sub1) >= 3:
+                            cleaned = [[p[0], p[1]] for p in sub1]
+                        elif len(sub2) >= 3:
+                            cleaned = [[p[0], p[1]] for p in sub2]
+                        else:
+                            continue
+
+                        found_intersection = True
+                        break
+            if not found_intersection:
+                break  # No more intersections
+            if len(cleaned) < 3:
+                return polygon_pts
 
         return cleaned if len(cleaned) >= 3 else polygon_pts
 
