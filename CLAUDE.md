@@ -2,8 +2,8 @@
 
 ## 0. Bootstrap (起動直後に必ず実施)
 1. `git log --oneline -n 8` で直近の変更を確認
-2. auto-memory (`~/.claude/projects/C--Users-LENOVO/memory/blender-pipeline.md`) を参照
-3. セッション状態ファイルがあれば確認: `memory/porano-perse-session.md`
+2. auto-memory (`~/.claude/projects/C--Users-y-suz/memory/`) を参照
+3. セッション状態ファイルがあれば確認
 4. dev server: `npm run dev`（ポート3001）
 
 ## 1. コンテキスト管理 (最重要 — 全ルールに優先)
@@ -150,17 +150,26 @@ python scripts/gen-dxf.py --sample -o output/drawings/shop.dxf && \
   --background --python scripts/render-from-dxf.py \
   -- output/drawings/shop.dxf --quality preview --camera eye_level
 
-# DXF → シーンJSON 変換のみ（Blender不要）
-python scripts/dxf-to-scene.py input.dxf -o scene.json --pretty
-
-# JW_CADで編集したDXFからパース生成
+# スタイル付きレンダリング（ホストクラブ等）
 "/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
   --background --python scripts/render-from-dxf.py \
-  -- edited.dxf --quality draft --camera overview
+  -- output/drawings/shop.dxf --quality draft --camera bird_eye \
+  --style output/hostclub/hostclub_style.json
+
+# カスタムカメラ位置（DXF mm座標指定）
+"/c/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
+  --background --python scripts/render-from-dxf.py \
+  -- output/drawings/shop.dxf --quality draft \
+  --camera "3000,2000,1500" --target "6000,7000,1000"
+
+# DXF → シーンJSON 変換のみ（Blender不要）
+python scripts/dxf-to-scene.py input.dxf -o scene.json --pretty
 ```
 - DXFが唯一の正（Single Source of Truth）
 - gen-dxf.py が .dxf + .meta.json を同時生成
 - JW_CADで編集後もDXF解析でBlenderに反映
+- `--style` でJSON/インラインスタイル指定可能
+- カメラプリセット: eye_level / counter / overview / topdown / bird_eye
 
 ### 4.3 PDF→DXF 改善PDCA
 ```bash
@@ -174,8 +183,9 @@ python scripts/compare-pdf-dxf.py <pdf> <dxf> -o output/drawings/comparison.png 
 ```
 - ダッシュボード: https://yuyasuzuki117.github.io/porano-perse/
 - テストPDF: `C:\Users\y-suz\OneDrive\デスクトップ\ChloeBY展開図‗見積用20251202 2.pdf`
-- 現在: test10 (壁31本, 部屋47室, 名前あり25)
+- 現在: test13 (壁31本, 部屋27室, 名前あり25/93%, 不明2)
 - 座標系: PyMuPDF(Y-down) → flip_y → paper_mm → ×scale → real_mm(Y-up)
+- 詳細: `.claude/rules/pdf-to-dxf-extraction.md`
 
 ### 4.4 Blender パイプライン（従来）
 ```bash
@@ -279,11 +289,13 @@ npx tsx scripts/template-to-json.ts --template=rt_small_cafe --style=cafe
 | `/context-save` | セッション状態をメモリに保存 |
 | `/store-inspect` | ストアの指定セクションだけ安全に読む |
 
-## 8. MCP Servers
-| MCP | 設定場所 | 用途 |
-|-----|---------|------|
-| **Playwright** | グローバル (~/.claude/settings.json) | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
-| **Context7** | プロジェクト (~/.claude.json) | Three.js/R3F/Drei/Zustand/Blender/Python ドキュメント参照 |
+## 8. MCP Servers (.mcp.json)
+| MCP | 用途 |
+|-----|------|
+| **Playwright** | ビジュアルテスト・デプロイ後検証・レンダリング結果確認 |
+| **Context7** | Three.js/R3F/Drei/Zustand/Next.js/Blender API ドキュメント参照 |
+| **Sequential-Thinking** | 複雑な3D数学・座標変換・レンダリングパイプライン設計の段階的推論 |
+| **MCP-Three** | GLB/GLTF→R3F JSXコンポーネント変換・3Dモデル構造分析・メッシュ最適化 |
 
 ### 8.1 図面→パース制作パイプライン
 ```
@@ -312,10 +324,27 @@ Blender Pythonスクリプト (scripts/render-*.py)
 | `cameras.py` | カメラプリセット |
 | `renderer.py` | Cycles設定・画像出力 |
 | `style_applicator.py` | カラーパレット・AgXトーンマッピング |
-| `materials/*.py` | PBRマテリアル6種 |
-| `models/*.py` | カスタム高品質モデル |
+| `materials/*.py` | PBRマテリアル6種 (wood/metal/fabric/glass/wall_finishes/floor_finishes) |
+| `models/*.py` | カスタム高品質モデル9種 (cafe_chair/cafe_table/bar_counter/bar_stool/club_chair/brass_table/door_panel/vip_table/hostclub_sofa) |
 
-## 9. Design Rules (.claude/rules/)
+## 9. 学習ループ（案件を重ねるほど精度が上がる仕組み）
+
+### 9.1 知見蓄積 (lessons-learned)
+- 案件完了時 `/deliverable-pack` → `output/projects/<案件>/lessons.md` に自動記録
+- 新案件開始時 `/project-init` → 同業種の過去知見を自動参照・提案
+- 詳細: `.claude/rules/lessons-learned.md`
+
+### 9.2 回帰テスト (regression-test)
+- ゴールドスタンダード: `tests/golden/*.json` (鈴木さん承認済みの正解データ)
+- テスト実行: `python scripts/regression-test.py`
+- PDF→DXF改善時 `/pdf-dxf-pdca` → 過去の図面を壊していないか自動検証
+- 新しい図面が来たら正解JSON追加 → テストスイート拡充
+
+### 9.3 モデル/マテリアル カタログ
+- `scripts/blender/models/catalog.json` — 業種タグ・品質・使用実績付き
+- 案件完了時に使用実績を更新 → 次の同業種案件で自動推薦
+
+## 10. Design Rules (.claude/rules/ — 15個)
 | ルール | 対象 |
 |--------|------|
 | `context-management.md` | コンテキスト管理（常時適用・最重要） |
@@ -332,8 +361,34 @@ Blender Pythonスクリプト (scripts/render-*.py)
 | `furniture-modeling.md` | 家具モデリング規約 |
 | `iteration-checklist.md` | 修正反復チェックリスト |
 | `material-recipes.md` | マテリアルレシピ集 |
+| `lessons-learned.md` | 案件知見の蓄積・参照ルール |
 
-## 10. 関連プロジェクト
-- **Porano ERP**: `C:/Users/LENOVO/Projects/Porano/` — 将来API連携予定
+## 11. 関連プロジェクト
+- **Porano ERP**: `C:\Users\y-suz\Porano` — 将来API連携予定
 - **GitHub**: `YuyaSuzuki117/porano-perse`
 - **本番**: https://porano-perse.vercel.app
+- **ダッシュボード**: https://yuyasuzuki117.github.io/porano-perse/
+
+## 12. Python依存関係
+```
+PyMuPDF>=1.27     # PDF解析 (fitz)
+ezdxf>=1.4        # DXF図面生成
+opencv-python-headless>=4.13  # 画像処理・部屋検出
+scikit-image>=0.26  # 画像分析
+Pillow>=12.1      # 画像描画 (compare-pdf-dxf.py)
+numpy>=2.4        # 数値計算
+```
+インストール: `pip install -r requirements.txt`
+
+## 13. 三経59ホストクラブ v6 (最新案件)
+- 出力: `output/hostclub/`
+- スタイルJSON: `output/hostclub/hostclub_style.json`
+- 壁39本・部屋20室・ドア16・什器24
+
+### v6 追加機能
+- **カスタムモデル:** hostclub_sofa.py (L字ダークレザー), vip_table.py (ガラストップ)
+- **ミラー壁:** wall_finishes.py `create_mirror_wall_material()` (Metallic=1.0)
+- **LED間接照明:** レイヤー7 (style.ledStripColor)
+- **マルチダウンライト:** レイヤー8 (style.downlightCount)
+- **bird_eye カメラ:** 大型物件用プリセット (天井自動非表示)
+- **カスタムカメラ位置:** style.cameraPosition / cameraTarget (DXF mm座標)

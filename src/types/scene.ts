@@ -23,14 +23,15 @@ export type StylePreset =
   | 'luxury'          // ラグジュアリー
   | 'scandinavian'    // 北欧
   | 'retro'           // レトロ
-  | 'medical';        // メディカル
+  | 'medical'         // メディカル
+  | 'art_deco_bar';   // アール・デコバー
 
 export interface StyleConfig {
   name: string;
   nameJa: string;
   wallColor: string;
   floorColor: string;
-  floorTexture: 'wood' | 'tile' | 'concrete' | 'tatami' | 'marble' | 'checkerboard' | 'linoleum';
+  floorTexture: 'wood' | 'tile' | 'concrete' | 'tatami' | 'marble' | 'checkerboard' | 'linoleum' | 'terrazzo_art_deco';
   ceilingColor: string;
   accentColor: string;
   ambientIntensity: number;

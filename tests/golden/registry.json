@@ -1,0 +1,24 @@
+{
+  "golden_standards": [
+    {
+      "name": "ChloeBY",
+      "json": "ChloeBY.json",
+      "pdf": "C:/Users/y-suz/OneDrive/デスクトップ/ChloeBY展開図‗見積用20251202 2.pdf",
+      "page": 0,
+      "expected": {
+        "walls": 31,
+        "rooms": 26,
+        "named_rooms": 24,
+        "fixtures": 68
+      },
+      "tolerance": {
+        "walls": 3,
+        "rooms": 5,
+        "fixtures": 5
+      },
+      "approved_by": "鈴木",
+      "approved_date": "2026-03-19",
+      "notes": "test13ベース。壁マスク増強・PS分割済み"
+    }
+  ]
+}

@@ -11,6 +11,24 @@ function autoSave(bp: BlueprintJson) {
   } catch { /* quota exceeded - ignore */ }
 }
 
+/** 描画レイヤーのdirtyフラグ型 */
+export interface DirtyLayers {
+  pdf: boolean;
+  grid: boolean;
+  rooms: boolean;
+  walls: boolean;
+  fixtures: boolean;
+  labels: boolean;
+  dimensions: boolean;
+  highlight: boolean;
+  measure: boolean;
+}
+
+/** 全レイヤーをdirtyにするヘルパー */
+function allDirty(): DirtyLayers {
+  return { pdf: true, grid: true, rooms: true, walls: true, fixtures: true, labels: true, dimensions: true, highlight: true, measure: true };
+}
+
 interface CorrectionState {
   // データ
   blueprint: BlueprintJson | null;
@@ -50,6 +68,9 @@ interface CorrectionState {
   // PDF透明度
   pdfOpacity: number;
 
+  // 描画最適化: どのレイヤーが再描画必要か
+  dirtyLayers: DirtyLayers;
+
   // アクション
   loadBlueprint: (bp: BlueprintJson) => void;
   setPdfInfo: (info: PdfRenderInfo) => void;
@@ -86,6 +107,12 @@ interface CorrectionState {
   setWallAddPoints: (pts: [number, number][]) => void;
   setMeasurePoints: (pts: [number, number][]) => void;
   setMeasureActive: (v: boolean) => void;
+
+  // dirtyLayers操作
+  markDirty: (layers: Partial<DirtyLayers>) => void;
+  markAllDirty: () => void;
+  clearDirty: (layer: keyof DirtyLayers) => void;
+  clearAllDirty: () => void;
 }
 
 function pushHistory(state: CorrectionState): Partial<CorrectionState> {
@@ -135,6 +162,9 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
   // PDF透明度
   pdfOpacity: 0.4,
 
+  // 描画最適化: 初期状態は全レイヤーdirty
+  dirtyLayers: allDirty(),
+
   loadBlueprint: (bp) =>
     set({
       blueprint: bp,
@@ -144,11 +174,12 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       selectedFixtureIdx: null,
       selectedVertexIdx: null,
       selectedWallIdx: null,
+      dirtyLayers: allDirty(),
     }),
 
-  setPdfInfo: (info) => set({ pdfInfo: info }),
-  setZoom: (z) => set({ zoom: Math.max(0.1, Math.min(5, z)) }),
-  setPan: (x, y) => set({ panX: x, panY: y }),
+  setPdfInfo: (info) => set({ pdfInfo: info, dirtyLayers: allDirty() }),
+  setZoom: (z) => set({ zoom: Math.max(0.1, Math.min(5, z)), dirtyLayers: allDirty() }),
+  setPan: (x, y) => set({ panX: x, panY: y, dirtyLayers: allDirty() }),
   setActiveTool: (t) =>
     set({
       activeTool: t,
@@ -159,10 +190,13 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       measureActive: t === 'measure',
     }),
   selectRoom: (idx) =>
-    set({ selectedRoomIdx: idx, selectedFixtureIdx: null, selectedVertexIdx: null, selectedWallIdx: null }),
+    set({ selectedRoomIdx: idx, selectedFixtureIdx: null, selectedVertexIdx: null, selectedWallIdx: null,
+      dirtyLayers: { ...allDirty(), pdf: false, grid: false, walls: false, dimensions: false, highlight: true } }),
   selectFixture: (idx) =>
-    set({ selectedFixtureIdx: idx, selectedRoomIdx: null, selectedVertexIdx: null, selectedWallIdx: null }),
-  selectVertex: (idx) => set({ selectedVertexIdx: idx }),
+    set({ selectedFixtureIdx: idx, selectedRoomIdx: null, selectedVertexIdx: null, selectedWallIdx: null,
+      dirtyLayers: { ...allDirty(), pdf: false, grid: false, rooms: false, walls: false, dimensions: false, highlight: true } }),
+  selectVertex: (idx) => set({ selectedVertexIdx: idx,
+    dirtyLayers: { ...allDirty(), pdf: false, grid: false, walls: false, dimensions: false, highlight: true } }),
 
   setRoomName: (roomIdx, name) =>
     set((s) => {
@@ -171,7 +205,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       bp.rooms[roomIdx].name = name;
       bp.rooms[roomIdx].confidence = 1.0;
       autoSave(bp);
-      return { blueprint: bp, ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, dirtyLayers: { ...s.dirtyLayers, labels: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   moveVertex: (roomIdx, vertexIdx, x_mm, y_mm) =>
@@ -183,7 +217,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       room.area_m2 = Math.round(polygonAreaM2(room.polygon_mm) * 10) / 10;
       room.center_mm = polygonCentroid(room.polygon_mm).map(Math.round) as [number, number];
       autoSave(bp);
-      return { blueprint: bp, ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, dirtyLayers: { ...s.dirtyLayers, rooms: true, labels: true, dimensions: true, highlight: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   addRoom: (polygon, name) =>
@@ -198,7 +232,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         polygon_mm: polygon,
       });
       autoSave(bp);
-      return { blueprint: bp, ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, dirtyLayers: { ...s.dirtyLayers, rooms: true, labels: true, dimensions: true, highlight: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   deleteRoom: (roomIdx) =>
@@ -211,6 +245,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         blueprint: bp,
         selectedRoomIdx: null,
         selectedVertexIdx: null,
+        dirtyLayers: { ...s.dirtyLayers, rooms: true, labels: true, dimensions: true, highlight: true },
         ...pushHistory({ ...s, blueprint: bp }),
       };
     }),
@@ -222,7 +257,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       bp.fixtures[fixtureIdx].x_mm = x_mm;
       bp.fixtures[fixtureIdx].y_mm = y_mm;
       autoSave(bp);
-      return { blueprint: bp, ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, dirtyLayers: { ...s.dirtyLayers, fixtures: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   undo: () =>
@@ -236,6 +271,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         selectedFixtureIdx: null,
         selectedVertexIdx: null,
         selectedWallIdx: null,
+        dirtyLayers: allDirty(),
       };
     }),
 
@@ -250,6 +286,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         selectedFixtureIdx: null,
         selectedVertexIdx: null,
         selectedWallIdx: null,
+        dirtyLayers: allDirty(),
       };
     }),
 
@@ -278,6 +315,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         selectedRoomIdx: keepIdx,
         selectedFixtureIdx: null,
         selectedVertexIdx: null,
+        dirtyLayers: { ...s.dirtyLayers, rooms: true, labels: true, dimensions: true, highlight: true },
         ...pushHistory({ ...s, blueprint: bp }),
       };
     }),
@@ -293,6 +331,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         selectedFixtureIdx: null,
         selectedVertexIdx: null,
         selectedWallIdx: null,
+        dirtyLayers: allDirty(),
       };
     }),
 
@@ -321,13 +360,14 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
 
   // --- 新機能アクション ---
   setSnapEnabled: (v) => set({ snapEnabled: v }),
-  setSnapGrid: (v) => set({ snapGrid: v }),
-  setGridVisible: (v) => set({ gridVisible: v }),
+  setSnapGrid: (v) => set((s) => ({ snapGrid: v, dirtyLayers: { ...s.dirtyLayers, grid: true } })),
+  setGridVisible: (v) => set((s) => ({ gridVisible: v, dirtyLayers: { ...s.dirtyLayers, grid: true } })),
   setLayerVisible: (layer, visible) =>
-    set((s) => ({ layers: { ...s.layers, [layer]: visible } })),
-  setPdfOpacity: (v) => set({ pdfOpacity: v }),
+    set((s) => ({ layers: { ...s.layers, [layer]: visible }, dirtyLayers: { ...s.dirtyLayers, [layer]: true } })),
+  setPdfOpacity: (v) => set((s) => ({ pdfOpacity: v, dirtyLayers: { ...s.dirtyLayers, pdf: true } })),
   selectWall: (idx) =>
-    set({ selectedWallIdx: idx, selectedRoomIdx: null, selectedFixtureIdx: null, selectedVertexIdx: null }),
+    set((s) => ({ selectedWallIdx: idx, selectedRoomIdx: null, selectedFixtureIdx: null, selectedVertexIdx: null,
+      dirtyLayers: { ...s.dirtyLayers, highlight: true } })),
   setWallAddPoints: (pts) => set({ wallAddPoints: pts }),
 
   addWall: (startX, startY, endX, endY) =>
@@ -346,7 +386,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
         openings: [],
       });
       autoSave(bp);
-      return { blueprint: bp, wallAddPoints: [], ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, wallAddPoints: [], dirtyLayers: { ...s.dirtyLayers, walls: true, dimensions: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   moveWall: (wallIdx, dx, dy) =>
@@ -359,7 +399,7 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       wall.end_x_mm += dx;
       wall.end_y_mm += dy;
       autoSave(bp);
-      return { blueprint: bp, ...pushHistory({ ...s, blueprint: bp }) };
+      return { blueprint: bp, dirtyLayers: { ...s.dirtyLayers, walls: true, dimensions: true }, ...pushHistory({ ...s, blueprint: bp }) };
     }),
 
   deleteWall: (wallIdx) =>
@@ -371,10 +411,17 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       return {
         blueprint: bp,
         selectedWallIdx: null,
+        dirtyLayers: { ...s.dirtyLayers, walls: true, dimensions: true },
         ...pushHistory({ ...s, blueprint: bp }),
       };
     }),
 
-  setMeasurePoints: (pts) => set({ measurePoints: pts }),
-  setMeasureActive: (v) => set({ measureActive: v }),
+  setMeasurePoints: (pts) => set((s) => ({ measurePoints: pts, dirtyLayers: { ...s.dirtyLayers, measure: true } })),
+  setMeasureActive: (v) => set((s) => ({ measureActive: v, dirtyLayers: { ...s.dirtyLayers, measure: true } })),
+
+  // --- dirtyLayers操作 ---
+  markDirty: (layers) => set((s) => ({ dirtyLayers: { ...s.dirtyLayers, ...layers } })),
+  markAllDirty: () => set({ dirtyLayers: allDirty() }),
+  clearDirty: (layer) => set((s) => ({ dirtyLayers: { ...s.dirtyLayers, [layer]: false } })),
+  clearAllDirty: () => set({ dirtyLayers: { pdf: false, grid: false, rooms: false, walls: false, fixtures: false, labels: false, dimensions: false, highlight: false, measure: false } }),
 }));

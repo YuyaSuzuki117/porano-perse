@@ -62,10 +62,19 @@
   cp output/blueprint-analysis/compare_testN.png docs/compare_testN.png
   ```
 
-#### 5.2 記録
+#### 5.2 回帰テスト（過去の図面を壊していないか）
+- `tests/golden/` にゴールドスタンダードJSONがある場合:
+  ```bash
+  python scripts/regression-test.py
+  ```
+- 結果表: 各ゴールドスタンダードとの壁数/部屋数/什器数の差分
+- 悪化があれば修正を戻すか、ゴールドスタンダードを更新するか判断
+
+#### 5.3 記録
 - git commit + push
 - メモリ `project_pdfdxf_improvement.md` を更新
 - 残課題を整理して次の優先順位を提示
+- **改善パターン記録**: どのパラメータ変更が何に効いたかを `tests/golden/improvement_log.md` に追記
 
 ## エージェントチーム活用（並列改善）
 

@@ -1,0 +1,124 @@
+{
+  "description": "カスタムBlenderモデル カタログ（業種タグ・品質・使用実績付き）",
+  "updated": "2026-03-19",
+  "models": [
+    {
+      "id": "cafe_chair",
+      "file": "cafe_chair.py",
+      "name": "カフェチェア",
+      "tags": ["カフェ", "飲食店", "サロン"],
+      "quality": "production",
+      "used_in": ["daikanyama_null_bar"],
+      "notes": "曲木フレーム、座面クッション"
+    },
+    {
+      "id": "cafe_table",
+      "file": "cafe_table.py",
+      "name": "カフェテーブル",
+      "tags": ["カフェ", "飲食店", "サロン"],
+      "quality": "production",
+      "used_in": ["daikanyama_null_bar"],
+      "notes": "ペデスタル回転体、ガラス/木天板"
+    },
+    {
+      "id": "bar_counter",
+      "file": "bar_counter.py",
+      "name": "バーカウンター",
+      "tags": ["バー", "ホストクラブ", "飲食店"],
+      "quality": "production",
+      "used_in": ["daikanyama_null_bar"],
+      "notes": "L字形状、木天板+金属フレーム"
+    },
+    {
+      "id": "bar_stool",
+      "file": "bar_stool.py",
+      "name": "バースツール",
+      "tags": ["バー", "ホストクラブ", "カフェ"],
+      "quality": "production",
+      "used_in": ["daikanyama_null_bar"],
+      "notes": "足かけ付き、レザー座面"
+    },
+    {
+      "id": "club_chair",
+      "file": "club_chair.py",
+      "name": "クラブチェア",
+      "tags": ["バー", "ホストクラブ", "ラウンジ"],
+      "quality": "production",
+      "used_in": [],
+      "notes": "高品質アームチェア、深い座面"
+    },
+    {
+      "id": "brass_table",
+      "file": "brass_table.py",
+      "name": "真鍮脚テーブル",
+      "tags": ["バー", "ホストクラブ", "ラウンジ", "ホテル"],
+      "quality": "production",
+      "used_in": [],
+      "notes": "真鍮ペデスタル、ガラス天板"
+    },
+    {
+      "id": "door_panel",
+      "file": "door_panel.py",
+      "name": "ドアパネル",
+      "tags": ["共通"],
+      "quality": "production",
+      "used_in": [],
+      "notes": "建具、フレーム+パネル+取手"
+    },
+    {
+      "id": "vip_table",
+      "file": "vip_table.py",
+      "name": "VIPテーブル",
+      "tags": ["ホストクラブ", "ラウンジ", "バー"],
+      "quality": "production",
+      "used_in": ["sankei59_hostclub"],
+      "notes": "ガラストップ+黒金属ペデスタル"
+    },
+    {
+      "id": "hostclub_sofa",
+      "file": "hostclub_sofa.py",
+      "name": "ホストクラブソファ",
+      "tags": ["ホストクラブ", "ラウンジ", "バー"],
+      "quality": "production",
+      "used_in": ["sankei59_hostclub"],
+      "notes": "L字ダークレザー、bevel cushion"
+    }
+  ],
+  "material_presets": [
+    {
+      "id": "mirror_wall",
+      "name": "ミラー壁",
+      "file": "materials/wall_finishes.py",
+      "function": "create_mirror_wall_material()",
+      "tags": ["ホストクラブ", "サロン", "ダンススタジオ"],
+      "used_in": ["sankei59_hostclub"],
+      "notes": "Metallic=1.0、全面/部分指定可 (style.mirrorWalls)"
+    },
+    {
+      "id": "dark_leather",
+      "name": "ダークレザー",
+      "file": "materials/fabric.py",
+      "tags": ["ホストクラブ", "バー", "ラウンジ"],
+      "used_in": ["sankei59_hostclub"],
+      "notes": "黒/ダークブラウン、roughness=0.4"
+    }
+  ],
+  "lighting_presets": [
+    {
+      "id": "led_strip",
+      "name": "LED間接照明",
+      "layer": 7,
+      "tags": ["ホストクラブ", "バー", "ラウンジ"],
+      "used_in": ["sankei59_hostclub"],
+      "notes": "style.ledStripColor で色指定"
+    },
+    {
+      "id": "multi_downlight",
+      "name": "マルチダウンライト",
+      "layer": 8,
+      "tags": ["ホストクラブ", "飲食店", "オフィス"],
+      "used_in": ["sankei59_hostclub"],
+      "notes": "style.downlightCount で数指定"
+    }
+  ]
+}

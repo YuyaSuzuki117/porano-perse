@@ -49,6 +49,7 @@ function estimateAtmosphere(preset: StylePreset): string {
     scandinavian: '自然体・明るさ・やさしい',
     retro: 'ノスタルジア・遊び心・個性',
     medical: '清潔感・安心・プロフェッショナル',
+    art_deco_bar: '華やか・退廃的・アールデコ',
   };
   return map[preset] ?? '-';
 }

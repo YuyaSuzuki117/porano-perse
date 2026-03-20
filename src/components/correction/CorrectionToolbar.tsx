@@ -216,14 +216,24 @@ export default function CorrectionToolbar() {
             <button
               key={t.tool}
               onClick={() => setActiveTool(t.tool)}
-              className={`relative flex items-center justify-center w-8 h-8 rounded transition-all ${
+              className={`group relative flex items-center justify-center w-8 h-8 rounded transition-all ${
                 activeTool === t.tool
-                  ? 'bg-[#1e3a5f] text-[#4a90d9] ring-1 ring-[#4a90d9]/50'
+                  ? 'bg-[#1e3a5f] text-[#4a90d9] ring-1 ring-[#4a90d9]/60 shadow-[0_0_8px_rgba(74,144,217,0.25)]'
                   : 'text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4]'
               }`}
               title={`${t.label}${t.shortcut ? ` (${t.shortcut})` : ''}`}
             >
               {t.icon}
+              {/* ショートカットキー表示（右下に小さく） */}
+              {t.shortcut && (
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 text-[8px] font-mono font-bold leading-none ${
+                    activeTool === t.tool ? 'text-[#4a90d9]' : 'text-[#3a5a7a] group-hover:text-[#6b8ab5]'
+                  }`}
+                >
+                  {t.shortcut}
+                </span>
+              )}
             </button>
           ))}
         </React.Fragment>

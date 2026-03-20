@@ -15,6 +15,7 @@ const STYLE_NAMES: Record<StylePreset, string> = {
   scandinavian: 'Scandinavian',
   retro: 'Retro',
   medical: 'Medical',
+  art_deco_bar: 'Art Deco Bar',
 };
 
 // Furniture type to Japanese display name mapping

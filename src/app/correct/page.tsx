@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useCorrectionStore } from '@/stores/useCorrectionStore';
 import type { BlueprintJson, PdfRenderInfo } from '@/types/blueprint';
 import CorrectionCanvas from '@/components/correction/CorrectionCanvas';
@@ -9,6 +10,15 @@ import CorrectionSidebar from '@/components/correction/CorrectionSidebar';
 import RoomNameEditor from '@/components/correction/RoomNameEditor';
 import ExportBar from '@/components/correction/ExportBar';
 import Toast from '@/components/correction/Toast';
+
+const ZoomControls = dynamic(
+  () => import('@/components/correction/ZoomControls'),
+  { ssr: false }
+);
+const ShortcutHelp = dynamic(
+  () => import('@/components/correction/ShortcutHelp'),
+  { ssr: false }
+);
 
 export default function CorrectionPage() {
   const blueprint = useCorrectionStore((s) => s.blueprint);
@@ -301,6 +311,10 @@ export default function CorrectionPage() {
         <div className="relative flex-1">
           <CorrectionCanvas />
           <RoomNameEditor />
+          {/* ズームコントロール（右下） */}
+          <ZoomControls />
+          {/* ショートカットヘルプ（?ボタン + オーバーレイ） */}
+          <ShortcutHelp />
         </div>
 
         {/* サイドバー */}

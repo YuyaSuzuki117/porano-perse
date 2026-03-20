@@ -233,3 +233,232 @@ export function polygonBBox(polygon: [number, number][]): { minX: number; minY: 
   }
   return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }
+
+// =====================================================
+// measureText メモ化キャッシュ
+// =====================================================
+
+/** measureText結果のキャッシュエントリ */
+interface TextMeasureEntry {
+  width: number;
+  actualBoundingBoxAscent: number;
+  actualBoundingBoxDescent: number;
+}
+
+/**
+ * Canvas measureText のメモ化キャッシュを生成
+ * フォント+テキストをキーにキャッシュし、LRU的に古いエントリから破棄
+ * @param maxSize キャッシュ上限（デフォルト500）
+ */
+export function createTextMeasureCache(maxSize = 500) {
+  const cache = new Map<string, TextMeasureEntry>();
+  /** アクセス順序追跡用（先頭が最も古い） */
+  const accessOrder: string[] = [];
+
+  function makeKey(font: string, text: string): string {
+    return `${font}|||${text}`;
+  }
+
+  /** LRU的に古いエントリを破棄 */
+  function evictIfNeeded() {
+    while (cache.size >= maxSize && accessOrder.length > 0) {
+      const oldest = accessOrder.shift()!;
+      cache.delete(oldest);
+    }
+  }
+
+  /** アクセス順序を更新（最後尾=最新） */
+  function touchKey(key: string) {
+    const idx = accessOrder.indexOf(key);
+    if (idx !== -1) {
+      accessOrder.splice(idx, 1);
+    }
+    accessOrder.push(key);
+  }
+
+  return {
+    /**
+     * キャッシュ付きmeasureText
+     * @param ctx Canvas 2D コンテキスト（font設定済み前提）
+     * @param font フォント文字列（ctx.fontと同じ値）
+     * @param text 計測するテキスト
+     */
+    measure(ctx: CanvasRenderingContext2D, font: string, text: string): TextMeasureEntry {
+      const key = makeKey(font, text);
+      const cached = cache.get(key);
+      if (cached) {
+        touchKey(key);
+        return cached;
+      }
+
+      // 実測
+      const prev = ctx.font;
+      if (ctx.font !== font) ctx.font = font;
+      const m = ctx.measureText(text);
+      if (prev !== font) ctx.font = prev;
+
+      const entry: TextMeasureEntry = {
+        width: m.width,
+        actualBoundingBoxAscent: m.actualBoundingBoxAscent,
+        actualBoundingBoxDescent: m.actualBoundingBoxDescent,
+      };
+
+      evictIfNeeded();
+      cache.set(key, entry);
+      accessOrder.push(key);
+
+      return entry;
+    },
+
+    /** キャッシュをクリア */
+    clear() {
+      cache.clear();
+      accessOrder.length = 0;
+    },
+
+    /** 現在のキャッシュサイズ */
+    get size() {
+      return cache.size;
+    },
+  };
+}
+
+// =====================================================
+// 空間インデックス（グリッドベース簡易版）
+// =====================================================
+
+/** 空間インデックスのエントリ型 */
+export interface SpatialEntry {
+  type: 'room' | 'wall';
+  idx: number;
+  /** バウンディングボックス（mm） */
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** グリッドベース空間インデックス */
+export interface SpatialIndex {
+  /** グリッドセルサイズ（mm） */
+  cellSize: number;
+  /** グリッドマップ: "gx,gy" → エントリ配列 */
+  grid: Map<string, SpatialEntry[]>;
+  /** 全エントリ（デバッグ用） */
+  entries: SpatialEntry[];
+}
+
+/**
+ * 部屋と壁から空間インデックスを構築
+ * @param rooms BlueprintRoom配列
+ * @param walls BlueprintWall配列
+ * @param cellSize グリッドセルサイズ（デフォルト100mm）
+ */
+export function buildSpatialIndex(
+  rooms: { polygon_mm: [number, number][] }[],
+  walls: { start_x_mm: number; start_y_mm: number; end_x_mm: number; end_y_mm: number }[],
+  cellSize = 100,
+): SpatialIndex {
+  const grid = new Map<string, SpatialEntry[]>();
+  const entries: SpatialEntry[] = [];
+
+  /** エントリをグリッドに登録 */
+  function insertEntry(entry: SpatialEntry) {
+    entries.push(entry);
+    const gxMin = Math.floor(entry.minX / cellSize);
+    const gyMin = Math.floor(entry.minY / cellSize);
+    const gxMax = Math.floor(entry.maxX / cellSize);
+    const gyMax = Math.floor(entry.maxY / cellSize);
+
+    for (let gx = gxMin; gx <= gxMax; gx++) {
+      for (let gy = gyMin; gy <= gyMax; gy++) {
+        const key = `${gx},${gy}`;
+        let bucket = grid.get(key);
+        if (!bucket) {
+          bucket = [];
+          grid.set(key, bucket);
+        }
+        bucket.push(entry);
+      }
+    }
+  }
+
+  // 部屋を登録
+  for (let i = 0; i < rooms.length; i++) {
+    const poly = rooms[i].polygon_mm;
+    if (poly.length === 0) continue;
+    const bbox = polygonBBox(poly);
+    insertEntry({
+      type: 'room',
+      idx: i,
+      minX: bbox.minX,
+      minY: bbox.minY,
+      maxX: bbox.maxX,
+      maxY: bbox.maxY,
+    });
+  }
+
+  // 壁を登録
+  for (let i = 0; i < walls.length; i++) {
+    const w = walls[i];
+    insertEntry({
+      type: 'wall',
+      idx: i,
+      minX: Math.min(w.start_x_mm, w.end_x_mm),
+      minY: Math.min(w.start_y_mm, w.end_y_mm),
+      maxX: Math.max(w.start_x_mm, w.end_x_mm),
+      maxY: Math.max(w.start_y_mm, w.end_y_mm),
+    });
+  }
+
+  return { cellSize, grid, entries };
+}
+
+/**
+ * 指定座標の近傍にあるエントリを返す
+ * @param index 空間インデックス
+ * @param x_mm X座標（mm）
+ * @param y_mm Y座標（mm）
+ * @param radius_mm 検索半径（mm）
+ * @returns 近傍のエントリ（重複なし）
+ */
+export function queryNearby(
+  index: SpatialIndex,
+  x_mm: number,
+  y_mm: number,
+  radius_mm: number,
+): SpatialEntry[] {
+  const { cellSize, grid } = index;
+  const gxMin = Math.floor((x_mm - radius_mm) / cellSize);
+  const gyMin = Math.floor((y_mm - radius_mm) / cellSize);
+  const gxMax = Math.floor((x_mm + radius_mm) / cellSize);
+  const gyMax = Math.floor((y_mm + radius_mm) / cellSize);
+
+  /** 重複排除用セット（type+idxをキーに） */
+  const seen = new Set<string>();
+  const results: SpatialEntry[] = [];
+
+  for (let gx = gxMin; gx <= gxMax; gx++) {
+    for (let gy = gyMin; gy <= gyMax; gy++) {
+      const bucket = grid.get(`${gx},${gy}`);
+      if (!bucket) continue;
+      for (const entry of bucket) {
+        const key = `${entry.type}_${entry.idx}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        // AABBと検索範囲の交差判定
+        if (
+          entry.maxX >= x_mm - radius_mm &&
+          entry.minX <= x_mm + radius_mm &&
+          entry.maxY >= y_mm - radius_mm &&
+          entry.minY <= y_mm + radius_mm
+        ) {
+          results.push(entry);
+        }
+      }
+    }
+  }
+
+  return results;
+}
