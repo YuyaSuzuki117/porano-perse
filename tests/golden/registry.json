@@ -7,9 +7,9 @@
       "page": 0,
       "expected": {
         "walls": 44,
-        "rooms": 43,
-        "named_rooms": 25,
-        "fixtures": 56
+        "rooms": 32,
+        "named_rooms": 32,
+        "fixtures": 48
       },
       "tolerance": {
         "walls": 5,
@@ -18,7 +18,7 @@
       },
       "approved_by": "鈴木",
       "approved_date": "2026-03-20",
-      "notes": "壁検出改善+ポリゴン自己交差除去+ラスター壁検証(キャップ付き)後。名前付き率100%"
+      "notes": "名前付き率100%(32/32)。室名判定改善+不明室マージ後"
     },
     {
       "name": "sankei59",
@@ -27,8 +27,8 @@
       "page": 0,
       "expected": {
         "walls": 55,
-        "rooms": 165,
-        "named_rooms": 21,
+        "rooms": 163,
+        "named_rooms": 24,
         "fixtures": 147
       },
       "tolerance": {
@@ -38,7 +38,7 @@
       },
       "approved_by": "鈴木",
       "approved_date": "2026-03-20",
-      "notes": "pdf-extract-vectors.py自動抽出ベース。密な図面のため検出数が多い。許容値広め"
+      "notes": "密な図面。部屋過検出は今後の改善対象"
     }
   ]
 }

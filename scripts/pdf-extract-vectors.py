@@ -1200,15 +1200,31 @@ class PDFVectorExtractor:
                 })
                 continue
 
-            # 什器キーワードチェック (室名より優先)
-            # 半角↔全角カタカナ正規化してから比較
+            # 室名判定 (什器キーワードより先にチェック)
             text_normalized = unicodedata.normalize('NFKC', text)
+            is_room = False
+            for pattern in ROOM_NAME_PATTERNS:
+                if pattern in text:
+                    is_room = True
+                    break
+
+            # 什器キーワードチェック
+            # 半角↔全角カタカナ正規化してから比較
             is_fixture_text = False
             for kw in self.FIXTURE_KEYWORDS:
                 kw_normalized = unicodedata.normalize('NFKC', kw)
                 if kw_normalized in text_normalized:
                     is_fixture_text = True
                     break
+
+            # 室名パターンにも什器キーワードにも一致する場合:
+            # 短いテキスト(6文字以下)は室名を優先 (例: "トイレ", "厨房", "倉庫", "通路")
+            # 長いテキスト(7文字以上)は什器を優先 (例: "カウンター下冷蔵庫")
+            if is_room and is_fixture_text:
+                if len(text) <= 6:
+                    is_fixture_text = False  # 室名として扱う
+                else:
+                    is_room = False  # 什器として扱う
 
             if is_fixture_text:
                 # 什器テキストとして保持 → 後で什器エントリ生成
@@ -1217,13 +1233,6 @@ class PDFVectorExtractor:
                     "origin": t.origin,
                 })
                 continue
-
-            # 室名判定
-            is_room = False
-            for pattern in ROOM_NAME_PATTERNS:
-                if pattern in text:
-                    is_room = True
-                    break
 
             if is_room:
                 self.room_names.append({
@@ -3566,6 +3575,7 @@ class PDFVectorExtractor:
                             queue.append((nx, ny))
 
         # 残りの未割当領域 (室名テキストがない部屋) を連結成分で拾う
+        # 不明室は什器線で分断された小領域が多いため、閾値を高めに設定
         remaining = np.uint8(label_img == 0) * 255
         if np.any(remaining):
             num_rem, rem_labels, rem_stats, rem_centroids = cv2.connectedComponentsWithStats(
@@ -3575,7 +3585,7 @@ class PDFVectorExtractor:
             for rem_id in range(1, num_rem):
                 area_px = rem_stats[rem_id, cv2.CC_STAT_AREA]
                 area_m2 = area_px * (px_to_mm_local ** 2) / 1_000_000.0
-                if area_m2 >= 0.5:
+                if area_m2 >= 1.5:
                     label_counter += 1
                     label_img[rem_labels == rem_id] = label_counter
 
@@ -3647,11 +3657,14 @@ class PDFVectorExtractor:
             # 面積フィルタ (mm²)
             area_m2 = area_px * (px_to_mm ** 2) / 1_000_000.0
 
-            if area_m2 < 0.3 or area_m2 > 300.0:
-                if self.debug and 0.15 < area_m2 < 0.3:
+            # 面積フィルタ: 名前付き部屋は0.3㎡以上、不明室は1.0㎡以上
+            is_named = label_id in seed_label_names
+            min_area = 0.3 if is_named else 1.0
+            if area_m2 < min_area or area_m2 > 300.0:
+                if self.debug and area_m2 >= 0.15 and area_m2 < min_area:
                     cx_px, cy_px = centroids[label_id]
                     c_mm = raster_to_mm(int(cx_px), int(cy_px))
-                    print(f"[DEBUG] 連結成分スキップ(小): label={label_id} area={area_m2:.2f}㎡ center=({round(c_mm[0])},{round(c_mm[1])})")
+                    print(f"[DEBUG] 連結成分スキップ(小): label={label_id} area={area_m2:.2f}㎡ named={is_named} center=({round(c_mm[0])},{round(c_mm[1])})")
                 continue
 
             # 中心点
@@ -3848,7 +3861,7 @@ class PDFVectorExtractor:
             """テキスト原点の周囲を探索し、最も多くヒットしたラベルIDを返す"""
             px_x, px_y = mm_to_raster(origin_mm[0], origin_mm[1])
             # 探索半径を拡大: テキストが部屋中心から離れている場合に対応
-            search_max_r = 180
+            search_max_r = 250
             label_counts: dict[int, int] = {}
             for dy in range(-search_max_r, search_max_r + 1, 4):
                 for dx in range(-search_max_r, search_max_r + 1, 4):
@@ -3902,6 +3915,29 @@ class PDFVectorExtractor:
                 print(f"[DEBUG] 室名マッチ(ラスター): {rn['name']} -> center={room['center_mm']} "
                       f"(候補{len(candidates)}個)")
 
+        # Phase 1.5: ポリゴン内テキストマッチング
+        # ラスターラベルで見つからなかった室名テキストが部屋ポリゴン内にあるか判定
+        for name_list in [normal_names, area_labels]:
+            for idx, rn in name_list:
+                if idx in used_room_names:
+                    continue
+                rn_origin_mm = rn["origin"]
+                rn_mm_scaled = (round(rn_origin_mm[0] * sf), round(rn_origin_mm[1] * sf))
+                for room in self.rooms:
+                    if room["name"] != "不明":
+                        continue
+                    poly = room.get("polygon_mm")
+                    if not poly or len(poly) < 3:
+                        continue
+                    poly_tuples = [(p[0], p[1]) for p in poly]
+                    if point_in_polygon(rn_mm_scaled, poly_tuples):
+                        room["name"] = rn["name"]
+                        room["confidence"] = 0.95  # ポリゴン内ヒット
+                        used_room_names.add(idx)
+                        if self.debug:
+                            print(f"[DEBUG] 室名マッチ(ポリゴン内): {rn['name']} -> center={room['center_mm']}")
+                        break
+
         # Phase 2: ラスターで見つからなかった室名を最近傍で探す
         for name_list in [normal_names, area_labels]:
             for idx, rn in name_list:
@@ -3921,8 +3957,8 @@ class PDFVectorExtractor:
                     if d < best_dist:
                         best_dist = d
                         best_room = room
-                # 最近傍が5000mm以内なら割り当て
-                if best_room and best_dist < 5000:
+                # 最近傍が8000mm以内なら割り当て (5000→8000に拡大)
+                if best_room and best_dist < 8000:
                     best_room["name"] = rn["name"]
                     best_room["confidence"] = 0.8  # 最近傍マッチ
                     used_room_names.add(idx)
@@ -3931,28 +3967,59 @@ class PDFVectorExtractor:
                               f"dist={best_dist:.0f}mm")
 
         # Phase 3: 不明室に対して、中心点の近傍テキストから室名を推定
+        # (1) ポリゴン内に含まれるテキストを優先
+        # (2) 検索半径を5000mmに拡大
+        # (3) 同名の部屋を許容（同じroom_nameエントリの二重使用のみ防止）
         for room in self.rooms:
             if room["name"] != "不明":
                 continue
             cx_mm = room["center_mm"][0] / sf  # paper mm
             cy_mm = room["center_mm"][1] / sf
+
+            # まずポリゴン内のテキストを探す
+            poly = room.get("polygon_mm")
+            poly_match = None
+            if poly and len(poly) >= 3:
+                poly_tuples = [(p[0], p[1]) for p in poly]
+                best_poly_d = float("inf")
+                for rn_idx, rn in enumerate(self.room_names):
+                    if rn_idx in used_room_names:
+                        continue
+                    rn_mm_scaled = (round(rn["origin"][0] * sf), round(rn["origin"][1] * sf))
+                    if point_in_polygon(rn_mm_scaled, poly_tuples):
+                        d = distance((cx_mm, cy_mm), rn["origin"])
+                        if d < best_poly_d:
+                            best_poly_d = d
+                            poly_match = (rn_idx, rn["name"])
+            if poly_match:
+                room["name"] = poly_match[1]
+                room["confidence"] = 0.9
+                used_room_names.add(poly_match[0])
+                if self.debug:
+                    print(f"[DEBUG] 不明室名補完(ポリゴン内): {poly_match[1]} -> center={room['center_mm']}")
+                continue
+
+            # ポリゴン内に見つからなければ、最近傍テキストで探す (半径5000mm)
             best_name = None
-            best_d = 3000 / sf  # 3000mm real → paper mm
-            for rn in self.room_names:
-                if any(r["name"] == rn["name"] and r is not room
-                       for r in self.rooms if r["name"] != "不明"):
-                    continue  # この名前は既に使われている
+            best_d = 5000 / sf  # 5000mm real → paper mm
+            best_rn_idx = None
+            for rn_idx, rn in enumerate(self.room_names):
+                if rn_idx in used_room_names:
+                    continue
                 d = distance((cx_mm, cy_mm), rn["origin"])
                 if d < best_d:
                     best_d = d
                     best_name = rn["name"]
+                    best_rn_idx = rn_idx
             if best_name:
                 room["name"] = best_name
-                room["confidence"] = 0.8  # 最近傍テキスト補完
+                room["confidence"] = 0.7  # 近傍テキスト補完
+                if best_rn_idx is not None:
+                    used_room_names.add(best_rn_idx)
                 if self.debug:
                     print(f"[DEBUG] 不明室名補完: {best_name} -> center={room['center_mm']}")
 
-        # nearby_texts: 各部屋（特に不明室）の中心から2000mm以内のテキストを収集
+        # nearby_texts: 各部屋（特に不明室）の中心から4000mm以内のテキストを収集
         for room in self.rooms:
             cx_real = room["center_mm"][0]
             cy_real = room["center_mm"][1]
@@ -3962,17 +4029,55 @@ class PDFVectorExtractor:
                 rn_x = rn["origin"][0] * sf
                 rn_y = rn["origin"][1] * sf
                 d = distance((cx_real, cy_real), (rn_x, rn_y))
-                if d < 2000 and rn["name"] != room["name"]:
+                if d < 4000 and rn["name"] != room["name"]:
                     nearby.append(rn["name"])
             room["nearby_texts"] = nearby
 
-        # Phase 4: 小さな不明室を最近傍の名前付き部屋にマージ (DISABLED - correction UIで判断)
+        # Phase 3.5: 包含関係にある不明室のマージ
+        # 小さい不明室の中心が大きい部屋のポリゴン内にある場合、小さい方を削除
+        rooms_to_remove_contained: list[dict] = []
+        for i, room_a in enumerate(self.rooms):
+            if room_a in rooms_to_remove_contained:
+                continue
+            poly_a = room_a.get("polygon_mm", [])
+            if len(poly_a) < 3:
+                continue
+            for j, room_b in enumerate(self.rooms):
+                if i == j or room_b in rooms_to_remove_contained:
+                    continue
+                if room_b["area_m2"] >= room_a["area_m2"]:
+                    continue
+                if room_b["name"] != "不明":
+                    continue
+                # room_b (小・不明) の中心が room_a (大) のポリゴン内にあるか
+                bc = room_b["center_mm"]
+                inside = False
+                n = len(poly_a)
+                px_c, py_c = bc[0], bc[1]
+                for k in range(n):
+                    p1 = poly_a[k]
+                    p2 = poly_a[(k + 1) % n]
+                    x1 = p1[0] if isinstance(p1, (list, tuple)) else 0
+                    y1 = p1[1] if isinstance(p1, (list, tuple)) else 0
+                    x2 = p2[0] if isinstance(p2, (list, tuple)) else 0
+                    y2 = p2[1] if isinstance(p2, (list, tuple)) else 0
+                    if ((y1 > py_c) != (y2 > py_c)) and (px_c < (x2 - x1) * (py_c - y1) / (y2 - y1 + 1e-12) + x1):
+                        inside = not inside
+                if inside:
+                    rooms_to_remove_contained.append(room_b)
+                    if self.debug:
+                        print(f"[DEBUG] 包含マージ: 不明室 {room_b['area_m2']:.1f}㎡ ⊂ {room_a['name']} {room_a['area_m2']:.1f}㎡")
+        for room in rooms_to_remove_contained:
+            self.rooms.remove(room)
+        if self.debug and rooms_to_remove_contained:
+            print(f"[DEBUG] 包含マージ合計: {len(rooms_to_remove_contained)}室削除")
+
+        # Phase 4: 小さな不明室を最近傍の名前付き部屋にマージ
         # BFSがドア閉鎖により正しく分離した結果、室名テキストがない小領域が独立する。
-        # これらを隣接する名前付き部屋に統合して不明室を減らす。
-        # → 無効化: correction UI でユーザーがマージ判断する
-        _PHASE4_MERGE_ENABLED = False
-        merge_threshold_m2 = 2.0  # この面積以下の不明室をマージ対象に
-        merge_dist_mm = 3000     # この距離以内の名前付き部屋にマージ
+        # 面積3㎡以下の不明室で、名前付き部屋から2000mm以内のものをマージ
+        _PHASE4_MERGE_ENABLED = True
+        merge_threshold_m2 = 3.0  # この面積以下の不明室をマージ対象に
+        merge_dist_mm = 2000     # この距離以内の名前付き部屋にマージ
         merged_count = 0
         rooms_to_remove = []
         if _PHASE4_MERGE_ENABLED:
