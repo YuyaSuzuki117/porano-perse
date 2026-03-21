@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useCorrectionStore } from '@/stores/useCorrectionStore';
+import { showToast } from './Toast';
 
 /**
  * 下部バー: JSON保存・DXF出力・修正状態表示 (ダークテーマ)
@@ -13,6 +14,21 @@ export default function ExportBar() {
   const [exporting, setExporting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const exportTrigger = useCorrectionStore((s) => s._exportTrigger);
+
+  // キーボードショートカット経由のエクスポートトリガー監視
+  const lastTriggerTs = useRef<number>(0);
+  useEffect(() => {
+    if (!exportTrigger || exportTrigger.ts === lastTriggerTs.current) return;
+    lastTriggerTs.current = exportTrigger.ts;
+    if (exportTrigger.format === 'json') {
+      handleJsonSave();
+    } else if (exportTrigger.format === 'dxf') {
+      handleDxfExport();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportTrigger]);
 
   const editCount = Math.max(0, historyIdx);
 
@@ -43,7 +59,10 @@ export default function ExportBar() {
   }, [blueprint, showSuccess]);
 
   const handleDxfExport = useCallback(async () => {
-    if (!blueprint || hasUnknown) return;
+    if (!blueprint) return;
+    if (hasUnknown) {
+      showToast(`不明${unknownCount}室があります。確認してください`);
+    }
     setExporting(true);
     try {
       const res = await fetch('/api/correction/export-dxf', {
@@ -62,11 +81,11 @@ export default function ExportBar() {
       showSuccess('DXF出力完了');
     } catch (err) {
       console.error('DXF export error:', err);
-      alert('DXFエクスポートに失敗しました。');
+      showToast('DXFエクスポートに失敗しました');
     } finally {
       setExporting(false);
     }
-  }, [blueprint, hasUnknown, showSuccess]);
+  }, [blueprint, hasUnknown, unknownCount, showSuccess]);
 
   const handleReset = useCallback(() => {
     resetToOriginal();
@@ -145,11 +164,13 @@ export default function ExportBar() {
         <div className="relative group">
           <button
             onClick={handleDxfExport}
-            disabled={exporting || hasUnknown}
+            disabled={exporting}
             className={`flex items-center gap-1 px-3 py-1 text-[10px] font-medium rounded transition-colors border ${
-              exporting || hasUnknown
+              exporting
                 ? 'bg-[#1e3a5f]/50 text-[#4a6a8a] border-[#1e3a5f] cursor-not-allowed'
-                : 'bg-[#4a90d9] text-white border-[#4a90d9] hover:bg-[#3a80c9]'
+                : hasUnknown
+                  ? 'bg-amber-500/80 text-white border-amber-500 hover:bg-amber-500'
+                  : 'bg-[#4a90d9] text-white border-[#4a90d9] hover:bg-[#3a80c9]'
             }`}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

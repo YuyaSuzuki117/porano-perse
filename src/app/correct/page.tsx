@@ -9,6 +9,7 @@ import CorrectionToolbar from '@/components/correction/CorrectionToolbar';
 import CorrectionSidebar from '@/components/correction/CorrectionSidebar';
 import RoomNameEditor from '@/components/correction/RoomNameEditor';
 import ExportBar from '@/components/correction/ExportBar';
+import StatusBar from '@/components/correction/StatusBar';
 import Toast from '@/components/correction/Toast';
 
 const ZoomControls = dynamic(
@@ -17,6 +18,10 @@ const ZoomControls = dynamic(
 );
 const ShortcutHelp = dynamic(
   () => import('@/components/correction/ShortcutHelp'),
+  { ssr: false }
+);
+const Minimap = dynamic(
+  () => import('@/components/correction/Minimap'),
   { ssr: false }
 );
 
@@ -142,25 +147,38 @@ export default function CorrectionPage() {
   }, [processFiles]);
 
   // サンプルで試す
-  const handleLoadDemo = useCallback(async () => {
+  const handleLoadDemo = useCallback(async (fileKey?: string) => {
     setLoading(true);
     setLoadingMsg('サンプルデータを読み込み中...');
     setError(null);
 
     try {
-      const res = await fetch('/api/correction/demo');
+      const key = fileKey || 'sankei59';
+      const res = await fetch(`/api/correction/demo?file=${key}&with_pdf=1`);
       if (!res.ok) {
         throw new Error('サンプルデータの取得に失敗しました');
       }
-      const bp: BlueprintJson = await res.json();
-      loadBlueprint(bp);
+      const data = await res.json();
+      loadBlueprint(data.blueprint);
+      if (data.pdfInfo) {
+        setPdfInfo(data.pdfInfo);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'サンプル読み込みに失敗しました');
     } finally {
       setLoading(false);
       setLoadingMsg('');
     }
-  }, [loadBlueprint]);
+  }, [loadBlueprint, setPdfInfo]);
+
+  // URLパラメータ ?demo=sankei59 で自動読み込み
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const demoKey = params.get('demo');
+    if (demoKey && !blueprint) {
+      handleLoadDemo(demoKey);
+    }
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   // ローディングスピナー
   const spinner = useMemo(() => (
@@ -287,7 +305,7 @@ export default function CorrectionPage() {
             </button>
 
             <button
-              onClick={handleLoadDemo}
+              onClick={() => handleLoadDemo()}
               disabled={loading}
               className="w-full rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
@@ -313,6 +331,8 @@ export default function CorrectionPage() {
           <RoomNameEditor />
           {/* ズームコントロール（右下） */}
           <ZoomControls />
+          {/* ミニマップ（右下） */}
+          <Minimap />
           {/* ショートカットヘルプ（?ボタン + オーバーレイ） */}
           <ShortcutHelp />
         </div>
@@ -320,6 +340,9 @@ export default function CorrectionPage() {
         {/* サイドバー */}
         <CorrectionSidebar />
       </div>
+
+      {/* ステータスバー */}
+      <StatusBar />
 
       {/* 出力バー */}
       <ExportBar />

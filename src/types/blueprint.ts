@@ -81,7 +81,9 @@ export type CorrectionTool =
   | 'wallAdd'
   | 'wallMove'
   | 'wallDelete'
-  | 'measure';
+  | 'measure'
+  | 'moveAll'
+  | 'splitRoom';
 
 export interface LayerVisibility {
   pdf: boolean;

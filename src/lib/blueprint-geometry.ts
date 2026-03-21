@@ -221,6 +221,77 @@ export function snapToWallLine(
   return bestResult;
 }
 
+/** ポリゴンの重心計算 (平均座標) */
+export function polygonCentroidCalc(polygon: [number, number][]): [number, number] {
+  if (polygon.length === 0) return [0, 0];
+  const cx = polygon.reduce((s, p) => s + p[0], 0) / polygon.length;
+  const cy = polygon.reduce((s, p) => s + p[1], 0) / polygon.length;
+  return [cx, cy];
+}
+
+/**
+ * 2つの線分が交差するかチェック (端点共有は除外)
+ * 線分AB と 線分CD
+ */
+function segmentsIntersect(
+  ax: number, ay: number, bx: number, by: number,
+  cx: number, cy: number, dx: number, dy: number,
+): boolean {
+  const d1x = bx - ax, d1y = by - ay;
+  const d2x = dx - cx, d2y = dy - cy;
+  const cross = d1x * d2y - d1y * d2x;
+  if (Math.abs(cross) < 1e-10) return false; // parallel
+
+  const sx = cx - ax, sy = cy - ay;
+  const t = (sx * d2y - sy * d2x) / cross;
+  const u = (sx * d1y - sy * d1x) / cross;
+
+  // Strict interior intersection (exclude endpoints)
+  return t > 1e-10 && t < 1 - 1e-10 && u > 1e-10 && u < 1 - 1e-10;
+}
+
+/** ポリゴンが自己交差しているかチェック (O(n²)) */
+export function isPolygonSelfIntersecting(polygon: [number, number][]): boolean {
+  const n = polygon.length;
+  if (n < 4) return false; // triangle can't self-intersect
+  for (let i = 0; i < n; i++) {
+    const i2 = (i + 1) % n;
+    for (let j = i + 2; j < n; j++) {
+      // Skip adjacent edges (they share a vertex)
+      if (i === 0 && j === n - 1) continue;
+      const j2 = (j + 1) % n;
+      if (segmentsIntersect(
+        polygon[i][0], polygon[i][1], polygon[i2][0], polygon[i2][1],
+        polygon[j][0], polygon[j][1], polygon[j2][0], polygon[j2][1],
+      )) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** 線分交差判定 (分割ツール用): 線分a1-a2 が 線分b1-b2 と交差する点を返す */
+export function lineSegmentIntersection(
+  a1: [number, number], a2: [number, number],
+  b1: [number, number], b2: [number, number]
+): { point: [number, number]; t: number } | null {
+  const dx1 = a2[0] - a1[0], dy1 = a2[1] - a1[1];
+  const dx2 = b2[0] - b1[0], dy2 = b2[1] - b1[1];
+  const denom = dx1 * dy2 - dy1 * dx2;
+  if (Math.abs(denom) < 1e-10) return null;
+
+  const t = ((b1[0] - a1[0]) * dy2 - (b1[1] - a1[1]) * dx2) / denom;
+  const u = ((b1[0] - a1[0]) * dy1 - (b1[1] - a1[1]) * dx1) / denom;
+
+  if (u < 0.01 || u > 0.99) return null; // Strict interior of edge b
+
+  return {
+    point: [Math.round(a1[0] + t * dx1), Math.round(a1[1] + t * dy1)],
+    t: u,
+  };
+}
+
 /** ポリゴンのバウンディングボックス (width_mm, height_mm) */
 export function polygonBBox(polygon: [number, number][]): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number } {
   if (polygon.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
@@ -461,4 +532,41 @@ export function queryNearby(
   }
 
   return results;
+}
+
+/**
+ * Parse area value from text like "25.3m²", "25.3㎡", "12.5m2"
+ * Returns area in m² or null if not parseable
+ */
+export function parseAreaFromText(text: string): number | null {
+  const match = text.match(/([\d.]+)\s*(?:m²|㎡|m2|平米)/i);
+  return match ? parseFloat(match[1]) : null;
+}
+
+/**
+ * Validate room area against nearby text areas
+ * Returns { valid: boolean, expected: number | null, actual: number, diffPercent: number | null }
+ */
+export function validateRoomArea(room: { area_m2: number; nearby_texts?: string[] }): {
+  valid: boolean;
+  expected: number | null;
+  actual: number;
+  diffPercent: number | null;
+} {
+  const actual = room.area_m2;
+  if (!room.nearby_texts) return { valid: true, expected: null, actual, diffPercent: null };
+
+  for (const text of room.nearby_texts) {
+    const expected = parseAreaFromText(text);
+    if (expected !== null && expected > 0) {
+      const diffPercent = Math.abs(actual - expected) / expected * 100;
+      return {
+        valid: diffPercent < 15, // 15% tolerance
+        expected,
+        actual,
+        diffPercent,
+      };
+    }
+  }
+  return { valid: true, expected: null, actual, diffPercent: null };
 }

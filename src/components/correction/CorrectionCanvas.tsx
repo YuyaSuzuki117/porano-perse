@@ -9,6 +9,7 @@ import {
   pointInPolygon,
   distanceMm,
   distanceToSegment,
+  isPolygonSelfIntersecting,
 } from '@/lib/blueprint-geometry';
 import { showToast } from '@/components/correction/Toast';
 import { theme, HIT_THRESHOLD_PX, AUTOFIT_PADDING, AUTOFIT_MAX_ZOOM } from './theme';
@@ -16,6 +17,7 @@ import {
   drawPdfBackground,
   drawGrid,
   drawRooms,
+  drawCompareOverlay,
   drawWalls,
   drawDimensions,
   drawFixtures,
@@ -34,8 +36,10 @@ import {
   applyAxisLock,
   createKeyDownHandler,
   createKeyUpHandler,
+  fitAll,
   type CanvasRefs,
 } from './canvasHandlers';
+import ContextMenu, { type ContextMenuState } from './ContextMenu';
 
 /**
  * PDF補正キャンバス (CAD品質)
@@ -52,6 +56,7 @@ export default function CorrectionCanvas() {
   const isDraggingVertexRef = useRef(false);
   const isDraggingFixtureRef = useRef(false);
   const isDraggingWallRef = useRef(false);
+  const isDraggingAllRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const dragStartMmRef = useRef({ x_mm: 0, y_mm: 0 });
   const spaceHeldRef = useRef(false);
@@ -65,6 +70,9 @@ export default function CorrectionCanvas() {
   // スナップインジケータ
   const snapIndicatorRef = useRef<{ x: number; y: number; type: string } | null>(null);
 
+  // 自己交差警告の重複抑制
+  const selfIntersectWarningRef = useRef(false);
+
   // ホバー状態
   const [hoveredRoomIdx, setHoveredRoomIdx] = useState<number | null>(null);
   const [hoverTooltip, setHoverTooltip] = useState<{ x: number; y: number; name: string; area: number } | null>(null);
@@ -72,6 +80,7 @@ export default function CorrectionCanvas() {
   const [showHint, setShowHint] = useState(true);
   const [hasAutoFitted, setHasAutoFitted] = useState(false);
   const [mousePosMm, setMousePosMm] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   // ストアから個別セレクタで取得
   const blueprint = useCorrectionStore((s) => s.blueprint);
@@ -91,6 +100,8 @@ export default function CorrectionCanvas() {
   const pdfOpacity = useCorrectionStore((s) => s.pdfOpacity);
   const wallAddPoints = useCorrectionStore((s) => s.wallAddPoints);
   const measurePoints = useCorrectionStore((s) => s.measurePoints);
+  const compareMode = useCorrectionStore((s) => s.compareMode);
+  const history = useCorrectionStore((s) => s.history);
 
   const setZoom = useCorrectionStore((s) => s.setZoom);
   const setPan = useCorrectionStore((s) => s.setPan);
@@ -106,8 +117,15 @@ export default function CorrectionCanvas() {
   const addWall = useCorrectionStore((s) => s.addWall);
   const deleteWall = useCorrectionStore((s) => s.deleteWall);
   const moveWall = useCorrectionStore((s) => s.moveWall);
+  const moveAllElements = useCorrectionStore((s) => s.moveAllElements);
+  const toggleRoomSelect = useCorrectionStore((s) => s.toggleRoomSelect);
+  const clearMultiSelect = useCorrectionStore((s) => s.clearMultiSelect);
+  const commitMoveAll = useCorrectionStore((s) => s.commitMoveAll);
+  const selectAllRooms = useCorrectionStore((s) => s.selectAllRooms);
   const setWallAddPoints = useCorrectionStore((s) => s.setWallAddPoints);
   const setMeasurePoints = useCorrectionStore((s) => s.setMeasurePoints);
+  const addVertexOnEdge = useCorrectionStore((s) => s.addVertexOnEdge);
+  const splitRoom = useCorrectionStore((s) => s.splitRoom);
 
   // --- 座標変換ヘルパー ---
   const effectiveDpi = pdfInfo?.dpi ?? 150;
@@ -189,6 +207,36 @@ export default function CorrectionCanvas() {
     setHasAutoFitted(true);
   }, [blueprint, hasAutoFitted, effectiveDpi, effectivePageHeightPx, setZoom, setPan]);
 
+  // --- 不明室ナビゲーション時の自動ズーム ---
+  useEffect(() => {
+    if (selectedRoomIdx === null || !blueprint || activeTool !== 'editName') return;
+    const room = blueprint.rooms[selectedRoomIdx];
+    if (!room || room.polygon_mm.length < 3) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const { width: cw, height: ch } = container.getBoundingClientRect();
+    if (cw === 0 || ch === 0) return;
+
+    // Calculate room bounding box in image pixels
+    let minCx = Infinity, minCy = Infinity, maxCx = -Infinity, maxCy = -Infinity;
+    const scale = parseScale(blueprint.scale_detected);
+    for (const pt of room.polygon_mm) {
+      const { cx, cy } = mmToCanvas(pt[0], pt[1], scale, effectiveDpi, effectivePageHeightPx, 1, 0, 0);
+      minCx = Math.min(minCx, cx); minCy = Math.min(minCy, cy);
+      maxCx = Math.max(maxCx, cx); maxCy = Math.max(maxCy, cy);
+    }
+
+    const padding = 100;
+    const bboxW = maxCx - minCx;
+    const bboxH = maxCy - minCy;
+    const fitZoom = Math.min((cw - padding * 2) / Math.max(bboxW, 1), (ch - padding * 2) / Math.max(bboxH, 1), 3);
+    const centerX = (minCx + maxCx) / 2;
+    const centerY = (minCy + maxCy) / 2;
+    setZoom(fitZoom);
+    setPan(cw / 2 - centerX * fitZoom, ch / 2 - centerY * fitZoom);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoomIdx, activeTool]); // intentionally minimal deps for navigation
+
   // --- 描画 ---
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -217,6 +265,8 @@ export default function CorrectionCanvas() {
 
     // Layer 2-5: 部屋・壁・寸法・什器・ラベル
     drawRooms(ctx, blueprint, vs, layers, selectedRoomIdx, hoveredRoomIdx);
+    // Layer 2.5: 比較モード（修正前オーバーレイ）
+    drawCompareOverlay(ctx, blueprint, vs, compareMode, history);
     drawWalls(ctx, blueprint, vs, layers, selectedWallIdx);
     drawDimensions(ctx, blueprint, vs, layers);
     drawFixtures(ctx, blueprint, vs, layers, selectedFixtureIdx);
@@ -238,7 +288,7 @@ export default function CorrectionCanvas() {
 
     // Layer 11: ルーラー
     drawRuler(ctx, blueprint, vs, mousePosMm);
-  }, [blueprint, pdfInfo, zoom, panX, panY, selectedRoomIdx, selectedFixtureIdx, selectedVertexIdx, selectedWallIdx, hoveredRoomIdx, activeTool, layers, gridVisible, pdfOpacity, snapEnabled, wallAddPoints, measurePoints, mousePosMm, effectiveDpi, effectivePageHeightPx]);
+  }, [blueprint, pdfInfo, zoom, panX, panY, selectedRoomIdx, selectedFixtureIdx, selectedVertexIdx, selectedWallIdx, hoveredRoomIdx, activeTool, layers, gridVisible, pdfOpacity, snapEnabled, wallAddPoints, measurePoints, mousePosMm, effectiveDpi, effectivePageHeightPx, compareMode, history]);
 
   // 描画ループ
   useEffect(() => {
@@ -323,6 +373,26 @@ export default function CorrectionCanvas() {
         return;
       }
 
+      // splitRoom ツール
+      if (activeTool === 'splitRoom') {
+        const pts = [...wallAddPoints, [snapped.x_mm, snapped.y_mm] as [number, number]];
+        setWallAddPoints(pts);
+        if (pts.length >= 2) {
+          // Find room that contains the midpoint of the split line
+          const midX = (pts[0][0] + pts[1][0]) / 2;
+          const midY = (pts[0][1] + pts[1][1]) / 2;
+          for (let i = 0; i < blueprint.rooms.length; i++) {
+            if (pointInPolygon(midX, midY, blueprint.rooms[i].polygon_mm)) {
+              splitRoom(i, [pts[0], pts[1]]);
+              showToast('部屋を分割しました');
+              break;
+            }
+          }
+          setWallAddPoints([]);
+        }
+        return;
+      }
+
       // wallDelete ツール
       if (activeTool === 'wallDelete') {
         const scale = parseScale(blueprint.scale_detected);
@@ -336,6 +406,13 @@ export default function CorrectionCanvas() {
             return;
           }
         }
+        return;
+      }
+
+      // moveAll ツール
+      if (activeTool === 'moveAll') {
+        isDraggingAllRef.current = true;
+        dragStartMmRef.current = { x_mm: mm.x_mm, y_mm: mm.y_mm };
         return;
       }
 
@@ -389,6 +466,32 @@ export default function CorrectionCanvas() {
         }
       }
 
+      // 辺上に頂点追加 (moveVertexツール + 部屋選択時)
+      if (activeTool === 'moveVertex' && selectedRoomIdx !== null && blueprint.rooms[selectedRoomIdx]) {
+        const room = blueprint.rooms[selectedRoomIdx];
+        const scale = parseScale(blueprint.scale_detected);
+        const thresholdMm = (HIT_THRESHOLD_PX / zoom) * scale;
+
+        for (let e = 0; e < room.polygon_mm.length; e++) {
+          const p1 = room.polygon_mm[e];
+          const p2 = room.polygon_mm[(e + 1) % room.polygon_mm.length];
+          const d = distanceToSegment(mm.x_mm, mm.y_mm, p1[0], p1[1], p2[0], p2[1]);
+          if (d < thresholdMm) {
+            // Project click point onto edge
+            const ex = p2[0] - p1[0], ey = p2[1] - p1[1];
+            const len2 = ex * ex + ey * ey;
+            const t = Math.max(0, Math.min(1, ((mm.x_mm - p1[0]) * ex + (mm.y_mm - p1[1]) * ey) / len2));
+            const px = p1[0] + t * ex, py = p1[1] + t * ey;
+
+            addVertexOnEdge(selectedRoomIdx, e, Math.round(px), Math.round(py));
+            selectVertex(e + 1);
+            isDraggingVertexRef.current = true;
+            showToast('頂点を追加しました');
+            return;
+          }
+        }
+      }
+
       // 壁クリック判定 (selectツール)
       if (activeTool === 'select') {
         const scale = parseScale(blueprint.scale_detected);
@@ -419,7 +522,12 @@ export default function CorrectionCanvas() {
       for (let i = 0; i < blueprint.rooms.length; i++) {
         const room = blueprint.rooms[i];
         if (room.polygon_mm.length >= 3 && pointInPolygon(mm.x_mm, mm.y_mm, room.polygon_mm)) {
-          selectRoom(i);
+          if (shiftHeldRef.current) {
+            toggleRoomSelect(i);
+          } else {
+            clearMultiSelect();
+            selectRoom(i);
+          }
           return;
         }
       }
@@ -428,7 +536,7 @@ export default function CorrectionCanvas() {
       selectFixture(null);
       selectWall(null);
     },
-    [blueprint, zoom, toMm, selectedRoomIdx, selectRoom, selectFixture, selectVertex, selectWall, activeTool, deleteRoom, deleteWall, addWall, snapEnabled, snapGrid, wallAddPoints, measurePoints, setWallAddPoints, setMeasurePoints, moveFixture]
+    [blueprint, zoom, toMm, selectedRoomIdx, selectRoom, selectFixture, selectVertex, selectWall, activeTool, deleteRoom, deleteWall, addWall, snapEnabled, snapGrid, wallAddPoints, measurePoints, setWallAddPoints, setMeasurePoints, moveFixture, toggleRoomSelect, clearMultiSelect, addVertexOnEdge, splitRoom]
   );
 
   // --- マウスムーブ ---
@@ -467,6 +575,22 @@ export default function CorrectionCanvas() {
         }
         snapIndicatorRef.current = snapped.snapType ? { x: snapped.x_mm, y: snapped.y_mm, type: snapped.snapType } : null;
         moveVertex(selectedRoomIdx, selectedVertexIdx, snapped.x_mm, snapped.y_mm);
+
+        // 自己交差チェック
+        {
+          const updatedBp = useCorrectionStore.getState().blueprint;
+          if (updatedBp) {
+            const room = updatedBp.rooms[selectedRoomIdx];
+            if (room && isPolygonSelfIntersecting(room.polygon_mm)) {
+              if (!selfIntersectWarningRef.current) {
+                selfIntersectWarningRef.current = true;
+                showToast('ポリゴンが自己交差しています');
+              }
+            } else {
+              selfIntersectWarningRef.current = false;
+            }
+          }
+        }
         return;
       }
 
@@ -489,8 +613,18 @@ export default function CorrectionCanvas() {
         return;
       }
 
+      // 全体移動ドラッグ
+      if (isDraggingAllRef.current && blueprint) {
+        setCursorStyle('move');
+        const dxMm = rawMm.x_mm - dragStartMmRef.current.x_mm;
+        const dyMm = rawMm.y_mm - dragStartMmRef.current.y_mm;
+        moveAllElements(dxMm, dyMm);
+        // 移動後の座標系で再計算するためdragStartは更新しない（moveAllで座標が変わるため）
+        return;
+      }
+
       // ツール別マウス追跡
-      if (activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'measure') {
+      if (activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'splitRoom' || activeTool === 'measure') {
         const snapped = applySnap(rawMm.x_mm, rawMm.y_mm, snapEnabled, snapGrid, blueprint!, zoom, shiftHeldRef.current);
         currentMouseMmRef.current = { x_mm: snapped.x_mm, y_mm: snapped.y_mm };
         snapIndicatorRef.current = snapped.snapType ? { x: snapped.x_mm, y: snapped.y_mm, type: snapped.snapType } : null;
@@ -524,7 +658,7 @@ export default function CorrectionCanvas() {
             setHoveredRoomIdx(i);
             setHoverTooltip({ x: mx, y: my, name: room.name || '不明', area: room.area_m2 });
             setCursorStyle(
-              activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'measure' ? 'crosshair' :
+              activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'splitRoom' || activeTool === 'measure' ? 'crosshair' :
               activeTool === 'deleteRoom' || activeTool === 'wallDelete' ? 'not-allowed' :
               'pointer'
             );
@@ -537,24 +671,29 @@ export default function CorrectionCanvas() {
           setHoverTooltip(null);
           setCursorStyle(
             spaceHeldRef.current ? 'grab' :
-            activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'measure' ? 'crosshair' :
+            activeTool === 'moveAll' ? 'move' :
+            activeTool === 'addRoom' || activeTool === 'wallAdd' || activeTool === 'splitRoom' || activeTool === 'measure' ? 'crosshair' :
             activeTool === 'deleteRoom' || activeTool === 'wallDelete' ? 'crosshair' :
             'default'
           );
         }
       }
     },
-    [panX, panY, setPan, selectedRoomIdx, selectedVertexIdx, selectedFixtureIdx, selectedWallIdx, moveVertex, moveFixture, moveWall, toMm, blueprint, zoom, activeTool, showHint, snapEnabled, snapGrid]
+    [panX, panY, setPan, selectedRoomIdx, selectedVertexIdx, selectedFixtureIdx, selectedWallIdx, moveVertex, moveFixture, moveWall, moveAllElements, toMm, blueprint, zoom, activeTool, showHint, snapEnabled, snapGrid]
   );
 
   // --- マウスアップ ---
   const handleMouseUp = useCallback(() => {
+    if (isDraggingAllRef.current) {
+      commitMoveAll();
+    }
     isPanningRef.current = false;
     isDraggingVertexRef.current = false;
     isDraggingFixtureRef.current = false;
     isDraggingWallRef.current = false;
+    isDraggingAllRef.current = false;
     snapIndicatorRef.current = null;
-  }, []);
+  }, [commitMoveAll]);
 
   // --- ダブルクリック ---
   const handleDoubleClick = useCallback(
@@ -587,6 +726,74 @@ export default function CorrectionCanvas() {
     [blueprint, toMm, selectRoom, setActiveTool, activeTool, addRoom]
   );
 
+  // --- 部屋にズーム ---
+  const zoomToRoom = useCallback(
+    (roomIdx: number) => {
+      if (!blueprint) return;
+      const room = blueprint.rooms[roomIdx];
+      if (!room || room.polygon_mm.length < 3) return;
+      const container = containerRef.current;
+      if (!container) return;
+      const { width: cw, height: ch } = container.getBoundingClientRect();
+      if (cw === 0 || ch === 0) return;
+      const scale = parseScale(blueprint.scale_detected);
+      let minCx = Infinity, minCy = Infinity, maxCx = -Infinity, maxCy = -Infinity;
+      for (const pt of room.polygon_mm) {
+        const { cx, cy } = mmToCanvas(pt[0], pt[1], scale, effectiveDpi, effectivePageHeightPx, 1, 0, 0);
+        minCx = Math.min(minCx, cx); minCy = Math.min(minCy, cy);
+        maxCx = Math.max(maxCx, cx); maxCy = Math.max(maxCy, cy);
+      }
+      const padding = 100;
+      const bboxW = maxCx - minCx;
+      const bboxH = maxCy - minCy;
+      const fz = Math.min((cw - padding * 2) / Math.max(bboxW, 1), (ch - padding * 2) / Math.max(bboxH, 1), 3);
+      const centerX = (minCx + maxCx) / 2;
+      const centerY = (minCy + maxCy) / 2;
+      setZoom(fz);
+      setPan(cw / 2 - centerX * fz, ch / 2 - centerY * fz);
+      selectRoom(roomIdx);
+    },
+    [blueprint, effectiveDpi, effectivePageHeightPx, setZoom, setPan, selectRoom]
+  );
+
+  // --- 右クリックコンテキストメニュー ---
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!blueprint) return;
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const mm = toMm(mx, my);
+
+      // 部屋判定
+      for (let i = 0; i < blueprint.rooms.length; i++) {
+        const room = blueprint.rooms[i];
+        if (room.polygon_mm.length >= 3 && pointInPolygon(mm.x_mm, mm.y_mm, room.polygon_mm)) {
+          setContextMenu({ x: mx, y: my, roomIdx: i, wallIdx: null });
+          return;
+        }
+      }
+
+      // 壁判定
+      const scale = parseScale(blueprint.scale_detected);
+      const thresholdMm = (HIT_THRESHOLD_PX / zoom) * scale;
+      for (let i = 0; i < blueprint.walls.length; i++) {
+        const w = blueprint.walls[i];
+        const d = distanceToSegment(mm.x_mm, mm.y_mm, w.start_x_mm, w.start_y_mm, w.end_x_mm, w.end_y_mm);
+        if (d < thresholdMm) {
+          setContextMenu({ x: mx, y: my, roomIdx: null, wallIdx: i });
+          return;
+        }
+      }
+
+      // 空白エリア
+      setContextMenu({ x: mx, y: my, roomIdx: null, wallIdx: null });
+    },
+    [blueprint, toMm, zoom]
+  );
+
   return (
     <div ref={containerRef} data-correction-canvas className="relative w-full h-full overflow-hidden bg-[#1a1a2e]">
       <canvas
@@ -604,7 +811,7 @@ export default function CorrectionCanvas() {
           setMousePosMm(null);
         }}
         onDoubleClick={handleDoubleClick}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={handleContextMenu}
       />
 
       {/* ホバーツールチップ */}
@@ -631,6 +838,16 @@ export default function CorrectionCanvas() {
         <div className="absolute bottom-1 right-1 z-30 rounded bg-[#0d1b2a]/80 border border-[#1e3a5f] px-2 py-1 text-[10px] text-[#6b8ab5]">
           Wheel:Zoom | Middle:Pan | Dbl-click:名前 | S:Snap | G:Grid
         </div>
+      )}
+
+      {/* コンテキストメニュー */}
+      {contextMenu && (
+        <ContextMenu
+          menu={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onZoomToRoom={zoomToRoom}
+          onFitAll={fitAll}
+        />
       )}
     </div>
   );

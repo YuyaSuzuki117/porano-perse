@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useCorrectionStore } from '@/stores/useCorrectionStore';
-import { parseScale, mmToCanvas } from '@/lib/blueprint-geometry';
+import { parseScale, mmToCanvas, validateRoomArea } from '@/lib/blueprint-geometry';
 import CoordinatePanel from './CoordinatePanel';
 import LayerPanel from './LayerPanel';
+import UndoHistory from './UndoHistory';
+
 
 /**
  * 右サイドバー: 部屋一覧・什器・レイヤー・座標パネル
@@ -14,10 +16,16 @@ export default function CorrectionSidebar() {
   const blueprint = useCorrectionStore((s) => s.blueprint);
   const selectedRoomIdx = useCorrectionStore((s) => s.selectedRoomIdx);
   const selectRoom = useCorrectionStore((s) => s.selectRoom);
+  const selectedRoomIndices = useCorrectionStore((s) => s.selectedRoomIndices);
+  const toggleRoomSelect = useCorrectionStore((s) => s.toggleRoomSelect);
   const setActiveTool = useCorrectionStore((s) => s.setActiveTool);
   const setPan = useCorrectionStore((s) => s.setPan);
+  const setZoom = useCorrectionStore((s) => s.setZoom);
   const zoom = useCorrectionStore((s) => s.zoom);
   const pdfInfo = useCorrectionStore((s) => s.pdfInfo);
+
+  const snapshots = useCorrectionStore((s) => s._snapshots);
+  const restoreSnapshot = useCorrectionStore((s) => s.restoreSnapshot);
 
   const [isOpen, setIsOpen] = useState(true);
   const [showUnknownOnly, setShowUnknownOnly] = useState(false);
@@ -43,10 +51,40 @@ export default function CorrectionSidebar() {
 
   const handleRoomDoubleClick = useCallback(
     (idx: number) => {
+      if (!blueprint) return;
+      const room = blueprint.rooms[idx];
+      if (!room || room.polygon_mm.length < 3) return;
       selectRoom(idx);
-      setActiveTool('editName');
+
+      // 部屋のバウンディングボックスを計算してズーム
+      const scale = parseScale(blueprint.scale_detected);
+      const dpi = pdfInfo?.dpi ?? 150;
+      const pageHeightPx = pdfInfo?.pageHeightPx ?? (blueprint.room.depth_mm / scale) * dpi / 25.4;
+
+      let minCx = Infinity, minCy = Infinity, maxCx = -Infinity, maxCy = -Infinity;
+      for (const pt of room.polygon_mm) {
+        const { cx, cy } = mmToCanvas(pt[0], pt[1], scale, dpi, pageHeightPx, 1, 0, 0);
+        minCx = Math.min(minCx, cx); minCy = Math.min(minCy, cy);
+        maxCx = Math.max(maxCx, cx); maxCy = Math.max(maxCy, cy);
+      }
+
+      // キャンバスのサイズを取得（サイドバー幅260pxを差し引く）
+      const canvasW = window.innerWidth - 260;
+      const canvasH = window.innerHeight - 100; // ツールバー + ExportBar分を差し引く
+      const padding = 100;
+      const bboxW = maxCx - minCx;
+      const bboxH = maxCy - minCy;
+      const fitZoom = Math.min(
+        (canvasW - padding * 2) / Math.max(bboxW, 1),
+        (canvasH - padding * 2) / Math.max(bboxH, 1),
+        3
+      );
+      const centerX = (minCx + maxCx) / 2;
+      const centerY = (minCy + maxCy) / 2;
+      setZoom(fitZoom);
+      setPan(canvasW / 2 - centerX * fitZoom, canvasH / 2 - centerY * fitZoom);
     },
-    [selectRoom, setActiveTool]
+    [blueprint, pdfInfo, selectRoom, setZoom, setPan]
   );
 
   const handleEditClick = useCallback(
@@ -62,7 +100,7 @@ export default function CorrectionSidebar() {
 
   const rooms = blueprint.rooms;
   const fixtures = blueprint.fixtures;
-  const warnings = blueprint.warnings;
+  const warnings = blueprint.warnings ?? [];
 
   const unknownCount = rooms.filter((r) => r.name === '不明' || r.name === '').length;
   const namedCount = rooms.length - unknownCount;
@@ -158,19 +196,29 @@ export default function CorrectionSidebar() {
                   ? '#eab308'
                   : '#22c55e';
 
+              const isMultiSelected = selectedRoomIndices.includes(idx);
+
               return (
                 <li key={idx}>
                   <button
-                    onClick={() => handleRoomClick(idx)}
+                    onClick={(e) => {
+                      if (e.shiftKey) {
+                        toggleRoomSelect(idx);
+                      } else {
+                        handleRoomClick(idx);
+                      }
+                    }}
                     onDoubleClick={() => handleRoomDoubleClick(idx)}
                     onMouseEnter={() => setHoveredIdx(idx)}
                     onMouseLeave={() => setHoveredIdx(null)}
                     className={`w-full text-left px-3 py-1.5 text-[11px] transition-colors group border-l-2 ${
                       isSelected
                         ? 'bg-[#1e3a5f]/60 border-[#4a90d9] text-[#c8d8e8]'
-                        : isHovered
-                          ? 'bg-[#1e3a5f]/30 border-[#4a6a8a] text-[#8ba4c4]'
-                          : 'border-transparent text-[#6b8ab5] hover:bg-[#1e3a5f]/20'
+                        : isMultiSelected
+                          ? 'bg-[#1e3a5f]/40 border-l-2 border-cyan-400 text-[#c8d8e8]'
+                          : isHovered
+                            ? 'bg-[#1e3a5f]/30 border-[#4a6a8a] text-[#8ba4c4]'
+                            : 'border-transparent text-[#6b8ab5] hover:bg-[#1e3a5f]/20'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -197,9 +245,21 @@ export default function CorrectionSidebar() {
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
                         </button>
-                        <span className="text-[9px] text-[#4a6a8a] tabular-nums font-mono">
-                          {room.area_m2}m2
-                        </span>
+                        {(() => {
+                          const v = validateRoomArea(room);
+                          if (!v.valid && v.expected !== null) {
+                            return (
+                              <span className="text-[9px] text-amber-400 tabular-nums font-mono" title={`差異: ${v.diffPercent?.toFixed(0)}%`}>
+                                {room.area_m2}m2 ⚠ PDF:{v.expected}m2
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="text-[9px] text-[#4a6a8a] tabular-nums font-mono">
+                              {room.area_m2}m2
+                            </span>
+                          );
+                        })()}
                       </span>
                     </div>
                   </button>
@@ -245,6 +305,33 @@ export default function CorrectionSidebar() {
 
       {/* レイヤーパネル */}
       <LayerPanel />
+
+      {/* 操作履歴パネル */}
+      <UndoHistory />
+
+      {/* バックアップパネル */}
+      {snapshots.length > 0 && (
+        <div className="border-t border-[#1e3a5f] mt-1">
+          <div className="px-3 py-1.5">
+            <h3 className="text-[10px] font-bold text-[#6b8ab5] uppercase tracking-wider">
+              バックアップ ({snapshots.length})
+            </h3>
+          </div>
+          <ul className="max-h-24 overflow-y-auto">
+            {snapshots.map((snap, i) => (
+              <li key={i} className="flex items-center justify-between px-3 py-1 text-[10px] text-[#6b8ab5]">
+                <span>{new Date(snap.timestamp).toLocaleTimeString('ja-JP')}</span>
+                <button
+                  onClick={() => restoreSnapshot(i)}
+                  className="text-[#4a90d9] hover:text-white text-[9px]"
+                >
+                  復元
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* 座標パネル */}
       <CoordinatePanel />

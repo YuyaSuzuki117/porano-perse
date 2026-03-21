@@ -59,6 +59,28 @@ const MeasureIcon = () => (
     <circle cx="2" cy="20" r="1.5" fill="currentColor" /><circle cx="22" cy="4" r="1.5" fill="currentColor" />
   </svg>
 );
+const SplitRoomIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="12" y1="3" x2="12" y2="21" strokeDasharray="3 2" />
+  </svg>
+);
+const CompareIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="12" y1="3" x2="12" y2="21" />
+    <path d="M3 12h4" /><path d="M17 12h4" />
+  </svg>
+);
+const MoveAllIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2l3 3-3 3" /><path d="M12 2l-3 3 3 3" />
+    <path d="M12 22l3-3-3-3" /><path d="M12 22l-3-3 3-3" />
+    <path d="M2 12l3 3 3-3" /><path d="M2 12l3-3 3 3" />
+    <path d="M22 12l-3 3-3-3" /><path d="M22 12l-3-3-3 3" />
+    <line x1="12" y1="2" x2="12" y2="22" /><line x1="2" y1="12" x2="22" y2="12" />
+  </svg>
+);
 const FitAllIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" />
@@ -101,6 +123,7 @@ const toolGroups: ToolGroup[] = [
       { tool: 'moveVertex', label: '頂点移動', shortcut: 'M', icon: <MoveVertexIcon /> },
       { tool: 'addRoom', label: '部屋追加', shortcut: '', icon: <AddRoomIcon /> },
       { tool: 'deleteRoom', label: '部屋削除', shortcut: 'Del', icon: <DeleteRoomIcon /> },
+      { tool: 'splitRoom', label: '部屋分割', shortcut: '', icon: <SplitRoomIcon /> },
     ],
   },
   {
@@ -115,6 +138,7 @@ const toolGroups: ToolGroup[] = [
     label: '表示',
     tools: [
       { tool: 'measure', label: '測定', shortcut: 'R', icon: <MeasureIcon /> },
+      { tool: 'moveAll', label: '全体移動', shortcut: 'T', icon: <MoveAllIcon /> },
     ],
   },
 ];
@@ -137,6 +161,8 @@ export default function CorrectionToolbar() {
   const redo = useCorrectionStore((s) => s.redo);
   const setSnapEnabled = useCorrectionStore((s) => s.setSnapEnabled);
   const setGridVisible = useCorrectionStore((s) => s.setGridVisible);
+  const compareMode = useCorrectionStore((s) => s.compareMode);
+  const setCompareMode = useCorrectionStore((s) => s.setCompareMode);
 
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < historyLen - 1;
@@ -221,6 +247,8 @@ export default function CorrectionToolbar() {
                   ? 'bg-[#1e3a5f] text-[#4a90d9] ring-1 ring-[#4a90d9]/60 shadow-[0_0_8px_rgba(74,144,217,0.25)]'
                   : 'text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4]'
               }`}
+              aria-label={t.label}
+              aria-pressed={activeTool === t.tool}
               title={`${t.label}${t.shortcut ? ` (${t.shortcut})` : ''}`}
             >
               {t.icon}
@@ -240,6 +268,33 @@ export default function CorrectionToolbar() {
       ))}
 
       {/* セパレータ */}
+      <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+
+      {/* 壁ユーティリティ */}
+      <button
+        onClick={() => useCorrectionStore.getState().snapWallEndpoints()}
+        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+        title="壁端点スナップ（200mm以内の端点を結合）"
+        aria-label="壁端点スナップ"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="6" cy="6" r="2" /><circle cx="18" cy="6" r="2.5" fill="currentColor" opacity="0.3" />
+          <circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
+          <path d="M8 6h8" strokeDasharray="2 2" /><path d="M6 8v8" /><path d="M18 8v8" />
+        </svg>
+      </button>
+      <button
+        onClick={() => useCorrectionStore.getState().straightenWalls()}
+        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+        title="壁を水平/垂直に矯正（5°以内）"
+        aria-label="壁矯正"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12" /><line x1="12" y1="3" x2="12" y2="21" />
+          <path d="M5 8l3-3" opacity="0.4" /><path d="M5 8h3v-3" />
+        </svg>
+      </button>
+
       <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
 
       {/* Undo / Redo */}
@@ -297,6 +352,29 @@ export default function CorrectionToolbar() {
         title="スナップ (S)"
       >
         <SnapIcon />
+      </button>
+
+      <button
+        onClick={() => setCompareMode(!compareMode)}
+        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+          compareMode ? 'bg-[#1e3a5f] text-[#ef4444] ring-1 ring-[#ef4444]/60' : 'text-[#6b8ab5] hover:bg-[#16213e]'
+        }`}
+        title="修正前と比較"
+        aria-label="比較モード"
+      >
+        <CompareIcon />
+      </button>
+
+      <button
+        onClick={() => useCorrectionStore.getState().autoAlignToPdf()}
+        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+        title="PDF背景に自動整列"
+        aria-label="自動整列"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+          <path d="M14 3h7v7" /><path d="M3 14v7h7" />
+        </svg>
       </button>
 
       {/* ズーム表示 */}

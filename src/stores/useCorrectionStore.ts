@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { BlueprintJson, CorrectionTool, PdfRenderInfo, LayerVisibility } from '@/types/blueprint';
-import { polygonAreaM2, polygonCentroid } from '@/lib/blueprint-geometry';
+import { polygonAreaM2, polygonCentroid, parseScale, lineSegmentIntersection } from '@/lib/blueprint-geometry';
 
 const STORAGE_KEY = 'porano-correction-autosave';
 
@@ -43,11 +43,20 @@ interface CorrectionState {
   selectedRoomIdx: number | null;
   selectedFixtureIdx: number | null;
   selectedVertexIdx: number | null;
+  selectedRoomIndices: number[];
   activeTool: CorrectionTool;
 
   // Undo/Redo
   history: BlueprintJson[];
   historyIdx: number;
+
+  // 全体移動の履歴制御
+  _moveAllHistoryPushed: boolean;
+
+  // 自動バックアップ
+  _operationCount: number;
+  _snapshots: { blueprint: BlueprintJson; timestamp: string; label: string }[];
+  restoreSnapshot: (idx: number) => void;
 
   // スナップ設定
   snapEnabled: boolean;
@@ -67,6 +76,9 @@ interface CorrectionState {
 
   // PDF透明度
   pdfOpacity: number;
+
+  // 比較モード
+  compareMode: boolean;
 
   // 描画最適化: どのレイヤーが再描画必要か
   dirtyLayers: DirtyLayers;
@@ -108,6 +120,42 @@ interface CorrectionState {
   setMeasurePoints: (pts: [number, number][]) => void;
   setMeasureActive: (v: boolean) => void;
 
+  // 全体移動
+  moveAllElements: (dx_mm: number, dy_mm: number) => void;
+  commitMoveAll: () => void;
+
+  // 複数選択
+  toggleRoomSelect: (idx: number) => void;
+  selectAllRooms: () => void;
+  clearMultiSelect: () => void;
+  moveSelectedRooms: (dx_mm: number, dy_mm: number) => void;
+
+  // 壁スナップ・矯正
+  snapWallEndpoints: () => void;
+  straightenWalls: () => void;
+
+  // 辺上に頂点追加
+  addVertexOnEdge: (roomIdx: number, edgeIdx: number, x_mm: number, y_mm: number) => void;
+
+  // PDF自動整列
+  autoAlignToPdf: () => void;
+
+  // 履歴ジャンプ
+  jumpToHistory: (idx: number) => void;
+
+  // 比較モード
+  setCompareMode: (v: boolean) => void;
+
+  // 部屋分割
+  splitRoom: (roomIdx: number, splitLine: [[number, number], [number, number]]) => void;
+
+  // 不明室ナビゲーション
+  navigateUnknown: (direction: 'next' | 'prev') => void;
+
+  // エクスポートトリガー (キーボードショートカット用)
+  _exportTrigger: { format: 'json' | 'dxf'; ts: number } | null;
+  triggerExport: (format: 'json' | 'dxf') => void;
+
   // dirtyLayers操作
   markDirty: (layers: Partial<DirtyLayers>) => void;
   markAllDirty: () => void;
@@ -119,7 +167,24 @@ function pushHistory(state: CorrectionState): Partial<CorrectionState> {
   if (!state.blueprint) return {};
   const newHistory = state.history.slice(0, state.historyIdx + 1);
   newHistory.push(JSON.parse(JSON.stringify(state.blueprint)));
-  return { history: newHistory, historyIdx: newHistory.length - 1 };
+
+  const newCount = state._operationCount + 1;
+  let snapshotUpdate: Partial<CorrectionState> = { _operationCount: newCount };
+
+  if (newCount % 5 === 0) {
+    const snapshot = {
+      blueprint: JSON.parse(JSON.stringify(state.blueprint)),
+      timestamp: new Date().toISOString(),
+      label: `自動バックアップ #${Math.floor(newCount / 5)}`,
+    };
+    const snapshots = [...state._snapshots, snapshot].slice(-10);
+    try {
+      localStorage.setItem('porano-correction-snapshots', JSON.stringify(snapshots));
+    } catch { /* ignore */ }
+    snapshotUpdate = { _operationCount: newCount, _snapshots: snapshots };
+  }
+
+  return { history: newHistory, historyIdx: newHistory.length - 1, ...snapshotUpdate };
 }
 
 export const useCorrectionStore = create<CorrectionState>((set, get) => ({
@@ -131,9 +196,13 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
   selectedRoomIdx: null,
   selectedFixtureIdx: null,
   selectedVertexIdx: null,
+  selectedRoomIndices: [],
   activeTool: 'select',
+  _moveAllHistoryPushed: false,
   history: [],
   historyIdx: -1,
+  _operationCount: 0,
+  _snapshots: [],
 
   // スナップ設定
   snapEnabled: true,
@@ -162,10 +231,36 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
   // PDF透明度
   pdfOpacity: 0.4,
 
+  // 比較モード
+  compareMode: false,
+
+  // エクスポートトリガー
+  _exportTrigger: null,
+
   // 描画最適化: 初期状態は全レイヤーdirty
   dirtyLayers: allDirty(),
 
-  loadBlueprint: (bp) =>
+  loadBlueprint: (bp) => {
+    // JSON validation with defaults
+    bp.rooms = bp.rooms ?? [];
+    bp.walls = bp.walls ?? [];
+    bp.fixtures = bp.fixtures ?? [];
+    bp.warnings = bp.warnings ?? [];
+    bp.scale_detected = bp.scale_detected ?? '1:50';
+    bp.room = bp.room ?? { width_mm: 10000, depth_mm: 10000, ceiling_height_mm: 2700, shape: 'rectangle' };
+    bp.origin_offset_mm = bp.origin_offset_mm ?? { x: 0, y: 0 };
+    for (const room of bp.rooms) {
+      room.confidence = room.confidence ?? 0;
+      room.nearby_texts = room.nearby_texts ?? [];
+      room.area_m2 = room.area_m2 ?? 0;
+    }
+    // Load existing snapshots from localStorage
+    let savedSnapshots: { blueprint: BlueprintJson; timestamp: string; label: string }[] = [];
+    try {
+      const saved = localStorage.getItem('porano-correction-snapshots');
+      if (saved) savedSnapshots = JSON.parse(saved);
+    } catch { /* ignore */ }
+
     set({
       blueprint: bp,
       history: [JSON.parse(JSON.stringify(bp))],
@@ -174,8 +269,12 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
       selectedFixtureIdx: null,
       selectedVertexIdx: null,
       selectedWallIdx: null,
+      selectedRoomIndices: [],
       dirtyLayers: allDirty(),
-    }),
+      _snapshots: savedSnapshots,
+      _operationCount: 0,
+    });
+  },
 
   setPdfInfo: (info) => set({ pdfInfo: info, dirtyLayers: allDirty() }),
   setZoom: (z) => set({ zoom: Math.max(0.1, Math.min(5, z)), dirtyLayers: allDirty() }),
@@ -358,6 +457,19 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
     } catch { /* ignore */ }
   },
 
+  // --- スナップショット復元 ---
+  restoreSnapshot: (idx) => set((s) => {
+    const snapshot = s._snapshots[idx];
+    if (!snapshot) return {};
+    const bp = JSON.parse(JSON.stringify(snapshot.blueprint)) as BlueprintJson;
+    return {
+      blueprint: bp,
+      history: [bp],
+      historyIdx: 0,
+      dirtyLayers: allDirty(),
+    };
+  }),
+
   // --- 新機能アクション ---
   setSnapEnabled: (v) => set({ snapEnabled: v }),
   setSnapGrid: (v) => set((s) => ({ snapGrid: v, dirtyLayers: { ...s.dirtyLayers, grid: true } })),
@@ -418,6 +530,357 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
 
   setMeasurePoints: (pts) => set((s) => ({ measurePoints: pts, dirtyLayers: { ...s.dirtyLayers, measure: true } })),
   setMeasureActive: (v) => set((s) => ({ measureActive: v, dirtyLayers: { ...s.dirtyLayers, measure: true } })),
+
+  // --- 壁スナップ・矯正 ---
+  snapWallEndpoints: () => set((s) => {
+    if (!s.blueprint) return {};
+    const bp = JSON.parse(JSON.stringify(s.blueprint));
+    const SNAP_DIST = 200; // mm
+    const walls = bp.walls;
+
+    const endpoints: { wallIdx: number; end: 'start' | 'end'; x: number; y: number }[] = [];
+    for (let i = 0; i < walls.length; i++) {
+      endpoints.push({ wallIdx: i, end: 'start', x: walls[i].start_x_mm, y: walls[i].start_y_mm });
+      endpoints.push({ wallIdx: i, end: 'end', x: walls[i].end_x_mm, y: walls[i].end_y_mm });
+    }
+
+    const used = new Set<number>();
+    let snapCount = 0;
+    for (let i = 0; i < endpoints.length; i++) {
+      if (used.has(i)) continue;
+      const group = [i];
+      for (let j = i + 1; j < endpoints.length; j++) {
+        if (used.has(j)) continue;
+        const dx = endpoints[i].x - endpoints[j].x;
+        const dy = endpoints[i].y - endpoints[j].y;
+        if (Math.sqrt(dx * dx + dy * dy) < SNAP_DIST) {
+          group.push(j);
+        }
+      }
+      if (group.length > 1) {
+        const avgX = group.reduce((sum, idx) => sum + endpoints[idx].x, 0) / group.length;
+        const avgY = group.reduce((sum, idx) => sum + endpoints[idx].y, 0) / group.length;
+        for (const idx of group) {
+          const ep = endpoints[idx];
+          const w = walls[ep.wallIdx];
+          if (ep.end === 'start') { w.start_x_mm = avgX; w.start_y_mm = avgY; }
+          else { w.end_x_mm = avgX; w.end_y_mm = avgY; }
+          used.add(idx);
+        }
+        snapCount++;
+      }
+    }
+
+    if (snapCount === 0) return {};
+    autoSave(bp);
+    return { blueprint: bp, ...pushHistory(s), dirtyLayers: allDirty() };
+  }),
+
+  straightenWalls: () => set((s) => {
+    if (!s.blueprint) return {};
+    const bp = JSON.parse(JSON.stringify(s.blueprint));
+    const ANGLE_THRESHOLD = 5 * Math.PI / 180;
+    let count = 0;
+
+    for (const wall of bp.walls) {
+      const dx = wall.end_x_mm - wall.start_x_mm;
+      const dy = wall.end_y_mm - wall.start_y_mm;
+      const angle = Math.atan2(Math.abs(dy), Math.abs(dx));
+
+      if (angle < ANGLE_THRESHOLD) {
+        const avgY = (wall.start_y_mm + wall.end_y_mm) / 2;
+        wall.start_y_mm = avgY;
+        wall.end_y_mm = avgY;
+        count++;
+      } else if (angle > Math.PI / 2 - ANGLE_THRESHOLD) {
+        const avgX = (wall.start_x_mm + wall.end_x_mm) / 2;
+        wall.start_x_mm = avgX;
+        wall.end_x_mm = avgX;
+        count++;
+      }
+    }
+
+    if (count === 0) return {};
+    autoSave(bp);
+    return { blueprint: bp, ...pushHistory(s), dirtyLayers: allDirty() };
+  }),
+
+  // --- 辺上に頂点追加 ---
+  addVertexOnEdge: (roomIdx, edgeIdx, x_mm, y_mm) => set((s) => {
+    if (!s.blueprint) return {};
+    const bp = JSON.parse(JSON.stringify(s.blueprint)) as BlueprintJson;
+    const room = bp.rooms[roomIdx];
+    if (!room) return {};
+    room.polygon_mm.splice(edgeIdx + 1, 0, [x_mm, y_mm]);
+    autoSave(bp);
+    return { blueprint: bp, ...pushHistory(s), dirtyLayers: allDirty() };
+  }),
+
+  // --- 全体移動 ---
+  moveAllElements: (dx_mm, dy_mm) =>
+    set((s) => {
+      if (!s.blueprint) return {};
+      const bp = JSON.parse(JSON.stringify(s.blueprint));
+      // 全部屋のポリゴンとセンターを移動
+      for (const room of bp.rooms) {
+        room.polygon_mm = room.polygon_mm.map(([x, y]: [number, number]) => [x + dx_mm, y + dy_mm]);
+        if (room.center_mm) {
+          room.center_mm = [room.center_mm[0] + dx_mm, room.center_mm[1] + dy_mm];
+        }
+      }
+      // 全壁を移動
+      for (const wall of bp.walls) {
+        wall.start_x_mm += dx_mm;
+        wall.start_y_mm += dy_mm;
+        wall.end_x_mm += dx_mm;
+        wall.end_y_mm += dy_mm;
+      }
+      // 全什器を移動
+      for (const fix of bp.fixtures) {
+        fix.x_mm += dx_mm;
+        fix.y_mm += dy_mm;
+      }
+      autoSave(bp);
+      // Only push history on the first drag frame to prevent undo stack explosion
+      if (!s._moveAllHistoryPushed) {
+        return { blueprint: bp, _moveAllHistoryPushed: true, ...pushHistory(s), dirtyLayers: allDirty() };
+      }
+      return { blueprint: bp, dirtyLayers: allDirty() };
+    }),
+
+  commitMoveAll: () => set({ _moveAllHistoryPushed: false }),
+
+  // --- 複数選択 ---
+  toggleRoomSelect: (idx) =>
+    set((s) => {
+      const indices = s.selectedRoomIndices.includes(idx)
+        ? s.selectedRoomIndices.filter((i) => i !== idx)
+        : [...s.selectedRoomIndices, idx];
+      return { selectedRoomIndices: indices };
+    }),
+
+  selectAllRooms: () =>
+    set((s) => {
+      if (!s.blueprint) return {};
+      return { selectedRoomIndices: s.blueprint.rooms.map((_, i) => i) };
+    }),
+
+  clearMultiSelect: () => set({ selectedRoomIndices: [] }),
+
+  moveSelectedRooms: (dx_mm, dy_mm) =>
+    set((s) => {
+      if (!s.blueprint || s.selectedRoomIndices.length === 0) return {};
+      const bp = JSON.parse(JSON.stringify(s.blueprint)) as BlueprintJson;
+      for (const idx of s.selectedRoomIndices) {
+        const room = bp.rooms[idx];
+        if (!room) continue;
+        room.polygon_mm = room.polygon_mm.map(([x, y]: [number, number]) => [x + dx_mm, y + dy_mm] as [number, number]);
+        if (room.center_mm) {
+          room.center_mm = [room.center_mm[0] + dx_mm, room.center_mm[1] + dy_mm];
+        }
+      }
+      autoSave(bp);
+      // Only push history on first drag frame (reuse _moveAllHistoryPushed flag)
+      if (!s._moveAllHistoryPushed) {
+        return { blueprint: bp, _moveAllHistoryPushed: true, ...pushHistory(s), dirtyLayers: allDirty() };
+      }
+      return { blueprint: bp, dirtyLayers: allDirty() };
+    }),
+
+  // --- 履歴ジャンプ ---
+  jumpToHistory: (idx) =>
+    set((s) => {
+      if (idx < 0 || idx >= s.history.length) return {};
+      const bp = JSON.parse(JSON.stringify(s.history[idx]));
+      return {
+        blueprint: bp,
+        historyIdx: idx,
+        selectedRoomIdx: null,
+        selectedFixtureIdx: null,
+        selectedVertexIdx: null,
+        selectedWallIdx: null,
+        dirtyLayers: allDirty(),
+      };
+    }),
+
+  // --- エクスポートトリガー ---
+  triggerExport: (format) => set({ _exportTrigger: { format, ts: Date.now() } }),
+
+  // --- PDF自動整列 ---
+  autoAlignToPdf: () =>
+    set((s) => {
+      if (!s.blueprint || !s.pdfInfo) return {};
+      const bp = JSON.parse(JSON.stringify(s.blueprint)) as BlueprintJson;
+      const scale = parseScale(bp.scale_detected);
+
+      // Calculate bounding box in real mm
+      let minX = Infinity,
+        minY = Infinity;
+      let maxX = -Infinity,
+        maxY = -Infinity;
+      for (const room of bp.rooms) {
+        for (const [x, y] of room.polygon_mm) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+      for (const wall of bp.walls) {
+        minX = Math.min(minX, wall.start_x_mm, wall.end_x_mm);
+        minY = Math.min(minY, wall.start_y_mm, wall.end_y_mm);
+        maxX = Math.max(maxX, wall.start_x_mm, wall.end_x_mm);
+        maxY = Math.max(maxY, wall.start_y_mm, wall.end_y_mm);
+      }
+
+      if (!isFinite(minX)) return {};
+
+      // Paper mm of the min/max points
+      const minPaperX = minX / scale;
+      const minPaperY = minY / scale;
+      const maxPaperX = maxX / scale;
+      const maxPaperY = maxY / scale;
+
+      // PDF page dimensions in mm (from pt: pt * 25.4/72)
+      const pageWidthMm = (s.pdfInfo.pageWidthPt * 25.4) / 72;
+      const pageHeightMm = (s.pdfInfo.pageHeightPt * 25.4) / 72;
+
+      const drawingW = maxPaperX - minPaperX;
+      const drawingH = maxPaperY - minPaperY;
+
+      // If already near origin (min paper coords < 50mm), no shift needed
+      if (minPaperX < 50 && minPaperY < 50) return {};
+
+      // Estimate: try centering the drawing on the page
+      const targetMinX = (pageWidthMm - drawingW) / 2;
+      const targetMinY = (pageHeightMm - drawingH) / 2;
+
+      const dx = (targetMinX - minPaperX) * scale;
+      const dy = (targetMinY - minPaperY) * scale;
+
+      // Apply shift to all elements
+      for (const room of bp.rooms) {
+        room.polygon_mm = room.polygon_mm.map(
+          ([x, y]: [number, number]) => [x + dx, y + dy] as [number, number],
+        );
+        if (room.center_mm)
+          room.center_mm = [room.center_mm[0] + dx, room.center_mm[1] + dy];
+      }
+      for (const wall of bp.walls) {
+        wall.start_x_mm += dx;
+        wall.start_y_mm += dy;
+        wall.end_x_mm += dx;
+        wall.end_y_mm += dy;
+      }
+      for (const fix of bp.fixtures) {
+        fix.x_mm += dx;
+        fix.y_mm += dy;
+      }
+
+      autoSave(bp);
+      return { blueprint: bp, ...pushHistory(s), dirtyLayers: allDirty() };
+    }),
+
+  // --- 不明室ナビゲーション ---
+  navigateUnknown: (direction) => set((s) => {
+    if (!s.blueprint) return {};
+    const unknowns = s.blueprint.rooms
+      .map((r, i) => ({ idx: i, name: r.name }))
+      .filter(r => !r.name || r.name === '不明');
+    if (unknowns.length === 0) return {};
+
+    const currentIdx = s.selectedRoomIdx;
+    let currentUnknownPos = unknowns.findIndex(u => u.idx === currentIdx);
+
+    if (direction === 'next') {
+      currentUnknownPos = currentUnknownPos < unknowns.length - 1 ? currentUnknownPos + 1 : 0;
+    } else {
+      currentUnknownPos = currentUnknownPos > 0 ? currentUnknownPos - 1 : unknowns.length - 1;
+    }
+
+    const target = unknowns[currentUnknownPos];
+    return {
+      selectedRoomIdx: target.idx,
+      selectedFixtureIdx: null,
+      selectedVertexIdx: null,
+      selectedWallIdx: null,
+      activeTool: 'editName' as CorrectionTool,
+      dirtyLayers: allDirty(),
+    };
+  }),
+
+  // --- 比較モード ---
+  setCompareMode: (v) => set({ compareMode: v }),
+
+  // --- 部屋分割 ---
+  splitRoom: (roomIdx, splitLine) => set((s) => {
+    if (!s.blueprint) return {};
+    const bp = JSON.parse(JSON.stringify(s.blueprint)) as BlueprintJson;
+    const room = bp.rooms[roomIdx];
+    if (!room || room.polygon_mm.length < 3) return {};
+
+    const [lineStart, lineEnd] = splitLine;
+    const polygon = room.polygon_mm as [number, number][];
+
+    // Find intersection points of the split line with polygon edges
+    const intersections: { edgeIdx: number; point: [number, number]; t: number }[] = [];
+
+    for (let i = 0; i < polygon.length; i++) {
+      const p1 = polygon[i];
+      const p2 = polygon[(i + 1) % polygon.length];
+      const inter = lineSegmentIntersection(lineStart, lineEnd, p1, p2);
+      if (inter) {
+        intersections.push({ edgeIdx: i, point: inter.point, t: inter.t });
+      }
+    }
+
+    // Need exactly 2 intersection points to split
+    if (intersections.length !== 2) return {};
+
+    // Sort by edge index
+    intersections.sort((a, b) => a.edgeIdx - b.edgeIdx);
+    const [int1, int2] = intersections;
+
+    // Build two new polygons
+    const poly1: [number, number][] = [];
+    const poly2: [number, number][] = [];
+
+    // Poly1: from int1 to int2 along the polygon
+    poly1.push(int1.point);
+    for (let i = int1.edgeIdx + 1; i <= int2.edgeIdx; i++) {
+      poly1.push(polygon[i]);
+    }
+    poly1.push(int2.point);
+
+    // Poly2: from int2 to int1 along the polygon (wrapping)
+    poly2.push(int2.point);
+    for (let i = int2.edgeIdx + 1; i < polygon.length + int1.edgeIdx + 1; i++) {
+      poly2.push(polygon[i % polygon.length]);
+    }
+    poly2.push(int1.point);
+
+    // Create two new rooms
+    const room1 = {
+      ...room,
+      name: room.name + '-1',
+      polygon_mm: poly1,
+      area_m2: Math.round(polygonAreaM2(poly1) * 10) / 10,
+      center_mm: polygonCentroid(poly1).map(Math.round) as [number, number],
+    };
+    const room2 = {
+      ...room,
+      name: room.name + '-2',
+      polygon_mm: poly2,
+      area_m2: Math.round(polygonAreaM2(poly2) * 10) / 10,
+      center_mm: polygonCentroid(poly2).map(Math.round) as [number, number],
+    };
+
+    // Replace original room with two new rooms
+    bp.rooms.splice(roomIdx, 1, room1, room2);
+
+    autoSave(bp);
+    return { blueprint: bp, selectedRoomIdx: roomIdx, ...pushHistory(s), dirtyLayers: allDirty() };
+  }),
 
   // --- dirtyLayers操作 ---
   markDirty: (layers) => set((s) => ({ dirtyLayers: { ...s.dirtyLayers, ...layers } })),

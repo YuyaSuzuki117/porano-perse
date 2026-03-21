@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCorrectionStore } from '@/stores/useCorrectionStore';
 import { polygonBBox } from '@/lib/blueprint-geometry';
+import { showToast } from './Toast';
 
 /**
  * 座標パネル: 選択中の要素の正確な数値入力
@@ -40,9 +41,20 @@ export default function CoordinatePanel() {
   }, [vertex, fixture, selectedVertexIdx, selectedFixtureIdx]);
 
   const handleApply = useCallback(() => {
-    const x = parseInt(editX);
-    const y = parseInt(editY);
-    if (isNaN(x) || isNaN(y)) return;
+    const x = parseFloat(editX);
+    const y = parseFloat(editY);
+    if (isNaN(x) || isNaN(y)) {
+      showToast('無効な数値です');
+      return;
+    }
+    if (x < 0 || y < 0) {
+      showToast('座標は正の値にしてください');
+      return;
+    }
+    if (x > 100000 || y > 100000) {
+      showToast('座標が範囲外です');
+      return;
+    }
 
     if (selectedRoomIdx !== null && selectedVertexIdx !== null) {
       moveVertex(selectedRoomIdx, selectedVertexIdx, x, y);

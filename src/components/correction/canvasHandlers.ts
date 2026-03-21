@@ -109,6 +109,14 @@ export function createKeyDownHandler(
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+    // Tab/Shift+Tab: 不明室ナビゲーション
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = useCorrectionStore.getState();
+      s.navigateUnknown(e.shiftKey ? 'prev' : 'next');
+      return;
+    }
+
     if (e.code === 'Space') {
       e.preventDefault();
       refs.spaceHeldRef.current = true;
@@ -127,6 +135,33 @@ export function createKeyDownHandler(
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
       e.preventDefault();
       useCorrectionStore.getState().redo();
+      return;
+    }
+
+    // Ctrl+A: 全選択
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+      e.preventDefault();
+      useCorrectionStore.getState().selectAllRooms();
+      return;
+    }
+
+    // Ctrl+S: JSON保存
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      useCorrectionStore.getState().triggerExport('json');
+      return;
+    }
+
+    // Ctrl+E: DXFエクスポート
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+      e.preventDefault();
+      useCorrectionStore.getState().triggerExport('dxf');
+      return;
+    }
+
+    // F: フィットビュー
+    if (e.key === 'f' || e.key === 'F') {
+      fitAll();
       return;
     }
 
@@ -173,6 +208,7 @@ export function createKeyDownHandler(
       'm': 'moveVertex', 'M': 'moveVertex',
       'w': 'wallAdd', 'W': 'wallAdd',
       'r': 'measure', 'R': 'measure',
+      't': 'moveAll', 'T': 'moveAll',
     };
     const toolAction = toolShortcuts[e.key];
     if (toolAction) {
@@ -221,7 +257,7 @@ export function createKeyUpHandler(
 // ============================================================
 // 全体表示 (Ctrl+0)
 // ============================================================
-function fitAll() {
+export function fitAll() {
   const containerEl = document.querySelector('[data-correction-canvas]');
   if (!containerEl) return;
   const cw = containerEl.clientWidth;

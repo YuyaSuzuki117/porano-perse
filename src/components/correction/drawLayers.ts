@@ -162,6 +162,40 @@ export function drawRooms(
 }
 
 // ============================================================
+// Layer 2.5: 比較モード (修正前オーバーレイ)
+// ============================================================
+export function drawCompareOverlay(
+  ctx: CanvasRenderingContext2D,
+  blueprint: BlueprintJson,
+  vs: ViewState,
+  compareMode: boolean,
+  history: BlueprintJson[],
+): void {
+  if (!compareMode || history.length === 0) return;
+  const original = history[0];
+  if (!original.rooms) return;
+
+  ctx.save();
+  ctx.setLineDash([5, 5]);
+  for (const room of original.rooms) {
+    if (!room.polygon_mm || room.polygon_mm.length < 3) continue;
+    ctx.beginPath();
+    const first = toCanvas(room.polygon_mm[0][0], room.polygon_mm[0][1], blueprint, vs);
+    ctx.moveTo(first.cx, first.cy);
+    for (let j = 1; j < room.polygon_mm.length; j++) {
+      const p = toCanvas(room.polygon_mm[j][0], room.polygon_mm[j][1], blueprint, vs);
+      ctx.lineTo(p.cx, p.cy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ============================================================
 // Layer 3: 壁線
 // ============================================================
 export function drawWalls(
@@ -442,7 +476,7 @@ export function drawWallAddPreview(
   currentMouseMm: { x_mm: number; y_mm: number } | null,
   t: Theme = theme,
 ): void {
-  if (activeTool !== 'wallAdd' || wallAddPoints.length === 0) return;
+  if ((activeTool !== 'wallAdd' && activeTool !== 'splitRoom') || wallAddPoints.length === 0) return;
 
   const pts = wallAddPoints;
   const p0 = toCanvas(pts[0][0], pts[0][1], blueprint, vs);
