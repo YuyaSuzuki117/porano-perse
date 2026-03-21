@@ -80,6 +80,10 @@ interface CorrectionState {
   // 比較モード
   compareMode: boolean;
 
+  // かんたんモード
+  simpleMode: boolean;
+  setSimpleMode: (v: boolean) => void;
+
   // 描画最適化: どのレイヤーが再描画必要か
   dirtyLayers: DirtyLayers;
 
@@ -233,6 +237,9 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
 
   // 比較モード
   compareMode: false,
+
+  // かんたんモード
+  simpleMode: true,
 
   // エクスポートトリガー
   _exportTrigger: null,
@@ -811,6 +818,9 @@ export const useCorrectionStore = create<CorrectionState>((set, get) => ({
 
   // --- 比較モード ---
   setCompareMode: (v) => set({ compareMode: v }),
+
+  // --- かんたんモード ---
+  setSimpleMode: (v) => set({ simpleMode: v }),
 
   // --- 部屋分割 ---
   splitRoom: (roomIdx, splitLine) => set((s) => {

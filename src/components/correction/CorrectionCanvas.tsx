@@ -849,6 +849,28 @@ export default function CorrectionCanvas() {
           onFitAll={fitAll}
         />
       )}
+
+      {/* フローティング進捗表示 */}
+      {blueprint && (() => {
+        const unknowns = blueprint.rooms.filter(r => r.name === '不明' || r.name === '').length;
+        if (unknowns === 0) return null;
+        return (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 bg-amber-500/90 text-white px-4 py-1.5 rounded-full shadow-lg text-sm font-bold flex items-center gap-2 pointer-events-auto">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            あと {unknowns} 室
+            <button
+              onClick={() => {
+                const store = useCorrectionStore.getState();
+                store.navigateUnknown('next');
+                store.setActiveTool('editName');
+              }}
+              className="ml-1 bg-white/20 hover:bg-white/30 rounded px-2 py-0.5 text-xs transition-colors"
+            >
+              次へ →
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

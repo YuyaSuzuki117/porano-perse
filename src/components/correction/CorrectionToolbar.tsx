@@ -7,73 +7,73 @@ import type { CorrectionTool } from '@/types/blueprint';
 
 // --- SVGアイコン ---
 const SelectIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
   </svg>
 );
 const EditNameIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 const MoveVertexIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M5 9l-3 3 3 3" /><path d="M9 5l3-3 3 3" />
     <path d="M15 19l3 3-3-3" /><path d="M19 9l3 3-3 3" />
     <line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="2" x2="12" y2="22" />
   </svg>
 );
 const AddRoomIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
 const DeleteRoomIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </svg>
 );
 const WallAddIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="4" y1="20" x2="20" y2="4" /><line x1="17" y1="4" x2="20" y2="4" /><line x1="20" y1="4" x2="20" y2="7" />
     <circle cx="4" cy="20" r="2" fill="currentColor" /><circle cx="20" cy="4" r="2" fill="currentColor" />
   </svg>
 );
 const WallMoveIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="4" y1="20" x2="20" y2="4" />
     <path d="M8 8l-4 4 4 4" /><path d="M16 8l4 4-4 4" />
   </svg>
 );
 const WallDeleteIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="4" y1="20" x2="20" y2="4" opacity="0.4" />
     <line x1="8" y1="8" x2="16" y2="16" strokeWidth="3" /><line x1="16" y1="8" x2="8" y2="16" strokeWidth="3" />
   </svg>
 );
 const MeasureIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M2 20l20-16" />
     <path d="M6 16l2-2" /><path d="M10 12l2-2" /><path d="M14 8l2-2" />
     <circle cx="2" cy="20" r="1.5" fill="currentColor" /><circle cx="22" cy="4" r="1.5" fill="currentColor" />
   </svg>
 );
 const SplitRoomIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <line x1="12" y1="3" x2="12" y2="21" strokeDasharray="3 2" />
   </svg>
 );
 const CompareIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <line x1="12" y1="3" x2="12" y2="21" />
     <path d="M3 12h4" /><path d="M17 12h4" />
   </svg>
 );
 const MoveAllIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2l3 3-3 3" /><path d="M12 2l-3 3 3 3" />
     <path d="M12 22l3-3-3-3" /><path d="M12 22l-3-3 3-3" />
     <path d="M2 12l3 3 3-3" /><path d="M2 12l3-3 3 3" />
@@ -82,19 +82,19 @@ const MoveAllIcon = () => (
   </svg>
 );
 const FitAllIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" />
     <path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" />
   </svg>
 );
 const GridIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" />
     <line x1="9" y1="3" x2="9" y2="21" /><line x1="15" y1="3" x2="15" y2="21" />
   </svg>
 );
 const SnapIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0" fill="currentColor" />
     <path d="M18 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0" fill="currentColor" />
     <path d="M11 5a1 1 0 1 0 2 0 1 1 0 1 0-2 0" fill="currentColor" />
@@ -163,11 +163,25 @@ export default function CorrectionToolbar() {
   const setGridVisible = useCorrectionStore((s) => s.setGridVisible);
   const compareMode = useCorrectionStore((s) => s.compareMode);
   const setCompareMode = useCorrectionStore((s) => s.setCompareMode);
+  const simpleMode = useCorrectionStore((s) => s.simpleMode);
+  const setSimpleMode = useCorrectionStore((s) => s.setSimpleMode);
 
   const canUndo = historyIdx > 0;
   const canRedo = historyIdx < historyLen - 1;
 
   const selectedRoom = blueprint && selectedRoomIdx !== null ? blueprint.rooms[selectedRoomIdx] : null;
+
+  const simpleTools: CorrectionTool[] = ['select', 'editName', 'moveVertex', 'measure'];
+
+  const filteredToolGroups = useMemo(() => {
+    if (!simpleMode) return toolGroups;
+    return toolGroups
+      .map((group) => ({
+        ...group,
+        tools: group.tools.filter((t) => simpleTools.includes(t.tool)),
+      }))
+      .filter((group) => group.tools.length > 0);
+  }, [simpleMode]);
 
   const unknownCount = useMemo(() => {
     if (!blueprint) return 0;
@@ -233,16 +247,16 @@ export default function CorrectionToolbar() {
   };
 
   return (
-    <div className="flex items-center gap-0.5 px-2 py-1 bg-[#0d1b2a] border-b border-[#1e3a5f]">
+    <div className="flex items-end gap-0.5 px-2 py-1 bg-[#0d1b2a] border-b border-[#1e3a5f]">
       {/* ツールグループ */}
-      {toolGroups.map((group, gi) => (
+      {filteredToolGroups.map((group, gi) => (
         <React.Fragment key={group.label}>
-          {gi > 0 && <div className="w-px h-6 bg-[#1e3a5f] mx-0.5" />}
+          {gi > 0 && <div className="w-px h-8 bg-[#1e3a5f] mx-0.5 self-center" />}
           {group.tools.map((t) => (
             <button
               key={t.tool}
               onClick={() => setActiveTool(t.tool)}
-              className={`group relative flex items-center justify-center w-8 h-8 rounded transition-all ${
+              className={`group relative flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
                 activeTool === t.tool
                   ? 'bg-[#1e3a5f] text-[#4a90d9] ring-1 ring-[#4a90d9]/60 shadow-[0_0_8px_rgba(74,144,217,0.25)]'
                   : 'text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4]'
@@ -252,129 +266,132 @@ export default function CorrectionToolbar() {
               title={`${t.label}${t.shortcut ? ` (${t.shortcut})` : ''}`}
             >
               {t.icon}
-              {/* ショートカットキー表示（右下に小さく） */}
-              {t.shortcut && (
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 text-[8px] font-mono font-bold leading-none ${
-                    activeTool === t.tool ? 'text-[#4a90d9]' : 'text-[#3a5a7a] group-hover:text-[#6b8ab5]'
-                  }`}
-                >
-                  {t.shortcut}
-                </span>
-              )}
+              <span className="text-[8px] mt-0.5 leading-none">{t.label}</span>
             </button>
           ))}
         </React.Fragment>
       ))}
 
-      {/* セパレータ */}
-      <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+      {/* セパレータ + 壁ユーティリティ（simpleModeでは非表示） */}
+      {!simpleMode && (
+        <>
+          <div className="w-px h-8 bg-[#1e3a5f] mx-1 self-center" />
 
-      {/* 壁ユーティリティ */}
-      <button
-        onClick={() => useCorrectionStore.getState().snapWallEndpoints()}
-        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
-        title="壁端点スナップ（200mm以内の端点を結合）"
-        aria-label="壁端点スナップ"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="6" cy="6" r="2" /><circle cx="18" cy="6" r="2.5" fill="currentColor" opacity="0.3" />
-          <circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
-          <path d="M8 6h8" strokeDasharray="2 2" /><path d="M6 8v8" /><path d="M18 8v8" />
-        </svg>
-      </button>
-      <button
-        onClick={() => useCorrectionStore.getState().straightenWalls()}
-        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
-        title="壁を水平/垂直に矯正（5°以内）"
-        aria-label="壁矯正"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12" /><line x1="12" y1="3" x2="12" y2="21" />
-          <path d="M5 8l3-3" opacity="0.4" /><path d="M5 8h3v-3" />
-        </svg>
-      </button>
+          <button
+            onClick={() => useCorrectionStore.getState().snapWallEndpoints()}
+            className="flex flex-col items-center justify-center w-14 h-12 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+            title="壁端点スナップ（200mm以内の端点を結合）"
+            aria-label="壁端点スナップ"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="6" cy="6" r="2" /><circle cx="18" cy="6" r="2.5" fill="currentColor" opacity="0.3" />
+              <circle cx="6" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
+              <path d="M8 6h8" strokeDasharray="2 2" /><path d="M6 8v8" /><path d="M18 8v8" />
+            </svg>
+            <span className="text-[8px] mt-0.5 leading-none">壁スナップ</span>
+          </button>
+          <button
+            onClick={() => useCorrectionStore.getState().straightenWalls()}
+            className="flex flex-col items-center justify-center w-14 h-12 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+            title="壁を水平/垂直に矯正（5°以内）"
+            aria-label="壁矯正"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" /><line x1="12" y1="3" x2="12" y2="21" />
+              <path d="M5 8l3-3" opacity="0.4" /><path d="M5 8h3v-3" />
+            </svg>
+            <span className="text-[8px] mt-0.5 leading-none">壁矯正</span>
+          </button>
+        </>
+      )}
 
-      <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+      <div className="w-px h-8 bg-[#1e3a5f] mx-1 self-center" />
 
       {/* Undo / Redo */}
       <button
         onClick={undo}
         disabled={!canUndo}
-        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+        className={`flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
           canUndo ? 'text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4]' : 'text-[#2a3a4f] cursor-not-allowed'
         }`}
         title="元に戻す (Ctrl+Z)"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
         </svg>
+        <span className="text-[8px] mt-0.5 leading-none">戻す</span>
       </button>
       <button
         onClick={redo}
         disabled={!canRedo}
-        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+        className={`flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
           canRedo ? 'text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4]' : 'text-[#2a3a4f] cursor-not-allowed'
         }`}
         title="やり直す (Ctrl+Y)"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
         </svg>
+        <span className="text-[8px] mt-0.5 leading-none">やり直す</span>
       </button>
 
-      <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+      <div className="w-px h-8 bg-[#1e3a5f] mx-1 self-center" />
 
       {/* 表示コントロール */}
       <button
         onClick={handleFitAll}
-        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+        className="flex flex-col items-center justify-center w-14 h-12 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
         title="全体表示 (Ctrl+0)"
       >
         <FitAllIcon />
+        <span className="text-[8px] mt-0.5 leading-none">フィット</span>
       </button>
 
       <button
         onClick={() => setGridVisible(!gridVisible)}
-        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+        className={`flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
           gridVisible ? 'bg-[#1e3a5f] text-[#4a90d9]' : 'text-[#6b8ab5] hover:bg-[#16213e]'
         }`}
         title="グリッド表示 (G)"
       >
         <GridIcon />
+        <span className="text-[8px] mt-0.5 leading-none">グリッド</span>
       </button>
 
       <button
         onClick={() => setSnapEnabled(!snapEnabled)}
-        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+        className={`flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
           snapEnabled ? 'bg-[#1e3a5f] text-[#f59e0b]' : 'text-[#6b8ab5] hover:bg-[#16213e]'
         }`}
         title="スナップ (S)"
       >
         <SnapIcon />
+        <span className="text-[8px] mt-0.5 leading-none">スナップ</span>
       </button>
 
       <button
         onClick={() => setCompareMode(!compareMode)}
-        className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+        className={`flex flex-col items-center justify-center w-14 h-12 rounded transition-all ${
           compareMode ? 'bg-[#1e3a5f] text-[#ef4444] ring-1 ring-[#ef4444]/60' : 'text-[#6b8ab5] hover:bg-[#16213e]'
         }`}
         title="修正前と比較"
         aria-label="比較モード"
       >
         <CompareIcon />
+        <span className="text-[8px] mt-0.5 leading-none">比較</span>
       </button>
 
       <button
         onClick={() => useCorrectionStore.getState().autoAlignToPdf()}
-        className="flex items-center justify-center w-8 h-8 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
+        className="flex flex-col items-center justify-center w-14 h-12 rounded text-[#6b8ab5] hover:bg-[#16213e] hover:text-[#8ba4c4] transition-all"
         title="PDF背景に自動整列"
         aria-label="自動整列"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
           <path d="M14 3h7v7" /><path d="M3 14v7h7" />
         </svg>
+        <span className="text-[8px] mt-0.5 leading-none">整列</span>
       </button>
 
       {/* ズーム表示 */}
@@ -385,7 +402,7 @@ export default function CorrectionToolbar() {
       {/* 不明室ボタン */}
       {unknownCount > 0 && (
         <>
-          <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+          <div className="w-px h-8 bg-[#1e3a5f] mx-1 self-center" />
           <button
             onClick={handleNextUnknown}
             className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold bg-amber-500/90 text-white hover:bg-amber-500 active:bg-amber-600 transition-colors"
@@ -400,12 +417,24 @@ export default function CorrectionToolbar() {
       {/* 選択中の部屋情報 */}
       {selectedRoom && (
         <>
-          <div className="w-px h-6 bg-[#1e3a5f] mx-1" />
+          <div className="w-px h-8 bg-[#1e3a5f] mx-1 self-center" />
           <span className="text-[11px] text-[#4a90d9] font-medium truncate max-w-[180px] font-mono">
             {selectedRoom.name || '不明'} | {selectedRoom.area_m2}m2
           </span>
         </>
       )}
+
+      {/* かんたんモード切替 */}
+      <button
+        onClick={() => setSimpleMode(!simpleMode)}
+        className={`ml-auto px-2 py-1 rounded text-[10px] font-bold transition-all ${
+          simpleMode
+            ? 'bg-[#4a90d9] text-white hover:bg-[#3a7bc8]'
+            : 'bg-[#1e3a5f] text-[#6b8ab5] hover:bg-[#2a4a6f] hover:text-[#8ba4c4]'
+        }`}
+      >
+        {simpleMode ? '詳細モード' : 'かんたん'}
+      </button>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import RoomNameEditor from '@/components/correction/RoomNameEditor';
 import ExportBar from '@/components/correction/ExportBar';
 import StatusBar from '@/components/correction/StatusBar';
 import Toast from '@/components/correction/Toast';
+import Tutorial from '@/components/correction/Tutorial';
 
 const ZoomControls = dynamic(
   () => import('@/components/correction/ZoomControls'),
@@ -313,9 +314,27 @@ export default function CorrectionPage() {
             </button>
           </div>
         </div>
+        <Tutorial />
       </div>
     );
   }
+
+  // 初回読み込み後の自動ジャンプ
+  const hasAutoJumped = useRef(false);
+  useEffect(() => {
+    if (!blueprint || hasAutoJumped.current) return;
+    const unknownIdx = blueprint.rooms.findIndex(r => r.name === '不明' || r.name === '');
+    if (unknownIdx >= 0) {
+      hasAutoJumped.current = true;
+      // 少し待ってからジャンプ（オートフィット後）
+      setTimeout(() => {
+        const selectRoom = useCorrectionStore.getState().selectRoom;
+        const setActiveTool = useCorrectionStore.getState().setActiveTool;
+        selectRoom(unknownIdx);
+        setActiveTool('editName');
+      }, 500);
+    }
+  }, [blueprint]);
 
   // 読み込み済み: 補正UI (ダークテーマ)
   return (

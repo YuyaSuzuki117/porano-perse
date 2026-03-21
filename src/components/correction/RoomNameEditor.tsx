@@ -5,6 +5,19 @@ import { useCorrectionStore } from '@/stores/useCorrectionStore';
 import { parseScale, mmToCanvas } from '@/lib/blueprint-geometry';
 import { showToast } from '@/components/correction/Toast';
 
+const CUSTOM_NAMES_KEY = 'porano-correction-custom-names';
+
+function loadCustomNames(): string[] {
+  try {
+    const data = localStorage.getItem(CUSTOM_NAMES_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+}
+
+function saveCustomNames(names: string[]) {
+  localStorage.setItem(CUSTOM_NAMES_KEY, JSON.stringify(names));
+}
+
 const COMMON_NAMES = [
   'トイレ', '廊下', 'PS', 'EV', 'ENT', '更衣室', 'バックヤード',
   '事務室', '倉庫', '玄関', '洗面所', '厨房', 'ホール',
@@ -29,6 +42,9 @@ export default function RoomNameEditor() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
+  const [customNames, setCustomNames] = useState<string[]>(() => loadCustomNames());
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [newCustomName, setNewCustomName] = useState('');
 
   const room = blueprint && selectedRoomIdx !== null ? blueprint.rooms[selectedRoomIdx] : null;
   const isVisible = activeTool === 'editName' && room !== null;
@@ -190,6 +206,80 @@ export default function RoomNameEditor() {
               {s}
             </button>
           ))}
+        </div>
+
+        {/* カスタム室名 */}
+        {customNames.length > 0 && (
+          <div className="mt-1.5">
+            <div className="text-[9px] text-[#4a6a8a] mb-0.5">カスタム</div>
+            <div className="grid grid-cols-3 gap-1">
+              {customNames.map((s) => (
+                <button
+                  key={`custom-${s}`}
+                  onMouseDown={(e) => { e.preventDefault(); handleQuickName(s); }}
+                  className="px-1 py-0.5 text-[10px] rounded border border-purple-500/40 text-purple-300 hover:bg-purple-500/20 transition-colors truncate relative group"
+                >
+                  {s}
+                  <span
+                    className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[7px] rounded-full items-center justify-center hidden group-hover:flex cursor-pointer"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const updated = customNames.filter(n => n !== s);
+                      setCustomNames(updated);
+                      saveCustomNames(updated);
+                    }}
+                  >×</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* カスタム名前追加 */}
+        <div className="mt-1.5 flex items-center gap-1">
+          {showAddCustom ? (
+            <>
+              <input
+                type="text"
+                value={newCustomName}
+                onChange={(e) => setNewCustomName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newCustomName.trim()) {
+                    const updated = [...customNames, newCustomName.trim()];
+                    setCustomNames(updated);
+                    saveCustomNames(updated);
+                    setNewCustomName('');
+                    setShowAddCustom(false);
+                  } else if (e.key === 'Escape') {
+                    setShowAddCustom(false);
+                    setNewCustomName('');
+                  }
+                }}
+                placeholder="新しい室名..."
+                className="flex-1 px-1.5 py-0.5 text-[10px] bg-[#0d1b2a] border border-[#1e3a5f] text-[#c8d8e8] rounded focus:outline-none focus:ring-1 focus:ring-purple-400"
+                autoFocus
+              />
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (newCustomName.trim()) {
+                    const updated = [...customNames, newCustomName.trim()];
+                    setCustomNames(updated);
+                    saveCustomNames(updated);
+                    setNewCustomName('');
+                    setShowAddCustom(false);
+                  }
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300"
+              >追加</button>
+            </>
+          ) : (
+            <button
+              onMouseDown={(e) => { e.preventDefault(); setShowAddCustom(true); }}
+              className="text-[9px] text-[#4a6a8a] hover:text-purple-400 transition-colors"
+            >+ カスタム名を追加</button>
+          )}
         </div>
 
         {/* 操作ヒント */}

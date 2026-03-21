@@ -29,6 +29,7 @@ export default function CorrectionSidebar() {
 
   const [isOpen, setIsOpen] = useState(true);
   const [showUnknownOnly, setShowUnknownOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [roomsCollapsed, setRoomsCollapsed] = useState(false);
 
@@ -107,9 +108,13 @@ export default function CorrectionSidebar() {
   const namedFixtures = fixtures.filter((f) => f.name && f.name !== '').length;
   const progressPercent = rooms.length > 0 ? Math.round((namedCount / rooms.length) * 100) : 0;
 
-  const filteredRooms = showUnknownOnly
-    ? rooms.map((room, idx) => ({ room, idx })).filter(({ room }) => room.name === '不明' || room.name === '')
-    : rooms.map((room, idx) => ({ room, idx }));
+  const filteredRooms = rooms
+    .map((room, idx) => ({ room, idx }))
+    .filter(({ room }) => {
+      if (showUnknownOnly && room.name !== '不明' && room.name !== '') return false;
+      if (searchQuery && !room.name.includes(searchQuery)) return false;
+      return true;
+    });
 
   if (!isOpen) {
     return (
@@ -179,6 +184,14 @@ export default function CorrectionSidebar() {
             <span className="text-red-400">不明のみ ({unknownCount})</span>
           </label>
         )}
+
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="室名で検索..."
+          className="w-full px-2 py-1 text-[10px] bg-[#0d1b2a] border border-[#1e3a5f] text-[#c8d8e8] rounded focus:outline-none focus:ring-1 focus:ring-[#4a90d9] mt-1"
+        />
       </div>
 
       {/* 部屋リスト */}
@@ -219,11 +232,11 @@ export default function CorrectionSidebar() {
                           : isHovered
                             ? 'bg-[#1e3a5f]/30 border-[#4a6a8a] text-[#8ba4c4]'
                             : 'border-transparent text-[#6b8ab5] hover:bg-[#1e3a5f]/20'
-                    }`}
+                    } ${isUnknown ? 'bg-red-900/20' : ''}`}
                   >
                     <div className="flex items-center gap-1.5">
                       <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: dotColor }}
                       />
                       <span className={`font-medium truncate ${isUnknown ? 'text-red-400' : ''}`}>
